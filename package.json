@@ -1,0 +1,14 @@
+{
+  "name": "vscode-vba-extension",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws build",
+    "test": "npm run -ws test",
+    "lint": "npm run -ws lint",
+    "clean": "npm run -ws clean"
+  }
+}

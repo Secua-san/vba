@@ -1,0 +1,13 @@
+{
+  "name": "@vba/core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo \"No tests yet (core)\"",
+    "lint": "echo \"No lint config yet (core)\"",
+    "clean": "if exist dist rmdir /s /q dist"
+  }
+}
