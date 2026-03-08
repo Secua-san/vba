@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   analyzeModule,
   findDefinition,
+  formatModuleIndentation,
   getCompletionSymbols,
   getDocumentOutline,
   getSymbolTypeName,
@@ -411,4 +412,92 @@ End Sub`, { fileName: "WriteOnlyLocals.bas" });
   );
   assert.equal(unusedDiagnostics.length, 0);
   assert.ok(writeOnlyDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+});
+
+test("formatModuleIndentation indents nested VBA blocks and continued lines", () => {
+  const formatted = formatModuleIndentation(`Attribute VB_Name = "Formatter"
+Option Explicit
+
+Public Property Get Message() As String
+Dim value As String
+If True Then
+value = _
+"Hello"
+Else
+Select Case Len(value)
+Case 0
+With Application
+.StatusBar = value
+End With
+Case Else
+For index = 1 To 2
+Do While index < 2
+index = index + 1
+Loop
+Next index
+End Select
+End If
+Message = value
+End Property`, { fileName: "Formatter.bas", indentSize: 4, insertSpaces: true });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "Formatter"
+Option Explicit
+
+Public Property Get Message() As String
+    Dim value As String
+    If True Then
+        value = _
+            "Hello"
+    Else
+        Select Case Len(value)
+            Case 0
+                With Application
+                    .StatusBar = value
+                End With
+            Case Else
+                For index = 1 To 2
+                    Do While index < 2
+                        index = index + 1
+                    Loop
+                Next index
+        End Select
+    End If
+    Message = value
+End Property`
+  );
+});
+
+test("formatModuleIndentation preserves frm designer text and outdents labels", () => {
+  const formatted = formatModuleIndentation(`VERSION 5.00
+Begin VB.Form SampleForm
+    Caption = "Sample"
+End
+Attribute VB_Name = "SampleForm"
+Option Explicit
+
+Public Sub Demo()
+If True Then
+GoHere:
+Debug.Print "ready"
+End If
+End Sub`, { fileName: "SampleForm.frm", indentSize: 4, insertSpaces: true });
+
+  assert.equal(
+    formatted,
+    `VERSION 5.00
+Begin VB.Form SampleForm
+    Caption = "Sample"
+End
+Attribute VB_Name = "SampleForm"
+Option Explicit
+
+Public Sub Demo()
+    If True Then
+GoHere:
+        Debug.Print "ready"
+    End If
+End Sub`
+  );
 });

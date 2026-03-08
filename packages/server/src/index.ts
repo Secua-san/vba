@@ -60,6 +60,7 @@ export function startServer(): void {
       capabilities: {
         completionProvider: {},
         definitionProvider: true,
+        documentFormattingProvider: true,
         documentSymbolProvider: true,
         renameProvider: {
           prepareProvider: true
@@ -171,6 +172,17 @@ export function startServer(): void {
 
   connection.onDocumentSymbol((params): DocumentSymbol[] => {
     return documentService.getDocumentSymbols(params.textDocument.uri).map(toDocumentSymbol);
+  });
+
+  connection.onDocumentFormatting((params): TextEdit[] => {
+    const state = documentService.getState(params.textDocument.uri);
+    const formattedText = documentService.formatDocument(params.textDocument.uri, params.options);
+
+    if (!state || formattedText === undefined || formattedText === state.text) {
+      return [];
+    }
+
+    return [TextEdit.replace(toLspRange(getFullDocumentRange(state.text)), formattedText)];
   });
 
   connection.onReferences((params): Location[] => {
@@ -339,6 +351,23 @@ function toLspDiagnostic(diagnostic: Diagnostic) {
 
 function toLspRange(range: { end: Position; start: Position } | { end: { character: number; line: number }; start: { character: number; line: number } }): Range {
   return Range.create(range.start.line, range.start.character, range.end.line, range.end.character);
+}
+
+function getFullDocumentRange(text: string): { end: { character: number; line: number }; start: { character: number; line: number } } {
+  const normalizedText = text.replace(/\r\n?/g, "\n");
+  const lines = normalizedText.split("\n");
+  const endLine = Math.max(0, lines.length - 1);
+
+  return {
+    start: {
+      character: 0,
+      line: 0
+    },
+    end: {
+      character: lines[endLine]?.length ?? 0,
+      line: endLine
+    }
+  };
 }
 
 function mapCompletionItemKind(kind: SymbolInfo["kind"]): CompletionItemKind {

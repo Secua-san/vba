@@ -4,6 +4,7 @@ import {
   collectByRefArgumentDiagnostics,
   extractIdentifierAtPosition,
   findDefinition,
+  formatModuleIndentation,
   getCompletionSymbols,
   getDocumentOutline,
   inferExpressionTypeAtLine,
@@ -77,6 +78,7 @@ export interface SemanticTokenEntry {
 
 export interface DocumentService {
   analyzeText: (uri: string, languageId: string, version: number, text: string) => DocumentState;
+  formatDocument: (uri: string, options?: { insertSpaces?: boolean; tabSize?: number }) => string | undefined;
   getCompletionSymbols: (uri: string, position: LinePosition) => WorkspaceSymbolResolution[];
   getDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined;
   getDiagnostics: (uri: string) => Diagnostic[];
@@ -232,6 +234,19 @@ export function createDocumentService(): DocumentService {
       documentStates.set(uri, state);
       workspaceIndex = createWorkspaceIndex([...documentStates.values()]);
       return state;
+    },
+    formatDocument(uri: string, options?: { insertSpaces?: boolean; tabSize?: number }): string | undefined {
+      const state = documentStates.get(uri);
+
+      if (!state) {
+        return undefined;
+      }
+
+      return formatModuleIndentation(state.text, {
+        fileName: getFileNameFromUri(uri),
+        indentSize: options?.tabSize,
+        insertSpaces: options?.insertSpaces
+      });
     },
     getCompletionSymbols(uri: string, position: LinePosition): WorkspaceSymbolResolution[] {
       const state = documentStates.get(uri);

@@ -8,6 +8,8 @@ export async function run(): Promise<void> {
 
   await extension.activate();
   await vscode.workspace.getConfiguration("editor").update("snippetSuggestions", "top", vscode.ConfigurationTarget.Global);
+  await vscode.workspace.getConfiguration("editor").update("insertSpaces", true, vscode.ConfigurationTarget.Global);
+  await vscode.workspace.getConfiguration("editor").update("tabSize", 4, vscode.ConfigurationTarget.Global);
 
   const fixturesPath = path.resolve(__dirname, "..", "..", "test", "fixtures");
   const sampleDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "sample.bas"));
@@ -132,6 +134,40 @@ export async function run(): Promise<void> {
   assert.ok(semanticLegend.tokenTypes.includes("function"), "semantic token legend should include function");
   assert.ok(semanticLegend.tokenTypes.includes("type"), "semantic token legend should include type");
   assert.ok(semanticTokens.data.length > 0, "semantic tokens should be available");
+
+  const formatDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "FormatDocument.bas"));
+  await vscode.window.showTextDocument(formatDocument);
+
+  const formattedText = await waitForFormattedDocument(
+    formatDocument,
+    `Attribute VB_Name = "FormatDocument"
+Option Explicit
+
+Public Sub Demo()
+    If True Then
+        Debug.Print "ready"
+    Else
+        Select Case 1
+            Case Else
+                Debug.Print "fallback"
+        End Select
+    End If
+End Sub`
+  );
+
+  assert.equal(normalizeText(formattedText), normalizeText(`Attribute VB_Name = "FormatDocument"
+Option Explicit
+
+Public Sub Demo()
+    If True Then
+        Debug.Print "ready"
+    Else
+        Select Case 1
+            Case Else
+                Debug.Print "fallback"
+        End Select
+    End If
+End Sub`));
 
   const snippetDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "SnippetCompletions.bas"));
   await vscode.window.showTextDocument(snippetDocument);
@@ -332,6 +368,25 @@ async function waitForSemanticTokens(
   }
 
   return new vscode.SemanticTokens(new Uint32Array());
+}
+
+async function waitForFormattedDocument(document: vscode.TextDocument, expectedText: string): Promise<string> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await vscode.commands.executeCommand("editor.action.formatDocument");
+    const currentText = document.getText();
+
+    if (normalizeText(currentText) === normalizeText(expectedText)) {
+      return currentText;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return document.getText();
+}
+
+function normalizeText(text: string): string {
+  return text.replace(/\r\n?/g, "\n").trimEnd();
 }
 
 function getSignatureDocumentation(
