@@ -41,7 +41,7 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
     }
 
     for (const statement of member.body) {
-      if (statement.kind !== "executableStatement" || statement.range.start.line !== statement.range.end.line) {
+      if (statement.kind !== "executableStatement") {
         continue;
       }
 
@@ -159,9 +159,12 @@ function parseSimpleAssignment(
   const targetStartCharacter = (/^\s*(?:Set\s+)?/iu.exec(leftText)?.[0].length ?? 0);
   const expressionStart = equalsIndex + 1 + (rightText.length - rightText.trimStart().length);
   const expressionText = rightText.trim();
+  const spansMultipleLines = statementRange.start.line !== statementRange.end.line;
 
   return {
-    expressionRange: createInlineRange(statementRange.start.line, expressionStart, expressionStart + expressionText.length),
+    expressionRange: spansMultipleLines
+      ? statementRange
+      : createInlineRange(statementRange.start.line, expressionStart, expressionStart + expressionText.length),
     expressionText,
     isSet: Boolean(match[1]),
     targetName: targetName.replace(/[$%&!#@]$/, ""),
