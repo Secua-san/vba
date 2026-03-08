@@ -310,6 +310,57 @@ End Sub`
   );
 });
 
+test("document service aligns declaration blocks through the shared core formatter", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/DeclarationAlignment.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "DeclarationAlignment"
+Option Explicit
+
+Private Declare PtrSafe Function GetActiveWindow Lib "user32" () As LongPtr
+Private Declare PtrSafe Function GetDesktopWindow Lib "user32" () As LongPtr
+
+Public Sub Demo()
+Dim title As String
+Dim count       As Long
+Dim enabled As Boolean
+
+Const DefaultTitle As String = "Ready"
+Const RetryCount  As Long=3
+Const IsEnabled As Boolean   = True
+
+Debug.Print title, count, enabled
+End Sub`
+  );
+
+  const formatted = service.formatDocument(uri, { insertSpaces: true, tabSize: 4 });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "DeclarationAlignment"
+Option Explicit
+
+Private Declare PtrSafe Function GetActiveWindow  Lib "user32" () As LongPtr
+Private Declare PtrSafe Function GetDesktopWindow Lib "user32" () As LongPtr
+
+Public Sub Demo()
+    Dim title   As String
+    Dim count   As Long
+    Dim enabled As Boolean
+
+    Const DefaultTitle As String  = "Ready"
+    Const RetryCount   As Long    = 3
+    Const IsEnabled    As Boolean = True
+
+    Debug.Print title, count, enabled
+End Sub`
+  );
+});
+
 test("document service keeps ambiguous cross-file symbols conservative", () => {
   const service = createDocumentService();
   const consumerUri = "file:///C:/temp/Consumer.bas";
