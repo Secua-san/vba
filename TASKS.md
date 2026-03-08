@@ -103,6 +103,11 @@
   - 引数列の閉じ括弧だけを base indent に戻し、継続行の `_` 前後も最小限正規化する
   - core / server / extension のテストで継続行専用 fixture の整形結果を確認する
 
+- [x] ブロック整形
+  - `If / ElseIf / Else / Select Case / Case / #If / #Else / #End If` の圧縮ブロックを formatter で複数行へ展開する
+  - 通常の `:` 区切り文は維持し、ブロック境界に関わる行だけを安全側で分離する
+  - core / server / extension の整形テストで block layout の結果を確認する
+
 - [x] CodeRabbit 待機時間の見直し
   - PR #11 から PR #24 の実測を確認し、初回反応時間、進行中コメントの更新完了時間、レート制限待機時間を整理する
   - `docs/process/coderabbit-review.md` に実測値と新しい待機基準を追記する
@@ -110,9 +115,9 @@
 
 ## 次候補
 
-- [ ] ブロック整形
-  - `ElseIf` / `Case` / `#If` 系を含むブロック境界の改行と整形ルールを整理する
-  - 構文インデント formatter を土台に、継続行以外の block layout を段階的に整える
+- [ ] 宣言整列
+  - `Dim` / `Const` / `Declare` の列揃え方針を整理し、最小限の宣言整列 formatter を追加する
+  - 既存の block layout formatter と競合しないよう、宣言行だけを限定的に整える
 
 ## メモ
 
