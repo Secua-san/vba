@@ -60,10 +60,14 @@
   - モジュールスコープと手続きスコープで衝突する宣言を `duplicate-definition` error として追加
   - パラメータ、ローカル変数、ローカル定数、手続き宣言の重複を検出
 
+- [x] 到達不能コードの診断
+  - `Exit Sub` / `Exit Function` / `Exit Property` / `End` の後に続く同一到達領域の文を `unreachable-code` warning として追加
+  - `Else` / `Case` / ループ終端 / ラベルで保守的に検出を打ち切り、誤検知を抑制
+
 ## 次候補
 
-- [ ] 到達不能コードの診断
-  - `Exit Sub` / `Exit Function` / `End` 以降の同一ブロック内コードを warning として追加する
+- [ ] 未使用変数の診断
+  - 手続きローカルの変数と引数について、参照されない宣言を warning として追加する
 
 ## メモ
 
