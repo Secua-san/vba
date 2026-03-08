@@ -301,6 +301,79 @@ End Sub`
   assert.equal(service.getRenameEdits(uri, { character: 6, line: 6 }, "Sub"), undefined);
 });
 
+test("document service exposes semantic tokens for declarations and references", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/SemanticTokens.bas";
+  const text = `Attribute VB_Name = "SemanticTokens"
+Option Explicit
+
+Private Type CustomerRecord
+    Name As String
+End Type
+
+Private Const DefaultName As String = "A"
+
+Public Function BuildCustomer(ByVal sourceName As String) As CustomerRecord
+    Dim customer As CustomerRecord
+    customer.Name = sourceName
+    BuildCustomer = customer
+End Function
+
+Public Sub Demo()
+    Dim current As CustomerRecord
+    current = BuildCustomer(DefaultName)
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const tokens = service.getSemanticTokens(uri);
+
+  assertSemanticToken(text, tokens, 3, "CustomerRecord", {
+    modifiers: ["declaration"],
+    type: "type"
+  });
+  assertSemanticToken(text, tokens, 7, "DefaultName", {
+    modifiers: ["declaration", "readonly"],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 9, "BuildCustomer", {
+    modifiers: ["declaration"],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 9, "sourceName", {
+    modifiers: ["declaration"],
+    type: "parameter"
+  });
+  assertSemanticToken(text, tokens, 9, "CustomerRecord", {
+    modifiers: [],
+    type: "type"
+  });
+  assertSemanticToken(text, tokens, 10, "customer", {
+    modifiers: ["declaration"],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 10, "CustomerRecord", {
+    modifiers: [],
+    type: "type"
+  });
+  assertSemanticToken(text, tokens, 11, "sourceName", {
+    modifiers: [],
+    type: "parameter"
+  });
+  assertSemanticToken(text, tokens, 16, "current", {
+    modifiers: ["declaration"],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 17, "BuildCustomer", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 17, "DefaultName", {
+    modifiers: ["readonly"],
+    type: "variable"
+  });
+});
+
 test("document service exposes inferred type mismatch diagnostics", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/Mismatch.bas";
@@ -633,3 +706,31 @@ End Sub`
   );
   assert.equal(unusedDiagnostics.length, 0);
 });
+
+function assertSemanticToken(text, tokens, lineIndex, identifier, expected, occurrence = 0) {
+  const lines = text.split("\n");
+  const line = lines[lineIndex];
+  let startCharacter = -1;
+  let searchOffset = 0;
+
+  assert.notEqual(line, undefined, `line ${lineIndex} must exist`);
+
+  for (let index = 0; index <= occurrence; index += 1) {
+    startCharacter = line.indexOf(identifier, searchOffset);
+    searchOffset = startCharacter + identifier.length;
+  }
+
+  assert.notEqual(startCharacter, -1, `identifier '${identifier}' must exist on line ${lineIndex}`);
+
+  const token = tokens.find(
+    (entry) =>
+      entry.range.start.line === lineIndex &&
+      entry.range.start.character === startCharacter &&
+      entry.range.end.line === lineIndex &&
+      entry.range.end.character === startCharacter + identifier.length
+  );
+
+  assert.ok(token, `semantic token '${identifier}' must exist at ${lineIndex}:${startCharacter}`);
+  assert.equal(token.type, expected.type);
+  assert.deepEqual([...token.modifiers].sort(), [...expected.modifiers].sort());
+}

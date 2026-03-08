@@ -13,6 +13,7 @@ import {
   Position,
   ProposedFeatures,
   Range,
+  SemanticTokensBuilder,
   SignatureHelp,
   SignatureInformation,
   SymbolKind,
@@ -23,8 +24,17 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { createDocumentService } from "./lsp/documentService";
-import type { DocumentState, SignatureHint, WorkspaceSymbolResolution } from "./lsp/documentService";
+import {
+  createDocumentService,
+  SEMANTIC_TOKEN_MODIFIERS,
+  SEMANTIC_TOKEN_TYPES
+} from "./lsp/documentService";
+import type {
+  DocumentState,
+  SemanticTokenEntry,
+  SignatureHint,
+  WorkspaceSymbolResolution
+} from "./lsp/documentService";
 import type { Diagnostic, OutlineSymbol, SymbolInfo } from "../../core/src/index";
 
 export { createDocumentService } from "./lsp/documentService";
@@ -55,6 +65,13 @@ export function startServer(): void {
           prepareProvider: true
         },
         referencesProvider: true,
+        semanticTokensProvider: {
+          full: true,
+          legend: {
+            tokenModifiers: [...SEMANTIC_TOKEN_MODIFIERS],
+            tokenTypes: [...SEMANTIC_TOKEN_TYPES]
+          }
+        },
         signatureHelpProvider: {
           retriggerCharacters: [","],
           triggerCharacters: ["(", ","]
@@ -160,6 +177,22 @@ export function startServer(): void {
     return documentService
       .getReferences(params.textDocument.uri, toCorePosition(params.position), params.context.includeDeclaration)
       .map((reference) => Location.create(reference.uri, toLspRange(reference.range)));
+  });
+
+  connection.languages.semanticTokens.on((params) => {
+    const builder = new SemanticTokensBuilder();
+
+    for (const token of documentService.getSemanticTokens(params.textDocument.uri)) {
+      builder.push(
+        token.range.start.line,
+        token.range.start.character,
+        token.range.end.character - token.range.start.character,
+        getSemanticTokenTypeIndex(token),
+        getSemanticTokenModifierMask(token)
+      );
+    }
+
+    return builder.build();
   });
 
   connection.onPrepareRename((params) => {
@@ -347,6 +380,17 @@ function mapDocumentSymbolKind(kind: OutlineSymbol["kind"]): SymbolKind {
     default:
       return SymbolKind.Object;
   }
+}
+
+function getSemanticTokenModifierMask(token: SemanticTokenEntry): number {
+  return token.modifiers.reduce((mask, modifier) => {
+    const modifierIndex = SEMANTIC_TOKEN_MODIFIERS.indexOf(modifier);
+    return modifierIndex >= 0 ? mask | (1 << modifierIndex) : mask;
+  }, 0);
+}
+
+function getSemanticTokenTypeIndex(token: SemanticTokenEntry): number {
+  return SEMANTIC_TOKEN_TYPES.indexOf(token.type);
 }
 
 if (typeof require !== "undefined" && require.main === module) {

@@ -80,10 +80,15 @@
   - 同一手続き内の procedure-scope 変数だけを `prepareRename` / `rename` の対象にする
   - 新しい名前が不正、または同一手続きや可視シンボルと衝突する場合は保守的に拒否する
 
+- [x] セマンティックハイライト
+  - LSP の full document semantic tokens を追加し、変数、引数、定数、手続き、型、列挙体メンバーを色分け対象にする
+  - server / extension のテストで legend と token 配列が返ることを確認する
+
 ## 次候補
 
-- [ ] セマンティックハイライト
-  - 変数、引数、定数、手続き、型の semantic token を追加する
+- [ ] VBA コードスニペット
+  - `Sub` / `Function` / `If` / `For` / `Select Case` など主要構文の snippets を追加する
+  - 拡張パッケージに snippet 定義を含め、最低限の VS Code スモークで読み込みを確認する
 
 ## メモ
 
