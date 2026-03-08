@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run VBA Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--disable-extensions",
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/extension",
+        "${workspaceFolder}/packages/extension/test/fixtures"
+      ],
+      "preLaunchTask": "build",
+      "outFiles": [
+        "${workspaceFolder}/packages/extension/dist/**/*.js"
+      ]
+    },
+    {
+      "name": "Run VBA Extension Tests",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--disable-extensions",
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/extension",
+        "--extensionTestsPath=${workspaceFolder}/packages/extension/dist-test/suite/index.js",
+        "${workspaceFolder}/packages/extension/test/fixtures"
+      ],
+      "preLaunchTask": "build extension tests",
+      "outFiles": [
+        "${workspaceFolder}/packages/extension/dist/**/*.js",
+        "${workspaceFolder}/packages/extension/dist-test/**/*.js"
+      ]
+    }
+  ]
+}

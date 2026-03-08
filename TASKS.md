@@ -88,6 +88,11 @@
   - `Sub` / `Function` / `Property` / `If` / `For` / `Select Case` / `Do While` / `With` の snippets を追加する
   - extension の smoke test で snippet completion が読み込まれることを確認する
 
+- [x] 拡張機能開発ホストの起動導線
+  - ルート `.vscode` に build 付きの `extensionHost` 起動設定を追加する
+  - `npm run dev:host` と `npm run test:host` で CLI からも実機確認と拡張テストを起動できるようにする
+  - README に開発ホストの確認手順を追記する
+
 ## 次候補
 
 - [ ] VBA 構文インデント
