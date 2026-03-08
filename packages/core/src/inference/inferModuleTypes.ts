@@ -275,7 +275,7 @@ function getSourcePrecedence(source: InferredSymbolType["source"]): number {
   }
 }
 
-function areTypesCompatible(targetTypeName: string, valueTypeName: string): boolean {
+export function areTypesCompatible(targetTypeName: string, valueTypeName: string): boolean {
   const normalizedTargetType = normalizeTypeName(targetTypeName);
   const normalizedValueType = normalizeTypeName(valueTypeName);
 
