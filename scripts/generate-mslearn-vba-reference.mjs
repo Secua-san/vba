@@ -8,6 +8,7 @@ const rootDir = path.resolve(__dirname, "..");
 const outputDir = path.join(rootDir, "resources", "reference");
 const outputFile = path.join(outputDir, "mslearn-vba-reference.json");
 const apiBaseUrl = "https://learn.microsoft.com/en-us/office/vba/api/";
+const fetchTimeoutMs = 30_000;
 
 const sourceUrls = {
   apiToc: "https://learn.microsoft.com/en-us/office/vba/api/toc.json",
@@ -31,8 +32,23 @@ const sourceUrls = {
     "https://learn.microsoft.com/en-us/office/vba/api/overview/library-reference/reference-object-library-reference-for-office",
 };
 
+async function fetchWithTimeout(url, options) {
+  try {
+    return await fetch(url, {
+      signal: AbortSignal.timeout(fetchTimeoutMs),
+      ...options,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError" || error?.name === "TimeoutError") {
+      throw new Error(`Timed out fetching ${url} after ${fetchTimeoutMs}ms`, { cause: error });
+    }
+
+    throw error;
+  }
+}
+
 async function fetchText(url) {
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     headers: {
       Accept: "text/markdown, application/json;q=0.9, text/plain;q=0.8",
     },
@@ -45,7 +61,7 @@ async function fetchText(url) {
 }
 
 async function fetchJson(url) {
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     headers: {
       Accept: "application/json, text/plain;q=0.8",
     },
@@ -139,6 +155,15 @@ function splitTableRow(line) {
     .replace(/\|$/, "")
     .split("|")
     .map((value) => value.trim());
+}
+
+function requireFirstTable(markdown, parserName, baseUrl) {
+  const table = parseMarkdownTableBlocks(markdown)[0];
+  if (!table) {
+    throw new Error(`${parserName} could not find a markdown table in ${baseUrl}`);
+  }
+
+  return table;
 }
 
 function parseSectionedLinks(markdown, baseUrl) {
@@ -320,7 +345,7 @@ function summarizeApiItems(items, enumerations) {
 }
 
 function parseKeywords(markdown, baseUrl) {
-  const table = parseMarkdownTableBlocks(markdown)[0];
+  const table = requireFirstTable(markdown, "parseKeywords", baseUrl);
   return table.rows.map((cells) => {
     const [keywordCell = "", contextsCell = ""] = cells;
     const contexts = parseInlineLinks(contextsCell, baseUrl);
@@ -335,7 +360,7 @@ function parseKeywords(markdown, baseUrl) {
 }
 
 function parseOperatorSummary(markdown, baseUrl) {
-  const table = parseMarkdownTableBlocks(markdown)[0];
+  const table = requireFirstTable(markdown, "parseOperatorSummary", baseUrl);
   return table.rows.map((cells) => {
     const [groupCell = "", descriptionCell = "", operatorsCell = ""] = cells;
     const groupLinks = parseInlineLinks(groupCell, baseUrl);
@@ -349,7 +374,7 @@ function parseOperatorSummary(markdown, baseUrl) {
 }
 
 function parseExcelConstants(markdown, baseUrl) {
-  const table = parseMarkdownTableBlocks(markdown)[0];
+  const table = requireFirstTable(markdown, "parseExcelConstants", baseUrl);
   return table.rows.map((cells) => {
     const [nameCell = "", valueCell = "", descriptionCell = ""] = cells;
     return {
@@ -487,4 +512,7 @@ async function main() {
   );
 }
 
-await main();
+main().catch((error) => {
+  console.error("Failed to generate Microsoft Learn VBA reference data.", error);
+  process.exit(1);
+});
