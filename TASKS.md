@@ -127,11 +127,16 @@
   - Excel、VBA 言語リファレンス、Office library reference の一覧を Microsoft Learn から JSON 化する再生成スクリプトを追加
   - `resources/reference/mslearn-vba-reference.json` に、補完とハイライト用のオブジェクト、列挙、キーワード、定数カテゴリ、関数、文を保存する
 
+- [x] Option Explicit 補完
+  - `Option Explicit` が無いモジュールに対する quick fix code action を追加し、先頭付近へ安全に挿入できるようにする
+  - `.frm` のデザイナー領域と属性行を壊さず、既存 option 行の直後へ重複なく挿入する
+  - server / extension のテストで標準モジュールと `.frm` の挿入結果を確認する
+
 ## 次候補
 
-- [ ] Option Explicit 補完
-  - `Option Explicit` が無いモジュールに対する code action を追加し、先頭付近へ安全に挿入できるようにする
-  - `.frm` のデザイナー領域と属性行を壊さず、既存 option 行との重複を避ける
+- [ ] 組み込み参照データの補完連携
+  - Microsoft Learn から取得した参照 JSON を補完候補へ読み込み、Excel / VBA / Office の組み込みオブジェクト、定数、キーワードを提示できるようにする
+  - 予約語と組み込み識別子をセマンティックハイライトや診断抑制でも再利用できる形に整理する
 
 ## メモ
 
