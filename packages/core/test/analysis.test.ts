@@ -627,3 +627,44 @@ Public Sub Demo()
 End Sub`
   );
 });
+
+test("formatModuleIndentation normalizes comment spacing while preserving comment placement", () => {
+  const formatted = formatModuleIndentation(`Attribute VB_Name = "CommentFormatting"
+Option Explicit
+
+Public Sub Demo()
+'leading comment
+Dim value As Long'counter
+If True Then'true branch
+'inner comment
+value = 1'updated
+Rem    status
+#If VBA7 Then'requires vba7
+'conditional comment
+#Else'fallback path
+Rem    fallback comment
+#End If
+End If
+End Sub`, { fileName: "CommentFormatting.bas", indentSize: 4, insertSpaces: true });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "CommentFormatting"
+Option Explicit
+
+Public Sub Demo()
+    ' leading comment
+    Dim value As Long ' counter
+    If True Then ' true branch
+        ' inner comment
+        value = 1 ' updated
+        Rem status
+        #If VBA7 Then ' requires vba7
+            ' conditional comment
+        #Else ' fallback path
+            Rem fallback comment
+        #End If
+    End If
+End Sub`
+  );
+});

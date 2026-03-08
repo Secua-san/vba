@@ -113,6 +113,11 @@
   - 複数宣言、継続行、通常文の `:` 区切りは対象外にし、既存の block layout formatter と競合しないようにする
   - core / server / extension の整形テストで declaration alignment の結果を確認する
 
+- [x] コメント整形
+  - 行頭コメントと末尾コメントを対象に、コメントマーカー前後の空白を formatter で最小限正規化する
+  - コメント位置の移動は行わず、`'` と `Rem` の空白だけを保守的に整える
+  - core / server / extension の整形テストで comment formatting の結果を確認する
+
 - [x] CodeRabbit 待機時間の見直し
   - PR #11 から PR #24 の実測を確認し、初回反応時間、進行中コメントの更新完了時間、レート制限待機時間を整理する
   - `docs/process/coderabbit-review.md` に実測値と新しい待機基準を追記する
@@ -120,9 +125,9 @@
 
 ## 次候補
 
-- [ ] コメント整形
-  - 行頭コメントと末尾コメントの空白ルールを整理し、formatter で最小限の正規化を行う
-  - 既存の宣言整列、継続行、block layout と競合しないよう、コメント位置の維持を優先する
+- [ ] Option Explicit 補完
+  - `Option Explicit` が無いモジュールに対する code action を追加し、先頭付近へ安全に挿入できるようにする
+  - `.frm` のデザイナー領域と属性行を壊さず、既存 option 行との重複を避ける
 
 ## メモ
 
