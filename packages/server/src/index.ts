@@ -213,7 +213,7 @@ async function readSettings(connection: ReturnType<typeof createConnection>): Pr
 
 function toCompletionItem(resolution: WorkspaceSymbolResolution): CompletionItem {
   return {
-    detail: resolution.moduleName,
+    detail: resolution.typeName ? `${resolution.moduleName} : ${resolution.typeName}` : resolution.moduleName,
     kind: mapCompletionItemKind(resolution.symbol.kind),
     label: resolution.symbol.name
   };

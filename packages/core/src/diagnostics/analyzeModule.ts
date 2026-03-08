@@ -1,6 +1,7 @@
 import { BUILTIN_IDENTIFIERS, VBA_KEYWORDS } from "../lexer/keywords";
 import { parseModule } from "../parser/parseModule";
 import { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
+import { inferModuleTypes } from "../inference/inferModuleTypes";
 import { normalizeIdentifier } from "../types/helpers";
 import { AnalysisResult, AnalyzeModuleOptions, Diagnostic, LinePosition, OutlineSymbol, ParseResult, SymbolInfo, SymbolTable } from "../types/model";
 import { buildModuleSymbols, getAccessibleSymbolsAtLine } from "../symbol/buildModuleSymbols";
@@ -8,12 +9,14 @@ import { buildModuleSymbols, getAccessibleSymbolsAtLine } from "../symbol/buildM
 export function analyzeModule(text: string, options: AnalyzeModuleOptions = {}): AnalysisResult {
   const parseResult = parseModule(text, options);
   const symbols = buildModuleSymbols(parseResult);
-  const diagnostics = [...parseResult.diagnostics, ...collectUndeclaredVariableDiagnostics(parseResult, symbols)];
+  const typeInference = inferModuleTypes(parseResult, symbols);
+  const diagnostics = [...parseResult.diagnostics, ...collectUndeclaredVariableDiagnostics(parseResult, symbols), ...typeInference.diagnostics];
 
   return {
     ...parseResult,
     diagnostics,
-    symbols
+    symbols,
+    typeInference
   };
 }
 

@@ -28,10 +28,13 @@ export async function run(): Promise<void> {
     new vscode.Position(5, 4),
     (items) => items.some((item) => item.label === "PublicMessage")
   );
+  const publicMessageCompletion = completionItems.find((item) => item.label === "PublicMessage");
+
   assert.ok(
     completionItems.some((item) => item.label === "PublicMessage"),
     "cross-file completion should include exported workspace symbols"
   );
+  assert.ok(publicMessageCompletion?.detail?.includes("String"), "completion detail should include inferred type information");
 
   const definitions = await waitForDefinitions(
     consumerDocument,
