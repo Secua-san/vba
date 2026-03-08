@@ -33,6 +33,84 @@ End Sub`
   );
 });
 
+test("document service offers an Option Explicit code action after existing option lines", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/MissingOptionExplicit.bas";
+  const text = `Attribute VB_Name = "MissingOptionExplicit"
+Option Compare Text
+
+Public Sub Demo()
+    Debug.Print "ready"
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const actions = service.getCodeActions(uri);
+
+  assert.equal(actions.length, 1);
+  assert.equal(actions[0]?.title, "Option Explicit を追加");
+  assert.equal(
+    applyTextEdit(text, actions[0].edit),
+    `Attribute VB_Name = "MissingOptionExplicit"
+Option Compare Text
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print "ready"
+End Sub`
+  );
+});
+
+test("document service offers an Option Explicit code action for form modules without touching the designer area", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/MissingOptionExplicit.frm";
+  const text = `VERSION 5.00
+Begin VB.Form MissingOptionExplicit
+   Caption = "MissingOptionExplicit"
+End
+Attribute VB_Name = "MissingOptionExplicit"
+Public Sub Demo()
+    Debug.Print "ready"
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const actions = service.getCodeActions(uri);
+
+  assert.equal(actions.length, 1);
+  assert.equal(
+    applyTextEdit(text, actions[0].edit),
+    `VERSION 5.00
+Begin VB.Form MissingOptionExplicit
+   Caption = "MissingOptionExplicit"
+End
+Attribute VB_Name = "MissingOptionExplicit"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print "ready"
+End Sub`
+  );
+});
+
+test("document service omits the Option Explicit code action when the module already declares it", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/AlreadyExplicit.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "AlreadyExplicit"
+Option Explicit
+
+Public Sub Demo()
+End Sub`
+  );
+
+  assert.deepEqual(service.getCodeActions(uri), []);
+});
+
 test("document service resolves exported symbols across VBA modules", () => {
   const service = createDocumentService();
   const libraryUri = "file:///C:/temp/PublicApi.bas";
@@ -983,4 +1061,22 @@ function assertSemanticToken(text, tokens, lineIndex, identifier, expected, occu
   assert.ok(token, `semantic token '${identifier}' must exist at ${lineIndex}:${startCharacter}`);
   assert.equal(token.type, expected.type);
   assert.deepEqual([...token.modifiers].sort(), [...expected.modifiers].sort());
+}
+
+function applyTextEdit(text, edit) {
+  const normalizedText = text.replace(/\r\n?/g, "\n");
+  const startOffset = toOffset(normalizedText, edit.range.start);
+  const endOffset = toOffset(normalizedText, edit.range.end);
+  return normalizedText.slice(0, startOffset) + edit.newText + normalizedText.slice(endOffset);
+}
+
+function toOffset(text, position) {
+  const lines = text.split("\n");
+  let offset = 0;
+
+  for (let index = 0; index < position.line; index += 1) {
+    offset += (lines[index]?.length ?? 0) + 1;
+  }
+
+  return offset + position.character;
 }

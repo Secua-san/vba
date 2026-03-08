@@ -1,4 +1,6 @@
 import {
+  CodeAction,
+  CodeActionKind,
   CompletionItem,
   CompletionItemKind,
   createConnection,
@@ -30,6 +32,7 @@ import {
   SEMANTIC_TOKEN_TYPES
 } from "./lsp/documentService";
 import type {
+  DocumentCodeAction,
   DocumentState,
   SemanticTokenEntry,
   SignatureHint,
@@ -58,6 +61,7 @@ export function startServer(): void {
 
     return {
       capabilities: {
+        codeActionProvider: true,
         completionProvider: {},
         definitionProvider: true,
         documentFormattingProvider: true,
@@ -158,6 +162,20 @@ export function startServer(): void {
 
   connection.onCompletion((params): CompletionItem[] => {
     return documentService.getCompletionSymbols(params.textDocument.uri, toCorePosition(params.position)).map(toCompletionItem);
+  });
+
+  connection.onCodeAction((params): CodeAction[] => {
+    if (
+      params.context.only &&
+      !params.context.only.some(
+        (requestedKind) =>
+          requestedKind === CodeActionKind.QuickFix || requestedKind.startsWith(`${CodeActionKind.QuickFix}.`)
+      )
+    ) {
+      return [];
+    }
+
+    return documentService.getCodeActions(params.textDocument.uri).map(toCodeAction);
   });
 
   connection.onDefinition((params): Definition | undefined => {
@@ -305,6 +323,19 @@ function toCompletionItem(resolution: WorkspaceSymbolResolution): CompletionItem
     detail: resolution.typeName ? `${resolution.moduleName} : ${resolution.typeName}` : resolution.moduleName,
     kind: mapCompletionItemKind(resolution.symbol.kind),
     label: resolution.symbol.name
+  };
+}
+
+function toCodeAction(action: DocumentCodeAction): CodeAction {
+  return {
+    edit: {
+      changes: {
+        [action.edit.uri]: [TextEdit.replace(toLspRange(action.edit.range), action.edit.newText)]
+      }
+    },
+    isPreferred: true,
+    kind: CodeActionKind.QuickFix,
+    title: action.title
   };
 }
 

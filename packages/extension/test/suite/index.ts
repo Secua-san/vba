@@ -357,6 +357,55 @@ Public Sub Demo()
     End If
 End Sub`));
 
+  const missingOptionDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "MissingOptionExplicit.bas"));
+  await vscode.window.showTextDocument(missingOptionDocument);
+
+  const optionActions = await waitForCodeActions(
+    missingOptionDocument,
+    new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
+    (actions) => hasCodeAction(actions, "Option Explicit を追加")
+  );
+  const optionAction = getCodeAction(optionActions, "Option Explicit を追加");
+
+  assert.ok(optionAction?.edit, "missing Option Explicit should expose a quick fix");
+  assert.equal(await vscode.workspace.applyEdit(optionAction.edit), true);
+  assert.equal(
+    normalizeText(missingOptionDocument.getText()),
+    normalizeText(`Attribute VB_Name = "MissingOptionExplicit"
+Option Compare Text
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print "ready"
+End Sub`)
+  );
+
+  const missingFormDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "MissingOptionExplicit.frm"));
+  await vscode.window.showTextDocument(missingFormDocument);
+
+  const formOptionActions = await waitForCodeActions(
+    missingFormDocument,
+    new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
+    (actions) => hasCodeAction(actions, "Option Explicit を追加")
+  );
+  const formOptionAction = getCodeAction(formOptionActions, "Option Explicit を追加");
+
+  assert.ok(formOptionAction?.edit, "form modules should expose a quick fix for missing Option Explicit");
+  assert.equal(await vscode.workspace.applyEdit(formOptionAction.edit), true);
+  assert.equal(
+    normalizeText(missingFormDocument.getText()),
+    normalizeText(`VERSION 5.00
+Begin VB.Form MissingOptionExplicit
+   Caption = "MissingOptionExplicit"
+End
+Attribute VB_Name = "MissingOptionExplicit"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print "ready"
+End Sub`)
+  );
+
   const snippetDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "SnippetCompletions.bas"));
   await vscode.window.showTextDocument(snippetDocument);
 
@@ -394,6 +443,30 @@ async function waitForSymbols(document: vscode.TextDocument): Promise<readonly v
 
     if (symbols && symbols.length > 0) {
       return symbols;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return [];
+}
+
+async function waitForCodeActions(
+  document: vscode.TextDocument,
+  range: vscode.Range,
+  predicate: (actions: readonly vscode.CodeAction[]) => boolean
+): Promise<readonly vscode.CodeAction[]> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const actions = await vscode.commands.executeCommand<readonly (vscode.CodeAction | vscode.Command)[]>(
+      "vscode.executeCodeActionProvider",
+      document.uri,
+      range,
+      vscode.CodeActionKind.QuickFix.value
+    );
+    const codeActions = (actions ?? []).filter(isCodeAction);
+
+    if (codeActions.length > 0 && predicate(codeActions)) {
+      return codeActions;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 200));
@@ -597,4 +670,16 @@ function hasSnippetCompletion(items: readonly vscode.CompletionItem[], label: st
       item.kind === vscode.CompletionItemKind.Snippet &&
       getCompletionItemLabel(item).toLowerCase() === label.toLowerCase()
   );
+}
+
+function getCodeAction(actions: readonly vscode.CodeAction[], title: string): vscode.CodeAction | undefined {
+  return actions.find((action) => action.title === title);
+}
+
+function hasCodeAction(actions: readonly vscode.CodeAction[], title: string): boolean {
+  return getCodeAction(actions, title) !== undefined;
+}
+
+function isCodeAction(action: vscode.CodeAction | vscode.Command): action is vscode.CodeAction {
+  return "title" in action && "edit" in action;
 }

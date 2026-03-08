@@ -51,6 +51,12 @@ export interface RenameTextEdit {
   uri: string;
 }
 
+export interface DocumentCodeAction {
+  edit: RenameTextEdit;
+  kind: "quickfix";
+  title: string;
+}
+
 export interface SignatureParameterHint {
   documentation?: string;
   label: string;
@@ -79,6 +85,7 @@ export interface SemanticTokenEntry {
 export interface DocumentService {
   analyzeText: (uri: string, languageId: string, version: number, text: string) => DocumentState;
   formatDocument: (uri: string, options?: { insertSpaces?: boolean; tabSize?: number }) => string | undefined;
+  getCodeActions: (uri: string) => DocumentCodeAction[];
   getCompletionSymbols: (uri: string, position: LinePosition) => WorkspaceSymbolResolution[];
   getDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined;
   getDiagnostics: (uri: string) => Diagnostic[];
@@ -248,6 +255,16 @@ export function createDocumentService(): DocumentService {
         insertSpaces: options?.insertSpaces
       });
     },
+    getCodeActions(uri: string): DocumentCodeAction[] {
+      const state = documentStates.get(uri);
+
+      if (!state) {
+        return [];
+      }
+
+      const optionExplicitAction = createOptionExplicitCodeAction(state);
+      return optionExplicitAction ? [optionExplicitAction] : [];
+    },
     getCompletionSymbols(uri: string, position: LinePosition): WorkspaceSymbolResolution[] {
       const state = documentStates.get(uri);
 
@@ -386,6 +403,8 @@ interface CallContext {
   identifierStartCharacter: number;
 }
 
+const OPTION_EXPLICIT_TITLE = "Option Explicit を追加";
+
 function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
   const entries = states.flatMap(collectWorkspaceSymbols);
   const byNormalizedName = new Map<string, WorkspaceSymbolResolution[]>();
@@ -404,6 +423,101 @@ function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
     byNormalizedName,
     entries
   };
+}
+
+function createOptionExplicitCodeAction(state: DocumentState): DocumentCodeAction | undefined {
+  if (hasOptionExplicit(state)) {
+    return undefined;
+  }
+
+  const edit = createOptionExplicitEdit(state);
+
+  return edit
+    ? {
+        edit,
+        kind: "quickfix",
+        title: OPTION_EXPLICIT_TITLE
+      }
+    : undefined;
+}
+
+function createOptionExplicitEdit(state: DocumentState): RenameTextEdit | undefined {
+  const originalLines = state.analysis.source.originalLines;
+  const codeStartLine = state.analysis.source.lineMap[0] ?? originalLines.length;
+  const eol = getDocumentEol(state.text);
+  let anchoredInsertionLine: number | undefined;
+  let insertionLine = codeStartLine;
+
+  for (let lineIndex = codeStartLine; lineIndex < originalLines.length; lineIndex += 1) {
+    const line = originalLines[lineIndex] ?? "";
+    const trimmedLine = line.trim();
+
+    if (trimmedLine.length === 0 || isFullLineComment(trimmedLine)) {
+      continue;
+    }
+
+    if (/^Attribute\s+VB_/iu.test(trimmedLine) || /^Option\b/iu.test(trimmedLine)) {
+      anchoredInsertionLine = lineIndex + 1;
+      continue;
+    }
+
+    insertionLine = lineIndex;
+    break;
+  }
+
+  insertionLine = anchoredInsertionLine ?? insertionLine;
+
+  if (insertionLine >= originalLines.length) {
+    const lastLineIndex = Math.max(0, originalLines.length - 1);
+    const lastLineText = originalLines[lastLineIndex] ?? "";
+    const insertAtDocumentEnd = state.text.length === 0 ? "" : lastLineText.length > 0 ? eol : "";
+
+    return {
+      newText: `${insertAtDocumentEnd}Option Explicit${eol}`,
+      range: {
+        start: {
+          character: lastLineText.length,
+          line: lastLineIndex
+        },
+        end: {
+          character: lastLineText.length,
+          line: lastLineIndex
+        }
+      },
+      uri: state.uri
+    };
+  }
+
+  const nextLine = originalLines[insertionLine] ?? "";
+
+  return {
+    newText: `Option Explicit${eol}${nextLine.trim().length > 0 ? eol : ""}`,
+    range: {
+      start: {
+        character: 0,
+        line: insertionLine
+      },
+      end: {
+        character: 0,
+        line: insertionLine
+      }
+    },
+    uri: state.uri
+  };
+}
+
+function getDocumentEol(text: string): "\n" | "\r\n" {
+  return text.includes("\r\n") ? "\r\n" : "\n";
+}
+
+function hasOptionExplicit(state: DocumentState): boolean {
+  return state.analysis.module.members.some(
+    (member) => member.kind === "optionStatement" && normalizeIdentifier(member.name) === "explicit"
+  );
+}
+
+function isFullLineComment(trimmedLine: string): boolean {
+  return trimmedLine.startsWith("'") || /^Rem\b/iu.test(trimmedLine);
 }
 
 function collectSemanticTokensForState(
