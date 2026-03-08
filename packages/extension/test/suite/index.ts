@@ -19,6 +19,8 @@ export async function run(): Promise<void> {
 
   const libraryDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "PublicApi.bas"));
   await vscode.window.showTextDocument(libraryDocument);
+  const numberDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "NumberApi.bas"));
+  await vscode.window.showTextDocument(numberDocument);
 
   const consumerDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "Consumer.bas"));
   await vscode.window.showTextDocument(consumerDocument);
@@ -55,6 +57,24 @@ export async function run(): Promise<void> {
   assert.ok(references.length >= 2, "references should include declaration and usage");
   assert.ok(references.some((location) => location.uri.fsPath.endsWith(path.join("fixtures", "Consumer.bas"))));
   assert.ok(references.some((location) => location.uri.fsPath.endsWith(path.join("fixtures", "PublicApi.bas"))));
+
+  const consumerCompletionDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ConsumerCompletion.bas"));
+  await vscode.window.showTextDocument(consumerCompletionDocument);
+
+  const narrowedCompletionItems = await waitForCompletions(
+    consumerCompletionDocument,
+    new vscode.Position(5, 17),
+    (items) => items.some((item) => item.label === "PublicMessage")
+  );
+  assert.ok(
+    narrowedCompletionItems.some((item) => item.label === "PublicMessage"),
+    "type-aware completion should keep compatible candidates"
+  );
+  assert.equal(
+    narrowedCompletionItems.some((item) => item.label === "PublicNumber"),
+    false,
+    "type-aware completion should hide incompatible candidates"
+  );
 
   const commands = await vscode.commands.getCommands(true);
   assert.equal(commands.includes("vba.extract"), false);

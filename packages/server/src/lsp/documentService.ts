@@ -1,5 +1,6 @@
 import {
   analyzeModule,
+  areTypesCompatible,
   extractIdentifierAtPosition,
   findDefinition,
   getCompletionSymbols,
@@ -167,7 +168,7 @@ export function createDocumentService(): DocumentService {
         }
       }
 
-      return [...deduplicated.values()];
+      return narrowCompletionByAssignmentTarget(state.text, uri, position, [...deduplicated.values()], resolveDefinition);
     },
     getDefinition(uri: string, position: LinePosition): WorkspaceSymbolResolution | undefined {
       return resolveDefinition(uri, position);
@@ -379,6 +380,26 @@ function deduplicateReferences(references: WorkspaceReference[]): WorkspaceRefer
   return [...deduplicated.values()];
 }
 
+function narrowCompletionByAssignmentTarget(
+  text: string,
+  uri: string,
+  position: LinePosition,
+  completions: WorkspaceSymbolResolution[],
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): WorkspaceSymbolResolution[] {
+  const targetTypeName = getAssignmentTargetTypeName(text, uri, position, resolveDefinition);
+
+  if (!targetTypeName) {
+    return completions;
+  }
+
+  const narrowed = completions.filter(
+    (resolution) => !resolution.typeName || areTypesCompatible(targetTypeName, resolution.typeName)
+  );
+
+  return narrowed.length > 0 && narrowed.length < completions.length ? narrowed : completions;
+}
+
 function findModuleSymbols(
   moduleSymbolsByName: Map<string, SymbolInfo[]>,
   name: string,
@@ -407,6 +428,45 @@ function getDiagnosticIdentifier(text: string, diagnostic: Diagnostic): string {
   }
 
   return getTextInRange(text, diagnostic.range);
+}
+
+function getAssignmentTargetTypeName(
+  text: string,
+  uri: string,
+  position: LinePosition,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): string | undefined {
+  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line];
+
+  if (line === undefined) {
+    return undefined;
+  }
+
+  const beforeCursor = line.slice(0, position.character);
+  const { code } = splitCodeAndComment(beforeCursor);
+  const assignmentTarget = parseAssignmentTarget(code, position.line);
+
+  if (!assignmentTarget) {
+    return undefined;
+  }
+
+  return resolveDefinition(uri, assignmentTarget)?.typeName;
+}
+
+function parseAssignmentTarget(code: string, line: number): LinePosition | undefined {
+  const match = /^\s*(?:Set\s+)?([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*=\s*(?:[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)?$/iu.exec(code);
+
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const prefixMatch = /^\s*(?:Set\s+)?/iu.exec(code);
+  const identifierStart = prefixMatch?.[0].length ?? 0;
+
+  return {
+    character: identifierStart,
+    line
+  };
 }
 
 function getFileNameFromUri(uri: string): string | undefined {

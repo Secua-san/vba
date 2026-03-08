@@ -80,6 +80,51 @@ End Sub`
   );
 });
 
+test("document service narrows completion candidates by inferred assignment type", () => {
+  const service = createDocumentService();
+  const consumerUri = "file:///C:/temp/ConsumerCompletion.bas";
+
+  service.analyzeText(
+    "file:///C:/temp/PublicApi.bas",
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicApi"
+Option Explicit
+
+Public Function PublicMessage() As String
+    PublicMessage = "Hello"
+End Function`
+  );
+  service.analyzeText(
+    "file:///C:/temp/NumberApi.bas",
+    "vba",
+    1,
+    `Attribute VB_Name = "NumberApi"
+Option Explicit
+
+Public Function PublicNumber() As Long
+    PublicNumber = 42
+End Function`
+  );
+  service.analyzeText(
+    consumerUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ConsumerCompletion"
+Option Explicit
+
+Public Sub UseLibraryCompletion()
+    Dim message As String
+    message = Pub
+End Sub`
+  );
+
+  const completions = service.getCompletionSymbols(consumerUri, { character: 17, line: 5 });
+
+  assert.ok(completions.some((resolution) => resolution.symbol.name === "PublicMessage"));
+  assert.equal(completions.some((resolution) => resolution.symbol.name === "PublicNumber"), false);
+});
+
 test("document service keeps ambiguous cross-file symbols conservative", () => {
   const service = createDocumentService();
   const consumerUri = "file:///C:/temp/Consumer.bas";
