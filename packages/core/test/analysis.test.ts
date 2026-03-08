@@ -139,3 +139,33 @@ End Sub`, { fileName: "Mismatch.bas" });
   assert.equal(mismatchDiagnostics.length, 2);
   assert.ok(mismatchDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
 });
+
+test("analyzeModule expands type mismatch diagnostics for compound expressions and Set assignments", () => {
+  const result = analyzeModule(`Attribute VB_Name = "ExpandedMismatch"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+    Dim count As Long
+    Dim flag As Boolean
+    Dim holder As Object
+    Dim loose As Variant
+    title = 1 + 2
+    count = "1" & loose
+    flag = 1 < 2
+    Set holder = Nothing
+    Set holder = 1
+End Sub`, { fileName: "ExpandedMismatch.bas" });
+
+  const mismatchDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(mismatchDiagnostics.length, 3);
+  assert.deepEqual(
+    mismatchDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Type mismatch: cannot assign Long to String.",
+      "Type mismatch: cannot assign String to Long.",
+      "Type mismatch: cannot assign Long to Object."
+    ]
+  );
+});

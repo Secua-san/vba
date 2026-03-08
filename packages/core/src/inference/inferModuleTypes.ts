@@ -1,4 +1,3 @@
-import { removeStringAndDateLiterals } from "../parser/text";
 import { getAccessibleSymbolsAtLine } from "../symbol/buildModuleSymbols";
 import { normalizeIdentifier } from "../types/helpers";
 import type {
@@ -23,10 +22,12 @@ const CAST_FUNCTION_TYPES = new Map<string, string>([
   ["cint", "Integer"],
   ["clng", "Long"],
   ["csng", "Single"],
-  ["cstr", "String"]
+  ["cstr", "String"],
+  ["cvar", "Variant"]
 ]);
 
 const NUMERIC_TYPES = new Set(["byte", "currency", "double", "integer", "long", "longlong", "longptr", "single"]);
+const SCALAR_TYPES = new Set(["boolean", "date", "nothing", "string", "variant", ...NUMERIC_TYPES]);
 
 export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTable): TypeInferenceResult {
   const diagnostics: Diagnostic[] = [];
@@ -60,7 +61,7 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
       const targetTypeName = getSymbolTypeNameFromMap(symbolTypes, targetSymbol) ?? targetSymbol.typeName;
 
       if (targetTypeName) {
-        if (!areTypesCompatible(targetTypeName, inferredExpressionType)) {
+        if (!areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: assignment.isSet })) {
           diagnostics.push({
             code: "type-mismatch",
             message: `Type mismatch: cannot assign ${inferredExpressionType} to ${targetTypeName}.`,
@@ -121,27 +122,30 @@ function seedExplicitTypes(symbolTable: SymbolTable, sink: Map<string, InferredS
 function parseSimpleAssignment(
   text: string,
   statementRange: SourceRange
-): { expressionRange: SourceRange; expressionText: string; targetName: string; targetRange: SourceRange } | undefined {
-  const match = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*=\s*(.+?)\s*$/i.exec(text);
-
-  if (!match || /=/.test(removeStringAndDateLiterals(match[2]))) {
-    return undefined;
-  }
-
-  const targetName = match[1];
-  const targetStartCharacter = match.index ?? 0;
-  const equalsIndex = text.indexOf("=", targetStartCharacter + targetName.length);
+): { expressionRange: SourceRange; expressionText: string; isSet: boolean; targetName: string; targetRange: SourceRange } | undefined {
+  const equalsIndex = findAssignmentOperatorIndex(text);
 
   if (equalsIndex < 0) {
     return undefined;
   }
 
-  const expressionStart = equalsIndex + 1 + (match[2].length - match[2].trimStart().length);
-  const expressionText = match[2].trim();
+  const leftText = text.slice(0, equalsIndex);
+  const rightText = text.slice(equalsIndex + 1);
+  const match = /^\s*(Set\s+)?([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*$/i.exec(leftText);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const targetName = match[2];
+  const targetStartCharacter = (/^\s*(?:Set\s+)?/iu.exec(leftText)?.[0].length ?? 0);
+  const expressionStart = equalsIndex + 1 + (rightText.length - rightText.trimStart().length);
+  const expressionText = rightText.trim();
 
   return {
     expressionRange: createInlineRange(statementRange.start.line, expressionStart, expressionStart + expressionText.length),
     expressionText,
+    isSet: Boolean(match[1]),
     targetName: targetName.replace(/[$%&!#@]$/, ""),
     targetRange: createInlineRange(statementRange.start.line, targetStartCharacter, targetStartCharacter + targetName.length)
   };
@@ -163,12 +167,46 @@ function inferExpressionType(
     return "Date";
   }
 
+  if (/^Nothing$/iu.test(normalizedExpression)) {
+    return "Nothing";
+  }
+
+  if (/^New\s+([A-Za-z_][A-Za-z0-9_\.]*)$/iu.test(normalizedExpression)) {
+    return /^New\s+([A-Za-z_][A-Za-z0-9_\.]*)$/iu.exec(normalizedExpression)?.[1];
+  }
+
   if (/^(?:True|False)$/iu.test(normalizedExpression)) {
     return "Boolean";
   }
 
   if (/^[+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?$/u.test(normalizedExpression)) {
     return /[.Ee]/u.test(normalizedExpression) ? "Double" : "Long";
+  }
+
+  if (/^(?:CreateObject|GetObject)\s*\(/iu.test(normalizedExpression)) {
+    return "Object";
+  }
+
+  if (/^Array\s*\(/iu.test(normalizedExpression)) {
+    return "Variant";
+  }
+
+  const comparisonType = inferComparisonExpressionType(symbolTable, symbolTypes, line, normalizedExpression);
+
+  if (comparisonType) {
+    return comparisonType;
+  }
+
+  const concatenationType = inferConcatenationExpressionType(symbolTable, symbolTypes, line, normalizedExpression);
+
+  if (concatenationType) {
+    return concatenationType;
+  }
+
+  const arithmeticType = inferArithmeticExpressionType(symbolTable, symbolTypes, line, normalizedExpression);
+
+  if (arithmeticType) {
+    return arithmeticType;
   }
 
   const callMatch = /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)$/iu.exec(normalizedExpression);
@@ -287,7 +325,11 @@ function getSourcePrecedence(source: InferredSymbolType["source"]): number {
   }
 }
 
-export function areTypesCompatible(targetTypeName: string, valueTypeName: string): boolean {
+export function areTypesCompatible(
+  targetTypeName: string,
+  valueTypeName: string,
+  options: { isSetAssignment?: boolean } = {}
+): boolean {
   const normalizedTargetType = normalizeTypeName(targetTypeName);
   const normalizedValueType = normalizeTypeName(valueTypeName);
 
@@ -303,11 +345,288 @@ export function areTypesCompatible(targetTypeName: string, valueTypeName: string
     return true;
   }
 
+  if (options.isSetAssignment) {
+    if (normalizedTargetType === "object" && isReferenceTypeName(normalizedValueType)) {
+      return true;
+    }
+
+    if (normalizedValueType === "nothing" && isReferenceTypeName(normalizedTargetType)) {
+      return true;
+    }
+  }
+
   return false;
 }
 
 function normalizeTypeName(typeName: string): string {
   return typeName.replace(/\s+/gu, "").toLowerCase();
+}
+
+function inferArithmeticExpressionType(
+  symbolTable: SymbolTable,
+  symbolTypes: Map<string, InferredSymbolType>,
+  line: number,
+  expressionText: string
+): string | undefined {
+  const parts = splitTopLevelExpression(expressionText, (text, index) => {
+    const currentCharacter = text[index];
+
+    if (["*", "/", "\\", "^"].includes(currentCharacter)) {
+      return 1;
+    }
+
+    if (["+", "-"].includes(currentCharacter)) {
+      const previousCharacter = getAdjacentNonWhitespaceCharacter(text, index, -1) ?? "";
+      return /[A-Za-z0-9_\]")#]/u.test(previousCharacter) ? 1 : 0;
+    }
+
+    if (text.slice(index, index + 3).toLowerCase() === "mod" && isTokenBoundary(text, index - 1) && isTokenBoundary(text, index + 3)) {
+      return 3;
+    }
+
+    return 0;
+  });
+
+  if (parts.length <= 1) {
+    return undefined;
+  }
+
+  const operandTypes = parts.map((part) => inferExpressionType(symbolTable, symbolTypes, line, part.trim()));
+
+  if (operandTypes.some((typeName) => typeName === undefined)) {
+    return undefined;
+  }
+
+  if (operandTypes.some((typeName) => normalizeTypeName(typeName!) === "variant")) {
+    return "Variant";
+  }
+
+  if (!operandTypes.every((typeName) => NUMERIC_TYPES.has(normalizeTypeName(typeName!)))) {
+    return undefined;
+  }
+
+  return expressionText.includes("/") ? "Double" : "Long";
+}
+
+function inferComparisonExpressionType(
+  symbolTable: SymbolTable,
+  symbolTypes: Map<string, InferredSymbolType>,
+  line: number,
+  expressionText: string
+): string | undefined {
+  const parts = splitTopLevelExpression(expressionText, (text, index) => {
+    const currentSlice = text.slice(index);
+
+    if (currentSlice.startsWith("<=") || currentSlice.startsWith(">=") || currentSlice.startsWith("<>")) {
+      return 2;
+    }
+
+    if (["<", ">", "="].includes(text[index])) {
+      return 1;
+    }
+
+    if (currentSlice.toLowerCase().startsWith("is") && isTokenBoundary(text, index - 1) && isTokenBoundary(text, index + 2)) {
+      return 2;
+    }
+
+    if (currentSlice.toLowerCase().startsWith("like") && isTokenBoundary(text, index - 1) && isTokenBoundary(text, index + 4)) {
+      return 4;
+    }
+
+    return 0;
+  });
+
+  if (parts.length <= 1) {
+    return undefined;
+  }
+
+  const operandTypes = parts.map((part) => inferExpressionType(symbolTable, symbolTypes, line, part.trim()));
+
+  if (operandTypes.some((typeName) => typeName === undefined)) {
+    return undefined;
+  }
+
+  return "Boolean";
+}
+
+function inferConcatenationExpressionType(
+  symbolTable: SymbolTable,
+  symbolTypes: Map<string, InferredSymbolType>,
+  line: number,
+  expressionText: string
+): string | undefined {
+  const parts = splitTopLevelExpression(expressionText, (text, index) => (text[index] === "&" ? 1 : 0));
+
+  if (parts.length <= 1) {
+    return undefined;
+  }
+
+  const operandTypes = parts.map((part) => inferExpressionType(symbolTable, symbolTypes, line, part.trim()));
+
+  if (operandTypes.some((typeName) => typeName === undefined)) {
+    return undefined;
+  }
+
+  return "String";
+}
+
+function findAssignmentOperatorIndex(text: string): number {
+  let depth = 0;
+  let index = 0;
+
+  while (index < text.length) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === "\"") {
+      index = skipStringLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "#") {
+      index = skipDateLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "(") {
+      depth += 1;
+      index += 1;
+      continue;
+    }
+
+    if (currentCharacter === ")") {
+      depth = Math.max(0, depth - 1);
+      index += 1;
+      continue;
+    }
+
+    if (depth === 0 && currentCharacter === "=") {
+      const previousNonWhitespaceCharacter = getAdjacentNonWhitespaceCharacter(text, index, -1);
+
+      if (previousNonWhitespaceCharacter !== "<" && previousNonWhitespaceCharacter !== ">") {
+        return index;
+      }
+    }
+
+    index += 1;
+  }
+
+  return -1;
+}
+
+function getAdjacentNonWhitespaceCharacter(text: string, startIndex: number, direction: -1 | 1): string | undefined {
+  let index = startIndex + direction;
+
+  while (index >= 0 && index < text.length) {
+    if (!/\s/u.test(text[index] ?? "")) {
+      return text[index];
+    }
+
+    index += direction;
+  }
+
+  return undefined;
+}
+
+function isReferenceTypeName(typeName: string): boolean {
+  return !SCALAR_TYPES.has(typeName);
+}
+
+function splitTopLevelExpression(
+  text: string,
+  getOperatorLength: (text: string, index: number) => number
+): string[] {
+  const parts: string[] = [];
+  let buffer = "";
+  let depth = 0;
+  let index = 0;
+
+  while (index < text.length) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === "\"") {
+      const nextIndex = skipStringLiteral(text, index);
+      buffer += text.slice(index, nextIndex);
+      index = nextIndex;
+      continue;
+    }
+
+    if (currentCharacter === "#") {
+      const nextIndex = skipDateLiteral(text, index);
+      buffer += text.slice(index, nextIndex);
+      index = nextIndex;
+      continue;
+    }
+
+    if (currentCharacter === "(") {
+      depth += 1;
+      buffer += currentCharacter;
+      index += 1;
+      continue;
+    }
+
+    if (currentCharacter === ")") {
+      depth = Math.max(0, depth - 1);
+      buffer += currentCharacter;
+      index += 1;
+      continue;
+    }
+
+    const operatorLength = depth === 0 ? getOperatorLength(text, index) : 0;
+
+    if (operatorLength > 0) {
+      parts.push(buffer.trim());
+      buffer = "";
+      index += operatorLength;
+      continue;
+    }
+
+    buffer += currentCharacter;
+    index += 1;
+  }
+
+  parts.push(buffer.trim());
+  return parts.filter((part) => part.length > 0);
+}
+
+function isTokenBoundary(text: string, index: number): boolean {
+  if (index < 0 || index >= text.length) {
+    return true;
+  }
+
+  return !/[A-Za-z0-9_]/u.test(text[index] ?? "");
+}
+
+function skipDateLiteral(text: string, startIndex: number): number {
+  let index = startIndex + 1;
+
+  while (index < text.length) {
+    if (text[index] === "#") {
+      return index + 1;
+    }
+
+    index += 1;
+  }
+
+  return index;
+}
+
+function skipStringLiteral(text: string, startIndex: number): number {
+  let index = startIndex + 1;
+
+  while (index < text.length) {
+    if (text[index] === "\"" && text[index + 1] === "\"") {
+      index += 2;
+      continue;
+    }
+
+    if (text[index] === "\"") {
+      return index + 1;
+    }
+
+    index += 1;
+  }
+
+  return index;
 }
 
 function unwrapParentheses(expressionText: string): string {

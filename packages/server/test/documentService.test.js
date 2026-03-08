@@ -258,3 +258,41 @@ End Sub`
   assert.equal(diagnostics.length, 1);
   assert.equal(diagnostics[0]?.severity, "warning");
 });
+
+test("document service exposes expanded type mismatch diagnostics for compound and Set assignments", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/ExpandedMismatch.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ExpandedMismatch"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+    Dim count As Long
+    Dim flag As Boolean
+    Dim holder As Object
+    Dim loose As Variant
+    title = 1 + 2
+    count = "1" & loose
+    flag = 1 < 2
+    Set holder = Nothing
+    Set holder = 1
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(diagnostics.length, 3);
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Type mismatch: cannot assign Long to String.",
+      "Type mismatch: cannot assign String to Long.",
+      "Type mismatch: cannot assign Long to Object."
+    ]
+  );
+});
