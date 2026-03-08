@@ -5,6 +5,7 @@ import {
   Definition,
   DiagnosticSeverity,
   DocumentSymbol,
+  FileChangeType,
   InitializeParams,
   InitializeResult,
   Location,
@@ -14,10 +15,12 @@ import {
   SymbolKind,
   TextDocumentSyncKind
 } from "vscode-languageserver/node";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { createDocumentService } from "./lsp/documentService";
-import type { DocumentState } from "./lsp/documentService";
+import type { DocumentState, WorkspaceSymbolResolution } from "./lsp/documentService";
 import type { Diagnostic, OutlineSymbol, SymbolInfo } from "../../core/src/index";
 
 export { createDocumentService } from "./lsp/documentService";
@@ -53,6 +56,12 @@ export function startServer(): void {
     if (canReadConfiguration) {
       settings = await readSettings(connection);
     }
+
+    await primeWorkspaceIndex();
+
+    for (const document of documents.all()) {
+      analyzeAndPublish(document);
+    }
   });
 
   documents.onDidOpen((event) => {
@@ -83,8 +92,8 @@ export function startServer(): void {
       pendingTimers.delete(event.document.uri);
     }
 
-    documentService.remove(event.document.uri);
     connection.sendDiagnostics({ diagnostics: [], uri: event.document.uri });
+    void restoreWorkspaceDocument(event.document.uri);
   });
 
   connection.onDidChangeConfiguration(async () => {
@@ -97,18 +106,38 @@ export function startServer(): void {
     }
   });
 
+  connection.onDidChangeWatchedFiles(async (params) => {
+    const openDocumentUris = new Set(documents.all().map((document) => document.uri));
+
+    for (const change of params.changes) {
+      if (openDocumentUris.has(change.uri)) {
+        continue;
+      }
+
+      if (change.type === FileChangeType.Deleted) {
+        documentService.remove(change.uri);
+      } else {
+        await restoreWorkspaceDocument(change.uri);
+      }
+    }
+
+    for (const document of documents.all()) {
+      analyzeAndPublish(document);
+    }
+  });
+
   connection.onCompletion((params): CompletionItem[] => {
     return documentService.getCompletionSymbols(params.textDocument.uri, toCorePosition(params.position)).map(toCompletionItem);
   });
 
   connection.onDefinition((params): Definition | undefined => {
-    const symbol = documentService.getDefinition(params.textDocument.uri, toCorePosition(params.position));
+    const resolution = documentService.getDefinition(params.textDocument.uri, toCorePosition(params.position));
 
-    if (!symbol) {
+    if (!resolution) {
       return undefined;
     }
 
-    return Location.create(params.textDocument.uri, toLspRange(symbol.selectionRange));
+    return Location.create(resolution.uri, toLspRange(resolution.symbol.selectionRange));
   });
 
   connection.onDocumentSymbol((params): DocumentSymbol[] => {
@@ -121,10 +150,48 @@ export function startServer(): void {
   function analyzeAndPublish(document: TextDocument): DocumentState {
     const state = documentService.analyzeText(document.uri, document.languageId, document.version, document.getText());
     connection.sendDiagnostics({
-      diagnostics: state.analysis.diagnostics.map(toLspDiagnostic),
+      diagnostics: documentService.getDiagnostics(document.uri).map(toLspDiagnostic),
       uri: document.uri
     });
     return state;
+  }
+
+  async function primeWorkspaceIndex(): Promise<void> {
+    try {
+      const openDocumentUris = new Set(documents.all().map((document) => document.uri));
+      const workspaceUris = (
+        await Promise.all([
+          connection.workspace.findFiles("**/*.bas"),
+          connection.workspace.findFiles("**/*.cls"),
+          connection.workspace.findFiles("**/*.frm")
+        ])
+      ).flat();
+
+      for (const uri of [...new Set(workspaceUris)]) {
+        if (openDocumentUris.has(uri)) {
+          continue;
+        }
+
+        await restoreWorkspaceDocument(uri);
+      }
+    } catch (error) {
+      connection.console.error(`Failed to index VBA workspace files: ${String(error)}`);
+    }
+  }
+
+  async function restoreWorkspaceDocument(uri: string): Promise<void> {
+    if (!uri.startsWith("file:")) {
+      documentService.remove(uri);
+      return;
+    }
+
+    try {
+      const filePath = fileURLToPath(uri);
+      const text = await readFile(filePath, "utf8");
+      documentService.analyzeText(uri, "vba", 0, text);
+    } catch {
+      documentService.remove(uri);
+    }
   }
 }
 
@@ -137,10 +204,11 @@ async function readSettings(connection: ReturnType<typeof createConnection>): Pr
   };
 }
 
-function toCompletionItem(symbol: SymbolInfo): CompletionItem {
+function toCompletionItem(resolution: WorkspaceSymbolResolution): CompletionItem {
   return {
-    kind: mapCompletionItemKind(symbol.kind),
-    label: symbol.name
+    detail: resolution.moduleName,
+    kind: mapCompletionItemKind(resolution.symbol.kind),
+    label: resolution.symbol.name
   };
 }
 

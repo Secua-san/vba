@@ -6,6 +6,7 @@ let client: LanguageClient | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const serverModule = context.asAbsolutePath(path.join("dist", "server", "index.js"));
+  const fileWatcher = vscode.workspace.createFileSystemWatcher("**/*.{bas,cls,frm}");
   const serverOptions: ServerOptions = {
     debug: {
       module: serverModule,
@@ -27,11 +28,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     ],
     synchronize: {
-      configurationSection: "vba"
+      configurationSection: "vba",
+      fileEvents: fileWatcher
     }
   };
 
   client = new LanguageClient("excelVbaLanguageServer", "Excel VBA Language Server", serverOptions, clientOptions);
+  context.subscriptions.push(fileWatcher);
   context.subscriptions.push(client);
   await client.start();
 }
