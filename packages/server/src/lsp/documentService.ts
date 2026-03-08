@@ -63,6 +63,18 @@ export interface SignatureHint {
   parameters: SignatureParameterHint[];
 }
 
+export const SEMANTIC_TOKEN_TYPES = ["variable", "parameter", "function", "type", "enumMember"] as const;
+export const SEMANTIC_TOKEN_MODIFIERS = ["declaration", "readonly"] as const;
+
+export type SemanticTokenTypeName = (typeof SEMANTIC_TOKEN_TYPES)[number];
+export type SemanticTokenModifierName = (typeof SEMANTIC_TOKEN_MODIFIERS)[number];
+
+export interface SemanticTokenEntry {
+  modifiers: SemanticTokenModifierName[];
+  range: SourceRange;
+  type: SemanticTokenTypeName;
+}
+
 export interface DocumentService {
   analyzeText: (uri: string, languageId: string, version: number, text: string) => DocumentState;
   getCompletionSymbols: (uri: string, position: LinePosition) => WorkspaceSymbolResolution[];
@@ -71,6 +83,7 @@ export interface DocumentService {
   getDocumentSymbols: (uri: string) => ReturnType<typeof getDocumentOutline>;
   getRenameEdits: (uri: string, position: LinePosition, newName: string) => RenameTextEdit[] | undefined;
   getReferences: (uri: string, position: LinePosition, includeDeclaration: boolean) => WorkspaceReference[];
+  getSemanticTokens: (uri: string) => SemanticTokenEntry[];
   prepareRename: (uri: string, position: LinePosition) => RenameTarget | undefined;
   getSignatureHelp: (uri: string, position: LinePosition) => SignatureHint | undefined;
   getState: (uri: string) => DocumentState | undefined;
@@ -282,6 +295,10 @@ export function createDocumentService(): DocumentService {
     getReferences(uri: string, position: LinePosition, includeDeclaration: boolean): WorkspaceReference[] {
       return getReferenceMatches(uri, position, includeDeclaration);
     },
+    getSemanticTokens(uri: string): SemanticTokenEntry[] {
+      const state = documentStates.get(uri);
+      return state ? collectSemanticTokensForState(state, resolveDefinition, documentStates) : [];
+    },
     prepareRename(uri: string, position: LinePosition): RenameTarget | undefined {
       const renameTarget = resolveLocalRenameTarget(uri, position);
 
@@ -345,6 +362,7 @@ interface WorkspaceIndex {
 
 type LocalProcedureScope = DocumentState["analysis"]["symbols"]["procedureScopes"][number];
 type CallableMember = Extract<AnalysisResult["module"]["members"][number], { kind: "declareStatement" | "procedureDeclaration" }>;
+type SemanticTokenShape = Pick<SemanticTokenEntry, "modifiers" | "type">;
 
 interface CallContext {
   activeParameter: number;
@@ -371,6 +389,82 @@ function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
     byNormalizedName,
     entries
   };
+}
+
+function collectSemanticTokensForState(
+  state: DocumentState,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  documentStates: ReadonlyMap<string, DocumentState>
+): SemanticTokenEntry[] {
+  const tokens = new Map<string, SemanticTokenEntry>();
+  const declarationResolutions = [
+    ...state.analysis.symbols.moduleSymbols.map((symbol) => createResolution(state, symbol, state.uri)),
+    ...state.analysis.symbols.procedureScopes.flatMap((scope) => scope.symbols.map((symbol) => createResolution(state, symbol, state.uri)))
+  ];
+  const lines = state.text.replace(/\r\n?/g, "\n").split("\n");
+
+  for (const resolution of declarationResolutions) {
+    const tokenShape = mapSemanticToken(resolution.symbol);
+
+    if (!tokenShape) {
+      continue;
+    }
+
+    const declarationRange = getDeclarationRange(documentStates.get(resolution.uri), resolution, resolveDefinition);
+    addSemanticToken(tokens, declarationRange, {
+      modifiers: addUniqueModifier(tokenShape.modifiers, "declaration"),
+      type: tokenShape.type
+    });
+  }
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex];
+    const { code } = splitCodeAndComment(line);
+    const scrubbed = removeStringAndDateLiterals(code);
+
+    for (const match of scrubbed.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+      const identifier = match[0];
+      const startCharacter = match.index ?? 0;
+      const previousCharacter = scrubbed[startCharacter - 1] ?? "";
+      const nextCharacter = scrubbed[startCharacter + identifier.length] ?? "";
+
+      if (previousCharacter === "." || (nextCharacter === ":" && startCharacter === 0)) {
+        continue;
+      }
+
+      const range = {
+        start: {
+          character: startCharacter,
+          line: lineIndex
+        },
+        end: {
+          character: startCharacter + identifier.length,
+          line: lineIndex
+        }
+      };
+      const resolution = resolveDefinition(state.uri, range.start);
+
+      if (!resolution) {
+        continue;
+      }
+
+      const tokenShape = mapSemanticToken(resolution.symbol);
+
+      if (!tokenShape) {
+        continue;
+      }
+
+      const declarationRange = getDeclarationRange(documentStates.get(resolution.uri), resolution, resolveDefinition);
+      const isDeclaration = resolution.uri === state.uri && rangesEqual(range, declarationRange);
+
+      addSemanticToken(tokens, range, {
+        modifiers: isDeclaration ? addUniqueModifier(tokenShape.modifiers, "declaration") : tokenShape.modifiers,
+        type: tokenShape.type
+      });
+    }
+  }
+
+  return [...tokens.values()].sort(compareSemanticTokens);
 }
 
 function collectWorkspaceSymbols(state: DocumentState): WorkspaceSymbolResolution[] {
@@ -547,6 +641,29 @@ function deduplicateDiagnostics(diagnostics: Diagnostic[]): Diagnostic[] {
   }
 
   return [...deduplicated.values()];
+}
+
+function addSemanticToken(
+  tokens: Map<string, SemanticTokenEntry>,
+  range: SourceRange,
+  token: SemanticTokenShape
+): void {
+  const key = `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}:${token.type}:${token.modifiers.join(".")}`;
+
+  if (!tokens.has(key)) {
+    tokens.set(key, {
+      modifiers: token.modifiers,
+      range,
+      type: token.type
+    });
+  }
+}
+
+function addUniqueModifier(
+  modifiers: SemanticTokenModifierName[],
+  modifier: SemanticTokenModifierName
+): SemanticTokenModifierName[] {
+  return modifiers.includes(modifier) ? modifiers : [...modifiers, modifier];
 }
 
 function hasRenameConflict(
@@ -1069,4 +1186,61 @@ function comparePositions(left: LinePosition, right: LinePosition): number {
 
 function isWorkspaceVisible(modifier?: string): boolean {
   return /^(public|friend)$/i.test(modifier ?? "");
+}
+
+function mapSemanticToken(symbol: SymbolInfo): SemanticTokenShape | undefined {
+  switch (symbol.kind) {
+    case "constant":
+      return {
+        modifiers: ["readonly"],
+        type: "variable"
+      };
+    case "declare":
+    case "procedure":
+      return {
+        modifiers: [],
+        type: "function"
+      };
+    case "enum":
+    case "type":
+      return {
+        modifiers: [],
+        type: "type"
+      };
+    case "enumMember":
+      return {
+        modifiers: ["readonly"],
+        type: "enumMember"
+      };
+    case "parameter":
+      return {
+        modifiers: [],
+        type: "parameter"
+      };
+    case "variable":
+      return {
+        modifiers: [],
+        type: "variable"
+      };
+    default:
+      return undefined;
+  }
+}
+
+function compareSemanticTokens(left: SemanticTokenEntry, right: SemanticTokenEntry): number {
+  return (
+    comparePositions(left.range.start, right.range.start) ||
+    comparePositions(left.range.end, right.range.end) ||
+    left.type.localeCompare(right.type) ||
+    left.modifiers.join(".").localeCompare(right.modifiers.join("."))
+  );
+}
+
+function rangesEqual(left: SourceRange, right: SourceRange): boolean {
+  return (
+    left.start.line === right.start.line &&
+    left.start.character === right.start.character &&
+    left.end.line === right.end.line &&
+    left.end.character === right.end.character
+  );
 }

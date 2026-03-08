@@ -110,6 +110,28 @@ export async function run(): Promise<void> {
   assert.ok(renameEntries.every((edit) => edit.newText === "currentCount"));
   assert.ok(renameEntries.every((edit) => edit.range.start.line >= 4 && edit.range.start.line <= 8));
 
+  const semanticDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "SemanticTokens.bas"));
+  await vscode.window.showTextDocument(semanticDocument);
+
+  const semanticLegend = await waitForSemanticTokensLegend(
+    semanticDocument,
+    (legend) =>
+      legend.tokenTypes.includes("variable") &&
+      legend.tokenTypes.includes("parameter") &&
+      legend.tokenTypes.includes("function") &&
+      legend.tokenTypes.includes("type")
+  );
+  const semanticTokens = await waitForSemanticTokens(
+    semanticDocument,
+    (tokens) => tokens.data.length > 0
+  );
+
+  assert.ok(semanticLegend.tokenTypes.includes("variable"), "semantic token legend should include variable");
+  assert.ok(semanticLegend.tokenTypes.includes("parameter"), "semantic token legend should include parameter");
+  assert.ok(semanticLegend.tokenTypes.includes("function"), "semantic token legend should include function");
+  assert.ok(semanticLegend.tokenTypes.includes("type"), "semantic token legend should include type");
+  assert.ok(semanticTokens.data.length > 0, "semantic tokens should be available");
+
   const commands = await vscode.commands.getCommands(true);
   assert.equal(commands.includes("vba.extract"), false);
   assert.equal(commands.includes("vba.combine"), false);
@@ -246,6 +268,46 @@ async function waitForRename(
   }
 
   return new vscode.WorkspaceEdit();
+}
+
+async function waitForSemanticTokensLegend(
+  document: vscode.TextDocument,
+  predicate: (legend: vscode.SemanticTokensLegend) => boolean
+): Promise<vscode.SemanticTokensLegend> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const legend = await vscode.commands.executeCommand<vscode.SemanticTokensLegend>(
+      "vscode.provideDocumentSemanticTokensLegend",
+      document.uri
+    );
+
+    if (legend && predicate(legend)) {
+      return legend;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return new vscode.SemanticTokensLegend([]);
+}
+
+async function waitForSemanticTokens(
+  document: vscode.TextDocument,
+  predicate: (tokens: vscode.SemanticTokens) => boolean
+): Promise<vscode.SemanticTokens> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const tokens = await vscode.commands.executeCommand<vscode.SemanticTokens>(
+      "vscode.provideDocumentSemanticTokens",
+      document.uri
+    );
+
+    if (tokens && predicate(tokens)) {
+      return tokens;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return new vscode.SemanticTokens(new Uint32Array());
 }
 
 function getSignatureDocumentation(
