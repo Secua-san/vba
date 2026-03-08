@@ -222,6 +222,7 @@ export type SymbolKind =
 
 export interface SymbolInfo {
   containerName?: string;
+  isArray?: boolean;
   kind: SymbolKind;
   name: string;
   normalizedName: string;

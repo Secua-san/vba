@@ -48,10 +48,14 @@
 - [x] CI ラベル自動付与設定の修正
   - `actions/labeler@v5` に合わせて `.github/labeler.yml` の形式不整合を解消
 
+- [x] ByRef / ByVal 危険箇所の診断
+  - 同一モジュール内の `ByRef` 呼び出しで、式渡しと型不一致を warning として追加
+  - server でワークスペース公開手続きへの `ByRef` 警告も補完
+
 ## 次候補
 
-- [ ] ByRef / ByVal 危険箇所の診断
-  - 参照渡しで壊れやすい呼び出しや一時変数化が必要なケースを warning として追加する
+- [ ] Set 必須箇所検出
+  - オブジェクト代入で `Set` が必要なケースを warning として追加する
 
 ## メモ
 

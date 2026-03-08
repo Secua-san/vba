@@ -1,4 +1,6 @@
 export { analyzeModule, findDefinition, getCompletionSymbols, getDocumentOutline } from "./diagnostics/analyzeModule";
+export { collectByRefArgumentDiagnostics } from "./diagnostics/byRefDiagnostics";
+export type { ResolvedCallable } from "./diagnostics/byRefDiagnostics";
 export { areTypesCompatible, getSymbolTypeName, inferExpressionTypeAtLine, inferModuleTypes } from "./inference/inferModuleTypes";
 export { lexDocument } from "./lexer/lexDocument";
 export { parseModule } from "./parser/parseModule";

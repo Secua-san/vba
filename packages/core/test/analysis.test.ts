@@ -169,3 +169,35 @@ End Sub`, { fileName: "ExpandedMismatch.bas" });
     ]
   );
 });
+
+test("analyzeModule warns on risky ByRef arguments while allowing safe array elements", () => {
+  const result = analyzeModule(`Attribute VB_Name = "ByRefRisks"
+Option Explicit
+
+Private Sub UpdateCount(ByRef count As Long)
+End Sub
+
+Private Sub UpdateLabel(ByVal label As String)
+End Sub
+
+Public Sub Demo()
+    Dim count As Long
+    Dim wrongCount As String
+    Dim values() As Long
+    UpdateCount count + 1
+    UpdateCount wrongCount
+    UpdateCount values(0)
+    UpdateLabel wrongCount & "!"
+End Sub`, { fileName: "ByRefRisks.bas" });
+
+  const byRefDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(byRefDiagnostics.length, 2);
+  assert.deepEqual(
+    byRefDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "ByRef parameter 'count' in UpdateCount receives an expression. Introduce a temporary variable before the call.",
+      "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
+    ]
+  );
+});

@@ -1,6 +1,7 @@
 import {
   analyzeModule,
   areTypesCompatible,
+  collectByRefArgumentDiagnostics,
   extractIdentifierAtPosition,
   findDefinition,
   getCompletionSymbols,
@@ -99,7 +100,25 @@ export function createDocumentService(): DocumentService {
       return [];
     }
 
-    return state.analysis.diagnostics.filter((diagnostic) => {
+    const workspaceByRefDiagnostics = collectByRefArgumentDiagnostics(state.analysis, (position) => {
+      const target = resolveDefinition(uri, position);
+
+      if (!target || target.uri === uri) {
+        return undefined;
+      }
+
+      const targetState = documentStates.get(target.uri);
+
+      if (!targetState) {
+        return undefined;
+      }
+
+      const callable = findCallableMember(targetState.analysis, target.symbol);
+      return callable ? { callable, symbol: target.symbol } : undefined;
+    });
+    const diagnostics = deduplicateDiagnostics([...state.analysis.diagnostics, ...workspaceByRefDiagnostics]);
+
+    return diagnostics.filter((diagnostic) => {
       if (diagnostic.code !== "undeclared-variable") {
         return true;
       }
@@ -434,6 +453,20 @@ function deduplicateReferences(references: WorkspaceReference[]): WorkspaceRefer
 
     if (!deduplicated.has(key)) {
       deduplicated.set(key, reference);
+    }
+  }
+
+  return [...deduplicated.values()];
+}
+
+function deduplicateDiagnostics(diagnostics: Diagnostic[]): Diagnostic[] {
+  const deduplicated = new Map<string, Diagnostic>();
+
+  for (const diagnostic of diagnostics) {
+    const key = `${diagnostic.code}:${diagnostic.range.start.line}:${diagnostic.range.start.character}:${diagnostic.range.end.line}:${diagnostic.range.end.character}:${diagnostic.message}`;
+
+    if (!deduplicated.has(key)) {
+      deduplicated.set(key, diagnostic);
     }
   }
 
