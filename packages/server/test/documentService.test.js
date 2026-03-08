@@ -475,3 +475,36 @@ End Sub`
     ]
   );
 });
+
+test("document service exposes unused-variable diagnostics for locals and parameters", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/UnusedLocals.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "UnusedLocals"
+Option Explicit
+
+Public Sub Demo(ByVal usedArg As Long, ByVal unusedArg As Long)
+    Dim usedValue As Long
+    Dim writeOnlyValue As Long
+    Dim unusedValue As String
+    usedValue = usedArg
+    writeOnlyValue = 1
+    Debug.Print usedValue
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "unused-variable");
+
+  assert.equal(diagnostics.length, 2);
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Unused local declaration 'unusedArg'.",
+      "Unused local declaration 'unusedValue'."
+    ]
+  );
+});
