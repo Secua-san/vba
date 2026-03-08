@@ -11,6 +11,7 @@
   ],
   "files": [
     "dist/**",
+    "snippets/**",
     "syntaxes/**",
     "language-configuration.json",
     "resources/**",
@@ -43,6 +44,12 @@
         "language": "vba",
         "scopeName": "source.vba",
         "path": "./syntaxes/vba.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "vba",
+        "path": "./snippets/vba.code-snippets"
       }
     ],
     "configuration": {
