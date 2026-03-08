@@ -84,11 +84,15 @@
   - LSP の full document semantic tokens を追加し、変数、引数、定数、手続き、型、列挙体メンバーを色分け対象にする
   - server / extension のテストで legend と token 配列が返ることを確認する
 
+- [x] VBA コードスニペット
+  - `Sub` / `Function` / `Property` / `If` / `For` / `Select Case` / `Do While` / `With` の snippets を追加する
+  - extension の smoke test で snippet completion が読み込まれることを確認する
+
 ## 次候補
 
-- [ ] VBA コードスニペット
-  - `Sub` / `Function` / `If` / `For` / `Select Case` など主要構文の snippets を追加する
-  - 拡張パッケージに snippet 定義を含め、最低限の VS Code スモークで読み込みを確認する
+- [ ] VBA 構文インデント
+  - `If` / `Select Case` / `For` / `Do` / `With` / `Property` のネストに追従する最低限の整形基盤を追加する
+  - まずは整形コマンドではなく、将来の format provider に流用できる core 側の整形ロジックを作る
 
 ## メモ
 

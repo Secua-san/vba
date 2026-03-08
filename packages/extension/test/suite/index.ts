@@ -7,6 +7,7 @@ export async function run(): Promise<void> {
   assert.ok(extension, "extension must be discoverable");
 
   await extension.activate();
+  await vscode.workspace.getConfiguration("editor").update("snippetSuggestions", "top", vscode.ConfigurationTarget.Global);
 
   const fixturesPath = path.resolve(__dirname, "..", "..", "test", "fixtures");
   const sampleDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "sample.bas"));
@@ -131,6 +132,29 @@ export async function run(): Promise<void> {
   assert.ok(semanticLegend.tokenTypes.includes("function"), "semantic token legend should include function");
   assert.ok(semanticLegend.tokenTypes.includes("type"), "semantic token legend should include type");
   assert.ok(semanticTokens.data.length > 0, "semantic tokens should be available");
+
+  const snippetDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "SnippetCompletions.bas"));
+  await vscode.window.showTextDocument(snippetDocument);
+
+  const subSnippetItems = await waitForCompletions(
+    snippetDocument,
+    new vscode.Position(3, 3),
+    (items) => hasSnippetCompletion(items, "sub")
+  );
+  const selectSnippetItems = await waitForCompletions(
+    snippetDocument,
+    new vscode.Position(4, 6),
+    (items) => hasSnippetCompletion(items, "select")
+  );
+
+  assert.ok(
+    hasSnippetCompletion(subSnippetItems, "sub"),
+    "snippet completion should include the Sub Procedure template"
+  );
+  assert.ok(
+    hasSnippetCompletion(selectSnippetItems, "select"),
+    "snippet completion should include the Select Case template"
+  );
 
   const commands = await vscode.commands.getCommands(true);
   assert.equal(commands.includes("vba.extract"), false);
@@ -318,4 +342,16 @@ function getSignatureDocumentation(
   }
 
   return typeof documentation === "string" ? documentation : documentation.value;
+}
+
+function getCompletionItemLabel(item: vscode.CompletionItem): string {
+  return typeof item.label === "string" ? item.label : item.label.label;
+}
+
+function hasSnippetCompletion(items: readonly vscode.CompletionItem[], label: string): boolean {
+  return items.some(
+    (item) =>
+      item.kind === vscode.CompletionItemKind.Snippet &&
+      getCompletionItemLabel(item).toLowerCase() === label.toLowerCase()
+  );
 }

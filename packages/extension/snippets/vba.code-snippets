@@ -1,0 +1,130 @@
+{
+  "Sub Procedure": {
+    "prefix": [
+      "sub"
+    ],
+    "body": [
+      "Public Sub ${1:ProcedureName}()",
+      "    ${0}",
+      "End Sub"
+    ],
+    "description": "Excel VBA の Sub 手続きを作成します。"
+  },
+  "Function Procedure": {
+    "prefix": [
+      "func",
+      "function"
+    ],
+    "body": [
+      "Public Function ${1:FunctionName}(ByVal ${2:value} As Variant) As ${3:Variant}",
+      "    ${1} = ${0}",
+      "End Function"
+    ],
+    "description": "戻り値を持つ Function 手続きを作成します。"
+  },
+  "Property Get": {
+    "prefix": [
+      "propget"
+    ],
+    "body": [
+      "Public Property Get ${1:PropertyName}() As ${2:Variant}",
+      "    ${1} = ${0}",
+      "End Property"
+    ],
+    "description": "Property Get の雛形を作成します。"
+  },
+  "Property Let": {
+    "prefix": [
+      "proplet"
+    ],
+    "body": [
+      "Public Property Let ${1:PropertyName}(ByVal ${2:value} As ${3:Variant})",
+      "    ${0}",
+      "End Property"
+    ],
+    "description": "Property Let の雛形を作成します。"
+  },
+  "Property Set": {
+    "prefix": [
+      "propset"
+    ],
+    "body": [
+      "Public Property Set ${1:PropertyName}(ByVal ${2:value} As ${3:Object})",
+      "    Set ${0}",
+      "End Property"
+    ],
+    "description": "参照型向けの Property Set の雛形を作成します。"
+  },
+  "If Then Else": {
+    "prefix": [
+      "if"
+    ],
+    "body": [
+      "If ${1:condition} Then",
+      "    ${2}",
+      "Else",
+      "    ${0}",
+      "End If"
+    ],
+    "description": "If ... Then ... Else ブロックを作成します。"
+  },
+  "For Next": {
+    "prefix": [
+      "for"
+    ],
+    "body": [
+      "For ${1:index} = ${2:0} To ${3:10}",
+      "    ${0}",
+      "Next ${1}"
+    ],
+    "description": "For ... Next ループを作成します。"
+  },
+  "For Each Next": {
+    "prefix": [
+      "foreach"
+    ],
+    "body": [
+      "For Each ${1:item} In ${2:collection}",
+      "    ${0}",
+      "Next ${1}"
+    ],
+    "description": "For Each ... Next ループを作成します。"
+  },
+  "Select Case": {
+    "prefix": [
+      "select",
+      "case"
+    ],
+    "body": [
+      "Select Case ${1:expression}",
+      "    Case ${2:value}",
+      "        ${0}",
+      "    Case Else",
+      "        ",
+      "End Select"
+    ],
+    "description": "Select Case 分岐を作成します。"
+  },
+  "Do While Loop": {
+    "prefix": [
+      "dowhile"
+    ],
+    "body": [
+      "Do While ${1:condition}",
+      "    ${0}",
+      "Loop"
+    ],
+    "description": "Do While ... Loop を作成します。"
+  },
+  "With Block": {
+    "prefix": [
+      "with"
+    ],
+    "body": [
+      "With ${1:target}",
+      "    ${0}",
+      "End With"
+    ],
+    "description": "With ブロックを作成します。"
+  }
+}
