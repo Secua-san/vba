@@ -1,0 +1,14 @@
+{
+  "brackets": [
+    ["(", ")"]
+  ],
+  "comments": {
+    "lineComment": "'"
+  },
+  "folding": {
+    "markers": {
+      "end": "^\\s*End\\s+(Sub|Function|Property|If|Select|Type|Enum|With)\\b",
+      "start": "^\\s*(Sub|Function|Property|If|Select\\s+Case|Type|Enum|With)\\b"
+    }
+  }
+}

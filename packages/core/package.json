@@ -6,8 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "echo \"No tests yet (core)\"",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/**/*.test.js",
     "lint": "echo \"No lint config yet (core)\"",
-    "clean": "if exist dist rmdir /s /q dist"
+    "clean": "if exist dist rmdir /s /q dist && if exist dist-test rmdir /s /q dist-test"
   }
 }

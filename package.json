@@ -6,9 +6,17 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run -ws build",
-    "test": "npm run -ws test",
-    "lint": "npm run -ws lint",
-    "clean": "npm run -ws clean"
+    "build": "npm run build --workspace @vba/core && npm run build --workspace @vba/server && npm run build --workspace vba-extension && node scripts/prepare-extension.mjs",
+    "test": "npm run build && npm run test --workspace @vba/core && npm run test --workspace @vba/server && npm run test --workspace vba-extension",
+    "lint": "npm run lint --workspace @vba/core && npm run lint --workspace @vba/server && npm run lint --workspace vba-extension",
+    "clean": "npm run clean --workspace @vba/core && npm run clean --workspace @vba/server && npm run clean --workspace vba-extension && if exist dist rmdir /s /q dist",
+    "package": "npm run build && npm run package --workspace vba-extension"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.25.10",
+    "typescript": "^5.9.3"
   }
 }

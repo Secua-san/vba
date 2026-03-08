@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "echo \"No tests yet (server)\"",
+    "build": "node build.mjs",
+    "test": "node --test test/**/*.test.js",
     "lint": "echo \"No lint config yet (server)\"",
-    "clean": "if exist dist rmdir /s /q dist"
+    "clean": "if exist dist rmdir /s /q dist && if exist dist-test rmdir /s /q dist-test"
   },
   "dependencies": {
-    "@vba/core": "0.1.0"
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
   }
 }
