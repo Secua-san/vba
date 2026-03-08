@@ -367,3 +367,32 @@ End Sub`, { fileName: "UnusedLocals.bas" });
   );
   assert.ok(unusedDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
 });
+
+test("analyzeModule warns on write-only local variables without duplicating unused-variable", () => {
+  const result = analyzeModule(`Attribute VB_Name = "WriteOnlyLocals"
+Option Explicit
+
+Public Sub Demo()
+    Dim readValue As Long
+    Dim writeOnlyValue As Long
+    Dim objectHolder As Collection
+    readValue = 1
+    writeOnlyValue = readValue
+    Set objectHolder = New Collection
+    Debug.Print readValue
+End Sub`, { fileName: "WriteOnlyLocals.bas" });
+
+  const writeOnlyDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "write-only-variable");
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+
+  assert.equal(writeOnlyDiagnostics.length, 2);
+  assert.deepEqual(
+    writeOnlyDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Write-only local variable 'writeOnlyValue'.",
+      "Write-only local variable 'objectHolder'."
+    ]
+  );
+  assert.equal(unusedDiagnostics.length, 0);
+  assert.ok(writeOnlyDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+});

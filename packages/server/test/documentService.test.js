@@ -508,3 +508,39 @@ End Sub`
     ]
   );
 });
+
+test("document service exposes write-only-variable diagnostics for assigned-only locals", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/WriteOnlyLocals.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "WriteOnlyLocals"
+Option Explicit
+
+Public Sub Demo()
+    Dim readValue As Long
+    Dim writeOnlyValue As Long
+    Dim objectHolder As Collection
+    readValue = 1
+    writeOnlyValue = readValue
+    Set objectHolder = New Collection
+    Debug.Print readValue
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "write-only-variable");
+  const unusedDiagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "unused-variable");
+
+  assert.equal(diagnostics.length, 2);
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Write-only local variable 'writeOnlyValue'.",
+      "Write-only local variable 'objectHolder'."
+    ]
+  );
+  assert.equal(unusedDiagnostics.length, 0);
+});

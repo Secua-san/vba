@@ -3,6 +3,7 @@ import { collectByRefArgumentDiagnostics } from "./byRefDiagnostics";
 import { collectDuplicateDefinitionDiagnostics } from "./duplicateDefinitions";
 import { collectUnreachableCodeDiagnostics } from "./unreachableCode";
 import { collectUnusedVariableDiagnostics } from "./unusedVariables";
+import { collectWriteOnlyVariableDiagnostics } from "./writeOnlyVariables";
 import { parseModule } from "../parser/parseModule";
 import { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { inferModuleTypes } from "../inference/inferModuleTypes";
@@ -26,6 +27,7 @@ export function analyzeModule(text: string, options: AnalyzeModuleOptions = {}):
     ...collectDuplicateDefinitionDiagnostics(parseResult),
     ...collectUnreachableCodeDiagnostics(parseResult),
     ...collectUnusedVariableDiagnostics(parseResult),
+    ...collectWriteOnlyVariableDiagnostics(parseResult),
     ...typeInference.diagnostics,
     ...collectByRefArgumentDiagnostics(partialResult)
   ];
