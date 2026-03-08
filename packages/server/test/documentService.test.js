@@ -371,3 +371,58 @@ End Sub`
     ]
   );
 });
+
+test("document service exposes duplicate-definition diagnostics", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/Duplicates.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Duplicates"
+Option Explicit
+
+Private Type CustomerRecord
+    Id As Long
+End Type
+
+Private Type CustomerRecord
+    Name As String
+End Type
+
+Public Enum StatusKind
+    StatusOpen = 1
+End Enum
+
+Public Enum StatusKind
+    StatusClosed = 2
+End Enum
+
+Private Sub SharedName()
+End Sub
+
+Private Sub SharedName()
+End Sub
+
+Public Sub Demo(ByVal value As Long)
+    Dim value As Long
+    Const title As String = "A"
+    Const title As String = "B"
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "duplicate-definition");
+
+  assert.equal(diagnostics.length, 5);
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Duplicate definition 'CustomerRecord' in module scope.",
+      "Duplicate definition 'StatusKind' in module scope.",
+      "Duplicate definition 'SharedName' in module scope.",
+      "Duplicate definition 'value' in procedure 'Demo'.",
+      "Duplicate definition 'title' in procedure 'Demo'."
+    ]
+  );
+});
