@@ -50,19 +50,21 @@ export function formatModuleIndentation(text: string, options: FormatModuleInden
 
   const indentUnit = options.insertSpaces === false ? "\t" : " ".repeat(options.indentSize ?? 4);
   const continuationIndentLevels = Math.max(0, options.continuationIndentLevels ?? 1);
-  const formattedLines = [...source.normalizedLines];
+  const normalizedCodeText = normalizeBlockLayout(source.normalizedLines.join(lineEnding));
+  const formattingSource = createSourceDocument(normalizedCodeText, { fileName: options.fileName });
+  const formattedLines = [...formattingSource.normalizedLines];
   const stack: BlockKind[] = [];
 
-  for (const logicalLine of buildLogicalLines(source)) {
+  for (const logicalLine of buildLogicalLines(formattingSource)) {
     const kind = classifyLineKind(logicalLine.codeText.trim());
     applyPreIndentation(kind, stack);
 
     const baseIndentLevel = getBaseIndentLevel(kind, stack);
-    const physicalLines = source.normalizedLines.slice(logicalLine.startLine, logicalLine.endLine + 1);
+    const physicalLines = formattingSource.normalizedLines.slice(logicalLine.startLine, logicalLine.endLine + 1);
     const continuationContext = getContinuationContext(physicalLines);
 
     for (let lineIndex = logicalLine.startLine; lineIndex <= logicalLine.endLine; lineIndex += 1) {
-      const originalLine = source.normalizedLines[lineIndex] ?? "";
+      const originalLine = formattingSource.normalizedLines[lineIndex] ?? "";
       const trimmedLine = trimLogicalLinePreservingContinuation(originalLine, lineIndex < logicalLine.endLine);
 
       if (trimmedLine.length === 0) {
@@ -279,8 +281,163 @@ function applyPostIndentation(kind: LineKind, stack: BlockKind[]): void {
   }
 }
 
+function normalizeBlockLayout(text: string): string {
+  return text
+    .split("\n")
+    .flatMap(expandCompressedBlockLine)
+    .join("\n");
+}
+
+function expandCompressedBlockLine(line: string): string[] {
+  const { code, comment } = splitCodeAndComment(line);
+
+  if (!code.includes(":") || /\s+_\s*$/.test(code)) {
+    return [line];
+  }
+
+  const rawSegments = splitColonAware(code);
+
+  if (rawSegments.length < 2) {
+    return [line];
+  }
+
+  const segments = rawSegments.map((segment) => segment.trim()).filter((segment) => segment.length > 0);
+
+  if (segments.length < 2 || isLabelSegment(segments[0])) {
+    return [line];
+  }
+
+  const kinds = segments.map((segment) => classifyLineKind(segment));
+  const expandedLines: string[] = [];
+  let statementBuffer = "";
+  let changed = false;
+
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index];
+
+    if (shouldOwnLine(index, kinds)) {
+      if (statementBuffer.length > 0) {
+        expandedLines.push(statementBuffer);
+        statementBuffer = "";
+      }
+
+      expandedLines.push(segment);
+      changed = true;
+      continue;
+    }
+
+    statementBuffer = statementBuffer.length > 0 ? `${statementBuffer}: ${segment}` : segment;
+  }
+
+  if (statementBuffer.length > 0) {
+    expandedLines.push(statementBuffer);
+  }
+
+  if (!changed || expandedLines.length < 2) {
+    return [line];
+  }
+
+  if (comment) {
+    const lastLineIndex = expandedLines.length - 1;
+    expandedLines[lastLineIndex] = expandedLines[lastLineIndex].length > 0 ? `${expandedLines[lastLineIndex]} ${comment.trimStart()}` : comment.trimStart();
+  }
+
+  return expandedLines;
+}
+
+function splitColonAware(text: string): string[] {
+  const segments: string[] = [];
+  let buffer = "";
+  let index = 0;
+
+  while (index < text.length) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === "\"") {
+      buffer += currentCharacter;
+      index += 1;
+
+      while (index < text.length) {
+        buffer += text[index];
+
+        if (text[index] === "\"" && text[index + 1] === "\"") {
+          buffer += text[index + 1];
+          index += 2;
+          continue;
+        }
+
+        if (text[index] === "\"") {
+          index += 1;
+          break;
+        }
+
+        index += 1;
+      }
+
+      continue;
+    }
+
+    if (currentCharacter === "#" && !/^#(?:If\b|Else(?:If\b)?|End\s+If\b)/i.test(text.slice(index))) {
+      buffer += currentCharacter;
+      index += 1;
+
+      while (index < text.length) {
+        buffer += text[index];
+
+        if (text[index] === "#") {
+          index += 1;
+          break;
+        }
+
+        index += 1;
+      }
+
+      continue;
+    }
+
+    if (currentCharacter === ":") {
+      segments.push(buffer);
+      buffer = "";
+      index += 1;
+      continue;
+    }
+
+    buffer += currentCharacter;
+    index += 1;
+  }
+
+  segments.push(buffer);
+  return segments;
+}
+
+function shouldOwnLine(index: number, kinds: LineKind[]): boolean {
+  const kind = kinds[index];
+
+  if (kind === "blankOrComment" || kind === "other") {
+    return false;
+  }
+
+  if (kind === "ifStart") {
+    return hasFollowingKind(kinds, index, ["elseBranch", "endIf"]);
+  }
+
+  if (kind === "directiveIfStart") {
+    return hasFollowingKind(kinds, index, ["directiveElseBranch", "directiveEndIf"]);
+  }
+
+  return true;
+}
+
+function hasFollowingKind(kinds: LineKind[], index: number, targets: LineKind[]): boolean {
+  return kinds.slice(index + 1).some((kind) => targets.includes(kind));
+}
+
 function isLabelLine(trimmedLine: string): boolean {
   return /^[A-Za-z_][A-Za-z0-9_]*:\s*(?:$|'.*|Rem\b.*)/i.test(trimmedLine);
+}
+
+function isLabelSegment(trimmedSegment: string): boolean {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/i.test(trimmedSegment);
 }
 
 function popTop(stack: BlockKind[], expected: BlockKind): void {
