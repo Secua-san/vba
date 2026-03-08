@@ -675,14 +675,63 @@ function trimLogicalLinePreservingContinuation(line: string, preserveContinuatio
   const trimmedLine = line.trimStart().trimEnd();
 
   if (!preserveContinuationSuffix) {
-    return trimmedLine;
+    return normalizeCommentSpacing(trimmedLine);
   }
 
   const { code, comment } = splitCodeAndComment(trimmedLine);
   const normalizedCode = code.replace(/\s+_\s*$/, " _").trimEnd();
-  return normalizedCode + (comment ?? "");
+  const normalizedComment = normalizeCommentText(comment);
+
+  if (!normalizedComment) {
+    return normalizedCode;
+  }
+
+  if (normalizedCode.trim().length === 0) {
+    return normalizedComment;
+  }
+
+  return `${normalizedCode} ${normalizedComment}`;
 }
 
 function withTrailingComment(code: string, comment?: string): string {
-  return comment ? `${code} ${comment.trimStart()}` : code;
+  return comment ? `${code} ${normalizeCommentText(comment)}` : code;
+}
+
+function normalizeCommentSpacing(line: string): string {
+  const { code, comment } = splitCodeAndComment(line);
+  const normalizedComment = normalizeCommentText(comment);
+
+  if (!normalizedComment) {
+    return line;
+  }
+
+  const normalizedCode = code.trimEnd();
+
+  if (normalizedCode.trim().length === 0) {
+    return normalizedComment;
+  }
+
+  return `${normalizedCode} ${normalizedComment}`;
+}
+
+function normalizeCommentText(comment?: string): string | undefined {
+  if (!comment) {
+    return undefined;
+  }
+
+  const trimmedComment = comment.trimStart();
+
+  if (trimmedComment.startsWith("'")) {
+    const content = trimmedComment.slice(1).trim();
+    return content.length > 0 ? `' ${content}` : "'";
+  }
+
+  const remMatch = /^(Rem)\b/i.exec(trimmedComment);
+
+  if (remMatch) {
+    const content = trimmedComment.slice(remMatch[0].length).trim();
+    return content.length > 0 ? `${remMatch[0]} ${content}` : remMatch[0];
+  }
+
+  return trimmedComment;
 }
