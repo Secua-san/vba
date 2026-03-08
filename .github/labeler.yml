@@ -1,10 +1,15 @@
 parser:
-  - packages/core/**
+  - changed-files:
+      - any-glob-to-any-file: 'packages/core/**'
 lsp:
-  - packages/server/**
+  - changed-files:
+      - any-glob-to-any-file: 'packages/server/**'
 extension:
-  - packages/extension/**
+  - changed-files:
+      - any-glob-to-any-file: 'packages/extension/**'
 docs:
-  - docs/**
+  - changed-files:
+      - any-glob-to-any-file: 'docs/**'
 ci:
-  - .github/**
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
