@@ -259,6 +259,30 @@ End Sub`
   assert.equal(diagnostics[0]?.severity, "warning");
 });
 
+test("document service exposes type mismatch diagnostics for continued assignments", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/ContinuedMismatch.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ContinuedMismatch"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+    title = _
+        True
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0]?.message, "Type mismatch: cannot assign Boolean to String.");
+});
+
 test("document service exposes expanded type mismatch diagnostics for compound and Set assignments", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/ExpandedMismatch.bas";

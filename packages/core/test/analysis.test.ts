@@ -140,6 +140,22 @@ End Sub`, { fileName: "Mismatch.bas" });
   assert.ok(mismatchDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
 });
 
+test("analyzeModule reports type mismatches across continued assignments", () => {
+  const result = analyzeModule(`Attribute VB_Name = "ContinuedMismatch"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+    title = _
+        True
+End Sub`, { fileName: "ContinuedMismatch.bas" });
+
+  const mismatchDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(mismatchDiagnostics.length, 1);
+  assert.equal(mismatchDiagnostics[0]?.message, "Type mismatch: cannot assign Boolean to String.");
+});
+
 test("analyzeModule expands type mismatch diagnostics for compound expressions and Set assignments", () => {
   const result = analyzeModule(`Attribute VB_Name = "ExpandedMismatch"
 Option Explicit
