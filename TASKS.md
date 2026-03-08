@@ -108,6 +108,11 @@
   - 通常の `:` 区切り文は維持し、ブロック境界に関わる行だけを安全側で分離する
   - core / server / extension の整形テストで block layout の結果を確認する
 
+- [x] 宣言整列
+  - 単一行の `Dim` / `Const` / `Declare` を対象に、連続する宣言ブロック内で `As` / `=` / `Lib` の位置を限定的に揃える
+  - 複数宣言、継続行、通常文の `:` 区切りは対象外にし、既存の block layout formatter と競合しないようにする
+  - core / server / extension の整形テストで declaration alignment の結果を確認する
+
 - [x] CodeRabbit 待機時間の見直し
   - PR #11 から PR #24 の実測を確認し、初回反応時間、進行中コメントの更新完了時間、レート制限待機時間を整理する
   - `docs/process/coderabbit-review.md` に実測値と新しい待機基準を追記する
@@ -115,9 +120,9 @@
 
 ## 次候補
 
-- [ ] 宣言整列
-  - `Dim` / `Const` / `Declare` の列揃え方針を整理し、最小限の宣言整列 formatter を追加する
-  - 既存の block layout formatter と競合しないよう、宣言行だけを限定的に整える
+- [ ] コメント整形
+  - 行頭コメントと末尾コメントの空白ルールを整理し、formatter で最小限の正規化を行う
+  - 既存の宣言整列、継続行、block layout と競合しないよう、コメント位置の維持を優先する
 
 ## メモ
 

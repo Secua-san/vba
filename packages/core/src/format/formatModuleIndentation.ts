@@ -40,6 +40,18 @@ interface ContinuationContext {
   kind: "argumentList" | "assignment" | "generic" | "methodChain";
 }
 
+type DeclarationAlignmentKind = "const" | "declare" | "dim";
+
+interface AlignableDeclarationLine {
+  comment?: string;
+  head: string;
+  indent: string;
+  kind: DeclarationAlignmentKind;
+  tail?: string;
+  typeName?: string;
+  value?: string;
+}
+
 export function formatModuleIndentation(text: string, options: FormatModuleIndentationOptions = {}): string {
   const lineEnding = text.includes("\r\n") ? "\r\n" : "\n";
   const source = createSourceDocument(text, { fileName: options.fileName });
@@ -51,7 +63,8 @@ export function formatModuleIndentation(text: string, options: FormatModuleInden
   const indentUnit = options.insertSpaces === false ? "\t" : " ".repeat(options.indentSize ?? 4);
   const continuationIndentLevels = Math.max(0, options.continuationIndentLevels ?? 1);
   const normalizedCodeText = normalizeBlockLayout(source.normalizedLines.join(lineEnding));
-  const formattingSource = createSourceDocument(normalizedCodeText, { fileName: options.fileName });
+  const declarationAlignedText = normalizeDeclarationAlignment(normalizedCodeText);
+  const formattingSource = createSourceDocument(declarationAlignedText, { fileName: options.fileName });
   const formattedLines = [...formattingSource.normalizedLines];
   const stack: BlockKind[] = [];
 
@@ -288,6 +301,42 @@ function normalizeBlockLayout(text: string): string {
     .join("\n");
 }
 
+function normalizeDeclarationAlignment(text: string): string {
+  const lines = text.split("\n");
+  const normalizedLines: string[] = [];
+  let group: AlignableDeclarationLine[] = [];
+
+  const flushGroup = (): void => {
+    if (group.length === 0) {
+      return;
+    }
+
+    normalizedLines.push(...formatDeclarationGroup(group));
+    group = [];
+  };
+
+  for (const line of lines) {
+    const declaration = parseAlignableDeclarationLine(line);
+
+    if (!declaration) {
+      flushGroup();
+      normalizedLines.push(line);
+      continue;
+    }
+
+    if (group.length === 0 || canJoinDeclarationGroup(group[0], declaration)) {
+      group.push(declaration);
+      continue;
+    }
+
+    flushGroup();
+    group.push(declaration);
+  }
+
+  flushGroup();
+  return normalizedLines.join("\n");
+}
+
 function expandCompressedBlockLine(line: string): string[] {
   const { code, comment } = splitCodeAndComment(line);
 
@@ -432,6 +481,120 @@ function hasFollowingKind(kinds: LineKind[], index: number, targets: LineKind[])
   return kinds.slice(index + 1).some((kind) => targets.includes(kind));
 }
 
+function parseAlignableDeclarationLine(line: string): AlignableDeclarationLine | undefined {
+  const indent = line.match(/^\s*/u)?.[0] ?? "";
+  const { code, comment } = splitCodeAndComment(line);
+
+  if (code.trim().length === 0 || code.includes(":") || /\s+_\s*$/.test(code)) {
+    return undefined;
+  }
+
+  const trimmedCode = code.trim();
+  const dimMatch = /^(Dim\s+[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?(?:\([^)]*\))?)(?:\s+As\s+(.+))?$/iu.exec(trimmedCode);
+
+  if (dimMatch) {
+    return {
+      comment,
+      head: normalizeInlineSpacing(dimMatch[1] ?? trimmedCode),
+      indent,
+      kind: "dim",
+      typeName: dimMatch[2]?.trim()
+    };
+  }
+
+  const constMatch =
+    /^(?:(Public|Private)\s+)?Const\s+([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s+As\s+([^=]+?))?\s*=\s*(.+)$/iu.exec(trimmedCode);
+
+  if (constMatch) {
+    const modifier = constMatch[1] ? `${constMatch[1]} ` : "";
+    return {
+      comment,
+      head: `${modifier}Const ${constMatch[2]}`,
+      indent,
+      kind: "const",
+      typeName: constMatch[3]?.trim(),
+      value: constMatch[4]?.trim()
+    };
+  }
+
+  const declareMatch =
+    /^((?:(?:Public|Private)\s+)?Declare\s+(?:PtrSafe\s+)?(?:Sub|Function)\s+[A-Za-z_][A-Za-z0-9_]*)(\s+Lib\s+.+)$/iu.exec(trimmedCode);
+
+  if (declareMatch) {
+    return {
+      comment,
+      head: normalizeInlineSpacing(declareMatch[1] ?? trimmedCode),
+      indent,
+      kind: "declare",
+      tail: normalizeDeclareTail(declareMatch[2] ?? "")
+    };
+  }
+
+  return undefined;
+}
+
+function canJoinDeclarationGroup(left: AlignableDeclarationLine, right: AlignableDeclarationLine): boolean {
+  return left.kind === right.kind && left.indent === right.indent;
+}
+
+function formatDeclarationGroup(group: AlignableDeclarationLine[]): string[] {
+  switch (group[0]?.kind) {
+    case "const":
+      return formatConstGroup(group);
+    case "declare":
+      return formatDeclareGroup(group);
+    case "dim":
+      return formatDimGroup(group);
+    default:
+      return group.map((line) => `${line.indent}${line.head}`);
+  }
+}
+
+function formatDimGroup(group: AlignableDeclarationLine[]): string[] {
+  const headWidth = getMaxLength(group.map((line) => line.head));
+
+  return group.map((line) => {
+    const code = line.typeName ? `${line.head.padEnd(headWidth)} As ${line.typeName.trim()}` : line.head;
+    return withTrailingComment(line.indent + code, line.comment);
+  });
+}
+
+function formatConstGroup(group: AlignableDeclarationLine[]): string[] {
+  const headWidth = getMaxLength(group.map((line) => line.head));
+  const typedLines = group.filter((line) => line.typeName);
+  const typeWidth = getMaxLength(typedLines.map((line) => line.typeName ?? ""));
+
+  return group.map((line) => {
+    const typeSegment = line.typeName ? ` As ${line.typeName.trim().padEnd(typeWidth)}` : "";
+    const code = `${line.head.padEnd(headWidth)}${typeSegment} = ${line.value?.trim() ?? ""}`;
+    return withTrailingComment(line.indent + code, line.comment);
+  });
+}
+
+function formatDeclareGroup(group: AlignableDeclarationLine[]): string[] {
+  const headWidth = getMaxLength(group.map((line) => line.head));
+
+  return group.map((line) => {
+    const code = `${line.head.padEnd(headWidth)} ${line.tail?.trimStart() ?? ""}`.trimEnd();
+    return withTrailingComment(line.indent + code, line.comment);
+  });
+}
+
+function getMaxLength(values: string[]): number {
+  return values.reduce((maxLength, value) => Math.max(maxLength, value.length), 0);
+}
+
+function normalizeDeclareTail(tail: string): string {
+  return tail
+    .trimStart()
+    .replace(/\)\s+As\s+/iu, ") As ")
+    .replace(/\s+Alias\s+/iu, " Alias ");
+}
+
+function normalizeInlineSpacing(text: string): string {
+  return text.trim().replace(/\s+/gu, " ");
+}
+
 function isLabelLine(trimmedLine: string): boolean {
   return /^[A-Za-z_][A-Za-z0-9_]*:\s*(?:$|'.*|Rem\b.*)/i.test(trimmedLine);
 }
@@ -518,4 +681,8 @@ function trimLogicalLinePreservingContinuation(line: string, preserveContinuatio
   const { code, comment } = splitCodeAndComment(trimmedLine);
   const normalizedCode = code.replace(/\s+_\s*$/, " _").trimEnd();
   return normalizedCode + (comment ?? "");
+}
+
+function withTrailingComment(code: string, comment?: string): string {
+  return comment ? `${code} ${comment.trimStart()}` : code;
 }

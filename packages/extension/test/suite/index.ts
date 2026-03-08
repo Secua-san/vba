@@ -273,6 +273,48 @@ Public Sub Demo()
     #End If
 End Sub`));
 
+  const declarationAlignmentDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "DeclarationAlignment.bas"));
+  await vscode.window.showTextDocument(declarationAlignmentDocument);
+
+  const formattedDeclarationAlignmentText = await waitForFormattedDocument(
+    declarationAlignmentDocument,
+    `Attribute VB_Name = "DeclarationAlignment"
+Option Explicit
+
+Private Declare PtrSafe Function GetActiveWindow  Lib "user32" () As LongPtr
+Private Declare PtrSafe Function GetDesktopWindow Lib "user32" () As LongPtr
+
+Public Sub Demo()
+    Dim title   As String
+    Dim count   As Long
+    Dim enabled As Boolean
+
+    Const DefaultTitle As String  = "Ready"
+    Const RetryCount   As Long    = 3
+    Const IsEnabled    As Boolean = True
+
+    Debug.Print title, count, enabled
+End Sub`
+  );
+
+  assert.equal(normalizeText(formattedDeclarationAlignmentText), normalizeText(`Attribute VB_Name = "DeclarationAlignment"
+Option Explicit
+
+Private Declare PtrSafe Function GetActiveWindow  Lib "user32" () As LongPtr
+Private Declare PtrSafe Function GetDesktopWindow Lib "user32" () As LongPtr
+
+Public Sub Demo()
+    Dim title   As String
+    Dim count   As Long
+    Dim enabled As Boolean
+
+    Const DefaultTitle As String  = "Ready"
+    Const RetryCount   As Long    = 3
+    Const IsEnabled    As Boolean = True
+
+    Debug.Print title, count, enabled
+End Sub`));
+
   const snippetDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "SnippetCompletions.bas"));
   await vscode.window.showTextDocument(snippetDocument);
 
