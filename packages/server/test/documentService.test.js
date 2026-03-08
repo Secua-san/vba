@@ -125,6 +125,43 @@ End Sub`
   assert.equal(completions.some((resolution) => resolution.symbol.name === "PublicNumber"), false);
 });
 
+test("document service exposes signature help with inferred argument types", () => {
+  const service = createDocumentService();
+  const consumerUri = "file:///C:/temp/ConsumerSignature.bas";
+  const formatterUri = "file:///C:/temp/FormatterApi.bas";
+
+  service.analyzeText(
+    formatterUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "FormatterApi"
+Option Explicit
+
+Public Function FormatMessage(ByVal value As String, ByVal count As Long) As String
+    FormatMessage = value & CStr(count)
+End Function`
+  );
+  service.analyzeText(
+    consumerUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ConsumerSignature"
+Option Explicit
+
+Public Sub UseSignature()
+    Dim message As String
+    message = FormatMessage(message, 1)
+End Sub`
+  );
+
+  const signature = service.getSignatureHelp(consumerUri, { character: 38, line: 5 });
+
+  assert.equal(signature?.activeParameter, 1);
+  assert.equal(signature?.label, "FormatMessage(ByVal value As String, ByVal count As Long) As String");
+  assert.equal(signature?.documentation, "FormatterApi モジュール");
+  assert.equal(signature?.parameters[1]?.documentation?.includes("現在の引数型: Long"), true);
+});
+
 test("document service keeps ambiguous cross-file symbols conservative", () => {
   const service = createDocumentService();
   const consumerUri = "file:///C:/temp/Consumer.bas";

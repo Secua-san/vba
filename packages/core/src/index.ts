@@ -1,5 +1,5 @@
 export { analyzeModule, findDefinition, getCompletionSymbols, getDocumentOutline } from "./diagnostics/analyzeModule";
-export { areTypesCompatible, getSymbolTypeName, inferModuleTypes } from "./inference/inferModuleTypes";
+export { areTypesCompatible, getSymbolTypeName, inferExpressionTypeAtLine, inferModuleTypes } from "./inference/inferModuleTypes";
 export { lexDocument } from "./lexer/lexDocument";
 export { parseModule } from "./parser/parseModule";
 export { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "./parser/text";

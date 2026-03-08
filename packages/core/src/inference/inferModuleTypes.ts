@@ -102,6 +102,14 @@ export function getSymbolTypeName(
   return symbol.typeName ?? getSymbolTypeNameFromMap(typeInference.symbolTypes, symbol);
 }
 
+export function inferExpressionTypeAtLine(
+  result: Pick<AnalysisResult, "symbols" | "typeInference">,
+  line: number,
+  expressionText: string
+): string | undefined {
+  return inferExpressionType(result.symbols, createSymbolTypeMap(result.typeInference.symbolTypes), line, expressionText);
+}
+
 function seedExplicitTypes(symbolTable: SymbolTable, sink: Map<string, InferredSymbolType>): void {
   for (const symbol of symbolTable.allSymbols) {
     if (symbol.typeName) {
@@ -254,6 +262,10 @@ function getSymbolTypeNameFromMap(symbolTypes: Map<string, InferredSymbolType> |
   }
 
   return symbolTypes.get(getSymbolKey(symbol))?.typeName;
+}
+
+function createSymbolTypeMap(symbolTypes: InferredSymbolType[]): Map<string, InferredSymbolType> {
+  return new Map(symbolTypes.map((entry) => [getSymbolKey(entry.symbol), entry]));
 }
 
 function getSymbolKey(symbol: SymbolInfo): string {

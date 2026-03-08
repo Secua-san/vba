@@ -9,9 +9,12 @@ import {
   InitializeParams,
   InitializeResult,
   Location,
+  ParameterInformation,
   Position,
   ProposedFeatures,
   Range,
+  SignatureHelp,
+  SignatureInformation,
   SymbolKind,
   TextDocumentSyncKind
 } from "vscode-languageserver/node";
@@ -20,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { createDocumentService } from "./lsp/documentService";
-import type { DocumentState, WorkspaceSymbolResolution } from "./lsp/documentService";
+import type { DocumentState, SignatureHint, WorkspaceSymbolResolution } from "./lsp/documentService";
 import type { Diagnostic, OutlineSymbol, SymbolInfo } from "../../core/src/index";
 
 export { createDocumentService } from "./lsp/documentService";
@@ -48,6 +51,10 @@ export function startServer(): void {
         definitionProvider: true,
         documentSymbolProvider: true,
         referencesProvider: true,
+        signatureHelpProvider: {
+          retriggerCharacters: [","],
+          triggerCharacters: ["(", ","]
+        },
         textDocumentSync: TextDocumentSyncKind.Full
       }
     };
@@ -151,6 +158,11 @@ export function startServer(): void {
       .map((reference) => Location.create(reference.uri, toLspRange(reference.range)));
   });
 
+  connection.onSignatureHelp((params): SignatureHelp | undefined => {
+    const signatureHelp = documentService.getSignatureHelp(params.textDocument.uri, toCorePosition(params.position));
+    return signatureHelp ? toSignatureHelp(signatureHelp) : undefined;
+  });
+
   documents.listen(connection);
   connection.listen();
 
@@ -216,6 +228,20 @@ function toCompletionItem(resolution: WorkspaceSymbolResolution): CompletionItem
     detail: resolution.typeName ? `${resolution.moduleName} : ${resolution.typeName}` : resolution.moduleName,
     kind: mapCompletionItemKind(resolution.symbol.kind),
     label: resolution.symbol.name
+  };
+}
+
+function toSignatureHelp(signature: SignatureHint): SignatureHelp {
+  return {
+    activeParameter: signature.activeParameter,
+    activeSignature: signature.activeSignature,
+    signatures: [
+      SignatureInformation.create(
+        signature.label,
+        signature.documentation,
+        ...signature.parameters.map((parameter) => ParameterInformation.create(parameter.label, parameter.documentation))
+      )
+    ]
   };
 }
 
