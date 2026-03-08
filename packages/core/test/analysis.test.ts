@@ -341,3 +341,29 @@ End Sub`, { fileName: "Unreachable.bas" });
   );
   assert.ok(unreachableDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
 });
+
+test("analyzeModule warns on unused local variables and parameters", () => {
+  const result = analyzeModule(`Attribute VB_Name = "UnusedLocals"
+Option Explicit
+
+Public Sub Demo(ByVal usedArg As Long, ByVal unusedArg As Long)
+    Dim usedValue As Long
+    Dim writeOnlyValue As Long
+    Dim unusedValue As String
+    usedValue = usedArg
+    writeOnlyValue = 1
+    Debug.Print usedValue
+End Sub`, { fileName: "UnusedLocals.bas" });
+
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+
+  assert.equal(unusedDiagnostics.length, 2);
+  assert.deepEqual(
+    unusedDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Unused local declaration 'unusedArg'.",
+      "Unused local declaration 'unusedValue'."
+    ]
+  );
+  assert.ok(unusedDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+});
