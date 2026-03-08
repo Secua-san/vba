@@ -5,6 +5,7 @@ import {
   findDefinition,
   getCompletionSymbols,
   getDocumentOutline,
+  getSymbolTypeName,
   lexDocument,
   parseModule
 } from "../dist/index.js";
@@ -93,4 +94,48 @@ End Sub`, { fileName: "Shadowing.bas" });
   assert.equal(declarationDefinition?.scope, "procedure");
   assert.equal(usageDefinition?.kind, "variable");
   assert.equal(usageDefinition?.scope, "procedure");
+});
+
+test("analyzeModule infers types from literals, simple assignments, and function return values", () => {
+  const result = analyzeModule(`Attribute VB_Name = "Inference"
+Option Explicit
+
+Public Function BuildMessage()
+    BuildMessage = "Hello"
+End Function
+
+Public Sub Demo()
+    Dim message
+    Dim copiedMessage As String
+    message = BuildMessage()
+    copiedMessage = message
+End Sub`, { fileName: "Inference.bas" });
+
+  const procedureSymbol = result.symbols.moduleSymbols.find((symbol) => symbol.kind === "procedure" && symbol.name === "BuildMessage");
+  const messageSymbol = result.symbols.procedureScopes
+    .flatMap((scope) => scope.symbols)
+    .find((symbol) => symbol.kind === "variable" && symbol.name === "message");
+
+  assert.equal(getSymbolTypeName(result, procedureSymbol), "String");
+  assert.equal(getSymbolTypeName(result, messageSymbol), "String");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
+test("analyzeModule reports simple type mismatches", () => {
+  const result = analyzeModule(`Attribute VB_Name = "Mismatch"
+Option Explicit
+
+Public Function CountItems() As Long
+    CountItems = "wrong"
+End Function
+
+Public Sub Demo()
+    Dim title As String
+    title = True
+End Sub`, { fileName: "Mismatch.bas" });
+
+  const mismatchDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(mismatchDiagnostics.length, 2);
+  assert.ok(mismatchDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
 });

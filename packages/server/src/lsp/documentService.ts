@@ -4,6 +4,7 @@ import {
   findDefinition,
   getCompletionSymbols,
   getDocumentOutline,
+  getSymbolTypeName,
   normalizeIdentifier,
   removeStringAndDateLiterals,
   splitCodeAndComment,
@@ -25,6 +26,7 @@ export interface DocumentState {
 export interface WorkspaceSymbolResolution {
   moduleName: string;
   symbol: SymbolInfo;
+  typeName?: string;
   uri: string;
 }
 
@@ -58,11 +60,7 @@ export function createDocumentService(): DocumentService {
     const localDefinition = findDefinition(state.analysis, position);
 
     if (localDefinition) {
-      return {
-        moduleName: state.analysis.module.name,
-        symbol: localDefinition,
-        uri
-      };
+      return createResolution(state, localDefinition, uri);
     }
 
     const identifier = extractIdentifierAtPosition(state.text.replace(/\r\n?/g, "\n"), position);
@@ -149,9 +147,7 @@ export function createDocumentService(): DocumentService {
       }
 
       const localSymbols = getCompletionSymbols(state.analysis, position).map((symbol) => ({
-        moduleName: state.analysis.module.name,
-        symbol,
-        uri
+        ...createResolution(state, symbol, uri)
       }));
       const deduplicated = new Map<string, WorkspaceSymbolResolution>();
 
@@ -223,11 +219,7 @@ function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
 
 function collectWorkspaceSymbols(state: DocumentState): WorkspaceSymbolResolution[] {
   const entries: WorkspaceSymbolResolution[] = [
-    {
-      moduleName: state.analysis.module.name,
-      symbol: state.analysis.symbols.moduleSymbol,
-      uri: state.uri
-    }
+    createResolution(state, state.analysis.symbols.moduleSymbol, state.uri)
   ];
 
   if (state.analysis.source.moduleKind !== "standard") {
@@ -392,11 +384,7 @@ function findModuleSymbols(
   name: string,
   state: DocumentState
 ): WorkspaceSymbolResolution[] {
-  return (moduleSymbolsByName.get(normalizeIdentifier(name)) ?? []).map((symbol) => ({
-    moduleName: state.analysis.module.name,
-    symbol,
-    uri: state.uri
-  }));
+  return (moduleSymbolsByName.get(normalizeIdentifier(name)) ?? []).map((symbol) => createResolution(state, symbol, state.uri));
 }
 
 function getTextInRange(text: string, range: Diagnostic["range"]): string {
@@ -425,6 +413,15 @@ function getFileNameFromUri(uri: string): string | undefined {
   const normalizedUri = uri.startsWith("file:///") ? decodeURIComponent(uri.replace("file:///", "")) : uri;
   const segments = normalizedUri.split(/[\\/]/);
   return segments[segments.length - 1];
+}
+
+function createResolution(state: DocumentState, symbol: SymbolInfo, uri: string): WorkspaceSymbolResolution {
+  return {
+    moduleName: state.analysis.module.name,
+    symbol,
+    typeName: getSymbolTypeName(state.analysis, symbol),
+    uri
+  };
 }
 
 function getDeclarationRange(

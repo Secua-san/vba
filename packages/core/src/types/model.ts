@@ -245,6 +245,19 @@ export interface SymbolTable {
   procedureScopes: ProcedureScope[];
 }
 
+export type TypeInferenceSource = "assignment" | "explicit" | "return";
+
+export interface InferredSymbolType {
+  source: TypeInferenceSource;
+  symbol: SymbolInfo;
+  typeName: string;
+}
+
+export interface TypeInferenceResult {
+  diagnostics: Diagnostic[];
+  symbolTypes: InferredSymbolType[];
+}
+
 export interface OutlineSymbol {
   children?: OutlineSymbol[];
   kind: SymbolKind;
@@ -263,4 +276,5 @@ export interface ParseResult {
 export interface AnalysisResult extends ParseResult {
   diagnostics: Diagnostic[];
   symbols: SymbolTable;
+  typeInference: TypeInferenceResult;
 }

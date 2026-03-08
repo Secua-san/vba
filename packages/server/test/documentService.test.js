@@ -18,7 +18,11 @@ End Sub`
   );
 
   assert.equal(state.analysis.module.name, "Sample");
-  assert.ok(service.getCompletionSymbols(state.uri, { character: 4, line: 5 }).some((resolution) => resolution.symbol.name === "message"));
+  const messageCompletion = service
+    .getCompletionSymbols(state.uri, { character: 4, line: 5 })
+    .find((resolution) => resolution.symbol.name === "message");
+
+  assert.equal(messageCompletion?.typeName, "String");
   assert.equal(service.getDefinition(state.uri, { character: 5, line: 5 })?.symbol.name, "message");
   assert.ok(service.getDocumentSymbols(state.uri)[0]?.children?.some((symbol) => symbol.name === "Demo"));
   assert.deepEqual(
@@ -63,7 +67,9 @@ End Sub`
   const diagnostics = service.getDiagnostics(consumerUri);
   const references = service.getReferences(consumerUri, { character: 18, line: 5 }, true);
 
-  assert.ok(completions.some((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage"));
+  const publicMessageCompletion = completions.find((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage");
+
+  assert.equal(publicMessageCompletion?.typeName, "String");
   assert.equal(definition?.uri, libraryUri);
   assert.equal(definition?.moduleName, "PublicApi");
   assert.equal(definition?.symbol.name, "PublicMessage");
@@ -146,4 +152,27 @@ End Sub`
     references.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
     [`${uri}:6:8`, `${uri}:7:4`]
   );
+});
+
+test("document service exposes inferred type mismatch diagnostics", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/Mismatch.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Mismatch"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+    title = True
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0]?.severity, "warning");
 });
