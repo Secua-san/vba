@@ -76,7 +76,9 @@ export function buildModuleSymbols(parseResult: ParseResult): SymbolTable {
         break;
       case "variableDeclaration":
         for (const declarator of member.declarators) {
-          moduleSymbols.push(createModuleSymbol("variable", declarator.name, declarator.range, declarator.range, declarator.typeName));
+          moduleSymbols.push(
+            createModuleSymbol("variable", declarator.name, declarator.range, declarator.range, declarator.typeName, declarator.arraySuffix)
+          );
         }
         break;
       default:
@@ -118,6 +120,7 @@ export function getAccessibleSymbolsAtLine(symbolTable: SymbolTable, line: numbe
 
 function buildProcedureScope(procedure: ProcedureDeclarationNode): ProcedureScope {
   const symbols: SymbolInfo[] = procedure.parameters.map((parameter) => ({
+    isArray: parameter.arraySuffix,
     kind: "parameter",
     name: parameter.name,
     normalizedName: normalizeIdentifier(parameter.name),
@@ -143,6 +146,7 @@ function buildProcedureScope(procedure: ProcedureDeclarationNode): ProcedureScop
     if (statement.declaredVariables) {
       for (const variable of statement.declaredVariables) {
         symbols.push({
+          isArray: variable.arraySuffix,
           kind: "variable",
           name: variable.name,
           normalizedName: normalizeIdentifier(variable.name),
@@ -180,9 +184,11 @@ function createModuleSymbol(
   name: string,
   range: SymbolInfo["range"],
   selectionRange: SymbolInfo["selectionRange"],
-  typeName?: string
+  typeName?: string,
+  isArray?: boolean
 ): SymbolInfo {
   return {
+    isArray,
     kind,
     name,
     normalizedName: normalizeIdentifier(name),

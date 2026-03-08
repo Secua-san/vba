@@ -296,3 +296,40 @@ End Sub`
     ]
   );
 });
+
+test("document service augments diagnostics for cross-file ByRef argument risks", () => {
+  const service = createDocumentService();
+  const libraryUri = "file:///C:/temp/PublicByRefApi.bas";
+  const consumerUri = "file:///C:/temp/PublicByRefConsumer.bas";
+
+  service.analyzeText(
+    libraryUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefApi"
+Option Explicit
+
+Public Sub UpdateCount(ByRef count As Long)
+End Sub`
+  );
+  service.analyzeText(
+    consumerUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefConsumer"
+Option Explicit
+
+Public Sub Demo()
+    Dim wrongCount As String
+    UpdateCount wrongCount
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(consumerUri).filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(diagnostics.length, 1);
+  assert.equal(
+    diagnostics[0]?.message,
+    "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
+  );
+});
