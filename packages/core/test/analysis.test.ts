@@ -256,6 +256,22 @@ test("analyzeModule reports duplicate definitions in module and procedure scopes
   const result = analyzeModule(`Attribute VB_Name = "Duplicates"
 Option Explicit
 
+Private Type CustomerRecord
+    Id As Long
+End Type
+
+Private Type CustomerRecord
+    Name As String
+End Type
+
+Public Enum StatusKind
+    StatusOpen = 1
+End Enum
+
+Public Enum StatusKind
+    StatusClosed = 2
+End Enum
+
 Private Sub SharedName()
 End Sub
 
@@ -270,10 +286,12 @@ End Sub`, { fileName: "Duplicates.bas" });
 
   const duplicateDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "duplicate-definition");
 
-  assert.equal(duplicateDiagnostics.length, 3);
+  assert.equal(duplicateDiagnostics.length, 5);
   assert.deepEqual(
     duplicateDiagnostics.map((diagnostic) => diagnostic.message),
     [
+      "Duplicate definition 'CustomerRecord' in module scope.",
+      "Duplicate definition 'StatusKind' in module scope.",
       "Duplicate definition 'SharedName' in module scope.",
       "Duplicate definition 'value' in procedure 'Demo'.",
       "Duplicate definition 'title' in procedure 'Demo'."

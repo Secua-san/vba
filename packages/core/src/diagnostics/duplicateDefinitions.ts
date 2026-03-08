@@ -20,7 +20,9 @@ export function collectDuplicateDefinitionDiagnostics(parseResult: ParseResult):
     switch (member.kind) {
       case "constDeclaration":
       case "declareStatement":
+      case "enumDeclaration":
       case "procedureDeclaration":
+      case "typeDeclaration":
         moduleDefinitions.push({
           name: member.name,
           range: member.kind === "procedureDeclaration" ? member.headerRange : member.range

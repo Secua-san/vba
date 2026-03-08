@@ -383,6 +383,22 @@ test("document service exposes duplicate-definition diagnostics", () => {
     `Attribute VB_Name = "Duplicates"
 Option Explicit
 
+Private Type CustomerRecord
+    Id As Long
+End Type
+
+Private Type CustomerRecord
+    Name As String
+End Type
+
+Public Enum StatusKind
+    StatusOpen = 1
+End Enum
+
+Public Enum StatusKind
+    StatusClosed = 2
+End Enum
+
 Private Sub SharedName()
 End Sub
 
@@ -398,10 +414,12 @@ End Sub`
 
   const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "duplicate-definition");
 
-  assert.equal(diagnostics.length, 3);
+  assert.equal(diagnostics.length, 5);
   assert.deepEqual(
     diagnostics.map((diagnostic) => diagnostic.message),
     [
+      "Duplicate definition 'CustomerRecord' in module scope.",
+      "Duplicate definition 'StatusKind' in module scope.",
       "Duplicate definition 'SharedName' in module scope.",
       "Duplicate definition 'value' in procedure 'Demo'.",
       "Duplicate definition 'title' in procedure 'Demo'."
