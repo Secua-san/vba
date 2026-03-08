@@ -98,11 +98,16 @@
   - `.frm` のデザイナー領域は保持しつつ、コード領域だけを整形する
   - server の document formatting provider と extension の smoke test で整形結果を確認する
 
+- [x] 継続行整形
+  - `_` を使う代入、引数列、メソッドチェーンの hanging indent を formatter で安定化する
+  - 引数列の閉じ括弧だけを base indent に戻し、継続行の `_` 前後も最小限正規化する
+  - core / server / extension のテストで継続行専用 fixture の整形結果を確認する
+
 ## 次候補
 
-- [ ] 継続行整形
-  - `_` を使う代入、引数列、メソッドチェーンの hanging indent を安定化する
-  - 既存の構文インデント formatter の上に継続行専用ルールを積み、format provider から同じ入口で使えるようにする
+- [ ] ブロック整形
+  - `ElseIf` / `Case` / `#If` 系を含むブロック境界の改行と整形ルールを整理する
+  - 構文インデント formatter を土台に、継続行以外の block layout を段階的に整える
 
 ## メモ
 

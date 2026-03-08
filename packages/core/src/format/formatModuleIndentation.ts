@@ -1,4 +1,4 @@
-import { buildLogicalLines } from "../parser/text";
+import { buildLogicalLines, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { createSourceDocument } from "../types/helpers";
 
 type BlockKind = "case" | "directiveIf" | "do" | "enum" | "for" | "if" | "procedure" | "select" | "type" | "while" | "with";
@@ -36,6 +36,10 @@ export interface FormatModuleIndentationOptions {
   insertSpaces?: boolean;
 }
 
+interface ContinuationContext {
+  kind: "argumentList" | "assignment" | "generic" | "methodChain";
+}
+
 export function formatModuleIndentation(text: string, options: FormatModuleIndentationOptions = {}): string {
   const lineEnding = text.includes("\r\n") ? "\r\n" : "\n";
   const source = createSourceDocument(text, { fileName: options.fileName });
@@ -54,18 +58,22 @@ export function formatModuleIndentation(text: string, options: FormatModuleInden
     applyPreIndentation(kind, stack);
 
     const baseIndentLevel = getBaseIndentLevel(kind, stack);
+    const physicalLines = source.normalizedLines.slice(logicalLine.startLine, logicalLine.endLine + 1);
+    const continuationContext = getContinuationContext(physicalLines);
 
     for (let lineIndex = logicalLine.startLine; lineIndex <= logicalLine.endLine; lineIndex += 1) {
       const originalLine = source.normalizedLines[lineIndex] ?? "";
-      const trimmedLine = originalLine.trimStart();
+      const trimmedLine = trimLogicalLinePreservingContinuation(originalLine, lineIndex < logicalLine.endLine);
 
       if (trimmedLine.length === 0) {
         formattedLines[lineIndex] = "";
         continue;
       }
 
-      const continuationOffset = lineIndex === logicalLine.startLine ? 0 : continuationIndentLevels;
-      const indentLevel = isLabelLine(trimmedLine) ? 0 : baseIndentLevel + continuationOffset;
+      const indentLevel =
+        lineIndex === logicalLine.startLine
+          ? getIndentLevelForFirstLine(trimmedLine, baseIndentLevel)
+          : getIndentLevelForContinuationLine(trimmedLine, baseIndentLevel, continuationIndentLevels, continuationContext);
       formattedLines[lineIndex] = indentUnit.repeat(Math.max(0, indentLevel)) + trimmedLine;
     }
 
@@ -279,4 +287,78 @@ function popTop(stack: BlockKind[], expected: BlockKind): void {
   if (stack.at(-1) === expected) {
     stack.pop();
   }
+}
+
+function getContinuationContext(lines: string[]): ContinuationContext {
+  const trimmedContinuationLines = lines.slice(1).map((line) => line.trimStart());
+
+  if (trimmedContinuationLines.some((line) => line.startsWith("."))) {
+    return { kind: "methodChain" };
+  }
+
+  const firstLine = lines[0] ?? "";
+  const { code } = splitCodeAndComment(firstLine);
+  const continuationAnchor = code.replace(/\s+_\s*$/, "").trimEnd();
+  const scrubbedAnchor = removeStringAndDateLiterals(continuationAnchor);
+
+  if (getParenthesisBalance(scrubbedAnchor) > 0) {
+    return { kind: "argumentList" };
+  }
+
+  if (/^\s*(?:Set\s+)?[A-Za-z_][A-Za-z0-9_\.]*(?:\([^)]*\))?\s*=.*$/iu.test(continuationAnchor)) {
+    return { kind: "assignment" };
+  }
+
+  return { kind: "generic" };
+}
+
+function getIndentLevelForContinuationLine(
+  trimmedLine: string,
+  baseIndentLevel: number,
+  continuationIndentLevels: number,
+  context: ContinuationContext
+): number {
+  if (isStandaloneClosingParenthesisLine(trimmedLine) && context.kind === "argumentList") {
+    return baseIndentLevel;
+  }
+
+  return baseIndentLevel + continuationIndentLevels;
+}
+
+function getIndentLevelForFirstLine(trimmedLine: string, baseIndentLevel: number): number {
+  return isLabelLine(trimmedLine) ? 0 : baseIndentLevel;
+}
+
+function getParenthesisBalance(text: string): number {
+  let balance = 0;
+
+  for (const character of text) {
+    if (character === "(") {
+      balance += 1;
+      continue;
+    }
+
+    if (character === ")") {
+      balance -= 1;
+    }
+  }
+
+  return balance;
+}
+
+function isStandaloneClosingParenthesisLine(trimmedLine: string): boolean {
+  const { code } = splitCodeAndComment(trimmedLine);
+  return /^\)\s*(?:_)?\s*$/u.test(code.trimEnd());
+}
+
+function trimLogicalLinePreservingContinuation(line: string, preserveContinuationSuffix: boolean): string {
+  const trimmedLine = line.trimStart().trimEnd();
+
+  if (!preserveContinuationSuffix) {
+    return trimmedLine;
+  }
+
+  const { code, comment } = splitCodeAndComment(trimmedLine);
+  const normalizedCode = code.replace(/\s+_\s*$/, " _").trimEnd();
+  return normalizedCode + (comment ?? "");
 }

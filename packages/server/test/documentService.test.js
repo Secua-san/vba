@@ -205,6 +205,59 @@ End Sub`
   );
 });
 
+test("document service formats continued assignments, argument lists, and method chains", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/ContinuationFormatting.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ContinuationFormatting"
+Option Explicit
+
+Public Sub Demo()
+Dim message As String
+message =   _
+"prefix" &  _
+"suffix"
+
+Debug.Print JoinValues( _
+message, _
+"tail" _
+)
+
+message = CreateBuilder() _
+.WithName(message) _
+.WithSuffix("!")
+End Sub`
+  );
+
+  const formatted = service.formatDocument(uri, { insertSpaces: true, tabSize: 4 });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "ContinuationFormatting"
+Option Explicit
+
+Public Sub Demo()
+    Dim message As String
+    message = _
+        "prefix" & _
+        "suffix"
+
+    Debug.Print JoinValues( _
+        message, _
+        "tail" _
+    )
+
+    message = CreateBuilder() _
+        .WithName(message) _
+        .WithSuffix("!")
+End Sub`
+  );
+});
+
 test("document service keeps ambiguous cross-file symbols conservative", () => {
   const service = createDocumentService();
   const consumerUri = "file:///C:/temp/Consumer.bas";

@@ -169,6 +169,50 @@ Public Sub Demo()
     End If
 End Sub`));
 
+  const continuationDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ContinuationFormatting.bas"));
+  await vscode.window.showTextDocument(continuationDocument);
+
+  const formattedContinuationText = await waitForFormattedDocument(
+    continuationDocument,
+    `Attribute VB_Name = "ContinuationFormatting"
+Option Explicit
+
+Public Sub Demo()
+    Dim message As String
+    message = _
+        "prefix" & _
+        "suffix"
+
+    Debug.Print JoinValues( _
+        message, _
+        "tail" _
+    )
+
+    message = CreateBuilder() _
+        .WithName(message) _
+        .WithSuffix("!")
+End Sub`
+  );
+
+  assert.equal(normalizeText(formattedContinuationText), normalizeText(`Attribute VB_Name = "ContinuationFormatting"
+Option Explicit
+
+Public Sub Demo()
+    Dim message As String
+    message = _
+        "prefix" & _
+        "suffix"
+
+    Debug.Print JoinValues( _
+        message, _
+        "tail" _
+    )
+
+    message = CreateBuilder() _
+        .WithName(message) _
+        .WithSuffix("!")
+End Sub`));
+
   const snippetDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "SnippetCompletions.bas"));
   await vscode.window.showTextDocument(snippetDocument);
 
