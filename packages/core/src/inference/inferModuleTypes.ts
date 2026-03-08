@@ -61,7 +61,19 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
       const targetTypeName = getSymbolTypeNameFromMap(symbolTypes, targetSymbol) ?? targetSymbol.typeName;
 
       if (targetTypeName) {
-        if (!areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: assignment.isSet })) {
+        const missingSetAssignment = shouldWarnMissingSetAssignment(targetTypeName, inferredExpressionType, assignment.isSet);
+        const compatibleWithSet = areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: true });
+
+        if (missingSetAssignment) {
+          diagnostics.push({
+            code: "set-required",
+            message: `Set is required to assign ${inferredExpressionType} to ${targetTypeName}.`,
+            range: assignment.targetRange,
+            severity: "warning"
+          });
+        }
+
+        if (!areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: assignment.isSet }) && (!missingSetAssignment || !compatibleWithSet)) {
           diagnostics.push({
             code: "type-mismatch",
             message: `Type mismatch: cannot assign ${inferredExpressionType} to ${targetTypeName}.`,
@@ -529,6 +541,25 @@ function getAdjacentNonWhitespaceCharacter(text: string, startIndex: number, dir
 
 function isReferenceTypeName(typeName: string): boolean {
   return !SCALAR_TYPES.has(typeName);
+}
+
+function shouldWarnMissingSetAssignment(targetTypeName: string, valueTypeName: string, isSetAssignment: boolean): boolean {
+  if (isSetAssignment) {
+    return false;
+  }
+
+  const normalizedTargetType = normalizeTypeName(targetTypeName);
+  const normalizedValueType = normalizeTypeName(valueTypeName);
+
+  if (!isReferenceTypeName(normalizedTargetType)) {
+    return false;
+  }
+
+  if (normalizedValueType === "nothing") {
+    return true;
+  }
+
+  return isReferenceTypeName(normalizedValueType);
 }
 
 function splitTopLevelExpression(

@@ -333,3 +333,41 @@ End Sub`
     "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
   );
 });
+
+test("document service exposes set-required diagnostics for local object assignments", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/SetRequired.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "SetRequired"
+Option Explicit
+
+Private Function BuildItems() As Collection
+    Set BuildItems = New Collection
+End Function
+
+Public Sub Demo()
+    Dim items As Collection
+    Dim holder As Object
+    items = New Collection
+    holder = BuildItems()
+    items = Nothing
+    Set items = New Collection
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "set-required");
+
+  assert.equal(diagnostics.length, 3);
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Set is required to assign Collection to Collection.",
+      "Set is required to assign Collection to Object.",
+      "Set is required to assign Nothing to Collection."
+    ]
+  );
+});
