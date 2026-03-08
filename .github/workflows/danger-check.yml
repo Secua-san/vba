@@ -1,0 +1,19 @@
+name: Danger Change Detection
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  danger-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check dangerous changes
+        run: |
+          git diff --name-only origin/main...HEAD > changed.txt
+          if grep -E "(auth|permission|billing|migration|schema|infra|secret|\.env)" changed.txt; then
+            echo "❌ Dangerous changes detected. Human review required."
+            exit 1
+          fi

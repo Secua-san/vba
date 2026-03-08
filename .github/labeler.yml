@@ -1,0 +1,10 @@
+parser:
+  - packages/core/**
+lsp:
+  - packages/server/**
+extension:
+  - packages/extension/**
+docs:
+  - docs/**
+ci:
+  - .github/**
