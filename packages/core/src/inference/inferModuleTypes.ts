@@ -61,7 +61,25 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
       const targetTypeName = getSymbolTypeNameFromMap(symbolTypes, targetSymbol) ?? targetSymbol.typeName;
 
       if (targetTypeName) {
-        if (!areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: assignment.isSet })) {
+        const missingSetAssignment = shouldWarnMissingSetAssignment(
+          symbolTable,
+          targetSymbol,
+          targetTypeName,
+          inferredExpressionType,
+          assignment.isSet
+        );
+        const compatibleWithSet = areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: true });
+
+        if (missingSetAssignment) {
+          diagnostics.push({
+            code: "set-required",
+            message: `Set is required to assign ${inferredExpressionType} to ${targetTypeName}.`,
+            range: assignment.targetRange,
+            severity: "warning"
+          });
+        }
+
+        if (!areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: assignment.isSet }) && (!missingSetAssignment || !compatibleWithSet)) {
           diagnostics.push({
             code: "type-mismatch",
             message: `Type mismatch: cannot assign ${inferredExpressionType} to ${targetTypeName}.`,
@@ -529,6 +547,47 @@ function getAdjacentNonWhitespaceCharacter(text: string, startIndex: number, dir
 
 function isReferenceTypeName(typeName: string): boolean {
   return !SCALAR_TYPES.has(typeName);
+}
+
+function shouldWarnMissingSetAssignment(
+  symbolTable: SymbolTable,
+  targetSymbol: SymbolInfo,
+  targetTypeName: string,
+  valueTypeName: string,
+  isSetAssignment: boolean
+): boolean {
+  if (isSetAssignment) {
+    return false;
+  }
+
+  const normalizedTargetType = normalizeTypeName(targetTypeName);
+  const normalizedValueType = normalizeTypeName(valueTypeName);
+
+  if (!isObjectReferenceType(symbolTable, targetSymbol, normalizedTargetType)) {
+    return false;
+  }
+
+  if (normalizedValueType === "nothing") {
+    return true;
+  }
+
+  return isObjectReferenceType(symbolTable, undefined, normalizedValueType);
+}
+
+function isObjectReferenceType(symbolTable: SymbolTable, symbol: SymbolInfo | undefined, normalizedTypeName: string): boolean {
+  if (!isReferenceTypeName(normalizedTypeName) || normalizedTypeName === "variant") {
+    return false;
+  }
+
+  if (symbol?.isArray) {
+    return false;
+  }
+
+  const localUserDefinedType = symbolTable.moduleSymbols.find(
+    (entry) => (entry.kind === "enum" || entry.kind === "type") && normalizeTypeName(entry.name) === normalizedTypeName
+  );
+
+  return !localUserDefinedType;
 }
 
 function splitTopLevelExpression(

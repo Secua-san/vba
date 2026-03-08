@@ -201,3 +201,53 @@ End Sub`, { fileName: "ByRefRisks.bas" });
     ]
   );
 });
+
+test("analyzeModule warns when object assignments omit Set", () => {
+  const result = analyzeModule(`Attribute VB_Name = "SetRequired"
+Option Explicit
+
+Private Function BuildItems() As Collection
+    Set BuildItems = New Collection
+End Function
+
+Public Sub Demo()
+    Dim items As Collection
+    Dim holder As Object
+    items = New Collection
+    holder = BuildItems()
+    items = Nothing
+    Set items = New Collection
+End Sub`, { fileName: "SetRequired.bas" });
+
+  const setDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "set-required");
+  const typeMismatchDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(setDiagnostics.length, 3);
+  assert.deepEqual(
+    setDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Set is required to assign Collection to Collection.",
+      "Set is required to assign Collection to Object.",
+      "Set is required to assign Nothing to Collection."
+    ]
+  );
+  assert.equal(typeMismatchDiagnostics.length, 0);
+});
+
+test("analyzeModule does not require Set for user-defined types", () => {
+  const result = analyzeModule(`Attribute VB_Name = "UserTypes"
+Option Explicit
+
+Private Type ItemInfo
+    Value As Long
+End Type
+
+Public Sub Demo()
+    Dim leftValue As ItemInfo
+    Dim rightValue As ItemInfo
+    leftValue = rightValue
+End Sub`, { fileName: "UserTypes.bas" });
+
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
