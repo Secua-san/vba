@@ -236,6 +236,71 @@ End Sub`
   );
 });
 
+test("document service prepares safe local rename edits within one procedure", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/RenameLocal.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "RenameLocal"
+Option Explicit
+
+Public Sub Demo()
+    Dim totalCount As Long
+    Dim message As String
+    totalCount = 1
+    message = totalCount
+    Debug.Print totalCount
+End Sub
+
+Public Sub OtherDemo()
+    Dim totalCount As Long
+    totalCount = 2
+End Sub`
+  );
+
+  const target = service.prepareRename(uri, { character: 6, line: 6 });
+  const edits = service.getRenameEdits(uri, { character: 6, line: 6 }, "currentCount");
+
+  assert.equal(target?.placeholder, "totalCount");
+  assert.equal(`${target?.range.start.line}:${target?.range.start.character}`, "6:4");
+  assert.deepEqual(
+    edits?.map((edit) => `${edit.uri}:${edit.range.start.line}:${edit.range.start.character}:${edit.newText}`),
+    [
+      `${uri}:4:8:currentCount`,
+      `${uri}:6:4:currentCount`,
+      `${uri}:7:14:currentCount`,
+      `${uri}:8:16:currentCount`
+    ]
+  );
+});
+
+test("document service rejects unsafe local rename targets and names", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/RenameLocal.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "RenameLocal"
+Option Explicit
+
+Public Sub Demo(ByVal inputValue As Long)
+    Dim totalCount As Long
+    Dim message As String
+    totalCount = inputValue
+    message = totalCount
+End Sub`
+  );
+
+  assert.equal(service.prepareRename(uri, { character: 20, line: 3 }), undefined);
+  assert.equal(service.getRenameEdits(uri, { character: 6, line: 6 }, "message"), undefined);
+  assert.equal(service.getRenameEdits(uri, { character: 6, line: 6 }, "Sub"), undefined);
+});
+
 test("document service exposes inferred type mismatch diagnostics", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/Mismatch.bas";

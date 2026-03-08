@@ -17,6 +17,7 @@ import {
   type SourceRange,
   type SymbolInfo
 } from "../../../core/src/index";
+import { BUILTIN_IDENTIFIERS, VBA_KEYWORDS } from "../../../core/src/lexer/keywords";
 
 export interface DocumentState {
   analysis: AnalysisResult;
@@ -34,6 +35,17 @@ export interface WorkspaceSymbolResolution {
 }
 
 export interface WorkspaceReference {
+  range: SourceRange;
+  uri: string;
+}
+
+export interface RenameTarget {
+  placeholder: string;
+  range: SourceRange;
+}
+
+export interface RenameTextEdit {
+  newText: string;
   range: SourceRange;
   uri: string;
 }
@@ -57,7 +69,9 @@ export interface DocumentService {
   getDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined;
   getDiagnostics: (uri: string) => Diagnostic[];
   getDocumentSymbols: (uri: string) => ReturnType<typeof getDocumentOutline>;
+  getRenameEdits: (uri: string, position: LinePosition, newName: string) => RenameTextEdit[] | undefined;
   getReferences: (uri: string, position: LinePosition, includeDeclaration: boolean) => WorkspaceReference[];
+  prepareRename: (uri: string, position: LinePosition) => RenameTarget | undefined;
   getSignatureHelp: (uri: string, position: LinePosition) => SignatureHint | undefined;
   getState: (uri: string) => DocumentState | undefined;
   remove: (uri: string) => void;
@@ -66,6 +80,38 @@ export interface DocumentService {
 export function createDocumentService(): DocumentService {
   const documentStates = new Map<string, DocumentState>();
   let workspaceIndex = createWorkspaceIndex([]);
+
+  function resolveLocalRenameTarget(uri: string, position: LinePosition): {
+    range: SourceRange;
+    resolution: WorkspaceSymbolResolution;
+    state: DocumentState;
+    scope: LocalProcedureScope;
+  } | undefined {
+    const state = documentStates.get(uri);
+
+    if (!state) {
+      return undefined;
+    }
+
+    const resolution = resolveDefinition(uri, position);
+    const range = getIdentifierRangeAtPosition(state.text, position);
+
+    if (
+      !resolution ||
+      !range ||
+      resolution.uri !== uri ||
+      resolution.symbol.scope !== "procedure" ||
+      resolution.symbol.kind !== "variable"
+    ) {
+      return undefined;
+    }
+
+    const scope = state.analysis.symbols.procedureScopes.find((item) =>
+      item.symbols.some((symbol) => isSameSymbol(symbol, resolution.symbol))
+    );
+
+    return scope ? { range, resolution, scope, state } : undefined;
+  }
 
   function resolveDefinition(uri: string, position: LinePosition): WorkspaceSymbolResolution | undefined {
     const state = documentStates.get(uri);
@@ -214,8 +260,37 @@ export function createDocumentService(): DocumentService {
       const state = documentStates.get(uri);
       return state ? getDocumentOutline(state.analysis) : [];
     },
+    getRenameEdits(uri: string, position: LinePosition, newName: string): RenameTextEdit[] | undefined {
+      const renameTarget = resolveLocalRenameTarget(uri, position);
+
+      if (!renameTarget || !isValidRenameIdentifier(newName) || hasRenameConflict(renameTarget, newName)) {
+        return undefined;
+      }
+
+      return getReferenceMatches(uri, position, true)
+        .filter(
+          (reference) =>
+            reference.uri === renameTarget.resolution.uri &&
+            rangeIsWithin(renameTarget.scope.procedure.range, reference.range)
+        )
+        .map((reference) => ({
+          newText: newName,
+          range: reference.range,
+          uri: reference.uri
+        }));
+    },
     getReferences(uri: string, position: LinePosition, includeDeclaration: boolean): WorkspaceReference[] {
       return getReferenceMatches(uri, position, includeDeclaration);
+    },
+    prepareRename(uri: string, position: LinePosition): RenameTarget | undefined {
+      const renameTarget = resolveLocalRenameTarget(uri, position);
+
+      return renameTarget
+        ? {
+            placeholder: renameTarget.resolution.symbol.name,
+            range: renameTarget.range
+          }
+        : undefined;
     },
     getSignatureHelp(uri: string, position: LinePosition): SignatureHint | undefined {
       const state = documentStates.get(uri);
@@ -268,6 +343,7 @@ interface WorkspaceIndex {
   entries: WorkspaceSymbolResolution[];
 }
 
+type LocalProcedureScope = DocumentState["analysis"]["symbols"]["procedureScopes"][number];
 type CallableMember = Extract<AnalysisResult["module"]["members"][number], { kind: "declareStatement" | "procedureDeclaration" }>;
 
 interface CallContext {
@@ -471,6 +547,69 @@ function deduplicateDiagnostics(diagnostics: Diagnostic[]): Diagnostic[] {
   }
 
   return [...deduplicated.values()];
+}
+
+function hasRenameConflict(
+  renameTarget: {
+    resolution: WorkspaceSymbolResolution;
+    state: DocumentState;
+    scope: LocalProcedureScope;
+  },
+  newName: string
+): boolean {
+  const normalizedName = normalizeIdentifier(newName);
+  const accessibleSymbols = [
+    renameTarget.state.analysis.symbols.moduleSymbol,
+    ...renameTarget.state.analysis.symbols.moduleSymbols,
+    ...renameTarget.scope.symbols
+  ];
+
+  return accessibleSymbols.some(
+    (symbol) => symbol.normalizedName === normalizedName && !isSameSymbol(symbol, renameTarget.resolution.symbol)
+  );
+}
+
+function getIdentifierRangeAtPosition(text: string, position: LinePosition): SourceRange | undefined {
+  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line];
+
+  if (line === undefined) {
+    return undefined;
+  }
+
+  for (const match of line.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+    const startCharacter = match.index ?? 0;
+    const endCharacter = startCharacter + match[0].length;
+
+    if (position.character < startCharacter || position.character > endCharacter) {
+      continue;
+    }
+
+    return {
+      start: {
+        character: startCharacter,
+        line: position.line
+      },
+      end: {
+        character: endCharacter,
+        line: position.line
+      }
+    };
+  }
+
+  return undefined;
+}
+
+function isValidRenameIdentifier(name: string): boolean {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(name)) {
+    return false;
+  }
+
+  const normalizedName = normalizeIdentifier(name);
+  return !VBA_KEYWORDS.has(normalizedName) && !BUILTIN_IDENTIFIERS.has(normalizedName);
+}
+
+function rangeIsWithin(outer: SourceRange, inner: SourceRange): boolean {
+  return comparePositions(outer.start, inner.start) <= 0 && comparePositions(outer.end, inner.end) >= 0;
 }
 
 function narrowCompletionByAssignmentTarget(
@@ -904,16 +1043,28 @@ function getDeclarationRange(
   return target.symbol.selectionRange;
 }
 
-function isSameResolution(left: WorkspaceSymbolResolution, right: WorkspaceSymbolResolution): boolean {
+function isSameSymbol(left: SymbolInfo, right: SymbolInfo): boolean {
   return (
-    left.uri === right.uri &&
-    left.symbol.kind === right.symbol.kind &&
-    left.symbol.normalizedName === right.symbol.normalizedName &&
-    left.symbol.selectionRange.start.line === right.symbol.selectionRange.start.line &&
-    left.symbol.selectionRange.start.character === right.symbol.selectionRange.start.character &&
-    left.symbol.selectionRange.end.line === right.symbol.selectionRange.end.line &&
-    left.symbol.selectionRange.end.character === right.symbol.selectionRange.end.character
+    left.scope === right.scope &&
+    left.kind === right.kind &&
+    left.normalizedName === right.normalizedName &&
+    left.selectionRange.start.line === right.selectionRange.start.line &&
+    left.selectionRange.start.character === right.selectionRange.start.character &&
+    left.selectionRange.end.line === right.selectionRange.end.line &&
+    left.selectionRange.end.character === right.selectionRange.end.character
   );
+}
+
+function isSameResolution(left: WorkspaceSymbolResolution, right: WorkspaceSymbolResolution): boolean {
+  return left.uri === right.uri && isSameSymbol(left.symbol, right.symbol);
+}
+
+function comparePositions(left: LinePosition, right: LinePosition): number {
+  if (left.line !== right.line) {
+    return left.line - right.line;
+  }
+
+  return left.character - right.character;
 }
 
 function isWorkspaceVisible(modifier?: string): boolean {
