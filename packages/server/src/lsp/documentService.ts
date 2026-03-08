@@ -5,9 +5,12 @@ import {
   getCompletionSymbols,
   getDocumentOutline,
   normalizeIdentifier,
+  removeStringAndDateLiterals,
+  splitCodeAndComment,
   type AnalysisResult,
   type Diagnostic,
   type LinePosition,
+  type SourceRange,
   type SymbolInfo
 } from "../../../core/src/index";
 
@@ -25,12 +28,18 @@ export interface WorkspaceSymbolResolution {
   uri: string;
 }
 
+export interface WorkspaceReference {
+  range: SourceRange;
+  uri: string;
+}
+
 export interface DocumentService {
   analyzeText: (uri: string, languageId: string, version: number, text: string) => DocumentState;
   getCompletionSymbols: (uri: string, position: LinePosition) => WorkspaceSymbolResolution[];
   getDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined;
   getDiagnostics: (uri: string) => Diagnostic[];
   getDocumentSymbols: (uri: string) => ReturnType<typeof getDocumentOutline>;
+  getReferences: (uri: string, position: LinePosition, includeDeclaration: boolean) => WorkspaceReference[];
   getState: (uri: string) => DocumentState | undefined;
   remove: (uri: string) => void;
 }
@@ -38,6 +47,85 @@ export interface DocumentService {
 export function createDocumentService(): DocumentService {
   const documentStates = new Map<string, DocumentState>();
   let workspaceIndex = createWorkspaceIndex([]);
+
+  function resolveDefinition(uri: string, position: LinePosition): WorkspaceSymbolResolution | undefined {
+    const state = documentStates.get(uri);
+
+    if (!state) {
+      return undefined;
+    }
+
+    const localDefinition = findDefinition(state.analysis, position);
+
+    if (localDefinition) {
+      return {
+        moduleName: state.analysis.module.name,
+        symbol: localDefinition,
+        uri
+      };
+    }
+
+    const identifier = extractIdentifierAtPosition(state.text.replace(/\r\n?/g, "\n"), position);
+
+    if (!identifier) {
+      return undefined;
+    }
+
+    const matches = workspaceIndex.byNormalizedName
+      .get(normalizeIdentifier(identifier))
+      ?.filter((resolution) => resolution.uri !== uri) ?? [];
+
+    return matches.length === 1 ? matches[0] : undefined;
+  }
+
+  function getFilteredDiagnostics(uri: string): Diagnostic[] {
+    const state = documentStates.get(uri);
+
+    if (!state) {
+      return [];
+    }
+
+    return state.analysis.diagnostics.filter((diagnostic) => {
+      if (diagnostic.code !== "undeclared-variable") {
+        return true;
+      }
+
+      const identifier = getDiagnosticIdentifier(state.text, diagnostic);
+
+      if (!identifier) {
+        return true;
+      }
+
+      const matches = workspaceIndex.byNormalizedName
+        .get(normalizeIdentifier(identifier))
+        ?.filter((resolution) => resolution.uri !== uri && resolution.symbol.kind !== "module") ?? [];
+
+      return matches.length !== 1;
+    });
+  }
+
+  function getReferenceMatches(uri: string, position: LinePosition, includeDeclaration: boolean): WorkspaceReference[] {
+    const target = resolveDefinition(uri, position);
+
+    if (!target) {
+      return [];
+    }
+
+    const references = includeDeclaration
+      ? [
+          {
+            range: getDeclarationRange(documentStates.get(target.uri), target, resolveDefinition),
+            uri: target.uri
+          }
+        ]
+      : [];
+
+    for (const state of documentStates.values()) {
+      references.push(...collectReferencesForState(state, target, resolveDefinition));
+    }
+
+    return deduplicateReferences(references);
+  }
 
   return {
     analyzeText(uri: string, languageId: string, version: number, text: string): DocumentState {
@@ -86,62 +174,17 @@ export function createDocumentService(): DocumentService {
       return [...deduplicated.values()];
     },
     getDefinition(uri: string, position: LinePosition): WorkspaceSymbolResolution | undefined {
-      const state = documentStates.get(uri);
-
-      if (!state) {
-        return undefined;
-      }
-
-      const localDefinition = findDefinition(state.analysis, position);
-
-      if (localDefinition) {
-        return {
-          moduleName: state.analysis.module.name,
-          symbol: localDefinition,
-          uri
-        };
-      }
-
-      const identifier = extractIdentifierAtPosition(state.text.replace(/\r\n?/g, "\n"), position);
-
-      if (!identifier) {
-        return undefined;
-      }
-
-      const matches = workspaceIndex.byNormalizedName
-        .get(normalizeIdentifier(identifier))
-        ?.filter((resolution) => resolution.uri !== uri) ?? [];
-
-      return matches.length === 1 ? matches[0] : undefined;
+      return resolveDefinition(uri, position);
     },
     getDiagnostics(uri: string): Diagnostic[] {
-      const state = documentStates.get(uri);
-
-      if (!state) {
-        return [];
-      }
-
-      return state.analysis.diagnostics.filter((diagnostic) => {
-        if (diagnostic.code !== "undeclared-variable") {
-          return true;
-        }
-
-        const identifier = getDiagnosticIdentifier(state.text, diagnostic);
-
-        if (!identifier) {
-          return true;
-        }
-
-        const matches = workspaceIndex.byNormalizedName
-          .get(normalizeIdentifier(identifier))
-          ?.filter((resolution) => resolution.uri !== uri && resolution.symbol.kind !== "module") ?? [];
-
-        return matches.length !== 1;
-      });
+      return getFilteredDiagnostics(uri);
     },
     getDocumentSymbols(uri: string) {
       const state = documentStates.get(uri);
       return state ? getDocumentOutline(state.analysis) : [];
+    },
+    getReferences(uri: string, position: LinePosition, includeDeclaration: boolean): WorkspaceReference[] {
+      return getReferenceMatches(uri, position, includeDeclaration);
     },
     getState(uri: string): DocumentState | undefined {
       return documentStates.get(uri);
@@ -249,6 +292,73 @@ function collectWorkspaceSymbols(state: DocumentState): WorkspaceSymbolResolutio
   return deduplicateWorkspaceEntries(entries);
 }
 
+function collectReferencesForState(
+  state: DocumentState,
+  target: WorkspaceSymbolResolution,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): WorkspaceReference[] {
+  const lines = state.text.replace(/\r\n?/g, "\n").split("\n");
+  const references: WorkspaceReference[] = [];
+
+  for (const member of state.analysis.module.members) {
+    if (member.kind !== "procedureDeclaration") {
+      continue;
+    }
+
+    for (const statement of member.body) {
+      if (statement.kind !== "executableStatement") {
+        continue;
+      }
+
+      for (let lineIndex = statement.range.start.line; lineIndex <= statement.range.end.line; lineIndex += 1) {
+        const line = lines[lineIndex];
+
+        if (line === undefined) {
+          continue;
+        }
+
+        const { code } = splitCodeAndComment(line);
+        const scrubbed = removeStringAndDateLiterals(code);
+
+        for (const match of scrubbed.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+          const identifier = match[0];
+          const normalizedIdentifier = normalizeIdentifier(identifier);
+          const startIndex = match.index ?? 0;
+          const nextCharacter = scrubbed[startIndex + identifier.length] ?? "";
+
+          if (normalizedIdentifier !== target.symbol.normalizedName) {
+            continue;
+          }
+
+          if (nextCharacter === ":" && startIndex === 0) {
+            continue;
+          }
+
+          const resolution = resolveDefinition(state.uri, { character: startIndex, line: lineIndex });
+
+          if (resolution && isSameResolution(resolution, target)) {
+            references.push({
+              range: {
+                start: {
+                  character: startIndex,
+                  line: lineIndex
+                },
+                end: {
+                  character: startIndex + identifier.length,
+                  line: lineIndex
+                }
+              },
+              uri: state.uri
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return references;
+}
+
 function deduplicateWorkspaceEntries(entries: WorkspaceSymbolResolution[]): WorkspaceSymbolResolution[] {
   const deduplicated = new Map<string, WorkspaceSymbolResolution>();
 
@@ -257,6 +367,20 @@ function deduplicateWorkspaceEntries(entries: WorkspaceSymbolResolution[]): Work
 
     if (!deduplicated.has(key)) {
       deduplicated.set(key, entry);
+    }
+  }
+
+  return [...deduplicated.values()];
+}
+
+function deduplicateReferences(references: WorkspaceReference[]): WorkspaceReference[] {
+  const deduplicated = new Map<string, WorkspaceReference>();
+
+  for (const reference of references) {
+    const key = `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}:${reference.range.end.line}:${reference.range.end.character}`;
+
+    if (!deduplicated.has(key)) {
+      deduplicated.set(key, reference);
     }
   }
 
@@ -301,6 +425,82 @@ function getFileNameFromUri(uri: string): string | undefined {
   const normalizedUri = uri.startsWith("file:///") ? decodeURIComponent(uri.replace("file:///", "")) : uri;
   const segments = normalizedUri.split(/[\\/]/);
   return segments[segments.length - 1];
+}
+
+function getDeclarationRange(
+  state: DocumentState | undefined,
+  target: WorkspaceSymbolResolution,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): SourceRange {
+  if (!state) {
+    return target.symbol.selectionRange;
+  }
+
+  const lines = state.text.replace(/\r\n?/g, "\n").split("\n");
+
+  for (let lineIndex = target.symbol.selectionRange.start.line; lineIndex <= target.symbol.selectionRange.end.line; lineIndex += 1) {
+    const line = lines[lineIndex];
+
+    if (line === undefined) {
+      continue;
+    }
+
+    const { code } = splitCodeAndComment(line);
+    const scrubbed = removeStringAndDateLiterals(code);
+
+    for (const match of scrubbed.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+      const identifier = match[0];
+      const startIndex = match.index ?? 0;
+
+      if (normalizeIdentifier(identifier) !== target.symbol.normalizedName) {
+        continue;
+      }
+
+      if (lineIndex === target.symbol.selectionRange.start.line && startIndex < target.symbol.selectionRange.start.character) {
+        continue;
+      }
+
+      if (
+        lineIndex === target.symbol.selectionRange.end.line &&
+        startIndex + identifier.length > target.symbol.selectionRange.end.character
+      ) {
+        continue;
+      }
+
+      const range = {
+        start: {
+          character: startIndex,
+          line: lineIndex
+        },
+        end: {
+          character: startIndex + identifier.length,
+          line: lineIndex
+        }
+      };
+
+      const resolution = resolveDefinition(state.uri, range.start);
+
+      if (!resolution || !isSameResolution(resolution, target)) {
+        continue;
+      }
+
+      return range;
+    }
+  }
+
+  return target.symbol.selectionRange;
+}
+
+function isSameResolution(left: WorkspaceSymbolResolution, right: WorkspaceSymbolResolution): boolean {
+  return (
+    left.uri === right.uri &&
+    left.symbol.kind === right.symbol.kind &&
+    left.symbol.normalizedName === right.symbol.normalizedName &&
+    left.symbol.selectionRange.start.line === right.symbol.selectionRange.start.line &&
+    left.symbol.selectionRange.start.character === right.symbol.selectionRange.start.character &&
+    left.symbol.selectionRange.end.line === right.symbol.selectionRange.end.line &&
+    left.symbol.selectionRange.end.character === right.symbol.selectionRange.end.character
+  );
 }
 
 function isWorkspaceVisible(modifier?: string): boolean {

@@ -74,3 +74,23 @@ End Sub`, { fileName: "UserForm1.frm" });
   assert.equal(definition?.name, "message");
   assert.ok(outline[0]?.children?.some((symbol) => symbol.name === "ShowMessage"));
 });
+
+test("findDefinition prefers the declaration under the cursor when names are shadowed", () => {
+  const result = analyzeModule(`Attribute VB_Name = "Shadowing"
+Option Explicit
+
+Public Const SharedValue As Long = 1
+
+Public Sub Demo()
+    Dim SharedValue As Long
+    SharedValue = 2
+End Sub`, { fileName: "Shadowing.bas" });
+
+  const declarationDefinition = findDefinition(result, { character: 8, line: 6 });
+  const usageDefinition = findDefinition(result, { character: 8, line: 7 });
+
+  assert.equal(declarationDefinition?.kind, "variable");
+  assert.equal(declarationDefinition?.scope, "procedure");
+  assert.equal(usageDefinition?.kind, "variable");
+  assert.equal(usageDefinition?.scope, "procedure");
+});
