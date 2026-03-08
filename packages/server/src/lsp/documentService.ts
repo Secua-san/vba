@@ -5,20 +5,26 @@ import {
   extractIdentifierAtPosition,
   findDefinition,
   formatModuleIndentation,
+  getBuiltinCompletionItems,
+  getBuiltinReferenceItem,
   getCompletionSymbols,
   getDocumentOutline,
   inferExpressionTypeAtLine,
+  isReservedOrBuiltinIdentifier,
   getSymbolTypeName,
   normalizeIdentifier,
   removeStringAndDateLiterals,
   splitCodeAndComment,
   type AnalysisResult,
+  type BuiltinCompletionKind,
+  type BuiltinReferenceItem,
+  type BuiltinSemanticModifier,
+  type BuiltinSemanticType,
   type Diagnostic,
   type LinePosition,
   type SourceRange,
   type SymbolInfo
 } from "../../../core/src/index";
-import { BUILTIN_IDENTIFIERS, VBA_KEYWORDS } from "../../../core/src/lexer/keywords";
 
 export interface DocumentState {
   analysis: AnalysisResult;
@@ -29,7 +35,12 @@ export interface DocumentState {
 }
 
 export interface WorkspaceSymbolResolution {
+  completionItemKind?: BuiltinCompletionKind;
+  documentation?: string;
+  isBuiltIn?: boolean;
   moduleName: string;
+  semanticModifiers?: BuiltinSemanticModifier[];
+  semanticType?: BuiltinSemanticType;
   symbol: SymbolInfo;
   typeName?: string;
   uri: string;
@@ -70,7 +81,7 @@ export interface SignatureHint {
   parameters: SignatureParameterHint[];
 }
 
-export const SEMANTIC_TOKEN_TYPES = ["variable", "parameter", "function", "type", "enumMember"] as const;
+export const SEMANTIC_TOKEN_TYPES = ["variable", "parameter", "function", "type", "enumMember", "keyword"] as const;
 export const SEMANTIC_TOKEN_MODIFIERS = ["declaration", "readonly"] as const;
 
 export type SemanticTokenTypeName = (typeof SEMANTIC_TOKEN_TYPES)[number];
@@ -272,6 +283,7 @@ export function createDocumentService(): DocumentService {
         return [];
       }
 
+      const completionContext = getCompletionContext(state.text, position);
       const localSymbols = getCompletionSymbols(state.analysis, position).map((symbol) => ({
         ...createResolution(state, symbol, uri)
       }));
@@ -293,7 +305,21 @@ export function createDocumentService(): DocumentService {
         }
       }
 
-      return narrowCompletionByAssignmentTarget(state.text, uri, position, [...deduplicated.values()], resolveDefinition);
+      const userAndWorkspaceCompletions = filterCompletionsByPrefix([...deduplicated.values()], completionContext.prefix);
+      const builtInCompletions =
+        !completionContext.isMemberAccess && completionContext.prefix.length > 0
+          ? getBuiltinCompletionItems(completionContext.prefix)
+              .filter((item) => !userAndWorkspaceCompletions.some((resolution) => resolution.symbol.normalizedName === item.normalizedName))
+              .map(createBuiltinResolution)
+          : [];
+
+      return narrowCompletionByAssignmentTarget(
+        state.text,
+        uri,
+        position,
+        [...userAndWorkspaceCompletions, ...builtInCompletions],
+        resolveDefinition
+      );
     },
     getDefinition(uri: string, position: LinePosition): WorkspaceSymbolResolution | undefined {
       return resolveDefinition(uri, position);
@@ -403,6 +429,11 @@ interface CallContext {
   identifierStartCharacter: number;
 }
 
+interface CompletionContext {
+  isMemberAccess: boolean;
+  prefix: string;
+}
+
 const OPTION_EXPLICIT_TITLE = "Option Explicit を追加";
 
 function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
@@ -422,6 +453,41 @@ function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
   return {
     byNormalizedName,
     entries
+  };
+}
+
+function createBuiltinResolution(item: BuiltinReferenceItem): WorkspaceSymbolResolution {
+  return {
+    completionItemKind: item.completionKind,
+    documentation: item.documentation,
+    isBuiltIn: true,
+    moduleName: item.detail,
+    semanticModifiers: item.modifiers,
+    semanticType: item.semanticType,
+    symbol: {
+      kind: mapBuiltinSymbolKind(item.completionKind),
+      name: item.name,
+      normalizedName: item.normalizedName,
+      range: createZeroRange(),
+      scope: "module",
+      selectionRange: createZeroRange(),
+      typeName: item.typeName
+    },
+    typeName: item.typeName,
+    uri: "builtin://reference"
+  };
+}
+
+function createZeroRange(): SourceRange {
+  return {
+    start: {
+      character: 0,
+      line: 0
+    },
+    end: {
+      character: 0,
+      line: 0
+    }
   };
 }
 
@@ -572,19 +638,19 @@ function collectSemanticTokensForState(
         }
       };
       const resolution = resolveDefinition(state.uri, range.start);
-
-      if (!resolution) {
-        continue;
-      }
-
-      const tokenShape = mapSemanticToken(resolution.symbol);
+      const tokenShape = resolution
+        ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
+        : mapBuiltinSemanticToken(identifier);
 
       if (!tokenShape) {
         continue;
       }
 
-      const declarationRange = getDeclarationRange(documentStates.get(resolution.uri), resolution, resolveDefinition);
-      const isDeclaration = resolution.uri === state.uri && rangesEqual(range, declarationRange);
+      const declarationRange = resolution
+        ? getDeclarationRange(documentStates.get(resolution.uri), resolution, resolveDefinition)
+        : undefined;
+      const isDeclaration =
+        resolution && declarationRange ? resolution.uri === state.uri && rangesEqual(range, declarationRange) : false;
 
       addSemanticToken(tokens, range, {
         modifiers: isDeclaration ? addUniqueModifier(tokenShape.modifiers, "declaration") : tokenShape.modifiers,
@@ -845,13 +911,25 @@ function getIdentifierRangeAtPosition(text: string, position: LinePosition): Sou
   return undefined;
 }
 
+function getCompletionContext(text: string, position: LinePosition): CompletionContext {
+  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line] ?? "";
+  const prefixMatch = /[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.exec(line.slice(0, position.character));
+  const prefix = prefixMatch?.[0] ?? "";
+  const prefixStart = position.character - prefix.length;
+  const previousCharacter = line[prefixStart - 1] ?? "";
+
+  return {
+    isMemberAccess: previousCharacter === ".",
+    prefix
+  };
+}
+
 function isValidRenameIdentifier(name: string): boolean {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(name)) {
     return false;
   }
 
-  const normalizedName = normalizeIdentifier(name);
-  return !VBA_KEYWORDS.has(normalizedName) && !BUILTIN_IDENTIFIERS.has(normalizedName);
+  return !isReservedOrBuiltinIdentifier(name);
 }
 
 function rangeIsWithin(outer: SourceRange, inner: SourceRange): boolean {
@@ -876,6 +954,18 @@ function narrowCompletionByAssignmentTarget(
   );
 
   return narrowed.length > 0 && narrowed.length < completions.length ? narrowed : completions;
+}
+
+function filterCompletionsByPrefix(
+  completions: WorkspaceSymbolResolution[],
+  prefix: string
+): WorkspaceSymbolResolution[] {
+  if (prefix.length === 0) {
+    return completions;
+  }
+
+  const normalizedPrefix = normalizeIdentifier(prefix);
+  return completions.filter((resolution) => resolution.symbol.normalizedName.startsWith(normalizedPrefix));
 }
 
 function createSignatureHint(
@@ -1317,7 +1407,18 @@ function isWorkspaceVisible(modifier?: string): boolean {
   return /^(public|friend)$/i.test(modifier ?? "");
 }
 
-function mapSemanticToken(symbol: SymbolInfo): SemanticTokenShape | undefined {
+function mapSemanticToken(
+  symbol: SymbolInfo,
+  explicitType?: BuiltinSemanticType,
+  explicitModifiers?: BuiltinSemanticModifier[]
+): SemanticTokenShape | undefined {
+  if (explicitType) {
+    return {
+      modifiers: [...(explicitModifiers ?? [])],
+      type: explicitType as SemanticTokenTypeName
+    };
+  }
+
   switch (symbol.kind) {
     case "constant":
       return {
@@ -1353,6 +1454,33 @@ function mapSemanticToken(symbol: SymbolInfo): SemanticTokenShape | undefined {
       };
     default:
       return undefined;
+  }
+}
+
+function mapBuiltinSemanticToken(identifier: string): SemanticTokenShape | undefined {
+  const referenceItem = getBuiltinReferenceItem(identifier);
+
+  return referenceItem
+    ? {
+        modifiers: [...referenceItem.modifiers],
+        type: referenceItem.semanticType as SemanticTokenTypeName
+      }
+    : undefined;
+}
+
+function mapBuiltinSymbolKind(completionKind: BuiltinCompletionKind): SymbolInfo["kind"] {
+  switch (completionKind) {
+    case "constant":
+      return "constant";
+    case "function":
+      return "procedure";
+    case "type":
+      return "type";
+    case "variable":
+      return "variable";
+    case "keyword":
+    default:
+      return "variable";
   }
 }
 

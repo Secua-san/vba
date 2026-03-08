@@ -6,3 +6,4 @@ coverage/
 *.log
 .DS_Store
 packages/extension/resources/vbac/
+packages/extension/resources/reference/

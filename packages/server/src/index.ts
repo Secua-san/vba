@@ -321,8 +321,10 @@ async function readSettings(connection: ReturnType<typeof createConnection>): Pr
 function toCompletionItem(resolution: WorkspaceSymbolResolution): CompletionItem {
   return {
     detail: resolution.typeName ? `${resolution.moduleName} : ${resolution.typeName}` : resolution.moduleName,
-    kind: mapCompletionItemKind(resolution.symbol.kind),
-    label: resolution.symbol.name
+    documentation: resolution.documentation,
+    kind: mapCompletionItemKind(resolution.symbol.kind, resolution.completionItemKind),
+    label: resolution.symbol.name,
+    sortText: resolution.isBuiltIn ? `~${resolution.symbol.name}` : undefined
   };
 }
 
@@ -401,7 +403,25 @@ function getFullDocumentRange(text: string): { end: { character: number; line: n
   };
 }
 
-function mapCompletionItemKind(kind: SymbolInfo["kind"]): CompletionItemKind {
+function mapCompletionItemKind(
+  kind: SymbolInfo["kind"],
+  explicitKind?: WorkspaceSymbolResolution["completionItemKind"]
+): CompletionItemKind {
+  switch (explicitKind) {
+    case "constant":
+      return CompletionItemKind.Constant;
+    case "function":
+      return CompletionItemKind.Function;
+    case "keyword":
+      return CompletionItemKind.Keyword;
+    case "type":
+      return CompletionItemKind.Class;
+    case "variable":
+      return CompletionItemKind.Variable;
+    default:
+      break;
+  }
+
   switch (kind) {
     case "constant":
     case "enumMember":

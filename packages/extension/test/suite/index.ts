@@ -43,6 +43,27 @@ export async function run(): Promise<void> {
   );
   assert.ok(publicMessageCompletion?.detail?.includes("String"), "completion detail should include inferred type information");
 
+  const builtInCompletionDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "BuiltInCompletion.bas"));
+  await vscode.window.showTextDocument(builtInCompletionDocument);
+
+  const applicationCompletionItems = await waitForCompletions(
+    builtInCompletionDocument,
+    new vscode.Position(4, 7),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Application")
+  );
+  const excelConstantCompletionItems = await waitForCompletions(
+    builtInCompletionDocument,
+    new vscode.Position(5, 7),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "xlAll")
+  );
+  const applicationCompletion = applicationCompletionItems.find((item) => getCompletionItemLabel(item) === "Application");
+  const excelConstantCompletion = excelConstantCompletionItems.find((item) => getCompletionItemLabel(item) === "xlAll");
+
+  assert.ok(applicationCompletion, "built-in completion should include Application");
+  assert.ok(applicationCompletion.detail?.includes("Excel"), "built-in completion should include source detail");
+  assert.ok(excelConstantCompletion, "built-in completion should include Excel constants");
+  assert.ok(excelConstantCompletion.detail?.includes("Excel"), "built-in constant should include source detail");
+
   const definitions = await waitForDefinitions(
     consumerDocument,
     new vscode.Position(5, 18),
@@ -134,6 +155,33 @@ export async function run(): Promise<void> {
   assert.ok(semanticLegend.tokenTypes.includes("function"), "semantic token legend should include function");
   assert.ok(semanticLegend.tokenTypes.includes("type"), "semantic token legend should include type");
   assert.ok(semanticTokens.data.length > 0, "semantic tokens should be available");
+
+  const builtInSemanticDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "BuiltInSemantic.bas"));
+  await vscode.window.showTextDocument(builtInSemanticDocument);
+
+  const builtInSemanticLegend = await waitForSemanticTokensLegend(
+    builtInSemanticDocument,
+    (legend) => legend.tokenTypes.includes("keyword")
+  );
+  const builtInSemanticTokens = await waitForSemanticTokens(
+    builtInSemanticDocument,
+    (tokens) => tokens.data.length > 0
+  );
+  const decodedBuiltInSemanticTokens = decodeSemanticTokens(builtInSemanticTokens, builtInSemanticLegend);
+
+  assert.ok(builtInSemanticLegend.tokenTypes.includes("keyword"), "semantic token legend should include keyword");
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 4, "Beep", {
+    modifiers: [],
+    type: "keyword"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 5, "MsgBox", {
+    modifiers: [],
+    type: "function"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 5, "xlAll", {
+    modifiers: ["readonly"],
+    type: "variable"
+  });
 
   const formatDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "FormatDocument.bas"));
   await vscode.window.showTextDocument(formatDocument);
@@ -670,6 +718,68 @@ function hasSnippetCompletion(items: readonly vscode.CompletionItem[], label: st
       item.kind === vscode.CompletionItemKind.Snippet &&
       getCompletionItemLabel(item).toLowerCase() === label.toLowerCase()
   );
+}
+
+function decodeSemanticTokens(
+  tokens: vscode.SemanticTokens,
+  legend: vscode.SemanticTokensLegend
+): Array<{ endCharacter: number; line: number; modifiers: string[]; startCharacter: number; type: string }> {
+  const decodedTokens: Array<{ endCharacter: number; line: number; modifiers: string[]; startCharacter: number; type: string }> = [];
+  let currentLine = 0;
+  let currentCharacter = 0;
+
+  for (let index = 0; index < tokens.data.length; index += 5) {
+    const deltaLine = tokens.data[index] ?? 0;
+    const deltaCharacter = tokens.data[index + 1] ?? 0;
+    const length = tokens.data[index + 2] ?? 0;
+    const tokenType = legend.tokenTypes[tokens.data[index + 3] ?? 0] ?? "";
+    const modifierMask = tokens.data[index + 4] ?? 0;
+
+    currentLine += deltaLine;
+    currentCharacter = deltaLine === 0 ? currentCharacter + deltaCharacter : deltaCharacter;
+
+    decodedTokens.push({
+      endCharacter: currentCharacter + length,
+      line: currentLine,
+      modifiers: legend.tokenModifiers.filter((_, modifierIndex) => (modifierMask & (1 << modifierIndex)) !== 0),
+      startCharacter: currentCharacter,
+      type: tokenType
+    });
+  }
+
+  return decodedTokens;
+}
+
+function assertDecodedSemanticToken(
+  text: string,
+  tokens: Array<{ endCharacter: number; line: number; modifiers: string[]; startCharacter: number; type: string }>,
+  lineIndex: number,
+  identifier: string,
+  expected: { modifiers: string[]; type: string },
+  occurrence = 0
+): void {
+  const lines = text.split("\n");
+  const line = lines[lineIndex] ?? "";
+  let startCharacter = -1;
+  let searchOffset = 0;
+
+  for (let index = 0; index <= occurrence; index += 1) {
+    startCharacter = line.indexOf(identifier, searchOffset);
+    searchOffset = startCharacter + identifier.length;
+  }
+
+  assert.notEqual(startCharacter, -1, `identifier '${identifier}' must exist on line ${lineIndex}`);
+
+  const token = tokens.find(
+    (entry) =>
+      entry.line === lineIndex &&
+      entry.startCharacter === startCharacter &&
+      entry.endCharacter === startCharacter + identifier.length
+  );
+
+  assert.ok(token, `semantic token '${identifier}' must exist at ${lineIndex}:${startCharacter}`);
+  assert.equal(token.type, expected.type);
+  assert.deepEqual([...token.modifiers].sort(), [...expected.modifiers].sort());
 }
 
 function getCodeAction(actions: readonly vscode.CodeAction[], title: string): vscode.CodeAction | undefined {

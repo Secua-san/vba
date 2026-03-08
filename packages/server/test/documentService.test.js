@@ -33,6 +33,34 @@ End Sub`
   );
 });
 
+test("document service exposes built-in completion items from the reference index", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInCompletion.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "BuiltInCompletion"
+Option Explicit
+
+Public Sub Demo()
+    App
+    xlA
+End Sub`
+  );
+
+  const applicationCompletions = service.getCompletionSymbols(uri, { character: 7, line: 4 });
+  const excelConstantCompletions = service.getCompletionSymbols(uri, { character: 7, line: 5 });
+  const application = applicationCompletions.find((resolution) => resolution.symbol.name === "Application");
+  const excelConstant = excelConstantCompletions.find((resolution) => resolution.symbol.name === "xlAll");
+
+  assert.equal(application?.isBuiltIn, true);
+  assert.equal(application?.moduleName.includes("Excel"), true);
+  assert.equal(excelConstant?.isBuiltIn, true);
+  assert.equal(excelConstant?.typeName, "Long");
+});
+
 test("document service offers an Option Explicit code action after existing option lines", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/MissingOptionExplicit.bas";
@@ -699,6 +727,40 @@ End Sub`;
   assertSemanticToken(text, tokens, 17, "DefaultName", {
     modifiers: ["readonly"],
     type: "variable"
+  });
+});
+
+test("document service exposes semantic tokens for built-in keywords, functions, and constants", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInSemantic.bas";
+  const text = `Attribute VB_Name = "BuiltInSemantic"
+Option Explicit
+
+Public Sub Demo()
+    Beep
+    MsgBox xlAll
+    Debug.Print Application.Name
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const tokens = service.getSemanticTokens(uri);
+
+  assertSemanticToken(text, tokens, 4, "Beep", {
+    modifiers: [],
+    type: "keyword"
+  });
+  assertSemanticToken(text, tokens, 5, "MsgBox", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 5, "xlAll", {
+    modifiers: ["readonly"],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 6, "Application", {
+    modifiers: [],
+    type: "type"
   });
 });
 
