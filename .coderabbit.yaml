@@ -2,6 +2,8 @@
 language: "ja-JP"
 
 reviews:
+  auto_review:
+    auto_incremental_review: false
   path_filters:
     # Skip docs-only PRs by reviewing only code and executable/config files.
     - "**/*.ts"
