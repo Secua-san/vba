@@ -123,6 +123,10 @@
   - `docs/process/coderabbit-review.md` に実測値と新しい待機基準を追記する
   - 初回レビュー待ちの標準待機と、レート制限時の自動停止しきい値を見直す
 
+- [x] Microsoft Learn 参照一覧の取得基盤
+  - Excel、VBA 言語リファレンス、Office library reference の一覧を Microsoft Learn から JSON 化する再生成スクリプトを追加
+  - `resources/reference/mslearn-vba-reference.json` に、補完とハイライト用のオブジェクト、列挙、キーワード、定数カテゴリ、関数、文を保存する
+
 ## 次候補
 
 - [ ] Option Explicit 補完
