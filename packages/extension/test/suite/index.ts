@@ -95,6 +95,21 @@ export async function run(): Promise<void> {
     "signature help should include inferred argument type information"
   );
 
+  const renameDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "RenameLocal.bas"));
+  await vscode.window.showTextDocument(renameDocument);
+
+  const renameEdit = await waitForRename(
+    renameDocument,
+    new vscode.Position(6, 6),
+    "currentCount",
+    (edit) => (edit.get(renameDocument.uri)?.length ?? 0) === 4
+  );
+  const renameEntries = renameEdit.get(renameDocument.uri) ?? [];
+
+  assert.equal(renameEntries.length, 4, "rename should update declaration and local references only");
+  assert.ok(renameEntries.every((edit) => edit.newText === "currentCount"));
+  assert.ok(renameEntries.every((edit) => edit.range.start.line >= 4 && edit.range.start.line <= 8));
+
   const commands = await vscode.commands.getCommands(true);
   assert.equal(commands.includes("vba.extract"), false);
   assert.equal(commands.includes("vba.combine"), false);
@@ -207,6 +222,30 @@ async function waitForSignatureHelp(
     activeSignature: 0,
     signatures: []
   };
+}
+
+async function waitForRename(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  newName: string,
+  predicate: (edit: vscode.WorkspaceEdit) => boolean
+): Promise<vscode.WorkspaceEdit> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const renameEdit = await vscode.commands.executeCommand<vscode.WorkspaceEdit>(
+      "vscode.executeDocumentRenameProvider",
+      document.uri,
+      position,
+      newName
+    );
+
+    if (renameEdit && predicate(renameEdit)) {
+      return renameEdit;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return new vscode.WorkspaceEdit();
 }
 
 function getSignatureDocumentation(

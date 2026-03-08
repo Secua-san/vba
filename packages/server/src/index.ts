@@ -16,6 +16,7 @@ import {
   SignatureHelp,
   SignatureInformation,
   SymbolKind,
+  TextEdit,
   TextDocumentSyncKind
 } from "vscode-languageserver/node";
 import { readFile } from "node:fs/promises";
@@ -50,6 +51,9 @@ export function startServer(): void {
         completionProvider: {},
         definitionProvider: true,
         documentSymbolProvider: true,
+        renameProvider: {
+          prepareProvider: true
+        },
         referencesProvider: true,
         signatureHelpProvider: {
           retriggerCharacters: [","],
@@ -156,6 +160,34 @@ export function startServer(): void {
     return documentService
       .getReferences(params.textDocument.uri, toCorePosition(params.position), params.context.includeDeclaration)
       .map((reference) => Location.create(reference.uri, toLspRange(reference.range)));
+  });
+
+  connection.onPrepareRename((params) => {
+    const target = documentService.prepareRename(params.textDocument.uri, toCorePosition(params.position));
+
+    return target
+      ? {
+          placeholder: target.placeholder,
+          range: toLspRange(target.range)
+        }
+      : null;
+  });
+
+  connection.onRenameRequest((params) => {
+    const edits = documentService.getRenameEdits(params.textDocument.uri, toCorePosition(params.position), params.newName);
+
+    if (!edits || edits.length === 0) {
+      return null;
+    }
+
+    const changes = edits.reduce<Record<string, TextEdit[]>>((accumulator, edit) => {
+      const currentEdits = accumulator[edit.uri] ?? [];
+      currentEdits.push(TextEdit.replace(toLspRange(edit.range), edit.newText));
+      accumulator[edit.uri] = currentEdits;
+      return accumulator;
+    }, {});
+
+    return { changes };
   });
 
   connection.onSignatureHelp((params): SignatureHelp | undefined => {
