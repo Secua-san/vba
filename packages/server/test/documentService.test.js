@@ -371,3 +371,40 @@ End Sub`
     ]
   );
 });
+
+test("document service exposes duplicate-definition diagnostics", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/Duplicates.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Duplicates"
+Option Explicit
+
+Private Sub SharedName()
+End Sub
+
+Private Sub SharedName()
+End Sub
+
+Public Sub Demo(ByVal value As Long)
+    Dim value As Long
+    Const title As String = "A"
+    Const title As String = "B"
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "duplicate-definition");
+
+  assert.equal(diagnostics.length, 3);
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Duplicate definition 'SharedName' in module scope.",
+      "Duplicate definition 'value' in procedure 'Demo'.",
+      "Duplicate definition 'title' in procedure 'Demo'."
+    ]
+  );
+});

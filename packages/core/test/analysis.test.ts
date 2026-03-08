@@ -251,3 +251,33 @@ End Sub`, { fileName: "UserTypes.bas" });
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
+
+test("analyzeModule reports duplicate definitions in module and procedure scopes", () => {
+  const result = analyzeModule(`Attribute VB_Name = "Duplicates"
+Option Explicit
+
+Private Sub SharedName()
+End Sub
+
+Private Sub SharedName()
+End Sub
+
+Public Sub Demo(ByVal value As Long)
+    Dim value As Long
+    Const title As String = "A"
+    Const title As String = "B"
+End Sub`, { fileName: "Duplicates.bas" });
+
+  const duplicateDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "duplicate-definition");
+
+  assert.equal(duplicateDiagnostics.length, 3);
+  assert.deepEqual(
+    duplicateDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Duplicate definition 'SharedName' in module scope.",
+      "Duplicate definition 'value' in procedure 'Demo'.",
+      "Duplicate definition 'title' in procedure 'Demo'."
+    ]
+  );
+  assert.ok(duplicateDiagnostics.every((diagnostic) => diagnostic.severity === "error"));
+});
