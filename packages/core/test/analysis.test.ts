@@ -233,3 +233,21 @@ End Sub`, { fileName: "SetRequired.bas" });
   );
   assert.equal(typeMismatchDiagnostics.length, 0);
 });
+
+test("analyzeModule does not require Set for user-defined types", () => {
+  const result = analyzeModule(`Attribute VB_Name = "UserTypes"
+Option Explicit
+
+Private Type ItemInfo
+    Value As Long
+End Type
+
+Public Sub Demo()
+    Dim leftValue As ItemInfo
+    Dim rightValue As ItemInfo
+    leftValue = rightValue
+End Sub`, { fileName: "UserTypes.bas" });
+
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});

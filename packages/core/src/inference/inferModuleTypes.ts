@@ -61,7 +61,13 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
       const targetTypeName = getSymbolTypeNameFromMap(symbolTypes, targetSymbol) ?? targetSymbol.typeName;
 
       if (targetTypeName) {
-        const missingSetAssignment = shouldWarnMissingSetAssignment(targetTypeName, inferredExpressionType, assignment.isSet);
+        const missingSetAssignment = shouldWarnMissingSetAssignment(
+          symbolTable,
+          targetSymbol,
+          targetTypeName,
+          inferredExpressionType,
+          assignment.isSet
+        );
         const compatibleWithSet = areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: true });
 
         if (missingSetAssignment) {
@@ -543,7 +549,13 @@ function isReferenceTypeName(typeName: string): boolean {
   return !SCALAR_TYPES.has(typeName);
 }
 
-function shouldWarnMissingSetAssignment(targetTypeName: string, valueTypeName: string, isSetAssignment: boolean): boolean {
+function shouldWarnMissingSetAssignment(
+  symbolTable: SymbolTable,
+  targetSymbol: SymbolInfo,
+  targetTypeName: string,
+  valueTypeName: string,
+  isSetAssignment: boolean
+): boolean {
   if (isSetAssignment) {
     return false;
   }
@@ -551,7 +563,7 @@ function shouldWarnMissingSetAssignment(targetTypeName: string, valueTypeName: s
   const normalizedTargetType = normalizeTypeName(targetTypeName);
   const normalizedValueType = normalizeTypeName(valueTypeName);
 
-  if (!isReferenceTypeName(normalizedTargetType)) {
+  if (!isObjectReferenceType(symbolTable, targetSymbol, normalizedTargetType)) {
     return false;
   }
 
@@ -559,7 +571,23 @@ function shouldWarnMissingSetAssignment(targetTypeName: string, valueTypeName: s
     return true;
   }
 
-  return isReferenceTypeName(normalizedValueType);
+  return isObjectReferenceType(symbolTable, undefined, normalizedValueType);
+}
+
+function isObjectReferenceType(symbolTable: SymbolTable, symbol: SymbolInfo | undefined, normalizedTypeName: string): boolean {
+  if (!isReferenceTypeName(normalizedTypeName) || normalizedTypeName === "variant") {
+    return false;
+  }
+
+  if (symbol?.isArray) {
+    return false;
+  }
+
+  const localUserDefinedType = symbolTable.moduleSymbols.find(
+    (entry) => (entry.kind === "enum" || entry.kind === "type") && normalizeTypeName(entry.name) === normalizedTypeName
+  );
+
+  return !localUserDefinedType;
 }
 
 function splitTopLevelExpression(
