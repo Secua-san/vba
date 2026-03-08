@@ -1,4 +1,4 @@
-import { BUILTIN_IDENTIFIERS, VBA_KEYWORDS } from "../lexer/keywords";
+import { isReservedOrBuiltinIdentifier } from "../reference/builtinReference";
 import { collectByRefArgumentDiagnostics } from "./byRefDiagnostics";
 import { collectDuplicateDefinitionDiagnostics } from "./duplicateDefinitions";
 import { collectUnreachableCodeDiagnostics } from "./unreachableCode";
@@ -184,7 +184,7 @@ function collectUndeclaredVariableDiagnostics(parseResult: ParseResult, symbolTa
           continue;
         }
 
-        if (VBA_KEYWORDS.has(normalizedIdentifier) || BUILTIN_IDENTIFIERS.has(normalizedIdentifier)) {
+        if (isReservedOrBuiltinIdentifier(normalizedIdentifier)) {
           continue;
         }
 

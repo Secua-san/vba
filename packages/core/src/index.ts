@@ -7,6 +7,15 @@ export { areTypesCompatible, getSymbolTypeName, inferExpressionTypeAtLine, infer
 export { lexDocument } from "./lexer/lexDocument";
 export { parseModule } from "./parser/parseModule";
 export { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "./parser/text";
+export {
+  BUILTIN_IDENTIFIERS,
+  BUILTIN_REFERENCE_ITEMS,
+  getBuiltinCompletionItems,
+  getBuiltinReferenceItem,
+  isReservedOrBuiltinIdentifier,
+  RESERVED_IDENTIFIERS
+} from "./reference/builtinReference";
+export type { BuiltinCompletionKind, BuiltinReferenceItem, BuiltinSemanticModifier, BuiltinSemanticType } from "./reference/builtinReference";
 export { buildModuleSymbols, getAccessibleSymbolsAtLine } from "./symbol/buildModuleSymbols";
 export { normalizeIdentifier } from "./types/helpers";
 export type {

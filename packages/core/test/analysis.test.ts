@@ -53,6 +53,19 @@ End Sub`, { fileName: "Demo.bas" });
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "undeclared-variable"));
 });
 
+test("analyzeModule suppresses undeclared diagnostics for reserved and built-in reference data", () => {
+  const result = analyzeModule(`Attribute VB_Name = "BuiltInReferences"
+Option Explicit
+
+Public Sub Demo()
+    Beep
+    Debug.Print Application.Name
+    MsgBox xlAll
+End Sub`, { fileName: "BuiltInReferences.bas" });
+
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "undeclared-variable"), false);
+});
+
 test("analyzeModule skips frm designer text and exposes navigation symbols", () => {
   const result = analyzeModule(`VERSION 5.00
 Begin VB.Form UserForm1

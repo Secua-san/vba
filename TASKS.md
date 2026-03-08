@@ -132,11 +132,16 @@
   - `.frm` のデザイナー領域と属性行を壊さず、既存 option 行の直後へ重複なく挿入する
   - server / extension のテストで標準モジュールと `.frm` の挿入結果を確認する
 
+- [x] 組み込み参照データの補完連携
+  - Microsoft Learn 由来の参照 JSON を `core` の shared built-in index に正規化し、Excel / VBA / Office の組み込みオブジェクト、定数、キーワードを補完候補へ追加する
+  - 未宣言診断と rename 禁止名に同じ reserved / built-in 判定を使い、`Application`、`xlAll`、`Beep` などの誤警告を抑制する
+  - semantic token に built-in function / constant / keyword を追加し、server / extension のテストで legend と token を確認する
+
 ## 次候補
 
-- [ ] 組み込み参照データの補完連携
-  - Microsoft Learn から取得した参照 JSON を補完候補へ読み込み、Excel / VBA / Office の組み込みオブジェクト、定数、キーワードを提示できるようにする
-  - 予約語と組み込み識別子をセマンティックハイライトや診断抑制でも再利用できる形に整理する
+- [ ] 組み込みメンバー補完
+  - `Application.` や `WorksheetFunction.` のような member access に対して、Microsoft Learn 由来のメソッド / プロパティ候補を返す
+  - object / enum / constant まで追加した参照索引を、member completion と簡易ドキュメント表示へ拡張する
 
 ## メモ
 
