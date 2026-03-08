@@ -426,3 +426,52 @@ End Sub`
     ]
   );
 });
+
+test("document service exposes unreachable-code diagnostics conservatively", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/Unreachable.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Unreachable"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim keepRunning As Boolean
+    Dim marker As Long
+    Exit Sub
+    marker = 1
+JumpHere:
+    marker = 6
+
+    If ready Then
+        Exit Sub
+        marker = 2
+    Else
+        marker = 3
+    End If
+
+    Do While keepRunning
+        End
+        marker = 4
+    Loop
+
+    marker = 5
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(diagnostics.length, 3);
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Unreachable code after Exit Sub.",
+      "Unreachable code after Exit Sub.",
+      "Unreachable code after End."
+    ]
+  );
+});

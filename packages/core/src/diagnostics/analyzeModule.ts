@@ -1,6 +1,7 @@
 import { BUILTIN_IDENTIFIERS, VBA_KEYWORDS } from "../lexer/keywords";
 import { collectByRefArgumentDiagnostics } from "./byRefDiagnostics";
 import { collectDuplicateDefinitionDiagnostics } from "./duplicateDefinitions";
+import { collectUnreachableCodeDiagnostics } from "./unreachableCode";
 import { parseModule } from "../parser/parseModule";
 import { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { inferModuleTypes } from "../inference/inferModuleTypes";
@@ -22,6 +23,7 @@ export function analyzeModule(text: string, options: AnalyzeModuleOptions = {}):
     ...parseResult.diagnostics,
     ...collectUndeclaredVariableDiagnostics(parseResult, symbols),
     ...collectDuplicateDefinitionDiagnostics(parseResult),
+    ...collectUnreachableCodeDiagnostics(parseResult),
     ...typeInference.diagnostics,
     ...collectByRefArgumentDiagnostics(partialResult)
   ];

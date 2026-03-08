@@ -299,3 +299,45 @@ End Sub`, { fileName: "Duplicates.bas" });
   );
   assert.ok(duplicateDiagnostics.every((diagnostic) => diagnostic.severity === "error"));
 });
+
+test("analyzeModule warns on unreachable code after unconditional exits", () => {
+  const result = analyzeModule(`Attribute VB_Name = "Unreachable"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim keepRunning As Boolean
+    Dim marker As Long
+    Exit Sub
+    marker = 1
+JumpHere:
+    marker = 6
+
+    If ready Then
+        Exit Sub
+        marker = 2
+    Else
+        marker = 3
+    End If
+
+    Do While keepRunning
+        End
+        marker = 4
+    Loop
+
+    marker = 5
+End Sub`, { fileName: "Unreachable.bas" });
+
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(unreachableDiagnostics.length, 3);
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Unreachable code after Exit Sub.",
+      "Unreachable code after Exit Sub.",
+      "Unreachable code after End."
+    ]
+  );
+  assert.ok(unreachableDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+});
