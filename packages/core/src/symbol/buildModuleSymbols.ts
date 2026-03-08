@@ -99,10 +99,10 @@ export function getAccessibleSymbolsAtLine(symbolTable: SymbolTable, line: numbe
   );
 
   if (!scope) {
-    return symbolTable.moduleSymbols;
+    return [symbolTable.moduleSymbol, ...symbolTable.moduleSymbols];
   }
 
-  const combinedSymbols = [...symbolTable.moduleSymbols, ...scope.symbols];
+  const combinedSymbols = [symbolTable.moduleSymbol, ...symbolTable.moduleSymbols, ...scope.symbols];
   const uniqueSymbols = new Map<string, SymbolInfo>();
 
   for (const symbol of combinedSymbols) {
