@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "ja-JP"
+
+reviews:
+  path_filters:
+    # Skip docs-only PRs by reviewing only code and executable/config files.
+    - "**/*.ts"
+    - "**/*.js"
+    - "**/*.mjs"
+    - "**/*.cjs"
+    - "**/*.json"
+    - "**/*.yml"
+    - "**/*.yaml"
+    - "**/*.bas"
+    - "**/*.cls"
+    - "**/*.frm"
+    - "**/*.wsf"
+    - "!**/package-lock.json"
