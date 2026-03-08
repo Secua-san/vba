@@ -12,7 +12,7 @@
 - 探索や判断が空転したら、サブエージェントへ論点を絞って意見を求める
 
 ## 固定ルール
-- 解析対象は `.bas` / `.cls` / `.frm` を主軸とする
+- 解析対象は `.bas` / `.cls` / `.frm` / `.frx` を主軸とする
 - XLAM 連携は補助機能として `resources/vbac/vbac.wsf` を使う
 - `combine` は破壊的操作なので、バックアップ・確認・検証・エラーログを必須とする
 - 開発は Windows ネイティブ環境で行い、`npm` と Node LTS を前提にする
@@ -20,6 +20,7 @@
 - 解析は手書きパーサで実装し、`lexer -> parser -> AST -> symbol resolution -> type inference -> diagnostics/completion` を基本パイプラインとする
 - `Declare PtrSafe`、`LongPtr`、`#If VBA7 Then` などの条件付きコンパイルを優先して扱う
 - 重要な設計判断は `docs/adr/` に記録する
+- タスク管理を `TASKS.md` で行い、進捗に合わせ随時更新する
 
 ## リポジトリ構成
 - `packages/extension/`: VS Code 拡張本体
