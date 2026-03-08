@@ -93,11 +93,16 @@
   - `npm run dev:host` と `npm run test:host` で CLI からも実機確認と拡張テストを起動できるようにする
   - README に開発ホストの確認手順を追記する
 
+- [x] VBA 構文インデント
+  - `core` に `If` / `Select Case` / `For` / `Do` / `With` / `Property` を基準にした最小インデント formatter を追加する
+  - `.frm` のデザイナー領域は保持しつつ、コード領域だけを整形する
+  - server の document formatting provider と extension の smoke test で整形結果を確認する
+
 ## 次候補
 
-- [ ] VBA 構文インデント
-  - `If` / `Select Case` / `For` / `Do` / `With` / `Property` のネストに追従する最低限の整形基盤を追加する
-  - まずは整形コマンドではなく、将来の format provider に流用できる core 側の整形ロジックを作る
+- [ ] 継続行整形
+  - `_` を使う代入、引数列、メソッドチェーンの hanging indent を安定化する
+  - 既存の構文インデント formatter の上に継続行専用ルールを積み、format provider から同じ入口で使えるようにする
 
 ## メモ
 
