@@ -1,9 +1,21 @@
 {
   "name": "vba-extension",
+  "publisher": "tagi0",
   "displayName": "VBA Extension",
   "version": "0.1.0",
   "private": true,
   "main": "dist/extension.js",
+  "description": "VS Code language support for Excel VBA.",
+  "categories": [
+    "Programming Languages"
+  ],
+  "files": [
+    "dist/**",
+    "syntaxes/**",
+    "language-configuration.json",
+    "resources/**",
+    "README.md"
+  ],
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -11,27 +23,57 @@
     "onLanguage:vba"
   ],
   "contributes": {
-    "commands": [
+    "languages": [
       {
-        "command": "vba.extract",
-        "title": "VBA: Extract"
-      },
-      {
-        "command": "vba.combine",
-        "title": "VBA: Combine"
+        "id": "vba",
+        "aliases": [
+          "Excel VBA",
+          "VBA"
+        ],
+        "extensions": [
+          ".bas",
+          ".cls",
+          ".frm"
+        ],
+        "configuration": "./language-configuration.json"
       }
-    ]
+    ],
+    "grammars": [
+      {
+        "language": "vba",
+        "scopeName": "source.vba",
+        "path": "./syntaxes/vba.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Excel VBA",
+      "properties": {
+        "vba.analysis.debounceMs": {
+          "type": "number",
+          "default": 300,
+          "minimum": 50,
+          "maximum": 2000,
+          "description": "Debounce delay in milliseconds before the language server re-analyzes a VBA document."
+        }
+      }
+    }
   },
+  "keywords": [
+    "vba",
+    "excel",
+    "office"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "echo \"No tests yet (extension)\"",
+    "build": "node build.mjs",
+    "test": "tsc -p tsconfig.test.json && node dist-test/runTest.js",
     "lint": "echo \"No lint config yet (extension)\"",
-    "clean": "if exist dist rmdir /s /q dist"
+    "clean": "if exist dist rmdir /s /q dist && if exist dist-test rmdir /s /q dist-test",
+    "package": "vsce package --no-dependencies --allow-missing-repository --skip-license -o ../../dist/vba-extension.vsix"
   },
   "devDependencies": {
     "@types/vscode": "^1.90.0"
   },
   "dependencies": {
-    "@vba/server": "0.1.0"
+    "vscode-languageclient": "^9.0.1"
   }
 }

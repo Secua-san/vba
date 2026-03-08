@@ -1,0 +1,86 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Excel VBA",
+  "patterns": [
+    {
+      "include": "#attribute"
+    },
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#date"
+    },
+    {
+      "include": "#keyword"
+    },
+    {
+      "include": "#number"
+    }
+  ],
+  "repository": {
+    "attribute": {
+      "patterns": [
+        {
+          "match": "^\\s*(Attribute\\s+VB_[A-Za-z0-9_]+\\s*=.*)$",
+          "name": "meta.attribute.vba"
+        }
+      ]
+    },
+    "comment": {
+      "patterns": [
+        {
+          "match": "'[^\\n]*$",
+          "name": "comment.line.apostrophe.vba"
+        },
+        {
+          "match": "(?i)(?:^|\\s)(Rem\\b.*)$",
+          "name": "comment.line.rem.vba"
+        }
+      ]
+    },
+    "date": {
+      "patterns": [
+        {
+          "match": "#[^#\\n]+#",
+          "name": "constant.other.date.vba"
+        }
+      ]
+    },
+    "keyword": {
+      "patterns": [
+        {
+          "match": "(?i)\\b(Attribute|ByRef|ByVal|Call|Case|Const|Declare|Dim|Do|Each|Else|ElseIf|End|Enum|Error|Exit|For|Friend|Function|If|Let|Loop|Next|On|Option|Optional|ParamArray|Private|Property|Public|PtrSafe|ReDim|Select|Set|Static|Step|Sub|Then|To|Type|Until|While|With)\\b",
+          "name": "keyword.control.vba"
+        }
+      ]
+    },
+    "number": {
+      "patterns": [
+        {
+          "match": "\\b\\d+(?:\\.\\d+)?[%&!#@]?\\b",
+          "name": "constant.numeric.vba"
+        }
+      ]
+    },
+    "string": {
+      "patterns": [
+        {
+          "begin": "\"",
+          "end": "\"",
+          "name": "string.quoted.double.vba",
+          "patterns": [
+            {
+              "match": "\"\"",
+              "name": "constant.character.escape.vba"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "scopeName": "source.vba"
+}
