@@ -5,6 +5,7 @@ import {
   findDefinition,
   getCompletionSymbols,
   getDocumentOutline,
+  inferExpressionTypeAtLine,
   getSymbolTypeName,
   normalizeIdentifier,
   removeStringAndDateLiterals,
@@ -36,6 +37,19 @@ export interface WorkspaceReference {
   uri: string;
 }
 
+export interface SignatureParameterHint {
+  documentation?: string;
+  label: string;
+}
+
+export interface SignatureHint {
+  activeParameter?: number;
+  activeSignature: number;
+  documentation?: string;
+  label: string;
+  parameters: SignatureParameterHint[];
+}
+
 export interface DocumentService {
   analyzeText: (uri: string, languageId: string, version: number, text: string) => DocumentState;
   getCompletionSymbols: (uri: string, position: LinePosition) => WorkspaceSymbolResolution[];
@@ -43,6 +57,7 @@ export interface DocumentService {
   getDiagnostics: (uri: string) => Diagnostic[];
   getDocumentSymbols: (uri: string) => ReturnType<typeof getDocumentOutline>;
   getReferences: (uri: string, position: LinePosition, includeDeclaration: boolean) => WorkspaceReference[];
+  getSignatureHelp: (uri: string, position: LinePosition) => SignatureHint | undefined;
   getState: (uri: string) => DocumentState | undefined;
   remove: (uri: string) => void;
 }
@@ -183,6 +198,42 @@ export function createDocumentService(): DocumentService {
     getReferences(uri: string, position: LinePosition, includeDeclaration: boolean): WorkspaceReference[] {
       return getReferenceMatches(uri, position, includeDeclaration);
     },
+    getSignatureHelp(uri: string, position: LinePosition): SignatureHint | undefined {
+      const state = documentStates.get(uri);
+
+      if (!state) {
+        return undefined;
+      }
+
+      const callContext = getCallContext(state.text, position);
+
+      if (!callContext) {
+        return undefined;
+      }
+
+      const target = resolveDefinition(uri, {
+        character: callContext.identifierStartCharacter,
+        line: position.line
+      });
+
+      if (!target || !isCallableSymbol(target.symbol)) {
+        return undefined;
+      }
+
+      const targetState = documentStates.get(target.uri);
+
+      if (!targetState) {
+        return undefined;
+      }
+
+      const callable = findCallableMember(targetState.analysis, target.symbol);
+
+      if (!callable) {
+        return undefined;
+      }
+
+      return createSignatureHint(state.analysis, uri, target, callable, position.line, callContext, resolveDefinition);
+    },
     getState(uri: string): DocumentState | undefined {
       return documentStates.get(uri);
     },
@@ -196,6 +247,15 @@ export function createDocumentService(): DocumentService {
 interface WorkspaceIndex {
   byNormalizedName: Map<string, WorkspaceSymbolResolution[]>;
   entries: WorkspaceSymbolResolution[];
+}
+
+type CallableMember = Extract<AnalysisResult["module"]["members"][number], { kind: "declareStatement" | "procedureDeclaration" }>;
+
+interface CallContext {
+  activeParameter: number;
+  currentArgumentStartCharacter: number;
+  currentArgumentText: string;
+  identifierStartCharacter: number;
 }
 
 function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
@@ -398,6 +458,269 @@ function narrowCompletionByAssignmentTarget(
   );
 
   return narrowed.length > 0 && narrowed.length < completions.length ? narrowed : completions;
+}
+
+function createSignatureHint(
+  analysis: AnalysisResult,
+  sourceUri: string,
+  target: WorkspaceSymbolResolution,
+  callable: CallableMember,
+  line: number,
+  callContext: CallContext,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): SignatureHint {
+  const currentArgumentTypeName = getCurrentArgumentTypeName(analysis, sourceUri, line, callContext, resolveDefinition);
+  const activeParameter =
+    callable.parameters.length === 0 ? undefined : Math.min(callContext.activeParameter, callable.parameters.length - 1);
+
+  return {
+    activeParameter,
+    activeSignature: 0,
+    documentation: target.moduleName === analysis.module.name ? undefined : `${target.moduleName} モジュール`,
+    label: buildSignatureLabel(target.symbol.name, callable),
+    parameters: callable.parameters.map((parameter, index) => ({
+      documentation: buildParameterDocumentation(parameter, index === activeParameter ? currentArgumentTypeName : undefined),
+      label: buildParameterLabel(parameter)
+    }))
+  };
+}
+
+function getCurrentArgumentTypeName(
+  analysis: AnalysisResult,
+  uri: string,
+  line: number,
+  callContext: CallContext,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): string | undefined {
+  const expressionText = callContext.currentArgumentText.trim();
+
+  if (expressionText.length === 0) {
+    return undefined;
+  }
+
+  const inferredTypeName = inferExpressionTypeAtLine(analysis, line, expressionText);
+
+  if (inferredTypeName) {
+    return inferredTypeName;
+  }
+
+  const expressionOffset = callContext.currentArgumentText.length - callContext.currentArgumentText.trimStart().length;
+  const simpleReferenceMatch = /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s*\(.*\))?$/iu.exec(expressionText);
+
+  if (!simpleReferenceMatch?.[1]) {
+    return undefined;
+  }
+
+  return resolveDefinition(uri, {
+    character: callContext.currentArgumentStartCharacter + expressionOffset,
+    line
+  })?.typeName;
+}
+
+function getCallContext(text: string, position: LinePosition): CallContext | undefined {
+  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line];
+
+  if (line === undefined) {
+    return undefined;
+  }
+
+  const { code } = splitCodeAndComment(line.slice(0, position.character));
+  const frames: Array<{
+    commaCount: number;
+    identifier?: string;
+    identifierStartCharacter?: number;
+    lastCommaIndex: number;
+  }> = [];
+  let index = 0;
+
+  while (index < code.length) {
+    const character = code[index];
+
+    if (character === "\"") {
+      index = skipStringLiteral(code, index);
+      continue;
+    }
+
+    if (character === "#") {
+      index = skipDateLiteral(code, index);
+      continue;
+    }
+
+    if (character === "(") {
+      const identifier = getIdentifierBeforeOpenParen(code, index);
+
+      frames.push({
+        commaCount: 0,
+        identifier: identifier?.text,
+        identifierStartCharacter: identifier?.startCharacter,
+        lastCommaIndex: index
+      });
+      index += 1;
+      continue;
+    }
+
+    if (character === ",") {
+      const currentFrame = frames[frames.length - 1];
+
+      if (currentFrame) {
+        currentFrame.commaCount += 1;
+        currentFrame.lastCommaIndex = index;
+      }
+
+      index += 1;
+      continue;
+    }
+
+    if (character === ")") {
+      frames.pop();
+    }
+
+    index += 1;
+  }
+
+  const currentFrame = [...frames].reverse().find((frame) => frame.identifier && frame.identifierStartCharacter !== undefined);
+
+  if (!currentFrame?.identifier || currentFrame.identifierStartCharacter === undefined) {
+    return undefined;
+  }
+
+  return {
+    activeParameter: currentFrame.commaCount,
+    currentArgumentStartCharacter: currentFrame.lastCommaIndex + 1,
+    currentArgumentText: code.slice(currentFrame.lastCommaIndex + 1),
+    identifierStartCharacter: currentFrame.identifierStartCharacter
+  };
+}
+
+function findCallableMember(analysis: AnalysisResult, symbol: SymbolInfo): CallableMember | undefined {
+  return analysis.module.members.find((member): member is CallableMember => {
+    if ((member.kind !== "declareStatement" && member.kind !== "procedureDeclaration") || member.name !== symbol.name) {
+      return false;
+    }
+
+    const selectionRange = member.kind === "procedureDeclaration" ? member.headerRange : member.range;
+
+    return (
+      selectionRange.start.line === symbol.selectionRange.start.line &&
+      selectionRange.start.character === symbol.selectionRange.start.character &&
+      selectionRange.end.line === symbol.selectionRange.end.line &&
+      selectionRange.end.character === symbol.selectionRange.end.character
+    );
+  });
+}
+
+function isCallableSymbol(symbol: SymbolInfo): boolean {
+  return symbol.kind === "declare" || symbol.kind === "procedure";
+}
+
+function buildSignatureLabel(name: string, callable: CallableMember): string {
+  const parameters = callable.parameters.map(buildParameterLabel).join(", ");
+  const returnType = callable.kind === "declareStatement" ? callable.returnType : callable.returnType;
+  const procedureKind = callable.kind === "declareStatement" ? callable.procedureKind : callable.procedureKind;
+
+  if (procedureKind === "Sub") {
+    return `${name}(${parameters})`;
+  }
+
+  return `${name}(${parameters}) As ${returnType ?? "Variant"}`;
+}
+
+function buildParameterLabel(parameter: CallableMember["parameters"][number]): string {
+  const modifiers = [
+    parameter.isOptional ? "Optional" : "",
+    parameter.isParamArray ? "ParamArray" : "",
+    parameter.direction === "byVal" ? "ByVal" : "ByRef"
+  ]
+    .filter((value) => value.length > 0)
+    .join(" ");
+  const arraySuffix = parameter.arraySuffix ? "()" : "";
+  const typeSuffix = parameter.typeName ? ` As ${parameter.typeName}` : "";
+
+  return `${modifiers} ${parameter.name}${arraySuffix}${typeSuffix}`.trim();
+}
+
+function buildParameterDocumentation(
+  parameter: CallableMember["parameters"][number],
+  currentArgumentTypeName?: string
+): string | undefined {
+  const lines = [];
+
+  if (parameter.typeName) {
+    lines.push(`想定型: ${parameter.typeName}`);
+  }
+
+  if (currentArgumentTypeName) {
+    lines.push(`現在の引数型: ${currentArgumentTypeName}`);
+  }
+
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+function getIdentifierBeforeOpenParen(
+  text: string,
+  openParenIndex: number
+): { startCharacter: number; text: string } | undefined {
+  let endIndex = openParenIndex - 1;
+
+  while (endIndex >= 0 && /\s/u.test(text[endIndex] ?? "")) {
+    endIndex -= 1;
+  }
+
+  if (endIndex < 0) {
+    return undefined;
+  }
+
+  let startIndex = endIndex;
+
+  while (startIndex >= 0 && /[A-Za-z0-9_$%&!#@]/u.test(text[startIndex] ?? "")) {
+    startIndex -= 1;
+  }
+
+  startIndex += 1;
+
+  const identifier = text.slice(startIndex, endIndex + 1);
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(identifier)) {
+    return undefined;
+  }
+
+  return {
+    startCharacter: startIndex,
+    text: identifier
+  };
+}
+
+function skipDateLiteral(text: string, startIndex: number): number {
+  let index = startIndex + 1;
+
+  while (index < text.length) {
+    if (text[index] === "#") {
+      return index + 1;
+    }
+
+    index += 1;
+  }
+
+  return index;
+}
+
+function skipStringLiteral(text: string, startIndex: number): number {
+  let index = startIndex + 1;
+
+  while (index < text.length) {
+    if (text[index] === "\"" && text[index + 1] === "\"") {
+      index += 2;
+      continue;
+    }
+
+    if (text[index] === "\"") {
+      return index + 1;
+    }
+
+    index += 1;
+  }
+
+  return index;
 }
 
 function findModuleSymbols(

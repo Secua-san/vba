@@ -21,6 +21,8 @@ export async function run(): Promise<void> {
   await vscode.window.showTextDocument(libraryDocument);
   const numberDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "NumberApi.bas"));
   await vscode.window.showTextDocument(numberDocument);
+  const formatterDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "FormatterApi.bas"));
+  await vscode.window.showTextDocument(formatterDocument);
 
   const consumerDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "Consumer.bas"));
   await vscode.window.showTextDocument(consumerDocument);
@@ -74,6 +76,23 @@ export async function run(): Promise<void> {
     narrowedCompletionItems.some((item) => item.label === "PublicNumber"),
     false,
     "type-aware completion should hide incompatible candidates"
+  );
+
+  const consumerSignatureDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ConsumerSignature.bas"));
+  await vscode.window.showTextDocument(consumerSignatureDocument);
+
+  const signatureHelp = await waitForSignatureHelp(
+    consumerSignatureDocument,
+    new vscode.Position(5, 38),
+    (help) => help.signatures.length > 0 && help.activeParameter === 1
+  );
+  assert.ok(signatureHelp.signatures.length > 0, "signature help should be available across files");
+  assert.equal(signatureHelp.activeParameter, 1);
+  assert.equal(signatureHelp.signatures[0]?.label, "FormatMessage(ByVal value As String, ByVal count As Long) As String");
+  assert.equal(getSignatureDocumentation(signatureHelp.signatures[0]?.documentation), "FormatterApi モジュール");
+  assert.ok(
+    getSignatureDocumentation(signatureHelp.signatures[0]?.parameters[1]?.documentation).includes("現在の引数型: Long"),
+    "signature help should include inferred argument type information"
   );
 
   const commands = await vscode.commands.getCommands(true);
@@ -162,4 +181,40 @@ async function waitForReferences(
   }
 
   return [];
+}
+
+async function waitForSignatureHelp(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  predicate: (help: vscode.SignatureHelp) => boolean
+): Promise<vscode.SignatureHelp> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const signatureHelp = await vscode.commands.executeCommand<vscode.SignatureHelp>(
+      "vscode.executeSignatureHelpProvider",
+      document.uri,
+      position
+    );
+
+    if (signatureHelp && predicate(signatureHelp)) {
+      return signatureHelp;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return {
+    activeParameter: 0,
+    activeSignature: 0,
+    signatures: []
+  };
+}
+
+function getSignatureDocumentation(
+  documentation: vscode.MarkdownString | vscode.ParameterInformation["documentation"] | vscode.SignatureInformation["documentation"] | undefined
+): string {
+  if (!documentation) {
+    return "";
+  }
+
+  return typeof documentation === "string" ? documentation : documentation.value;
 }
