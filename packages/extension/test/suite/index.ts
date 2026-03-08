@@ -41,6 +41,18 @@ export async function run(): Promise<void> {
   assert.ok(definitions.length > 0, "definition should resolve across files");
   assert.ok(definitions.some((location) => location.uri.fsPath.endsWith(path.join("fixtures", "PublicApi.bas"))));
 
+  const references = await waitForReferences(
+    consumerDocument,
+    new vscode.Position(5, 18),
+    (locations) =>
+      locations.length >= 2 &&
+      locations.some((location) => location.uri.fsPath.endsWith(path.join("fixtures", "Consumer.bas"))) &&
+      locations.some((location) => location.uri.fsPath.endsWith(path.join("fixtures", "PublicApi.bas")))
+  );
+  assert.ok(references.length >= 2, "references should include declaration and usage");
+  assert.ok(references.some((location) => location.uri.fsPath.endsWith(path.join("fixtures", "Consumer.bas"))));
+  assert.ok(references.some((location) => location.uri.fsPath.endsWith(path.join("fixtures", "PublicApi.bas"))));
+
   const commands = await vscode.commands.getCommands(true);
   assert.equal(commands.includes("vba.extract"), false);
   assert.equal(commands.includes("vba.combine"), false);
@@ -99,6 +111,28 @@ async function waitForDefinitions(
 
     if (definitions?.length && predicate(definitions)) {
       return definitions;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return [];
+}
+
+async function waitForReferences(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  predicate: (locations: readonly vscode.Location[]) => boolean
+): Promise<readonly vscode.Location[]> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const references = await vscode.commands.executeCommand<readonly vscode.Location[]>(
+      "vscode.executeReferenceProvider",
+      document.uri,
+      position
+    );
+
+    if (references?.length && predicate(references)) {
+      return references;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 200));

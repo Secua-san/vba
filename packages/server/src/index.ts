@@ -47,6 +47,7 @@ export function startServer(): void {
         completionProvider: {},
         definitionProvider: true,
         documentSymbolProvider: true,
+        referencesProvider: true,
         textDocumentSync: TextDocumentSyncKind.Full
       }
     };
@@ -142,6 +143,12 @@ export function startServer(): void {
 
   connection.onDocumentSymbol((params): DocumentSymbol[] => {
     return documentService.getDocumentSymbols(params.textDocument.uri).map(toDocumentSymbol);
+  });
+
+  connection.onReferences((params): Location[] => {
+    return documentService
+      .getReferences(params.textDocument.uri, toCorePosition(params.position), params.context.includeDeclaration)
+      .map((reference) => Location.create(reference.uri, toLspRange(reference.range)));
   });
 
   documents.listen(connection);

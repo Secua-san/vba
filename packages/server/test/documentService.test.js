@@ -21,6 +21,12 @@ End Sub`
   assert.ok(service.getCompletionSymbols(state.uri, { character: 4, line: 5 }).some((resolution) => resolution.symbol.name === "message"));
   assert.equal(service.getDefinition(state.uri, { character: 5, line: 5 })?.symbol.name, "message");
   assert.ok(service.getDocumentSymbols(state.uri)[0]?.children?.some((symbol) => symbol.name === "Demo"));
+  assert.deepEqual(
+    service
+      .getReferences(state.uri, { character: 5, line: 5 }, true)
+      .map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${state.uri}:4:8`, `${state.uri}:5:4`]
+  );
 });
 
 test("document service resolves exported symbols across VBA modules", () => {
@@ -55,12 +61,17 @@ End Sub`
   const completions = service.getCompletionSymbols(consumerUri, { character: 4, line: 5 });
   const definition = service.getDefinition(consumerUri, { character: 18, line: 5 });
   const diagnostics = service.getDiagnostics(consumerUri);
+  const references = service.getReferences(consumerUri, { character: 18, line: 5 }, true);
 
   assert.ok(completions.some((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage"));
   assert.equal(definition?.uri, libraryUri);
   assert.equal(definition?.moduleName, "PublicApi");
   assert.equal(definition?.symbol.name, "PublicMessage");
   assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "undeclared-variable"), false);
+  assert.deepEqual(
+    references.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${libraryUri}:3:16`, `${consumerUri}:5:14`]
+  );
 });
 
 test("document service keeps ambiguous cross-file symbols conservative", () => {
@@ -104,4 +115,35 @@ End Sub`
 
   assert.equal(service.getDefinition(consumerUri, { character: 18, line: 5 }), undefined);
   assert.equal(service.getDiagnostics(consumerUri).some((diagnostic) => diagnostic.code === "undeclared-variable"), true);
+  assert.deepEqual(service.getReferences(consumerUri, { character: 18, line: 5 }, true), []);
+});
+
+test("document service keeps local references scoped when module names are shadowed", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/Shadowing.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Shadowing"
+Option Explicit
+
+Public Const SharedValue As Long = 1
+
+Public Sub Demo()
+    Dim SharedValue As Long
+    SharedValue = 2
+End Sub`
+  );
+
+  const definition = service.getDefinition(uri, { character: 8, line: 6 });
+  const references = service.getReferences(uri, { character: 8, line: 6 }, true);
+
+  assert.equal(definition?.symbol.scope, "procedure");
+  assert.equal(definition?.symbol.kind, "variable");
+  assert.deepEqual(
+    references.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:6:8`, `${uri}:7:4`]
+  );
 });

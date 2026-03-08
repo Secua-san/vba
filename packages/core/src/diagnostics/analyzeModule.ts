@@ -26,7 +26,21 @@ export function findDefinition(result: AnalysisResult | ParseResult & { symbols:
 
   const normalizedIdentifier = normalizeIdentifier(identifier);
   const accessibleSymbols = getAccessibleSymbolsAtLine(result.symbols, position.line);
-  return accessibleSymbols.find((symbol) => symbol.normalizedName === normalizedIdentifier);
+  const matchingSymbols = accessibleSymbols.filter((symbol) => symbol.normalizedName === normalizedIdentifier);
+
+  if (matchingSymbols.length === 0) {
+    return undefined;
+  }
+
+  const declarationMatches = matchingSymbols.filter(
+    (symbol) => symbol.kind !== "module" && isPositionWithinRange(position, symbol.selectionRange)
+  );
+
+  if (declarationMatches.length > 0) {
+    return declarationMatches.find((symbol) => symbol.scope === "module") ?? declarationMatches[0];
+  }
+
+  return matchingSymbols.find((symbol) => symbol.scope === "procedure") ?? matchingSymbols.find((symbol) => symbol.kind !== "module") ?? matchingSymbols[0];
 }
 
 export function getCompletionSymbols(
@@ -181,4 +195,20 @@ function collectUndeclaredVariableDiagnostics(parseResult: ParseResult, symbolTa
   }
 
   return diagnostics;
+}
+
+function isPositionWithinRange(position: LinePosition, range: SymbolInfo["selectionRange"]): boolean {
+  if (position.line < range.start.line || position.line > range.end.line) {
+    return false;
+  }
+
+  if (position.line === range.start.line && position.character < range.start.character) {
+    return false;
+  }
+
+  if (position.line === range.end.line && position.character > range.end.character) {
+    return false;
+  }
+
+  return true;
 }
