@@ -45,6 +45,9 @@
 - [x] 型不一致診断の拡張
   - 複合式、`Set` 代入、Variant を含むケースへ warning 判定を広げる
 
+- [x] CI ラベル自動付与設定の修正
+  - `actions/labeler@v5` に合わせて `.github/labeler.yml` の形式不整合を解消
+
 ## 次候補
 
 - [ ] ByRef / ByVal 危険箇所の診断
