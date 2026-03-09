@@ -366,13 +366,17 @@ Option Explicit
 Public Sub Demo()
     Debug.Print WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
+    Debug.Print Application.WorksheetFunction.Power(2, 3)
+    Application.OnTime(Now, "BuiltInSignature.Demo")
     Debug.Print Application.Calculate
 End Sub`
   );
 
   const worksheetSignature = service.getSignatureHelp(uri, { character: 42, line: 4 });
   const chainedSignature = service.getSignatureHelp(uri, { character: 54, line: 5 });
-  const hover = service.getHover(uri, { character: 30, line: 6 });
+  const powerSignature = service.getSignatureHelp(uri, { character: 56, line: 6 });
+  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 7 });
+  const hover = service.getHover(uri, { character: 30, line: 8 });
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -382,6 +386,11 @@ End Sub`
   assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
   assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("現在の引数型: Long"), true);
   assert.equal(chainedSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(powerSignature?.label.includes("Power("), true);
+  assert.equal(powerSignature?.parameters.length, 2);
+  assert.equal(fallbackSignature?.label, "Application.OnTime()");
+  assert.equal(fallbackSignature?.parameters.length, 0);
+  assert.equal(fallbackSignature?.documentation?.includes("excel.application.ontime"), true);
   assert.equal(hover?.contents.includes("Calculate()"), true);
   assert.equal(hover?.contents.includes("Calculates all open workbooks"), true);
   assert.equal(hover?.contents.includes("Microsoft Learn"), true);

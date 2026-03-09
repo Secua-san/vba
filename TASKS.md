@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名データ拡張（第1弾）
+  - `signatureMemberAllowList` を拡張し、`Application.CalculateFull` / `CalculateFullRebuild` / `CalculateUntilAsyncQueriesDone` と `WorksheetFunction.Power` / `Round` の署名を Microsoft Learn から再生成
+  - 署名未収録の built-in callable でも、`Application.OnTime()` のような fallback signature help を返す保守動作を追加
+  - server / extension テストに署名拡張と fallback の回帰確認を追加
+
 - [x] 組み込みメンバー署名のレビュー修正
   - `WorksheetFunction.Sum` の署名データで `Arg2` 以降を `省略可能` として扱うよう再生成ロジックを補正
   - `WorksheetFunction.Sum` と同名の公開手続きが存在する場合でも、signature help が組み込みメンバーを優先するように修正
@@ -159,9 +164,9 @@
 
 ## 次候補
 
-- [ ] 組み込みメンバー署名データの拡張
-  - Microsoft Learn 署名の対象メソッドを段階的に増やし、`signatureMemberAllowList` を基準に更新する
-  - 署名データが未収録の built-in callable では、保守的な fallback 表示を追加する
+- [ ] 組み込みメンバー署名データの拡張（第2弾）
+  - `signatureMemberAllowList` を段階的に拡張し、`WorksheetFunction` の代表的な算術・統計メソッドを優先追加する
+  - ParamArray 系メソッドの必須/省略可能判定を個別補正から汎用ルールへ寄せる
 
 ## メモ
 

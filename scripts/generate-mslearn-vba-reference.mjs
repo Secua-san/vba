@@ -14,8 +14,8 @@ const fetchTimeoutMs = 30_000;
 const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
 const signatureMemberAllowList = new Map([
-  ["Application", new Set(["Calculate"])],
-  ["WorksheetFunction", new Set(["Sum"])],
+  ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
+  ["WorksheetFunction", new Set(["Power", "Round", "Sum"])],
 ]);
 const signatureOwnerNames = new Set(signatureMemberAllowList.keys());
 const microsoftLearnClient = createMcpRequestClient({
