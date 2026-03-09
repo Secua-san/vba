@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] ariawase ライセンス表記の追加
+  - `THIRD_PARTY_LICENSES.md` を新規追加し、`vbaidiot/ariawase`（MIT）の出典リンクとライセンス原文を記載
+  - ルート `README.md` にサードパーティライセンス一覧への導線を追加
+  - 拡張機能配布物に含まれる `packages/extension/README.md` にも `ariawase` のライセンス情報を追記
+
 - [x] 組み込みメンバー署名データ拡張（第4弾レビュー修正）
   - `WorksheetFunction.Or` / `WorksheetFunction.Xor` の `Arg2` 以降で不足していた `dataType` / `description` / `isRequired` を再生成ロジック側で補完
   - 署名パラメータ展開で `Arg1-Arg30` / `Arg1...Arg30` / `Arg1…Arg30` の表記ゆれを扱えるようにして、可変引数判定の `…` も吸収
