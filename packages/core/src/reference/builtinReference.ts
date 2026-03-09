@@ -7,14 +7,32 @@ export type BuiltinCompletionKind = "constant" | "function" | "keyword" | "type"
 export type BuiltinSemanticModifier = "readonly";
 export type BuiltinSemanticType = "enumMember" | "function" | "keyword" | "type" | "variable";
 
+export interface BuiltinSignatureParameter {
+  dataType?: string;
+  description?: string;
+  isRequired?: boolean;
+  label: string;
+  name: string;
+}
+
+export interface BuiltinCallableSignature {
+  label: string;
+  ownerName?: string;
+  parameters: BuiltinSignatureParameter[];
+  returnType?: string;
+}
+
 export interface BuiltinReferenceItem {
   completionKind: BuiltinCompletionKind;
   detail: string;
   documentation?: string;
+  learnUrl?: string;
   modifiers: BuiltinSemanticModifier[];
   name: string;
   normalizedName: string;
   semanticType: BuiltinSemanticType;
+  signature?: BuiltinCallableSignature;
+  summary?: string;
   typeName?: string;
 }
 
@@ -144,6 +162,10 @@ export function getBuiltinMemberCompletionItems(ownerName: string, prefix?: stri
 
 export function getBuiltinMemberReferenceItem(ownerName: string, memberName: string): BuiltinMemberReferenceItem | undefined {
   return derivedReferenceData.memberItemsByOwnerAndName.get(createOwnerMemberKey(ownerName, memberName));
+}
+
+export function getBuiltinMemberSignature(ownerName: string, memberName: string): BuiltinCallableSignature | undefined {
+  return getBuiltinMemberReferenceItem(ownerName, memberName)?.signature;
 }
 
 export function resolveBuiltinMemberOwner(pathSegments: string[]): string | undefined {
@@ -360,7 +382,10 @@ function createReferenceItem(
   detail: string,
   documentation?: string,
   options: {
+    learnUrl?: string;
     modifiers?: BuiltinSemanticModifier[];
+    signature?: BuiltinCallableSignature;
+    summary?: string;
     typeName?: string;
   } = {}
 ): BuiltinReferenceItem {
@@ -370,22 +395,25 @@ function createReferenceItem(
     completionKind,
     detail,
     documentation,
+    learnUrl: options.learnUrl,
     modifiers: options.modifiers ?? [],
     name: safeName,
     normalizedName: normalizeIdentifier(safeName),
     semanticType: mapSemanticType(completionKind),
+    signature: options.signature,
+    summary: options.summary,
     typeName: options.typeName
   };
 }
 
 function createMemberReferenceItem(
   ownerName: string,
-  name: string | undefined,
+  memberSource: RawReferenceEntry,
   sectionTitle: string | undefined,
   sourceLabel: string,
-  knownItemsByNormalizedName: ReadonlyMap<string, BuiltinReferenceItem>,
-  learnUrl?: string
+  knownItemsByNormalizedName: ReadonlyMap<string, BuiltinReferenceItem>
 ): BuiltinMemberReferenceItem {
+  const name = readString(memberSource, "name");
   const safeName = name ?? "";
   const normalizedSectionTitle = normalizeIdentifier(sectionTitle ?? "");
   const completionKind =
@@ -399,14 +427,20 @@ function createMemberReferenceItem(
           ? "event"
           : "member";
   const inferredTypeName = inferBuiltinMemberTypeName(safeName, knownItemsByNormalizedName);
+  const learnUrl = readString(memberSource, "learnUrl");
+  const summary = readString(memberSource, "summary");
+  const signature = readBuiltinSignature(memberSource);
 
   return {
     ...createReferenceItem(
       safeName,
       completionKind,
       `${sourceLabel} ${ownerName} ${memberKindLabel}`,
-      readDocumentation(`${sourceLabel} ${ownerName} ${memberKindLabel}`, learnUrl),
+      readDocumentation(`${sourceLabel} ${ownerName} ${memberKindLabel}`, learnUrl, summary),
       {
+        learnUrl,
+        signature,
+        summary,
         typeName: inferredTypeName
       }
     ),
@@ -466,11 +500,10 @@ function addObjectMemberEntries(
         addMemberEntry(
           createMemberReferenceItem(
             ownerName,
-            readString(member, "name"),
+            member,
             sectionTitle,
             sourceLabel,
-            knownItemsByNormalizedName,
-            readString(member, "learnUrl")
+            knownItemsByNormalizedName
           ),
           priority
         );
@@ -539,8 +572,18 @@ function resolveKeywordUrl(source: RawReferenceEntry): string | undefined {
   return readString(source, "learnUrl");
 }
 
-function readDocumentation(detail: string, learnUrl?: string): string | undefined {
-  return learnUrl ? `${detail}\n${learnUrl}` : undefined;
+function readDocumentation(detail: string, learnUrl?: string, summary?: string): string | undefined {
+  const lines = [detail];
+
+  if (summary) {
+    lines.push(summary);
+  }
+
+  if (learnUrl) {
+    lines.push(learnUrl);
+  }
+
+  return lines.length > 1 ? lines.join("\n") : learnUrl ? `${detail}\n${learnUrl}` : undefined;
 }
 
 function inferBuiltinMemberTypeName(
@@ -549,6 +592,37 @@ function inferBuiltinMemberTypeName(
 ): string | undefined {
   const knownItem = knownItemsByNormalizedName.get(normalizeIdentifier(memberName));
   return knownItem?.completionKind === "type" ? knownItem.name : undefined;
+}
+
+function readBuiltinSignature(source: RawReferenceEntry): BuiltinCallableSignature | undefined {
+  const value = source.signature;
+
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const parameters = Array.isArray(value.parameters)
+    ? value.parameters.filter(isRecord).map((parameter) => ({
+        dataType: readString(parameter, "dataType"),
+        description: readString(parameter, "description"),
+        isRequired: typeof parameter.isRequired === "boolean" ? parameter.isRequired : undefined,
+        label: readString(parameter, "label") ?? "",
+        name: readString(parameter, "name") ?? ""
+      }))
+    : [];
+
+  const label = readString(value, "label");
+
+  if (!label) {
+    return undefined;
+  }
+
+  return {
+    label,
+    ownerName: readString(value, "ownerName"),
+    parameters,
+    returnType: readString(value, "returnType")
+  };
 }
 
 function createOwnerMemberKey(ownerName: string, memberName: string): string {

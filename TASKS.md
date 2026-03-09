@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名のレビュー修正
+  - `WorksheetFunction.Sum` の署名データで `Arg2` 以降を `省略可能` として扱うよう再生成ロジックを補正
+  - `WorksheetFunction.Sum` と同名の公開手続きが存在する場合でも、signature help が組み込みメンバーを優先するように修正
+  - server / extension テストに必須・省略可能引数の期待値と衝突ケースの回帰確認を追加
+
 - [x] MCP サーバー呼び出しの 429 対策
   - 共通の retry / rate-limit ヘルパーを追加し、`429`、`Retry-After`、指数バックオフ + ジッター、最大再試行超過時の明確な失敗を実装
   - 呼び出し間隔の制御と in-flight 重複抑止を追加し、対象 MCP 名、retry 回数、待機時間、最終失敗理由を構造化ログへ出力
@@ -147,11 +152,16 @@
   - `Application.WorksheetFunction.` のような既知 chain も、built-in member の型名を使って段階的に解決する
   - built-in member の簡易ドキュメントと semantic token を server / extension のテストで確認する
 
+- [x] 組み込みメンバーのシグネチャ支援
+  - `WorksheetFunction.Sum` と `Application.Calculate` について、Microsoft Learn 由来の署名と説明を参照 JSON へ追加
+  - built-in callable の signature help を追加し、`Application.WorksheetFunction.Sum` の chain でも同じ署名を返す
+  - built-in callable の hover を追加し、署名、要約、Microsoft Learn リンクを表示する
+
 ## 次候補
 
-- [ ] 組み込みメンバーのシグネチャ支援
-  - `WorksheetFunction.Sum` など built-in callable に対して、Microsoft Learn 由来の署名候補を signature help / hover へ出せるようにする
-  - 現在の completion 用 member index を、引数情報と説明文の索引へ拡張する
+- [ ] 組み込みメンバー署名データの拡張
+  - Microsoft Learn 署名の対象メソッドを段階的に増やし、`signatureMemberAllowList` を基準に更新する
+  - 署名データが未収録の built-in callable では、保守的な fallback 表示を追加する
 
 ## メモ
 

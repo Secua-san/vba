@@ -13,17 +13,20 @@ export {
   getBuiltinCompletionItems,
   getBuiltinMemberCompletionItems,
   getBuiltinMemberReferenceItem,
+  getBuiltinMemberSignature,
   getBuiltinReferenceItem,
   isReservedOrBuiltinIdentifier,
   resolveBuiltinMemberOwner,
   RESERVED_IDENTIFIERS
 } from "./reference/builtinReference";
 export type {
+  BuiltinCallableSignature,
   BuiltinCompletionKind,
   BuiltinMemberReferenceItem,
   BuiltinReferenceItem,
   BuiltinSemanticModifier,
-  BuiltinSemanticType
+  BuiltinSemanticType,
+  BuiltinSignatureParameter
 } from "./reference/builtinReference";
 export { buildModuleSymbols, getAccessibleSymbolsAtLine } from "./symbol/buildModuleSymbols";
 export { normalizeIdentifier } from "./types/helpers";
