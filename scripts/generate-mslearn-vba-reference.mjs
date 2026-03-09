@@ -15,7 +15,23 @@ const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
 const signatureMemberAllowList = new Map([
   ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
-  ["WorksheetFunction", new Set(["Average", "Count", "Max", "Median", "Min", "Power", "Round", "Sum"])],
+  [
+    "WorksheetFunction",
+    new Set(["Average", "Count", "EDate", "EoMonth", "Find", "Max", "Median", "Min", "Power", "Round", "Search", "Sum", "Text", "VLookup"])
+  ],
+]);
+const signatureMetadataOverrides = new Map([
+  [
+    "worksheetfunction.find",
+    {
+      parameterDescriptions: new Map([
+        ["arg1", "Find_text - the text that you want to find."],
+        ["arg2", "Within_text - the text in which you want to search for find_text."],
+        ["arg3", "Start_num - the character number in within_text at which you want to start searching."],
+      ]),
+      summary: "Finds a substring within a text string and returns the starting position.",
+    },
+  ],
 ]);
 const signatureOwnerNames = new Set(signatureMemberAllowList.keys());
 const microsoftLearnClient = createMcpRequestClient({
@@ -747,6 +763,10 @@ function buildSignatureLabel(memberName, syntaxParameterNames, returnType) {
   return returnType ? `${baseLabel} As ${returnType}` : baseLabel;
 }
 
+function createSignatureMetadataOverrideKey(ownerName, memberName) {
+  return `${ownerName}.${memberName}`.replace(/\s+/g, "").toLowerCase();
+}
+
 function parseApiMethodReference(markdown, ownerName, memberName) {
   const summary = extractSummaryParagraph(markdown);
   const syntaxSection = extractMarkdownSection(markdown, "Syntax");
@@ -764,18 +784,29 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
     ),
   );
   const returnType = extractReturnType(returnValueSection);
+  const signatureMetadataOverride = signatureMetadataOverrides.get(createSignatureMetadataOverrideKey(ownerName, memberName));
+  const overriddenParameters = signatureMetadataOverride
+    ? parameters.map((parameter) => ({
+        ...parameter,
+        description:
+          signatureMetadataOverride.parameterDescriptions?.get(
+            normalizeSignatureParameterName(parameter.name).toLowerCase(),
+          ) ?? parameter.description,
+      }))
+    : parameters;
+  const resolvedSummary = signatureMetadataOverride?.summary ?? summary;
 
   return {
     signature:
-      syntaxLine || parameters.length > 0 || returnType
+      syntaxLine || overriddenParameters.length > 0 || returnType
         ? {
             label: buildSignatureLabel(memberName, signatureParameterNames, returnType),
             ownerName,
-            parameters,
+            parameters: overriddenParameters,
             returnType,
           }
         : undefined,
-    summary,
+    summary: resolvedSummary,
   };
 }
 

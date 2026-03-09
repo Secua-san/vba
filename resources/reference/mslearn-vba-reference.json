@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T14:47:48.943Z",
+  "generatedAt": "2026-03-09T15:18:11.425Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -29261,7 +29261,29 @@
                 {
                   "name": "EDate",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.edate",
-                  "tocHref": "excel.worksheetfunction.edate"
+                  "tocHref": "excel.worksheetfunction.edate",
+                  "summary": "Returns the serial number that represents the date that is the indicated number of months before or after a specified date (the start_date). Use EDate to calculate maturity dates or due dates that fall on the same day of the month as the date of issue.",
+                  "signature": {
+                    "label": "EDate(Arg1, Arg2) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Start_date - a date that represents the start date. Dates should be entered by using the DATE function, or as results of other formulas or functions. For example, use DATE(2008,5,23) for the 23rd day of May, 2008. Problems can occur if dates are entered as text.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Months - the number of months before or after start_date. A positive value for months yields a future date; a negative value yields a past date.",
+                        "isRequired": true,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "Effect",
@@ -29276,7 +29298,29 @@
                 {
                   "name": "EoMonth",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.eomonth",
-                  "tocHref": "excel.worksheetfunction.eomonth"
+                  "tocHref": "excel.worksheetfunction.eomonth",
+                  "summary": "Returns the serial number for the last day of the month that is the indicated number of months before or after start_date. Use EoMonth to calculate maturity dates or due dates that fall on the last day of the month.",
+                  "signature": {
+                    "label": "EoMonth(Arg1, Arg2) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Start_date - a date that represents the starting date. Dates should be entered by using the DATE function, or as results of other formulas or functions. For example, use DATE(2008,5,23) for the 23rd day of May, 2008. Problems can occur if dates are entered as text.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Months - the number of months before or after start_date. A positive value for months yields a future date; a negative value yields a past date.",
+                        "isRequired": true,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "Erf",
@@ -29361,7 +29405,36 @@
                 {
                   "name": "Find",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.find",
-                  "tocHref": "excel.worksheetfunction.find"
+                  "tocHref": "excel.worksheetfunction.find",
+                  "summary": "Finds a substring within a text string and returns the starting position.",
+                  "signature": {
+                    "label": "Find(Arg1, Arg2, Arg3) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "String",
+                        "description": "Find_text - the text that you want to find.",
+                        "isRequired": true,
+                        "label": "Arg1 As String",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "String",
+                        "description": "Within_text - the text in which you want to search for find_text.",
+                        "isRequired": true,
+                        "label": "Arg2 As String",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Start_num - the character number in within_text at which you want to start searching.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "FindB",
@@ -30795,7 +30868,36 @@
                 {
                   "name": "Search",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.search",
-                  "tocHref": "excel.worksheetfunction.search"
+                  "tocHref": "excel.worksheetfunction.search",
+                  "summary": "Search and SearchB locate one text string within a second text string, and return the number of the starting position of the first text string from the first character of the second text string.",
+                  "signature": {
+                    "label": "Search(Arg1, Arg2, Arg3) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "String",
+                        "description": "Find_text - the text that you want to find.",
+                        "isRequired": true,
+                        "label": "Arg1 As String",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "String",
+                        "description": "Within_text - the text in which you want to search for find_text.",
+                        "isRequired": true,
+                        "label": "Arg2 As String",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Start_num - the character number in within_text at which you want to start searching.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "SearchB",
@@ -31213,7 +31315,29 @@
                 {
                   "name": "Text",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.text",
-                  "tocHref": "excel.worksheetfunction.text"
+                  "tocHref": "excel.worksheetfunction.text",
+                  "summary": "Converts a value to text in a specific number format.",
+                  "signature": {
+                    "label": "Text(Arg1, Arg2) As String",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "A numeric value, a formula that evaluates to a numeric value, or a reference to a cell containing a numeric value.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "String",
+                        "description": "A number format in text form in the Category box on the Number tab in the Format Cells dialog box.",
+                        "isRequired": true,
+                        "label": "Arg2 As String",
+                        "name": "Arg2"
+                      }
+                    ],
+                    "returnType": "String"
+                  }
                 },
                 {
                   "name": "TInv",
@@ -31288,7 +31412,43 @@
                 {
                   "name": "VLookup",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.vlookup",
-                  "tocHref": "excel.worksheetfunction.vlookup"
+                  "tocHref": "excel.worksheetfunction.vlookup",
+                  "summary": "Searches for a value in the first column of a table array and returns a value in the same row from another column in the table array.",
+                  "signature": {
+                    "label": "VLookup(Arg1, Arg2, Arg3, Arg4) As Variant",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Lookup_value - the value to search in the first column of the table array. Lookup_value can be a value or a reference. If lookup_value is smaller than the smallest value in the first column of table_array, VLookup returns the #N/A error value.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Table_array - two or more columns of data. Use a reference to a range or a range name. The values in the first column of table_array are the values searched by lookup_value. These values can be text, numbers, or logical values. Uppercase and lowercase text are equivalent.",
+                        "isRequired": true,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Col_index_num - the column number in table_array from which the matching value must be returned. A col_index_num of 1 returns the value in the first column in table_array; a col_index_num of 2 returns the value in the second column in table_array, and so on.",
+                        "isRequired": true,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Range_lookup - a logical value that specifies whether you want the VLookup method to find an exact match or an approximate match.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      }
+                    ],
+                    "returnType": "Variant"
+                  }
                 },
                 {
                   "name": "WebService",

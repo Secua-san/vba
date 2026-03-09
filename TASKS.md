@@ -6,6 +6,12 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名データ拡張（第3弾）
+  - `WorksheetFunction` の日付/文字列/検索系メソッド（`EDate` / `EoMonth` / `Text` / `Find` / `Search` / `VLookup`）を署名抽出対象へ追加し、Microsoft Learn 参照 JSON を再生成
+  - server / extension テストに上記 6 メソッドの署名ヘルプ検証を追加し、`Find` / `Search` の省略可能引数メタデータも回帰監視
+  - `WorksheetFunction.Find` の誤った説明文を生成スクリプト側の override で補正
+  - fallback signature help の抑止ケースとして、`Application.WorksheetFunction()`（property）と `Application.AfterCalculate()`（event）が署名対象にならないことを確認
+
 - [x] 組み込みメンバー署名データ拡張（第2弾レビュー修正）
   - 可変引数展開時に parameter table 名との数値サフィックス対応を追加し、`Max` / `Min` の `Arg30` でも `dataType` / `description` / `label` を復元
   - 署名生成前に `...` を除外した parameter name 解決を追加し、`signatureLabel` と parameter metadata の不整合を防止
@@ -173,9 +179,9 @@
 
 ## 次候補
 
-- [ ] 組み込みメンバー署名データの拡張（第3弾）
-  - `WorksheetFunction` の日付/文字列/検索系メソッドにも署名抽出対象を段階拡張する
-  - fallback で返すラベルに、member kind（method / event）を考慮した抑止ケースの追加テストを強化する
+- [ ] 組み込みメンバー署名データの拡張（第4弾）
+  - `WorksheetFunction` の論理・集計系メソッド（`And` / `Or` / `Xor` / `CountA` / `CountBlank` など）を段階拡張する
+  - `Application` 側の fallback 対象を整理し、method 以外の抑止ケースを fixture 単位で追加する
 
 ## メモ
 
