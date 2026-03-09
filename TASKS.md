@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] PR 前サブエージェント設定の `reviewer` 既定化
+  - `docs/process/coderabbit-review.md` の PR 前セルフレビュー担当を `explorer` から `reviewer` へ変更
+  - `docs/process/sub-agent-escalation.md` の PR 前必須レビュー担当を `reviewer` へ変更し、`config.toml` / `reviewer.toml` の確認手順を追加
+  - `AGENTS.md` にも同方針を反映し、PR 作成前は `reviewer` を使う運用に統一
+
 - [x] 組み込み署名データ第5弾レビュー修正
   - extension の `BuiltInMemberSignature` テストで、追加メソッド以降の `vscode.Position` を文字列検索ヘルパー経由に変更し、fixture 行変更への耐性を向上
   - 参照 JSON 生成時の `generatedAt` を出力対象から外し、再生成時の差分ノイズを削減
@@ -13,7 +18,7 @@
 - [x] PR 前サブエージェント自己レビュー運用の追加
   - `docs/process/coderabbit-review.md` に「PR作成前のセルフレビュー（サブエージェント）」を追加
   - `docs/process/sub-agent-escalation.md` に「PR前の必須レビュー」を追加
-  - 次回以降は PR 作成前に `explorer` を既定として差分レビューを実施し、結果要約後に PR を作成する
+  - 次回以降は PR 作成前に `reviewer` を既定として差分レビューを実施し、結果要約後に PR を作成する
 
 - [x] 組み込みメンバー署名データ拡張（第5弾）
   - `WorksheetFunction` の参照・統計系メソッド（`Match` / `Index` / `Lookup` / `HLookup`）を署名抽出対象へ追加し、Microsoft Learn 参照 JSON を再生成
