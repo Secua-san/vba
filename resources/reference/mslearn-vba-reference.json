@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T13:31:08.960Z",
+  "generatedAt": "2026-03-09T13:52:26.386Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -29933,203 +29933,203 @@
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg2 As Variant",
                         "name": "Arg2"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg3 As Variant",
                         "name": "Arg3"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg4 As Variant",
                         "name": "Arg4"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg5 As Variant",
                         "name": "Arg5"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg6 As Variant",
                         "name": "Arg6"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg7 As Variant",
                         "name": "Arg7"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg8 As Variant",
                         "name": "Arg8"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg9 As Variant",
                         "name": "Arg9"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg10 As Variant",
                         "name": "Arg10"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg11 As Variant",
                         "name": "Arg11"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg12 As Variant",
                         "name": "Arg12"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg13 As Variant",
                         "name": "Arg13"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg14 As Variant",
                         "name": "Arg14"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg15 As Variant",
                         "name": "Arg15"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg16 As Variant",
                         "name": "Arg16"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg17 As Variant",
                         "name": "Arg17"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg18 As Variant",
                         "name": "Arg18"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg19 As Variant",
                         "name": "Arg19"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg20 As Variant",
                         "name": "Arg20"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg21 As Variant",
                         "name": "Arg21"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg22 As Variant",
                         "name": "Arg22"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg23 As Variant",
                         "name": "Arg23"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg24 As Variant",
                         "name": "Arg24"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg25 As Variant",
                         "name": "Arg25"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg26 As Variant",
                         "name": "Arg26"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg27 As Variant",
                         "name": "Arg27"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg28 As Variant",
                         "name": "Arg28"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg29 As Variant",
                         "name": "Arg29"
                       },
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg30 As Variant",
                         "name": "Arg30"
                       }

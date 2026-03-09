@@ -377,12 +377,48 @@ End Sub`
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
   assert.equal(worksheetSignature?.parameters.length, 30);
+  assert.equal(worksheetSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
   assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("想定型: Variant"), true);
-  assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("必須引数"), true);
+  assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
   assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("現在の引数型: Long"), true);
   assert.equal(chainedSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
   assert.equal(hover?.contents.includes("Calculate()"), true);
+  assert.equal(hover?.contents.includes("Calculates all open workbooks"), true);
   assert.equal(hover?.contents.includes("Microsoft Learn"), true);
+});
+
+test("document service prioritizes built-in member signature help over workspace callable collisions", () => {
+  const service = createDocumentService();
+  const consumerUri = "file:///C:/temp/BuiltInCollisionConsumer.bas";
+  const collisionUri = "file:///C:/temp/BuiltInCollisionDefinitions.bas";
+
+  service.analyzeText(
+    collisionUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "BuiltInCollisionDefinitions"
+Option Explicit
+
+Public Function Sum(ByVal value As Long) As Long
+    Sum = value
+End Function`
+  );
+  service.analyzeText(
+    consumerUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "BuiltInCollisionConsumer"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print WorksheetFunction.Sum(1, 2)
+End Sub`
+  );
+
+  const signature = service.getSignatureHelp(consumerUri, { character: 42, line: 4 });
+
+  assert.equal(signature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(signature?.documentation?.includes("excel.worksheetfunction.sum"), true);
 });
 
 test("document service keeps built-in signature and hover conservative for shadowed roots", () => {

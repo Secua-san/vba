@@ -410,6 +410,12 @@ export function createDocumentService(): DocumentService {
         return undefined;
       }
 
+      const builtinMember = resolveBuiltinCallableMember(uri, position.line, callContext, resolveDefinition);
+
+      if (builtinMember) {
+        return createBuiltinSignatureHint(state.analysis, uri, position.line, callContext, builtinMember, resolveDefinition);
+      }
+
       const target = resolveDefinition(uri, {
         character: callContext.identifierStartCharacter,
         line: position.line
@@ -431,11 +437,7 @@ export function createDocumentService(): DocumentService {
         return createSignatureHint(state.analysis, uri, target, callable, position.line, callContext, resolveDefinition);
       }
 
-      const builtinMember = resolveBuiltinCallableMember(uri, position.line, callContext, resolveDefinition);
-
-      return builtinMember
-        ? createBuiltinSignatureHint(state.analysis, uri, position.line, callContext, builtinMember, resolveDefinition)
-        : undefined;
+      return undefined;
     },
     getState(uri: string): DocumentState | undefined {
       return documentStates.get(uri);

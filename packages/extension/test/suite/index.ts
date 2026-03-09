@@ -191,12 +191,16 @@ export async function run(): Promise<void> {
     "built-in member signature should include expanded argument metadata"
   );
   assert.ok(
+    getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
+    "built-in member first argument should be required"
+  );
+  assert.ok(
     getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("想定型: Variant"),
     "built-in member parameter should include expected type"
   );
   assert.ok(
-    getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("必須引数"),
-    "built-in member parameter should include required metadata"
+    getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member second argument should be optional"
   );
   assert.ok(
     getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("現在の引数型: Long"),

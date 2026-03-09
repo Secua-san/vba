@@ -13,11 +13,11 @@ const apiBaseUrl = "https://learn.microsoft.com/en-us/office/vba/api/";
 const fetchTimeoutMs = 30_000;
 const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
-const signatureOwnerNames = new Set(["Application", "WorksheetFunction"]);
 const signatureMemberAllowList = new Map([
   ["Application", new Set(["Calculate"])],
   ["WorksheetFunction", new Set(["Sum"])],
 ]);
+const signatureOwnerNames = new Set(signatureMemberAllowList.keys());
 const microsoftLearnClient = createMcpRequestClient({
   baseDelayMs: 2_000,
   maxDelayMs: 60_000,
@@ -325,7 +325,7 @@ async function enrichApiMethodSignatures(items) {
   for (const item of items) {
     const allowedMembers = signatureMemberAllowList.get(item.name);
 
-    if (!allowedMembers || !signatureOwnerNames.has(item.name)) {
+    if (!allowedMembers) {
       continue;
     }
 
@@ -590,6 +590,22 @@ function buildSignatureParameterMetadata(syntaxParameterNames, tableRows) {
   });
 }
 
+function adjustSignatureParameterRequirements(ownerName, memberName, parameters) {
+  if (
+    ownerName !== "WorksheetFunction" ||
+    memberName !== "Sum" ||
+    parameters.length === 0 ||
+    parameters[0].name !== "Arg1"
+  ) {
+    return parameters;
+  }
+
+  return parameters.map((parameter, index) => ({
+    ...parameter,
+    isRequired: index === 0,
+  }));
+}
+
 function summarizeSignatureLabelParameters(parameterNames) {
   if (parameterNames.length <= 6) {
     return parameterNames;
@@ -612,7 +628,11 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
   const syntaxLine = extractSyntaxLine(syntaxSection);
   const syntaxParameterNames = extractSyntaxParameterNames(syntaxLine);
   const parameterTableRows = parseParameterTableRows(parametersSection);
-  const parameters = buildSignatureParameterMetadata(syntaxParameterNames, parameterTableRows);
+  const parameters = adjustSignatureParameterRequirements(
+    ownerName,
+    memberName,
+    buildSignatureParameterMetadata(syntaxParameterNames, parameterTableRows),
+  );
   const returnType = extractReturnType(returnValueSection);
 
   return {

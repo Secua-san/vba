@@ -24,9 +24,9 @@ export type {
   BuiltinCompletionKind,
   BuiltinMemberReferenceItem,
   BuiltinReferenceItem,
-  BuiltinSignatureParameter,
   BuiltinSemanticModifier,
-  BuiltinSemanticType
+  BuiltinSemanticType,
+  BuiltinSignatureParameter
 } from "./reference/builtinReference";
 export { buildModuleSymbols, getAccessibleSymbolsAtLine } from "./symbol/buildModuleSymbols";
 export { normalizeIdentifier } from "./types/helpers";
