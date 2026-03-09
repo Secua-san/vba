@@ -188,37 +188,52 @@ export async function run(): Promise<void> {
     new vscode.Position(8, 46),
     (help) => help.signatures.length > 0
   );
+  const builtInEomonthSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(9, 48),
+    (help) => help.signatures.length > 0
+  );
+  const builtInFindSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(10, 42),
+    (help) => help.signatures.length > 0
+  );
+  const builtInSearchSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(11, 44),
+    (help) => help.signatures.length > 0
+  );
   const builtInTextSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(9, 44),
+    new vscode.Position(12, 44),
     (help) => help.signatures.length > 0
   );
   const builtInVlookupSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(10, 63),
+    new vscode.Position(13, 63),
     (help) => help.signatures.length > 0
   );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(11, 35),
+    new vscode.Position(14, 35),
     (help) => help.signatures.length > 0
   );
   const builtInFallbackSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(12, 36),
+    new vscode.Position(15, 36),
     (help) => help.signatures.length > 0
   );
   const builtInPropertyFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(13, 39)
+    new vscode.Position(16, 39)
   );
   const builtInEventFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(14, 35)
+    new vscode.Position(17, 35)
   );
   const builtInHover = await waitForHover(
     builtInSignatureDocument,
-    new vscode.Position(15, 30),
+    new vscode.Position(18, 30),
     (hovers) => hovers.length > 0
   );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
@@ -281,6 +296,44 @@ export async function run(): Promise<void> {
     builtInEdateSignatureHelp.signatures[0]?.parameters.length,
     2,
     "built-in member EDate signature should keep fixed parameter metadata"
+  );
+  assert.equal(
+    builtInEomonthSignatureHelp.signatures[0]?.label,
+    "EoMonth(Arg1, Arg2) As Double",
+    "built-in member signature should be available for WorksheetFunction.EoMonth"
+  );
+  assert.equal(
+    builtInEomonthSignatureHelp.signatures[0]?.parameters.length,
+    2,
+    "built-in member EoMonth signature should keep fixed parameter metadata"
+  );
+  assert.equal(
+    builtInFindSignatureHelp.signatures[0]?.label,
+    "Find(Arg1, Arg2, Arg3) As Double",
+    "built-in member signature should be available for WorksheetFunction.Find"
+  );
+  assert.equal(
+    builtInFindSignatureHelp.signatures[0]?.parameters.length,
+    3,
+    "built-in member Find signature should expose optional third argument"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInFindSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes("省略可能"),
+    "built-in member Find third argument should be optional"
+  );
+  assert.equal(
+    builtInSearchSignatureHelp.signatures[0]?.label,
+    "Search(Arg1, Arg2, Arg3) As Double",
+    "built-in member signature should be available for WorksheetFunction.Search"
+  );
+  assert.equal(
+    builtInSearchSignatureHelp.signatures[0]?.parameters.length,
+    3,
+    "built-in member Search signature should expose optional third argument"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInSearchSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes("省略可能"),
+    "built-in member Search third argument should be optional"
   );
   assert.equal(
     builtInTextSignatureHelp.signatures[0]?.label,
@@ -856,21 +909,21 @@ async function waitForNoSignatureHelp(
   document: vscode.TextDocument,
   position: vscode.Position
 ): Promise<boolean> {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     const signatureHelp = await vscode.commands.executeCommand<vscode.SignatureHelp>(
       "vscode.executeSignatureHelpProvider",
       document.uri,
       position
     );
 
-    if (!signatureHelp || signatureHelp.signatures.length === 0) {
-      return true;
+    if (signatureHelp) {
+      return false;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
-  return false;
+  return true;
 }
 
 async function waitForHover(

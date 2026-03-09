@@ -8,7 +8,8 @@
 
 - [x] 組み込みメンバー署名データ拡張（第3弾）
   - `WorksheetFunction` の日付/文字列/検索系メソッド（`EDate` / `EoMonth` / `Text` / `Find` / `Search` / `VLookup`）を署名抽出対象へ追加し、Microsoft Learn 参照 JSON を再生成
-  - server / extension テストに `EDate` / `Text` / `VLookup` の署名ヘルプ検証を追加
+  - server / extension テストに上記 6 メソッドの署名ヘルプ検証を追加し、`Find` / `Search` の省略可能引数メタデータも回帰監視
+  - `WorksheetFunction.Find` の誤った説明文を生成スクリプト側の override で補正
   - fallback signature help の抑止ケースとして、`Application.WorksheetFunction()`（property）と `Application.AfterCalculate()`（event）が署名対象にならないことを確認
 
 - [x] 組み込みメンバー署名データ拡張（第2弾レビュー修正）

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T14:56:05.401Z",
+  "generatedAt": "2026-03-09T15:18:11.425Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -29406,28 +29406,28 @@
                   "name": "Find",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.find",
                   "tocHref": "excel.worksheetfunction.find",
-                  "summary": "Finds specific information on a worksheet.",
+                  "summary": "Finds a substring within a text string and returns the starting position.",
                   "signature": {
                     "label": "Find(Arg1, Arg2, Arg3) As Double",
                     "ownerName": "WorksheetFunction",
                     "parameters": [
                       {
                         "dataType": "String",
-                        "description": "The name of the worksheet.",
+                        "description": "Find_text - the text that you want to find.",
                         "isRequired": true,
                         "label": "Arg1 As String",
                         "name": "Arg1"
                       },
                       {
                         "dataType": "String",
-                        "description": "The name of the range.",
+                        "description": "Within_text - the text in which you want to search for find_text.",
                         "isRequired": true,
                         "label": "Arg2 As String",
                         "name": "Arg2"
                       },
                       {
                         "dataType": "Variant",
-                        "description": "The name of an argument to refine the search.",
+                        "description": "Start_num - the character number in within_text at which you want to start searching.",
                         "isRequired": false,
                         "label": "Arg3 As Variant",
                         "name": "Arg3"

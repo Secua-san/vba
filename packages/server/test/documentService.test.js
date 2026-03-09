@@ -369,6 +369,9 @@ Public Sub Demo()
     Debug.Print Application.WorksheetFunction.Power(2, 3)
     Debug.Print WorksheetFunction.Average(1, 2, 3)
     Debug.Print WorksheetFunction.EDate(Date, 1)
+    Debug.Print WorksheetFunction.EoMonth(Date, 1)
+    Debug.Print WorksheetFunction.Find("A", "ABC")
+    Debug.Print WorksheetFunction.Search("A", "ABC")
     Debug.Print WorksheetFunction.Text(Now, "yyyy-mm-dd")
     Debug.Print WorksheetFunction.VLookup("A", Range("A1:B2"), 2, False)
     Call Application.CalculateFull()
@@ -384,13 +387,16 @@ End Sub`
   const powerSignature = service.getSignatureHelp(uri, { character: 56, line: 6 });
   const averageSignature = service.getSignatureHelp(uri, { character: 46, line: 7 });
   const edateSignature = service.getSignatureHelp(uri, { character: 46, line: 8 });
-  const textSignature = service.getSignatureHelp(uri, { character: 44, line: 9 });
-  const vlookupSignature = service.getSignatureHelp(uri, { character: 63, line: 10 });
-  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 11 });
-  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 12 });
-  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 13 });
-  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 14 });
-  const hover = service.getHover(uri, { character: 30, line: 15 });
+  const eomonthSignature = service.getSignatureHelp(uri, { character: 48, line: 9 });
+  const findSignature = service.getSignatureHelp(uri, { character: 42, line: 10 });
+  const searchSignature = service.getSignatureHelp(uri, { character: 44, line: 11 });
+  const textSignature = service.getSignatureHelp(uri, { character: 44, line: 12 });
+  const vlookupSignature = service.getSignatureHelp(uri, { character: 63, line: 13 });
+  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 14 });
+  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 15 });
+  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 16 });
+  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 17 });
+  const hover = service.getHover(uri, { character: 30, line: 18 });
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -406,6 +412,14 @@ End Sub`
   assert.equal(averageSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
   assert.equal(edateSignature?.label, "EDate(Arg1, Arg2) As Double");
   assert.equal(edateSignature?.parameters.length, 2);
+  assert.equal(eomonthSignature?.label, "EoMonth(Arg1, Arg2) As Double");
+  assert.equal(eomonthSignature?.parameters.length, 2);
+  assert.equal(findSignature?.label, "Find(Arg1, Arg2, Arg3) As Double");
+  assert.equal(findSignature?.parameters.length, 3);
+  assert.equal(findSignature?.parameters[2]?.documentation?.includes("省略可能"), true);
+  assert.equal(searchSignature?.label, "Search(Arg1, Arg2, Arg3) As Double");
+  assert.equal(searchSignature?.parameters.length, 3);
+  assert.equal(searchSignature?.parameters[2]?.documentation?.includes("省略可能"), true);
   assert.equal(textSignature?.label, "Text(Arg1, Arg2) As String");
   assert.equal(textSignature?.parameters.length, 2);
   assert.equal(vlookupSignature?.label, "VLookup(Arg1, Arg2, Arg3, Arg4) As Variant");
