@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名データ拡張（第4弾レビュー修正）
+  - `WorksheetFunction.Or` / `WorksheetFunction.Xor` の `Arg2` 以降で不足していた `dataType` / `description` / `isRequired` を再生成ロジック側で補完
+  - 署名パラメータ展開で `Arg1-Arg30` / `Arg1...Arg30` / `Arg1…Arg30` の表記ゆれを扱えるようにして、可変引数判定の `…` も吸収
+  - server / extension テストに `Or` / `Xor` 第2引数の `Variant` と省略可能フラグの回帰確認を追加
+
 - [x] 組み込みメンバー署名データ拡張（第4弾）
   - `WorksheetFunction` の論理・集計系メソッド（`And` / `Or` / `Xor` / `CountA` / `CountBlank`）を署名抽出対象へ追加し、Microsoft Learn 参照 JSON を再生成
   - server / extension テストに上記 5 メソッドの署名ヘルプ検証を追加し、`And` / `CountA` の省略可能引数メタデータを回帰監視

@@ -392,6 +392,14 @@ export async function run(): Promise<void> {
     30,
     "built-in member Or signature should expose variadic parameter metadata"
   );
+  assert.ok(
+    getSignatureDocumentation(builtInOrSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("想定型: Variant"),
+    "built-in member Or second argument should include expected type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInOrSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member Or second argument should be optional"
+  );
   assert.equal(
     builtInXorSignatureHelp.signatures[0]?.label,
     "Xor(Arg1, Arg2, Arg3, ..., Arg30) As Boolean",
@@ -401,6 +409,14 @@ export async function run(): Promise<void> {
     builtInXorSignatureHelp.signatures[0]?.parameters.length,
     30,
     "built-in member Xor signature should expose variadic parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInXorSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("想定型: Variant"),
+    "built-in member Xor second argument should include expected type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInXorSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member Xor second argument should be optional"
   );
   assert.equal(
     builtInCountASignatureHelp.signatures[0]?.label,

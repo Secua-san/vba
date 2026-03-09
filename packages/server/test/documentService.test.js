@@ -439,8 +439,12 @@ End Sub`
   assert.equal(andSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
   assert.equal(orSignature?.label, "Or(Arg1, Arg2, Arg3, ..., Arg30) As Boolean");
   assert.equal(orSignature?.parameters.length, 30);
+  assert.equal(orSignature?.parameters[1]?.documentation?.includes("想定型: Variant"), true);
+  assert.equal(orSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
   assert.equal(xorSignature?.label, "Xor(Arg1, Arg2, Arg3, ..., Arg30) As Boolean");
   assert.equal(xorSignature?.parameters.length, 30);
+  assert.equal(xorSignature?.parameters[1]?.documentation?.includes("想定型: Variant"), true);
+  assert.equal(xorSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
   assert.equal(countASignature?.label, "CountA(Arg1, Arg2, Arg3, ..., Arg30) As Double");
   assert.equal(countASignature?.parameters.length, 30);
   assert.equal(countASignature?.parameters[1]?.documentation?.includes("省略可能"), true);

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T15:29:01.310Z",
+  "generatedAt": "2026-03-09T15:56:47.081Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -30381,115 +30381,199 @@
                         "name": "Arg1"
                       },
                       {
-                        "label": "Arg2",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
                         "name": "Arg2"
                       },
                       {
-                        "label": "Arg3",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
                         "name": "Arg3"
                       },
                       {
-                        "label": "Arg4",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
                         "name": "Arg4"
                       },
                       {
-                        "label": "Arg5",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
                         "name": "Arg5"
                       },
                       {
-                        "label": "Arg6",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
                         "name": "Arg6"
                       },
                       {
-                        "label": "Arg7",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
                         "name": "Arg7"
                       },
                       {
-                        "label": "Arg8",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
                         "name": "Arg8"
                       },
                       {
-                        "label": "Arg9",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
                         "name": "Arg9"
                       },
                       {
-                        "label": "Arg10",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
                         "name": "Arg10"
                       },
                       {
-                        "label": "Arg11",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
                         "name": "Arg11"
                       },
                       {
-                        "label": "Arg12",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
                         "name": "Arg12"
                       },
                       {
-                        "label": "Arg13",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
                         "name": "Arg13"
                       },
                       {
-                        "label": "Arg14",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
                         "name": "Arg14"
                       },
                       {
-                        "label": "Arg15",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
                         "name": "Arg15"
                       },
                       {
-                        "label": "Arg16",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
                         "name": "Arg16"
                       },
                       {
-                        "label": "Arg17",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
                         "name": "Arg17"
                       },
                       {
-                        "label": "Arg18",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
                         "name": "Arg18"
                       },
                       {
-                        "label": "Arg19",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
                         "name": "Arg19"
                       },
                       {
-                        "label": "Arg20",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
                         "name": "Arg20"
                       },
                       {
-                        "label": "Arg21",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
                         "name": "Arg21"
                       },
                       {
-                        "label": "Arg22",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
                         "name": "Arg22"
                       },
                       {
-                        "label": "Arg23",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
                         "name": "Arg23"
                       },
                       {
-                        "label": "Arg24",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
                         "name": "Arg24"
                       },
                       {
-                        "label": "Arg25",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
                         "name": "Arg25"
                       },
                       {
-                        "label": "Arg26",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
                         "name": "Arg26"
                       },
                       {
-                        "label": "Arg27",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
                         "name": "Arg27"
                       },
                       {
-                        "label": "Arg28",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
                         "name": "Arg28"
                       },
                       {
-                        "label": "Arg29",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
                         "name": "Arg29"
                       },
                       {
@@ -30750,115 +30834,199 @@
                         "name": "Arg1"
                       },
                       {
-                        "label": "Arg2",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
                         "name": "Arg2"
                       },
                       {
-                        "label": "Arg3",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
                         "name": "Arg3"
                       },
                       {
-                        "label": "Arg4",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
                         "name": "Arg4"
                       },
                       {
-                        "label": "Arg5",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
                         "name": "Arg5"
                       },
                       {
-                        "label": "Arg6",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
                         "name": "Arg6"
                       },
                       {
-                        "label": "Arg7",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
                         "name": "Arg7"
                       },
                       {
-                        "label": "Arg8",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
                         "name": "Arg8"
                       },
                       {
-                        "label": "Arg9",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
                         "name": "Arg9"
                       },
                       {
-                        "label": "Arg10",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
                         "name": "Arg10"
                       },
                       {
-                        "label": "Arg11",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
                         "name": "Arg11"
                       },
                       {
-                        "label": "Arg12",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
                         "name": "Arg12"
                       },
                       {
-                        "label": "Arg13",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
                         "name": "Arg13"
                       },
                       {
-                        "label": "Arg14",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
                         "name": "Arg14"
                       },
                       {
-                        "label": "Arg15",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
                         "name": "Arg15"
                       },
                       {
-                        "label": "Arg16",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
                         "name": "Arg16"
                       },
                       {
-                        "label": "Arg17",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
                         "name": "Arg17"
                       },
                       {
-                        "label": "Arg18",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
                         "name": "Arg18"
                       },
                       {
-                        "label": "Arg19",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
                         "name": "Arg19"
                       },
                       {
-                        "label": "Arg20",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
                         "name": "Arg20"
                       },
                       {
-                        "label": "Arg21",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
                         "name": "Arg21"
                       },
                       {
-                        "label": "Arg22",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
                         "name": "Arg22"
                       },
                       {
-                        "label": "Arg23",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
                         "name": "Arg23"
                       },
                       {
-                        "label": "Arg24",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
                         "name": "Arg24"
                       },
                       {
-                        "label": "Arg25",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
                         "name": "Arg25"
                       },
                       {
-                        "label": "Arg26",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
                         "name": "Arg26"
                       },
                       {
-                        "label": "Arg27",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
                         "name": "Arg27"
                       },
                       {
-                        "label": "Arg28",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
                         "name": "Arg28"
                       },
                       {
-                        "label": "Arg29",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
                         "name": "Arg29"
                       },
                       {
@@ -31054,119 +31222,206 @@
                         "name": "Arg1"
                       },
                       {
-                        "label": "Arg2",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
                         "name": "Arg2"
                       },
                       {
-                        "label": "Arg3",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
                         "name": "Arg3"
                       },
                       {
-                        "label": "Arg4",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
                         "name": "Arg4"
                       },
                       {
-                        "label": "Arg5",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
                         "name": "Arg5"
                       },
                       {
-                        "label": "Arg6",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
                         "name": "Arg6"
                       },
                       {
-                        "label": "Arg7",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
                         "name": "Arg7"
                       },
                       {
-                        "label": "Arg8",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
                         "name": "Arg8"
                       },
                       {
-                        "label": "Arg9",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
                         "name": "Arg9"
                       },
                       {
-                        "label": "Arg10",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
                         "name": "Arg10"
                       },
                       {
-                        "label": "Arg11",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
                         "name": "Arg11"
                       },
                       {
-                        "label": "Arg12",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
                         "name": "Arg12"
                       },
                       {
-                        "label": "Arg13",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
                         "name": "Arg13"
                       },
                       {
-                        "label": "Arg14",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
                         "name": "Arg14"
                       },
                       {
-                        "label": "Arg15",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
                         "name": "Arg15"
                       },
                       {
-                        "label": "Arg16",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
                         "name": "Arg16"
                       },
                       {
-                        "label": "Arg17",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
                         "name": "Arg17"
                       },
                       {
-                        "label": "Arg18",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
                         "name": "Arg18"
                       },
                       {
-                        "label": "Arg19",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
                         "name": "Arg19"
                       },
                       {
-                        "label": "Arg20",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
                         "name": "Arg20"
                       },
                       {
-                        "label": "Arg21",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
                         "name": "Arg21"
                       },
                       {
-                        "label": "Arg22",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
                         "name": "Arg22"
                       },
                       {
-                        "label": "Arg23",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
                         "name": "Arg23"
                       },
                       {
-                        "label": "Arg24",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
                         "name": "Arg24"
                       },
                       {
-                        "label": "Arg25",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
                         "name": "Arg25"
                       },
                       {
-                        "label": "Arg26",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
                         "name": "Arg26"
                       },
                       {
-                        "label": "Arg27",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
                         "name": "Arg27"
                       },
                       {
-                        "label": "Arg28",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
                         "name": "Arg28"
                       },
                       {
-                        "label": "Arg29",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
                         "name": "Arg29"
                       },
                       {
-                        "label": "Arg30",
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
                         "name": "Arg30"
                       }
                     ],
@@ -32094,115 +32349,199 @@
                         "name": "Arg1"
                       },
                       {
-                        "label": "Arg2",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
                         "name": "Arg2"
                       },
                       {
-                        "label": "Arg3",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
                         "name": "Arg3"
                       },
                       {
-                        "label": "Arg4",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
                         "name": "Arg4"
                       },
                       {
-                        "label": "Arg5",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
                         "name": "Arg5"
                       },
                       {
-                        "label": "Arg6",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
                         "name": "Arg6"
                       },
                       {
-                        "label": "Arg7",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
                         "name": "Arg7"
                       },
                       {
-                        "label": "Arg8",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
                         "name": "Arg8"
                       },
                       {
-                        "label": "Arg9",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
                         "name": "Arg9"
                       },
                       {
-                        "label": "Arg10",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
                         "name": "Arg10"
                       },
                       {
-                        "label": "Arg11",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
                         "name": "Arg11"
                       },
                       {
-                        "label": "Arg12",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
                         "name": "Arg12"
                       },
                       {
-                        "label": "Arg13",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
                         "name": "Arg13"
                       },
                       {
-                        "label": "Arg14",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
                         "name": "Arg14"
                       },
                       {
-                        "label": "Arg15",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
                         "name": "Arg15"
                       },
                       {
-                        "label": "Arg16",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
                         "name": "Arg16"
                       },
                       {
-                        "label": "Arg17",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
                         "name": "Arg17"
                       },
                       {
-                        "label": "Arg18",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
                         "name": "Arg18"
                       },
                       {
-                        "label": "Arg19",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
                         "name": "Arg19"
                       },
                       {
-                        "label": "Arg20",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
                         "name": "Arg20"
                       },
                       {
-                        "label": "Arg21",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
                         "name": "Arg21"
                       },
                       {
-                        "label": "Arg22",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
                         "name": "Arg22"
                       },
                       {
-                        "label": "Arg23",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
                         "name": "Arg23"
                       },
                       {
-                        "label": "Arg24",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
                         "name": "Arg24"
                       },
                       {
-                        "label": "Arg25",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
                         "name": "Arg25"
                       },
                       {
-                        "label": "Arg26",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
                         "name": "Arg26"
                       },
                       {
-                        "label": "Arg27",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
                         "name": "Arg27"
                       },
                       {
-                        "label": "Arg28",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
                         "name": "Arg28"
                       },
                       {
-                        "label": "Arg29",
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
                         "name": "Arg29"
                       },
                       {
