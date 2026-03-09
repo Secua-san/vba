@@ -6,6 +6,15 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名データ拡張（第2弾レビュー修正）
+  - 可変引数展開時に parameter table 名との数値サフィックス対応を追加し、`Max` / `Min` の `Arg30` でも `dataType` / `description` / `label` を復元
+  - 署名生成前に `...` を除外した parameter name 解決を追加し、`signatureLabel` と parameter metadata の不整合を防止
+
+- [x] 組み込みメンバー署名データ拡張（第2弾）
+  - `WorksheetFunction.Average` / `Count` / `Max` / `Median` / `Min` を署名抽出対象に追加し、Microsoft Learn 参照 JSON を再生成
+  - ParamArray 系の `Arg1..ArgN` かつ `...` を含む署名では、個別メソッド分岐ではなく汎用ルールで `Arg2` 以降を省略可能へ補正
+  - server / extension テストに `Average` の可変引数署名を追加し、fallback 表示との差分を回帰確認
+
 - [x] 組み込みメンバー署名データ拡張（第1弾）
   - `signatureMemberAllowList` を拡張し、`Application.CalculateFull` / `CalculateFullRebuild` / `CalculateUntilAsyncQueriesDone` と `WorksheetFunction.Power` / `Round` の署名を Microsoft Learn から再生成
   - 署名未収録の built-in callable でも、`Application.OnTime()` のような fallback signature help を返す保守動作を追加
@@ -164,9 +173,9 @@
 
 ## 次候補
 
-- [ ] 組み込みメンバー署名データの拡張（第2弾）
-  - `signatureMemberAllowList` を段階的に拡張し、`WorksheetFunction` の代表的な算術・統計メソッドを優先追加する
-  - ParamArray 系メソッドの必須/省略可能判定を個別補正から汎用ルールへ寄せる
+- [ ] 組み込みメンバー署名データの拡張（第3弾）
+  - `WorksheetFunction` の日付/文字列/検索系メソッドにも署名抽出対象を段階拡張する
+  - fallback で返すラベルに、member kind（method / event）を考慮した抑止ケースの追加テストを強化する
 
 ## メモ
 

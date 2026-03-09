@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T14:19:30.620Z",
+  "generatedAt": "2026-03-09T14:47:48.943Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -28340,7 +28340,225 @@
                 {
                   "name": "Average",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.average",
-                  "tocHref": "excel.worksheetfunction.average"
+                  "tocHref": "excel.worksheetfunction.average",
+                  "summary": "Returns the average (arithmetic mean) of the arguments.",
+                  "signature": {
+                    "label": "Average(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 numeric arguments for which you want the average.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "AverageIf",
@@ -28585,7 +28803,225 @@
                 {
                   "name": "Count",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.count",
-                  "tocHref": "excel.worksheetfunction.count"
+                  "tocHref": "excel.worksheetfunction.count",
+                  "summary": "Counts the number of cells that contain numbers and counts numbers within the list of arguments.",
+                  "signature": {
+                    "label": "Count(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments that can contain or refer to a variety of different types of data, but only numbers are counted.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "CountA",
@@ -29410,7 +29846,138 @@
                 {
                   "name": "Max",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.max",
-                  "tocHref": "excel.worksheetfunction.max"
+                  "tocHref": "excel.worksheetfunction.max",
+                  "summary": "Returns the largest value in a set of values.",
+                  "signature": {
+                    "label": "Max(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "label": "Arg1",
+                        "name": "Arg1"
+                      },
+                      {
+                        "label": "Arg2",
+                        "name": "Arg2"
+                      },
+                      {
+                        "label": "Arg3",
+                        "name": "Arg3"
+                      },
+                      {
+                        "label": "Arg4",
+                        "name": "Arg4"
+                      },
+                      {
+                        "label": "Arg5",
+                        "name": "Arg5"
+                      },
+                      {
+                        "label": "Arg6",
+                        "name": "Arg6"
+                      },
+                      {
+                        "label": "Arg7",
+                        "name": "Arg7"
+                      },
+                      {
+                        "label": "Arg8",
+                        "name": "Arg8"
+                      },
+                      {
+                        "label": "Arg9",
+                        "name": "Arg9"
+                      },
+                      {
+                        "label": "Arg10",
+                        "name": "Arg10"
+                      },
+                      {
+                        "label": "Arg11",
+                        "name": "Arg11"
+                      },
+                      {
+                        "label": "Arg12",
+                        "name": "Arg12"
+                      },
+                      {
+                        "label": "Arg13",
+                        "name": "Arg13"
+                      },
+                      {
+                        "label": "Arg14",
+                        "name": "Arg14"
+                      },
+                      {
+                        "label": "Arg15",
+                        "name": "Arg15"
+                      },
+                      {
+                        "label": "Arg16",
+                        "name": "Arg16"
+                      },
+                      {
+                        "label": "Arg17",
+                        "name": "Arg17"
+                      },
+                      {
+                        "label": "Arg18",
+                        "name": "Arg18"
+                      },
+                      {
+                        "label": "Arg19",
+                        "name": "Arg19"
+                      },
+                      {
+                        "label": "Arg20",
+                        "name": "Arg20"
+                      },
+                      {
+                        "label": "Arg21",
+                        "name": "Arg21"
+                      },
+                      {
+                        "label": "Arg22",
+                        "name": "Arg22"
+                      },
+                      {
+                        "label": "Arg23",
+                        "name": "Arg23"
+                      },
+                      {
+                        "label": "Arg24",
+                        "name": "Arg24"
+                      },
+                      {
+                        "label": "Arg25",
+                        "name": "Arg25"
+                      },
+                      {
+                        "label": "Arg26",
+                        "name": "Arg26"
+                      },
+                      {
+                        "label": "Arg27",
+                        "name": "Arg27"
+                      },
+                      {
+                        "label": "Arg28",
+                        "name": "Arg28"
+                      },
+                      {
+                        "label": "Arg29",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": true,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "MDeterm",
@@ -29425,12 +29992,361 @@
                 {
                   "name": "Median",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.median",
-                  "tocHref": "excel.worksheetfunction.median"
+                  "tocHref": "excel.worksheetfunction.median",
+                  "summary": "Returns the median of the given numbers. The median is the number in the middle of a set of numbers.",
+                  "signature": {
+                    "label": "Median(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want the median.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "Min",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.min",
-                  "tocHref": "excel.worksheetfunction.min"
+                  "tocHref": "excel.worksheetfunction.min",
+                  "summary": "Returns the smallest number in a set of values.",
+                  "signature": {
+                    "label": "Min(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "label": "Arg1",
+                        "name": "Arg1"
+                      },
+                      {
+                        "label": "Arg2",
+                        "name": "Arg2"
+                      },
+                      {
+                        "label": "Arg3",
+                        "name": "Arg3"
+                      },
+                      {
+                        "label": "Arg4",
+                        "name": "Arg4"
+                      },
+                      {
+                        "label": "Arg5",
+                        "name": "Arg5"
+                      },
+                      {
+                        "label": "Arg6",
+                        "name": "Arg6"
+                      },
+                      {
+                        "label": "Arg7",
+                        "name": "Arg7"
+                      },
+                      {
+                        "label": "Arg8",
+                        "name": "Arg8"
+                      },
+                      {
+                        "label": "Arg9",
+                        "name": "Arg9"
+                      },
+                      {
+                        "label": "Arg10",
+                        "name": "Arg10"
+                      },
+                      {
+                        "label": "Arg11",
+                        "name": "Arg11"
+                      },
+                      {
+                        "label": "Arg12",
+                        "name": "Arg12"
+                      },
+                      {
+                        "label": "Arg13",
+                        "name": "Arg13"
+                      },
+                      {
+                        "label": "Arg14",
+                        "name": "Arg14"
+                      },
+                      {
+                        "label": "Arg15",
+                        "name": "Arg15"
+                      },
+                      {
+                        "label": "Arg16",
+                        "name": "Arg16"
+                      },
+                      {
+                        "label": "Arg17",
+                        "name": "Arg17"
+                      },
+                      {
+                        "label": "Arg18",
+                        "name": "Arg18"
+                      },
+                      {
+                        "label": "Arg19",
+                        "name": "Arg19"
+                      },
+                      {
+                        "label": "Arg20",
+                        "name": "Arg20"
+                      },
+                      {
+                        "label": "Arg21",
+                        "name": "Arg21"
+                      },
+                      {
+                        "label": "Arg22",
+                        "name": "Arg22"
+                      },
+                      {
+                        "label": "Arg23",
+                        "name": "Arg23"
+                      },
+                      {
+                        "label": "Arg24",
+                        "name": "Arg24"
+                      },
+                      {
+                        "label": "Arg25",
+                        "name": "Arg25"
+                      },
+                      {
+                        "label": "Arg26",
+                        "name": "Arg26"
+                      },
+                      {
+                        "label": "Arg27",
+                        "name": "Arg27"
+                      },
+                      {
+                        "label": "Arg28",
+                        "name": "Arg28"
+                      },
+                      {
+                        "label": "Arg29",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": true,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "MInverse",

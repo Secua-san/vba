@@ -367,6 +367,7 @@ Public Sub Demo()
     Debug.Print WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Power(2, 3)
+    Debug.Print WorksheetFunction.Average(1, 2, 3)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Debug.Print Application.Calculate
@@ -376,9 +377,10 @@ End Sub`
   const worksheetSignature = service.getSignatureHelp(uri, { character: 42, line: 4 });
   const chainedSignature = service.getSignatureHelp(uri, { character: 54, line: 5 });
   const powerSignature = service.getSignatureHelp(uri, { character: 56, line: 6 });
-  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 7 });
-  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 8 });
-  const hover = service.getHover(uri, { character: 30, line: 9 });
+  const averageSignature = service.getSignatureHelp(uri, { character: 46, line: 7 });
+  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 8 });
+  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 9 });
+  const hover = service.getHover(uri, { character: 30, line: 10 });
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -390,6 +392,8 @@ End Sub`
   assert.equal(chainedSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
   assert.equal(powerSignature?.label.includes("Power("), true);
   assert.equal(powerSignature?.parameters.length, 2);
+  assert.equal(averageSignature?.label, "Average(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(averageSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
   assert.equal(extractedZeroArgSignature?.label, "CalculateFull()");
   assert.equal(extractedZeroArgSignature?.parameters.length, 0);
   assert.equal(fallbackSignature?.label, "Application.OnTime()");
