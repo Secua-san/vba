@@ -9,7 +9,7 @@
 - [x] CodeRabbit レビュー要約ログ運用の追加
   - `docs/process/coderabbit-review-summaries.md` を新規追加し、PR ごとのレビュー要約テンプレートと記録を追加
   - 要約には「この作業で当てはまりそうな内容（横展開候補）」を必須項目として定義
-  - `docs/process/coderabbit-review.md` / `AGENTS.md` にログ追記ルールを反映
+  - `docs/process/coderabbit-review.md` / `docs/process/sub-agent-escalation.md` / `AGENTS.md` にログ追記ルールを反映
 
 - [x] PR 前サブエージェント設定の `reviewer` 既定化
   - `docs/process/coderabbit-review.md` の PR 前セルフレビュー担当を `explorer` から `reviewer` へ変更
