@@ -17,7 +17,27 @@ const signatureMemberAllowList = new Map([
   ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
   [
     "WorksheetFunction",
-    new Set(["Average", "Count", "EDate", "EoMonth", "Find", "Max", "Median", "Min", "Power", "Round", "Search", "Sum", "Text", "VLookup"])
+    new Set([
+      "And",
+      "Average",
+      "Count",
+      "CountA",
+      "CountBlank",
+      "EDate",
+      "EoMonth",
+      "Find",
+      "Max",
+      "Median",
+      "Min",
+      "Or",
+      "Power",
+      "Round",
+      "Search",
+      "Sum",
+      "Text",
+      "VLookup",
+      "Xor",
+    ])
   ],
 ]);
 const signatureMetadataOverrides = new Map([

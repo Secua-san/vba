@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名データ拡張（第4弾）
+  - `WorksheetFunction` の論理・集計系メソッド（`And` / `Or` / `Xor` / `CountA` / `CountBlank`）を署名抽出対象へ追加し、Microsoft Learn 参照 JSON を再生成
+  - server / extension テストに上記 5 メソッドの署名ヘルプ検証を追加し、`And` / `CountA` の省略可能引数メタデータを回帰監視
+  - `Application` 側 fallback の抑止ケースとして、`ActiveCell`（property）と `NewWorkbook`（event）の呼び出しでも署名を返さないことを fixture 単位で確認
+
 - [x] 組み込みメンバー署名データ拡張（第3弾）
   - `WorksheetFunction` の日付/文字列/検索系メソッド（`EDate` / `EoMonth` / `Text` / `Find` / `Search` / `VLookup`）を署名抽出対象へ追加し、Microsoft Learn 参照 JSON を再生成
   - server / extension テストに上記 6 メソッドの署名ヘルプ検証を追加し、`Find` / `Search` の省略可能引数メタデータも回帰監視
@@ -179,9 +184,9 @@
 
 ## 次候補
 
-- [ ] 組み込みメンバー署名データの拡張（第4弾）
-  - `WorksheetFunction` の論理・集計系メソッド（`And` / `Or` / `Xor` / `CountA` / `CountBlank` など）を段階拡張する
-  - `Application` 側の fallback 対象を整理し、method 以外の抑止ケースを fixture 単位で追加する
+- [ ] 組み込みメンバー署名データの拡張（第5弾）
+  - `WorksheetFunction` の参照・統計系メソッド（`Match` / `Index` / `Lookup` / `HLookup` など）を段階拡張する
+  - variadic 署名で metadata が欠落しやすいメソッド（`Or` / `Xor` など）の補完ルールを見直す
 
 ## メモ
 

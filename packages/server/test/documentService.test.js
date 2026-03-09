@@ -372,12 +372,19 @@ Public Sub Demo()
     Debug.Print WorksheetFunction.EoMonth(Date, 1)
     Debug.Print WorksheetFunction.Find("A", "ABC")
     Debug.Print WorksheetFunction.Search("A", "ABC")
+    Debug.Print WorksheetFunction.And(True, False, True)
+    Debug.Print WorksheetFunction.Or(True, False, True)
+    Debug.Print WorksheetFunction.Xor(True, False, True)
+    Debug.Print WorksheetFunction.CountA("A", "")
+    Debug.Print WorksheetFunction.CountBlank(Range("A1:A2"))
     Debug.Print WorksheetFunction.Text(Now, "yyyy-mm-dd")
     Debug.Print WorksheetFunction.VLookup("A", Range("A1:B2"), 2, False)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Call Application.WorksheetFunction()
     Call Application.AfterCalculate()
+    Call Application.ActiveCell()
+    Call Application.NewWorkbook()
     Debug.Print Application.Calculate
 End Sub`
   );
@@ -390,13 +397,20 @@ End Sub`
   const eomonthSignature = service.getSignatureHelp(uri, { character: 48, line: 9 });
   const findSignature = service.getSignatureHelp(uri, { character: 42, line: 10 });
   const searchSignature = service.getSignatureHelp(uri, { character: 44, line: 11 });
-  const textSignature = service.getSignatureHelp(uri, { character: 44, line: 12 });
-  const vlookupSignature = service.getSignatureHelp(uri, { character: 63, line: 13 });
-  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 14 });
-  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 15 });
-  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 16 });
-  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 17 });
-  const hover = service.getHover(uri, { character: 30, line: 18 });
+  const andSignature = service.getSignatureHelp(uri, { character: 44, line: 12 });
+  const orSignature = service.getSignatureHelp(uri, { character: 43, line: 13 });
+  const xorSignature = service.getSignatureHelp(uri, { character: 44, line: 14 });
+  const countASignature = service.getSignatureHelp(uri, { character: 45, line: 15 });
+  const countBlankSignature = service.getSignatureHelp(uri, { character: 45, line: 16 });
+  const textSignature = service.getSignatureHelp(uri, { character: 44, line: 17 });
+  const vlookupSignature = service.getSignatureHelp(uri, { character: 63, line: 18 });
+  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 19 });
+  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 20 });
+  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 21 });
+  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 22 });
+  const propertyFallbackSignature2 = service.getSignatureHelp(uri, { character: 32, line: 23 });
+  const eventFallbackSignature2 = service.getSignatureHelp(uri, { character: 33, line: 24 });
+  const hover = service.getHover(uri, { character: 30, line: 25 });
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -420,6 +434,18 @@ End Sub`
   assert.equal(searchSignature?.label, "Search(Arg1, Arg2, Arg3) As Double");
   assert.equal(searchSignature?.parameters.length, 3);
   assert.equal(searchSignature?.parameters[2]?.documentation?.includes("省略可能"), true);
+  assert.equal(andSignature?.label, "And(Arg1, Arg2, Arg3, ..., Arg30) As Boolean");
+  assert.equal(andSignature?.parameters.length, 30);
+  assert.equal(andSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
+  assert.equal(orSignature?.label, "Or(Arg1, Arg2, Arg3, ..., Arg30) As Boolean");
+  assert.equal(orSignature?.parameters.length, 30);
+  assert.equal(xorSignature?.label, "Xor(Arg1, Arg2, Arg3, ..., Arg30) As Boolean");
+  assert.equal(xorSignature?.parameters.length, 30);
+  assert.equal(countASignature?.label, "CountA(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(countASignature?.parameters.length, 30);
+  assert.equal(countASignature?.parameters[1]?.documentation?.includes("省略可能"), true);
+  assert.equal(countBlankSignature?.label, "CountBlank(Arg1) As Double");
+  assert.equal(countBlankSignature?.parameters.length, 1);
   assert.equal(textSignature?.label, "Text(Arg1, Arg2) As String");
   assert.equal(textSignature?.parameters.length, 2);
   assert.equal(vlookupSignature?.label, "VLookup(Arg1, Arg2, Arg3, Arg4) As Variant");
@@ -431,6 +457,8 @@ End Sub`
   assert.equal(fallbackSignature?.documentation?.includes("excel.application.ontime"), true);
   assert.equal(propertyFallbackSignature, undefined);
   assert.equal(eventFallbackSignature, undefined);
+  assert.equal(propertyFallbackSignature2, undefined);
+  assert.equal(eventFallbackSignature2, undefined);
   assert.equal(hover?.contents.includes("Calculate()"), true);
   assert.equal(hover?.contents.includes("Calculates all open workbooks"), true);
   assert.equal(hover?.contents.includes("Microsoft Learn"), true);
