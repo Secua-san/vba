@@ -976,7 +976,6 @@ async function main() {
   const signatureStats = await enrichApiMethodSignatures(excelReference.items);
 
   const output = {
-    generatedAt: new Date().toISOString(),
     source: {
       provider: "Microsoft Learn",
       notes: [

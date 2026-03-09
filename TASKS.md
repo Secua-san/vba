@@ -6,6 +6,10 @@
 
 ## 完了
 
+- [x] 組み込み署名データ第5弾レビュー修正
+  - extension の `BuiltInMemberSignature` テストで、追加メソッド以降の `vscode.Position` を文字列検索ヘルパー経由に変更し、fixture 行変更への耐性を向上
+  - 参照 JSON 生成時の `generatedAt` を出力対象から外し、再生成時の差分ノイズを削減
+
 - [x] PR 前サブエージェント自己レビュー運用の追加
   - `docs/process/coderabbit-review.md` に「PR作成前のセルフレビュー（サブエージェント）」を追加
   - `docs/process/sub-agent-escalation.md` に「PR前の必須レビュー」を追加

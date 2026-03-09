@@ -240,53 +240,53 @@ export async function run(): Promise<void> {
   );
   const builtInMatchSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(19, 45),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Match("),
     (help) => help.signatures.length > 0
   );
   const builtInIndexSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(20, 45),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Index("),
     (help) => help.signatures.length > 0
   );
   const builtInLookupSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(21, 46),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Lookup("),
     (help) => help.signatures.length > 0
   );
   const builtInHlookupSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(22, 47),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.HLookup("),
     (help) => help.signatures.length > 0
   );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(23, 35),
+    findPositionAfterToken(builtInSignatureDocument, "Application.CalculateFull("),
     (help) => help.signatures.length > 0
   );
   const builtInFallbackSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(24, 36),
+    findPositionAfterToken(builtInSignatureDocument, "Application.OnTime("),
     (help) => help.signatures.length > 0
   );
   const builtInPropertyFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(25, 39)
+    findPositionAfterToken(builtInSignatureDocument, "Application.WorksheetFunction(")
   );
   const builtInEventFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(26, 35)
+    findPositionAfterToken(builtInSignatureDocument, "Application.AfterCalculate(")
   );
   const builtInPropertyFallbackSuppressed2 = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(27, 32)
+    findPositionAfterToken(builtInSignatureDocument, "Application.ActiveCell(")
   );
   const builtInEventFallbackSuppressed2 = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(28, 33)
+    findPositionAfterToken(builtInSignatureDocument, "Application.NewWorkbook(")
   );
   const builtInHover = await waitForHover(
     builtInSignatureDocument,
-    new vscode.Position(29, 30),
+    findPositionAfterToken(builtInSignatureDocument, "Debug.Print Application.Calcu"),
     (hovers) => hovers.length > 0
   );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
@@ -1206,6 +1206,13 @@ async function waitForFormattedDocument(document: vscode.TextDocument, expectedT
 
 function normalizeText(text: string): string {
   return text.replace(/\r\n?/g, "\n").trimEnd();
+}
+
+function findPositionAfterToken(document: vscode.TextDocument, token: string, offsetFromEnd = 0): vscode.Position {
+  const source = document.getText();
+  const startIndex = source.indexOf(token);
+  assert.notEqual(startIndex, -1, `token not found in document: ${token}`);
+  return document.positionAt(startIndex + token.length + offsetFromEnd);
 }
 
 function getSignatureDocumentation(
