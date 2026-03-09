@@ -379,6 +379,10 @@ Public Sub Demo()
     Debug.Print WorksheetFunction.CountBlank(Range("A1:A2"))
     Debug.Print WorksheetFunction.Text(Now, "yyyy-mm-dd")
     Debug.Print WorksheetFunction.VLookup("A", Range("A1:B2"), 2, False)
+    Debug.Print WorksheetFunction.Match("A", Range("A1:A2"), 0)
+    Debug.Print WorksheetFunction.Index(Range("A1:B2"), 1, 2)
+    Debug.Print WorksheetFunction.Lookup("A", Range("A1:A2"), Range("B1:B2"))
+    Debug.Print WorksheetFunction.HLookup("A", Range("A1:B2"), 2, False)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Call Application.WorksheetFunction()
@@ -404,13 +408,17 @@ End Sub`
   const countBlankSignature = service.getSignatureHelp(uri, { character: 45, line: 16 });
   const textSignature = service.getSignatureHelp(uri, { character: 44, line: 17 });
   const vlookupSignature = service.getSignatureHelp(uri, { character: 63, line: 18 });
-  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 19 });
-  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 20 });
-  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 21 });
-  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 22 });
-  const propertyFallbackSignature2 = service.getSignatureHelp(uri, { character: 32, line: 23 });
-  const eventFallbackSignature2 = service.getSignatureHelp(uri, { character: 33, line: 24 });
-  const hover = service.getHover(uri, { character: 30, line: 25 });
+  const matchSignature = service.getSignatureHelp(uri, { character: 45, line: 19 });
+  const indexSignature = service.getSignatureHelp(uri, { character: 45, line: 20 });
+  const lookupSignature = service.getSignatureHelp(uri, { character: 46, line: 21 });
+  const hlookupSignature = service.getSignatureHelp(uri, { character: 47, line: 22 });
+  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 23 });
+  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 24 });
+  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 25 });
+  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 26 });
+  const propertyFallbackSignature2 = service.getSignatureHelp(uri, { character: 32, line: 27 });
+  const eventFallbackSignature2 = service.getSignatureHelp(uri, { character: 33, line: 28 });
+  const hover = service.getHover(uri, { character: 30, line: 29 });
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -454,6 +462,19 @@ End Sub`
   assert.equal(textSignature?.parameters.length, 2);
   assert.equal(vlookupSignature?.label, "VLookup(Arg1, Arg2, Arg3, Arg4) As Variant");
   assert.equal(vlookupSignature?.parameters[3]?.documentation?.includes("省略可能"), true);
+  assert.equal(matchSignature?.label, "Match(Arg1, Arg2, Arg3) As Double");
+  assert.equal(matchSignature?.parameters.length, 3);
+  assert.equal(matchSignature?.parameters[2]?.documentation?.includes("省略可能"), true);
+  assert.equal(indexSignature?.label, "Index(Arg1, Arg2, Arg3, Arg4) As Variant");
+  assert.equal(indexSignature?.parameters.length, 4);
+  assert.equal(indexSignature?.parameters[2]?.documentation?.includes("省略可能"), true);
+  assert.equal(indexSignature?.parameters[3]?.documentation?.includes("省略可能"), true);
+  assert.equal(lookupSignature?.label, "Lookup(Arg1, Arg2, Arg3) As Variant");
+  assert.equal(lookupSignature?.parameters.length, 3);
+  assert.equal(lookupSignature?.parameters[2]?.documentation?.includes("省略可能"), true);
+  assert.equal(hlookupSignature?.label, "HLookup(Arg1, Arg2, Arg3, Arg4) As Variant");
+  assert.equal(hlookupSignature?.parameters.length, 4);
+  assert.equal(hlookupSignature?.parameters[3]?.documentation?.includes("省略可能"), true);
   assert.equal(extractedZeroArgSignature?.label, "CalculateFull()");
   assert.equal(extractedZeroArgSignature?.parameters.length, 0);
   assert.equal(fallbackSignature?.label, "Application.OnTime()");

@@ -26,7 +26,11 @@ const signatureMemberAllowList = new Map([
       "EDate",
       "EoMonth",
       "Find",
+      "HLookup",
+      "Index",
+      "Lookup",
       "Max",
+      "Match",
       "Median",
       "Min",
       "Or",
@@ -972,7 +976,6 @@ async function main() {
   const signatureStats = await enrichApiMethodSignatures(excelReference.items);
 
   const output = {
-    generatedAt: new Date().toISOString(),
     source: {
       provider: "Microsoft Learn",
       notes: [
