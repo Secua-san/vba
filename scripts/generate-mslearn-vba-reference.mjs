@@ -2,6 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createMcpRequestClient } from "./lib/mcpRequest.mjs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
@@ -9,6 +11,16 @@ const outputDir = path.join(rootDir, "resources", "reference");
 const outputFile = path.join(outputDir, "mslearn-vba-reference.json");
 const apiBaseUrl = "https://learn.microsoft.com/en-us/office/vba/api/";
 const fetchTimeoutMs = 30_000;
+const fetchMinIntervalMs = 250;
+const maxFetchRetries = 5;
+const microsoftLearnClient = createMcpRequestClient({
+  baseDelayMs: 2_000,
+  maxDelayMs: 60_000,
+  maxRetries: maxFetchRetries,
+  mcpName: "microsoft-learn",
+  minIntervalMs: fetchMinIntervalMs,
+  timeoutMs: fetchTimeoutMs,
+});
 
 const sourceUrls = {
   apiToc: "https://learn.microsoft.com/en-us/office/vba/api/toc.json",
@@ -32,45 +44,32 @@ const sourceUrls = {
     "https://learn.microsoft.com/en-us/office/vba/api/overview/library-reference/reference-object-library-reference-for-office",
 };
 
-async function fetchWithTimeout(url, options) {
-  try {
-    return await fetch(url, {
-      signal: AbortSignal.timeout(fetchTimeoutMs),
-      ...options,
-    });
-  } catch (error) {
-    if (error?.name === "AbortError" || error?.name === "TimeoutError") {
-      throw new Error(`Timed out fetching ${url} after ${fetchTimeoutMs}ms`, { cause: error });
-    }
-
-    throw error;
-  }
-}
-
 async function fetchText(url) {
-  const response = await fetchWithTimeout(url, {
-    headers: {
-      Accept: "text/markdown, application/json;q=0.9, text/plain;q=0.8",
+  return microsoftLearnClient.request({
+    init: {
+      headers: {
+        Accept: "text/markdown, application/json;q=0.9, text/plain;q=0.8",
+      },
     },
+    operationName: "fetch-text",
+    parseResponse: (response) => response.text(),
+    requestKey: `GET text ${url}`,
+    url,
   });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-  }
-
-  return response.text();
 }
 
 async function fetchJson(url) {
-  const response = await fetchWithTimeout(url, {
-    headers: {
-      Accept: "application/json, text/plain;q=0.8",
+  return microsoftLearnClient.request({
+    init: {
+      headers: {
+        Accept: "application/json, text/plain;q=0.8",
+      },
     },
+    operationName: "fetch-json",
+    parseResponse: (response) => response.json(),
+    requestKey: `GET json ${url}`,
+    url,
   });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 function withMarkdown(url) {

@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] MCP サーバー呼び出しの 429 対策
+  - 共通の retry / rate-limit ヘルパーを追加し、`429`、`Retry-After`、指数バックオフ + ジッター、最大再試行超過時の明確な失敗を実装
+  - 呼び出し間隔の制御と in-flight 重複抑止を追加し、対象 MCP 名、retry 回数、待機時間、最終失敗理由を構造化ログへ出力
+  - `scripts/generate-mslearn-vba-reference.mjs` を共通ヘルパーへ移行し、スクリプト用テストを root `npm test` に組み込む
+
 - [x] M0-M2 基盤実装のマージ
   - Core の lexer / parser / symbol / diagnostics パイプライン
   - 最小構成の LSP サーバーと VS Code 拡張接続
