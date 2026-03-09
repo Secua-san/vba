@@ -1075,9 +1075,15 @@ function resolveBuiltinCallableMember(
 
   const ownerName = resolveBuiltinMemberOwner(callContext.callPath.slice(0, -1));
   const memberName = callContext.callPath[callContext.callPath.length - 1];
+  const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberName) : undefined;
 
-  return ownerName && getBuiltinMemberSignature(ownerName, memberName)
-    ? getBuiltinMemberReferenceItem(ownerName, memberName)
+  if (!memberReference) {
+    return undefined;
+  }
+
+  return memberReference.signature ||
+    (memberReference.completionKind === "function" && memberReference.memberKind === "method")
+    ? memberReference
     : undefined;
 }
 

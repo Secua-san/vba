@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T13:52:26.386Z",
+  "generatedAt": "2026-03-09T14:19:30.620Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -828,17 +828,35 @@
                 {
                   "name": "CalculateFull",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.application.calculatefull",
-                  "tocHref": "excel.application.calculatefull"
+                  "tocHref": "excel.application.calculatefull",
+                  "summary": "Forces a full calculation of the data in all open workbooks.",
+                  "signature": {
+                    "label": "CalculateFull()",
+                    "ownerName": "Application",
+                    "parameters": []
+                  }
                 },
                 {
                   "name": "CalculateFullRebuild",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.application.calculatefullrebuild",
-                  "tocHref": "excel.application.calculatefullrebuild"
+                  "tocHref": "excel.application.calculatefullrebuild",
+                  "summary": "For all open workbooks, forces a full calculation of the data and rebuilds the dependencies.",
+                  "signature": {
+                    "label": "CalculateFullRebuild()",
+                    "ownerName": "Application",
+                    "parameters": []
+                  }
                 },
                 {
                   "name": "CalculateUntilAsyncQueriesDone",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.application.calculateuntilasyncqueriesdone",
-                  "tocHref": "excel.application.calculateuntilasyncqueriesdone"
+                  "tocHref": "excel.application.calculateuntilasyncqueriesdone",
+                  "summary": "Runs all pending queries to OLEDB and OLAP data sources.",
+                  "signature": {
+                    "label": "CalculateUntilAsyncQueriesDone()",
+                    "ownerName": "Application",
+                    "parameters": []
+                  }
                 },
                 {
                   "name": "CentimetersToPoints",
@@ -29667,7 +29685,29 @@
                 {
                   "name": "Power",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.power",
-                  "tocHref": "excel.worksheetfunction.power"
+                  "tocHref": "excel.worksheetfunction.power",
+                  "summary": "Returns the result of a number raised to a power.",
+                  "signature": {
+                    "label": "Power(Arg1, Arg2) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Double",
+                        "description": "Number - the base number. It can be any real number.",
+                        "isRequired": true,
+                        "label": "Arg1 As Double",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Double",
+                        "description": "Power - the exponent to which the base number is raised.",
+                        "isRequired": true,
+                        "label": "Arg2 As Double",
+                        "name": "Arg2"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "Ppmt",
@@ -29787,7 +29827,29 @@
                 {
                   "name": "Round",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.round",
-                  "tocHref": "excel.worksheetfunction.round"
+                  "tocHref": "excel.worksheetfunction.round",
+                  "summary": "Rounds a number to a specified number of digits.",
+                  "signature": {
+                    "label": "Round(Arg1, Arg2) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Double",
+                        "description": "Number - the number that you want to round.",
+                        "isRequired": true,
+                        "label": "Arg1 As Double",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Double",
+                        "description": "Num_digits - specifies the number of digits to which you want to round number.",
+                        "isRequired": true,
+                        "label": "Arg2 As Double",
+                        "name": "Arg2"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "RoundDown",

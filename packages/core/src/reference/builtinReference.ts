@@ -4,6 +4,7 @@ import { VBA_KEYWORDS } from "../lexer/keywords";
 import { normalizeIdentifier } from "../types/helpers";
 
 export type BuiltinCompletionKind = "constant" | "function" | "keyword" | "type" | "variable";
+export type BuiltinMemberKind = "event" | "member" | "method" | "property";
 export type BuiltinSemanticModifier = "readonly";
 export type BuiltinSemanticType = "enumMember" | "function" | "keyword" | "type" | "variable";
 
@@ -37,6 +38,7 @@ export interface BuiltinReferenceItem {
 }
 
 export interface BuiltinMemberReferenceItem extends BuiltinReferenceItem {
+  memberKind: BuiltinMemberKind;
   ownerName: string;
   ownerNormalizedName: string;
 }
@@ -418,7 +420,7 @@ function createMemberReferenceItem(
   const normalizedSectionTitle = normalizeIdentifier(sectionTitle ?? "");
   const completionKind =
     normalizedSectionTitle === "methods" || normalizedSectionTitle === "events" ? "function" : "variable";
-  const memberKindLabel =
+  const memberKind =
     normalizedSectionTitle === "methods"
       ? "method"
       : normalizedSectionTitle === "properties"
@@ -435,8 +437,8 @@ function createMemberReferenceItem(
     ...createReferenceItem(
       safeName,
       completionKind,
-      `${sourceLabel} ${ownerName} ${memberKindLabel}`,
-      readDocumentation(`${sourceLabel} ${ownerName} ${memberKindLabel}`, learnUrl, summary),
+      `${sourceLabel} ${ownerName} ${memberKind}`,
+      readDocumentation(`${sourceLabel} ${ownerName} ${memberKind}`, learnUrl, summary),
       {
         learnUrl,
         signature,
@@ -444,6 +446,7 @@ function createMemberReferenceItem(
         typeName: inferredTypeName
       }
     ),
+    memberKind,
     ownerName,
     ownerNormalizedName: normalizeIdentifier(ownerName)
   };

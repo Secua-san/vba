@@ -173,9 +173,24 @@ export async function run(): Promise<void> {
     new vscode.Position(5, 54),
     (help) => help.signatures.length > 0
   );
+  const builtInPowerSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(6, 56),
+    (help) => help.signatures.length > 0
+  );
+  const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(7, 35),
+    (help) => help.signatures.length > 0
+  );
+  const builtInFallbackSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(8, 36),
+    (help) => help.signatures.length > 0
+  );
   const builtInHover = await waitForHover(
     builtInSignatureDocument,
-    new vscode.Position(6, 30),
+    new vscode.Position(9, 30),
     (hovers) => hovers.length > 0
   );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
@@ -210,6 +225,39 @@ export async function run(): Promise<void> {
     builtInChainedSignatureHelp.signatures[0]?.label,
     "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double",
     "built-in member signature should resolve through Application.WorksheetFunction"
+  );
+  assert.ok(
+    builtInPowerSignatureHelp.signatures[0]?.label.includes("Power("),
+    "built-in member signature should be available for WorksheetFunction.Power"
+  );
+  assert.equal(
+    builtInPowerSignatureHelp.signatures[0]?.parameters.length,
+    2,
+    "built-in member signature should expose fixed parameter metadata"
+  );
+  assert.equal(
+    builtInExtractedZeroArgSignatureHelp.signatures[0]?.label,
+    "CalculateFull()",
+    "built-in zero-arg allow-listed signature should use extracted short label"
+  );
+  assert.equal(
+    builtInExtractedZeroArgSignatureHelp.signatures[0]?.parameters.length,
+    0,
+    "built-in zero-arg allow-listed signature should not fabricate parameters"
+  );
+  assert.equal(
+    builtInFallbackSignatureHelp.signatures[0]?.label,
+    "Application.OnTime()",
+    "built-in callable without signature metadata should expose fallback label"
+  );
+  assert.equal(
+    builtInFallbackSignatureHelp.signatures[0]?.parameters.length,
+    0,
+    "built-in callable fallback should not fabricate parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInFallbackSignatureHelp.signatures[0]?.documentation).includes("excel.application.ontime"),
+    "built-in callable fallback should keep learn URL in documentation"
   );
   assert.ok(
     builtInHoverText.includes("Calculate()"),
