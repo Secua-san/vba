@@ -6,6 +6,8 @@ import {
   findDefinition,
   formatModuleIndentation,
   getBuiltinCompletionItems,
+  getBuiltinMemberCompletionItems,
+  getBuiltinMemberReferenceItem,
   getBuiltinReferenceItem,
   getCompletionSymbols,
   getDocumentOutline,
@@ -14,9 +16,11 @@ import {
   getSymbolTypeName,
   normalizeIdentifier,
   removeStringAndDateLiterals,
+  resolveBuiltinMemberOwner,
   splitCodeAndComment,
   type AnalysisResult,
   type BuiltinCompletionKind,
+  type BuiltinMemberReferenceItem,
   type BuiltinReferenceItem,
   type BuiltinSemanticModifier,
   type BuiltinSemanticType,
@@ -306,8 +310,17 @@ export function createDocumentService(): DocumentService {
       }
 
       const userAndWorkspaceCompletions = filterCompletionsByPrefix([...deduplicated.values()], completionContext.prefix);
+
+      if (completionContext.isMemberAccess) {
+        const memberOwnerName = resolveConfirmedBuiltinMemberOwner(state, position.line, completionContext, resolveDefinition);
+
+        return memberOwnerName
+          ? getBuiltinMemberCompletionItems(memberOwnerName, completionContext.prefix).map(createBuiltinResolution)
+          : [];
+      }
+
       const builtInCompletions =
-        !completionContext.isMemberAccess && completionContext.prefix.length > 0
+        completionContext.prefix.length > 0
           ? getBuiltinCompletionItems(completionContext.prefix)
               .filter((item) => !userAndWorkspaceCompletions.some((resolution) => resolution.symbol.normalizedName === item.normalizedName))
               .map(createBuiltinResolution)
@@ -431,6 +444,8 @@ interface CallContext {
 
 interface CompletionContext {
   isMemberAccess: boolean;
+  memberPath: string[];
+  memberPathStartCharacter?: number;
   prefix: string;
 }
 
@@ -456,7 +471,7 @@ function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
   };
 }
 
-function createBuiltinResolution(item: BuiltinReferenceItem): WorkspaceSymbolResolution {
+function createBuiltinResolution(item: BuiltinMemberReferenceItem | BuiltinReferenceItem): WorkspaceSymbolResolution {
   return {
     completionItemKind: item.completionKind,
     documentation: item.documentation,
@@ -623,7 +638,7 @@ function collectSemanticTokensForState(
       const previousCharacter = scrubbed[startCharacter - 1] ?? "";
       const nextCharacter = scrubbed[startCharacter + identifier.length] ?? "";
 
-      if (previousCharacter === "." || (nextCharacter === ":" && startCharacter === 0)) {
+      if (nextCharacter === ":" && startCharacter === 0) {
         continue;
       }
 
@@ -637,6 +652,17 @@ function collectSemanticTokensForState(
           line: lineIndex
         }
       };
+
+      if (previousCharacter === ".") {
+        const memberTokenShape = mapBuiltinMemberSemanticToken(state.uri, lineIndex, scrubbed, startCharacter, identifier, resolveDefinition);
+
+        if (memberTokenShape) {
+          addSemanticToken(tokens, range, memberTokenShape);
+        }
+
+        continue;
+      }
+
       const resolution = resolveDefinition(state.uri, range.start);
       const tokenShape = resolution
         ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
@@ -913,15 +939,50 @@ function getIdentifierRangeAtPosition(text: string, position: LinePosition): Sou
 
 function getCompletionContext(text: string, position: LinePosition): CompletionContext {
   const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line] ?? "";
-  const prefixMatch = /[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.exec(line.slice(0, position.character));
-  const prefix = prefixMatch?.[0] ?? "";
-  const prefixStart = position.character - prefix.length;
-  const previousCharacter = line[prefixStart - 1] ?? "";
+  const { code } = splitCodeAndComment(line.slice(0, position.character));
+  const memberAccess = parseTrailingMemberAccess(code);
+
+  if (memberAccess) {
+    return {
+      isMemberAccess: true,
+      memberPath: memberAccess.memberPath,
+      memberPathStartCharacter: memberAccess.memberPathStartCharacter,
+      prefix: memberAccess.prefix
+    };
+  }
 
   return {
-    isMemberAccess: previousCharacter === ".",
-    prefix
+    isMemberAccess: false,
+    memberPath: [],
+    memberPathStartCharacter: undefined,
+    prefix: getTrailingIdentifier(code)
   };
+}
+
+function resolveConfirmedBuiltinMemberOwner(
+  state: DocumentState,
+  line: number,
+  completionContext: CompletionContext,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): string | undefined {
+  if (
+    !completionContext.isMemberAccess ||
+    completionContext.memberPath.length === 0 ||
+    completionContext.memberPathStartCharacter === undefined
+  ) {
+    return undefined;
+  }
+
+  const rootResolution = resolveDefinition(state.uri, {
+    character: completionContext.memberPathStartCharacter,
+    line
+  });
+
+  if (rootResolution) {
+    return undefined;
+  }
+
+  return resolveBuiltinMemberOwner(completionContext.memberPath);
 }
 
 function isValidRenameIdentifier(name: string): boolean {
@@ -1468,6 +1529,39 @@ function mapBuiltinSemanticToken(identifier: string): SemanticTokenShape | undef
     : undefined;
 }
 
+function mapBuiltinMemberSemanticToken(
+  uri: string,
+  line: number,
+  lineText: string,
+  startCharacter: number,
+  identifier: string,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): SemanticTokenShape | undefined {
+  const memberAccess = parseTrailingMemberAccess(lineText.slice(0, startCharacter + identifier.length));
+
+  if (
+    !memberAccess ||
+    memberAccess.memberPathStartCharacter === undefined ||
+    normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier) ||
+    resolveDefinition(uri, {
+      character: memberAccess.memberPathStartCharacter,
+      line
+    })
+  ) {
+    return undefined;
+  }
+
+  const ownerName = resolveBuiltinMemberOwner(memberAccess.memberPath);
+  const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, identifier) : undefined;
+
+  return memberReference
+    ? {
+        modifiers: [...memberReference.modifiers],
+        type: memberReference.semanticType as SemanticTokenTypeName
+      }
+    : undefined;
+}
+
 function mapBuiltinSymbolKind(completionKind: BuiltinCompletionKind): SymbolInfo["kind"] {
   switch (completionKind) {
     case "constant":
@@ -1491,6 +1585,82 @@ function compareSemanticTokens(left: SemanticTokenEntry, right: SemanticTokenEnt
     left.type.localeCompare(right.type) ||
     left.modifiers.join(".").localeCompare(right.modifiers.join("."))
   );
+}
+
+function parseTrailingMemberAccess(
+  text: string
+): {
+  memberPath: string[];
+  memberPathStartCharacter: number;
+  prefix: string;
+} | undefined {
+  let index = text.length - 1;
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  const prefixEnd = index + 1;
+
+  while (index >= 0 && /[A-Za-z0-9_$%&!#@]/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  const prefix = text.slice(index + 1, prefixEnd);
+
+  if (prefix.length > 0 && !/^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(prefix)) {
+    return undefined;
+  }
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  if (text[index] !== ".") {
+    return undefined;
+  }
+
+  const memberPath: string[] = [];
+  let memberPathStartCharacter: number | undefined;
+
+  while (index >= 0 && text[index] === ".") {
+    index -= 1;
+
+    while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+      index -= 1;
+    }
+
+    const identifierEnd = index + 1;
+
+    while (index >= 0 && /[A-Za-z0-9_$%&!#@]/u.test(text[index] ?? "")) {
+      index -= 1;
+    }
+
+    const identifier = text.slice(index + 1, identifierEnd);
+
+    if (!/^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(identifier)) {
+      return undefined;
+    }
+
+    memberPath.unshift(identifier);
+    memberPathStartCharacter = index + 1;
+
+    while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+      index -= 1;
+    }
+  }
+
+  return memberPath.length > 0
+    ? {
+        memberPath,
+        memberPathStartCharacter: memberPathStartCharacter ?? 0,
+        prefix
+      }
+    : undefined;
+}
+
+function getTrailingIdentifier(text: string): string {
+  return /[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.exec(text)?.[0] ?? "";
 }
 
 function rangesEqual(left: SourceRange, right: SourceRange): boolean {
