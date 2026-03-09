@@ -571,14 +571,41 @@ function expandSignatureParameterNames(parameterName, syntaxParameterNames) {
   return Array.from({ length: endValue - startValue + 1 }, (_, index) => `${startPrefix}${startValue + index}`);
 }
 
+function getTrailingNumericSuffix(value) {
+  const match = value.match(/(\d+)$/u);
+  return match?.[1];
+}
+
 function buildSignatureParameterMetadata(syntaxParameterNames, tableRows) {
   const rowEntries = tableRows.flatMap((row) =>
     expandSignatureParameterNames(row.name, syntaxParameterNames).map((parameterName) => [parameterName, row]),
   );
   const metadataByName = new Map(rowEntries);
+  const metadataByNumericSuffix = new Map();
+
+  for (const [parameterName, row] of rowEntries) {
+    const numericSuffix = getTrailingNumericSuffix(parameterName);
+
+    if (!numericSuffix) {
+      continue;
+    }
+
+    const existing = metadataByNumericSuffix.get(numericSuffix);
+
+    if (!existing) {
+      metadataByNumericSuffix.set(numericSuffix, row);
+      continue;
+    }
+
+    if (existing !== row) {
+      metadataByNumericSuffix.set(numericSuffix, null);
+    }
+  }
 
   return syntaxParameterNames.map((parameterName) => {
-    const metadata = metadataByName.get(parameterName);
+    const numericSuffix = getTrailingNumericSuffix(parameterName);
+    const metadataFromSuffix = numericSuffix ? metadataByNumericSuffix.get(numericSuffix) : undefined;
+    const metadata = metadataByName.get(parameterName) ?? (metadataFromSuffix && metadataFromSuffix !== null ? metadataFromSuffix : undefined);
     const dataType = metadata?.dataType;
     const label = dataType ? `${parameterName} As ${dataType}` : parameterName;
     return {
@@ -589,6 +616,34 @@ function buildSignatureParameterMetadata(syntaxParameterNames, tableRows) {
       name: parameterName,
     };
   });
+}
+
+function expandTableParameterNames(tableRows, syntaxParameterNames) {
+  const names = [];
+
+  for (const row of tableRows) {
+    for (const parameterName of expandSignatureParameterNames(row.name, syntaxParameterNames)) {
+      if (parameterName.length === 0 || parameterName === "..." || names.includes(parameterName)) {
+        continue;
+      }
+
+      names.push(parameterName);
+    }
+  }
+
+  return names;
+}
+
+function resolveSignatureParameterNames(syntaxParameterNames, tableRows) {
+  const syntaxNames = syntaxParameterNames.filter((parameterName) => parameterName.length > 0 && parameterName !== "...");
+  const hasVariadicMarker = syntaxParameterNames.includes("...");
+
+  if (!hasVariadicMarker) {
+    return syntaxNames;
+  }
+
+  const expandedTableNames = expandTableParameterNames(tableRows, syntaxNames);
+  return expandedTableNames.length > syntaxNames.length ? expandedTableNames : syntaxNames;
 }
 
 function extractOptionalSyntaxParameterNames(syntaxLine) {
@@ -700,11 +755,12 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
   const syntaxLine = extractSyntaxLine(syntaxSection);
   const syntaxParameterNames = extractSyntaxParameterNames(syntaxLine);
   const parameterTableRows = parseParameterTableRows(parametersSection);
+  const signatureParameterNames = resolveSignatureParameterNames(syntaxParameterNames, parameterTableRows);
   const parameters = applyVariadicTailOptionalRule(
     syntaxLine,
     applySyntaxOptionalParameterRequirements(
       syntaxLine,
-      buildSignatureParameterMetadata(syntaxParameterNames, parameterTableRows),
+      buildSignatureParameterMetadata(signatureParameterNames, parameterTableRows),
     ),
   );
   const returnType = extractReturnType(returnValueSection);
@@ -713,7 +769,7 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
     signature:
       syntaxLine || parameters.length > 0 || returnType
         ? {
-            label: buildSignatureLabel(memberName, syntaxParameterNames, returnType),
+            label: buildSignatureLabel(memberName, signatureParameterNames, returnType),
             ownerName,
             parameters,
             returnType,

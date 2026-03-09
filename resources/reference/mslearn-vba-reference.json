@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T14:29:51.860Z",
+  "generatedAt": "2026-03-09T14:47:48.943Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -29969,7 +29969,10 @@
                         "name": "Arg29"
                       },
                       {
-                        "label": "Arg30",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": true,
+                        "label": "Arg30 As Variant",
                         "name": "Arg30"
                       }
                     ],
@@ -30335,7 +30338,10 @@
                         "name": "Arg29"
                       },
                       {
-                        "label": "Arg30",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": true,
+                        "label": "Arg30 As Variant",
                         "name": "Arg30"
                       }
                     ],
