@@ -98,6 +98,53 @@ End Sub`
   assert.equal(chainedWorksheetFunctionSum?.moduleName, "Excel WorksheetFunction method");
 });
 
+test("document service keeps built-in member completion and semantic tokens conservative", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInMemberShadowing.bas";
+  const text = `Attribute VB_Name = "BuiltInMemberShadowing"
+Option Explicit
+
+Private Type Application
+    Name As String
+End Type
+
+Public Sub Demo()
+    Dim Application As Application
+    Dim foo As Collection
+    Debug.Print Application.Name
+    Debug.Print foo.Count
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const shadowedApplicationMembers = service.getCompletionSymbols(uri, { character: 28, line: 10 });
+  const unknownOwnerMembers = service.getCompletionSymbols(uri, { character: 20, line: 11 });
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.deepEqual(shadowedApplicationMembers, []);
+  assert.deepEqual(unknownOwnerMembers, []);
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === 10 &&
+        entry.range.start.character === 28 &&
+        entry.range.end.character === 32 &&
+        entry.type === "variable"
+    ),
+    false
+  );
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === 11 &&
+        entry.range.start.character === 20 &&
+        entry.range.end.character === 25 &&
+        entry.type === "function"
+    ),
+    false
+  );
+});
+
 test("document service offers an Option Explicit code action after existing option lines", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/MissingOptionExplicit.bas";

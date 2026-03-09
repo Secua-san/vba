@@ -135,7 +135,7 @@ export function getBuiltinMemberCompletionItems(ownerName: string, prefix?: stri
   const items = derivedReferenceData.memberItemsByOwnerNormalizedName.get(normalizeIdentifier(ownerName)) ?? [];
 
   if (!prefix) {
-    return items;
+    return [...items];
   }
 
   const normalizedPrefix = normalizeIdentifier(prefix);

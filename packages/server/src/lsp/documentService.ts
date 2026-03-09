@@ -312,13 +312,11 @@ export function createDocumentService(): DocumentService {
       const userAndWorkspaceCompletions = filterCompletionsByPrefix([...deduplicated.values()], completionContext.prefix);
 
       if (completionContext.isMemberAccess) {
-        const memberOwnerName = resolveBuiltinMemberOwner(completionContext.memberPath);
+        const memberOwnerName = resolveConfirmedBuiltinMemberOwner(state, position.line, completionContext, resolveDefinition);
 
-        if (!memberOwnerName) {
-          return userAndWorkspaceCompletions;
-        }
-
-        return getBuiltinMemberCompletionItems(memberOwnerName, completionContext.prefix).map(createBuiltinResolution);
+        return memberOwnerName
+          ? getBuiltinMemberCompletionItems(memberOwnerName, completionContext.prefix).map(createBuiltinResolution)
+          : [];
       }
 
       const builtInCompletions =
@@ -447,6 +445,7 @@ interface CallContext {
 interface CompletionContext {
   isMemberAccess: boolean;
   memberPath: string[];
+  memberPathStartCharacter?: number;
   prefix: string;
 }
 
@@ -655,7 +654,7 @@ function collectSemanticTokensForState(
       };
 
       if (previousCharacter === ".") {
-        const memberTokenShape = mapBuiltinMemberSemanticToken(scrubbed, startCharacter, identifier);
+        const memberTokenShape = mapBuiltinMemberSemanticToken(state.uri, lineIndex, scrubbed, startCharacter, identifier, resolveDefinition);
 
         if (memberTokenShape) {
           addSemanticToken(tokens, range, memberTokenShape);
@@ -947,6 +946,7 @@ function getCompletionContext(text: string, position: LinePosition): CompletionC
     return {
       isMemberAccess: true,
       memberPath: memberAccess.memberPath,
+      memberPathStartCharacter: memberAccess.memberPathStartCharacter,
       prefix: memberAccess.prefix
     };
   }
@@ -954,8 +954,35 @@ function getCompletionContext(text: string, position: LinePosition): CompletionC
   return {
     isMemberAccess: false,
     memberPath: [],
+    memberPathStartCharacter: undefined,
     prefix: getTrailingIdentifier(code)
   };
+}
+
+function resolveConfirmedBuiltinMemberOwner(
+  state: DocumentState,
+  line: number,
+  completionContext: CompletionContext,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): string | undefined {
+  if (
+    !completionContext.isMemberAccess ||
+    completionContext.memberPath.length === 0 ||
+    completionContext.memberPathStartCharacter === undefined
+  ) {
+    return undefined;
+  }
+
+  const rootResolution = resolveDefinition(state.uri, {
+    character: completionContext.memberPathStartCharacter,
+    line
+  });
+
+  if (rootResolution) {
+    return undefined;
+  }
+
+  return resolveBuiltinMemberOwner(completionContext.memberPath);
 }
 
 function isValidRenameIdentifier(name: string): boolean {
@@ -1503,13 +1530,24 @@ function mapBuiltinSemanticToken(identifier: string): SemanticTokenShape | undef
 }
 
 function mapBuiltinMemberSemanticToken(
+  uri: string,
+  line: number,
   lineText: string,
   startCharacter: number,
-  identifier: string
+  identifier: string,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
 ): SemanticTokenShape | undefined {
   const memberAccess = parseTrailingMemberAccess(lineText.slice(0, startCharacter + identifier.length));
 
-  if (!memberAccess || normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier)) {
+  if (
+    !memberAccess ||
+    memberAccess.memberPathStartCharacter === undefined ||
+    normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier) ||
+    resolveDefinition(uri, {
+      character: memberAccess.memberPathStartCharacter,
+      line
+    })
+  ) {
     return undefined;
   }
 
@@ -1553,6 +1591,7 @@ function parseTrailingMemberAccess(
   text: string
 ): {
   memberPath: string[];
+  memberPathStartCharacter: number;
   prefix: string;
 } | undefined {
   let index = text.length - 1;
@@ -1582,6 +1621,7 @@ function parseTrailingMemberAccess(
   }
 
   const memberPath: string[] = [];
+  let memberPathStartCharacter: number | undefined;
 
   while (index >= 0 && text[index] === ".") {
     index -= 1;
@@ -1603,6 +1643,7 @@ function parseTrailingMemberAccess(
     }
 
     memberPath.unshift(identifier);
+    memberPathStartCharacter = index + 1;
 
     while (index >= 0 && /\s/u.test(text[index] ?? "")) {
       index -= 1;
@@ -1612,6 +1653,7 @@ function parseTrailingMemberAccess(
   return memberPath.length > 0
     ? {
         memberPath,
+        memberPathStartCharacter: memberPathStartCharacter ?? 0,
         prefix
       }
     : undefined;
