@@ -368,8 +368,13 @@ Public Sub Demo()
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Power(2, 3)
     Debug.Print WorksheetFunction.Average(1, 2, 3)
+    Debug.Print WorksheetFunction.EDate(Date, 1)
+    Debug.Print WorksheetFunction.Text(Now, "yyyy-mm-dd")
+    Debug.Print WorksheetFunction.VLookup("A", Range("A1:B2"), 2, False)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
+    Call Application.WorksheetFunction()
+    Call Application.AfterCalculate()
     Debug.Print Application.Calculate
 End Sub`
   );
@@ -378,9 +383,14 @@ End Sub`
   const chainedSignature = service.getSignatureHelp(uri, { character: 54, line: 5 });
   const powerSignature = service.getSignatureHelp(uri, { character: 56, line: 6 });
   const averageSignature = service.getSignatureHelp(uri, { character: 46, line: 7 });
-  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 8 });
-  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 9 });
-  const hover = service.getHover(uri, { character: 30, line: 10 });
+  const edateSignature = service.getSignatureHelp(uri, { character: 46, line: 8 });
+  const textSignature = service.getSignatureHelp(uri, { character: 44, line: 9 });
+  const vlookupSignature = service.getSignatureHelp(uri, { character: 63, line: 10 });
+  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 11 });
+  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 12 });
+  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 13 });
+  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 14 });
+  const hover = service.getHover(uri, { character: 30, line: 15 });
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -394,11 +404,19 @@ End Sub`
   assert.equal(powerSignature?.parameters.length, 2);
   assert.equal(averageSignature?.label, "Average(Arg1, Arg2, Arg3, ..., Arg30) As Double");
   assert.equal(averageSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
+  assert.equal(edateSignature?.label, "EDate(Arg1, Arg2) As Double");
+  assert.equal(edateSignature?.parameters.length, 2);
+  assert.equal(textSignature?.label, "Text(Arg1, Arg2) As String");
+  assert.equal(textSignature?.parameters.length, 2);
+  assert.equal(vlookupSignature?.label, "VLookup(Arg1, Arg2, Arg3, Arg4) As Variant");
+  assert.equal(vlookupSignature?.parameters[3]?.documentation?.includes("省略可能"), true);
   assert.equal(extractedZeroArgSignature?.label, "CalculateFull()");
   assert.equal(extractedZeroArgSignature?.parameters.length, 0);
   assert.equal(fallbackSignature?.label, "Application.OnTime()");
   assert.equal(fallbackSignature?.parameters.length, 0);
   assert.equal(fallbackSignature?.documentation?.includes("excel.application.ontime"), true);
+  assert.equal(propertyFallbackSignature, undefined);
+  assert.equal(eventFallbackSignature, undefined);
   assert.equal(hover?.contents.includes("Calculate()"), true);
   assert.equal(hover?.contents.includes("Calculates all open workbooks"), true);
   assert.equal(hover?.contents.includes("Microsoft Learn"), true);
