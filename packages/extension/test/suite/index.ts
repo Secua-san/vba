@@ -203,37 +203,70 @@ export async function run(): Promise<void> {
     new vscode.Position(11, 44),
     (help) => help.signatures.length > 0
   );
-  const builtInTextSignatureHelp = await waitForSignatureHelp(
+  const builtInAndSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     new vscode.Position(12, 44),
     (help) => help.signatures.length > 0
   );
+  const builtInOrSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(13, 43),
+    (help) => help.signatures.length > 0
+  );
+  const builtInXorSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(14, 44),
+    (help) => help.signatures.length > 0
+  );
+  const builtInCountASignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(15, 45),
+    (help) => help.signatures.length > 0
+  );
+  const builtInCountBlankSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(16, 45),
+    (help) => help.signatures.length > 0
+  );
+  const builtInTextSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(17, 44),
+    (help) => help.signatures.length > 0
+  );
   const builtInVlookupSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(13, 63),
+    new vscode.Position(18, 63),
     (help) => help.signatures.length > 0
   );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(14, 35),
+    new vscode.Position(19, 35),
     (help) => help.signatures.length > 0
   );
   const builtInFallbackSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(15, 36),
+    new vscode.Position(20, 36),
     (help) => help.signatures.length > 0
   );
   const builtInPropertyFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(16, 39)
+    new vscode.Position(21, 39)
   );
   const builtInEventFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(17, 35)
+    new vscode.Position(22, 35)
+  );
+  const builtInPropertyFallbackSuppressed2 = await waitForNoSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(23, 32)
+  );
+  const builtInEventFallbackSuppressed2 = await waitForNoSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(24, 33)
   );
   const builtInHover = await waitForHover(
     builtInSignatureDocument,
-    new vscode.Position(18, 30),
+    new vscode.Position(25, 30),
     (hovers) => hovers.length > 0
   );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
@@ -336,6 +369,80 @@ export async function run(): Promise<void> {
     "built-in member Search third argument should be optional"
   );
   assert.equal(
+    builtInAndSignatureHelp.signatures[0]?.label,
+    "And(Arg1, Arg2, Arg3, ..., Arg30) As Boolean",
+    "built-in member signature should be available for WorksheetFunction.And"
+  );
+  assert.equal(
+    builtInAndSignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member And signature should expose variadic parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInAndSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member And second argument should be optional"
+  );
+  assert.equal(
+    builtInOrSignatureHelp.signatures[0]?.label,
+    "Or(Arg1, Arg2, Arg3, ..., Arg30) As Boolean",
+    "built-in member signature should be available for WorksheetFunction.Or"
+  );
+  assert.equal(
+    builtInOrSignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member Or signature should expose variadic parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInOrSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("想定型: Variant"),
+    "built-in member Or second argument should include expected type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInOrSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member Or second argument should be optional"
+  );
+  assert.equal(
+    builtInXorSignatureHelp.signatures[0]?.label,
+    "Xor(Arg1, Arg2, Arg3, ..., Arg30) As Boolean",
+    "built-in member signature should be available for WorksheetFunction.Xor"
+  );
+  assert.equal(
+    builtInXorSignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member Xor signature should expose variadic parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInXorSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("想定型: Variant"),
+    "built-in member Xor second argument should include expected type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInXorSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member Xor second argument should be optional"
+  );
+  assert.equal(
+    builtInCountASignatureHelp.signatures[0]?.label,
+    "CountA(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+    "built-in member signature should be available for WorksheetFunction.CountA"
+  );
+  assert.equal(
+    builtInCountASignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member CountA signature should expose variadic parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInCountASignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member CountA second argument should be optional"
+  );
+  assert.equal(
+    builtInCountBlankSignatureHelp.signatures[0]?.label,
+    "CountBlank(Arg1) As Double",
+    "built-in member signature should be available for WorksheetFunction.CountBlank"
+  );
+  assert.equal(
+    builtInCountBlankSignatureHelp.signatures[0]?.parameters.length,
+    1,
+    "built-in member CountBlank signature should expose single-argument metadata"
+  );
+  assert.equal(
     builtInTextSignatureHelp.signatures[0]?.label,
     "Text(Arg1, Arg2) As String",
     "built-in member signature should be available for WorksheetFunction.Text"
@@ -387,6 +494,16 @@ export async function run(): Promise<void> {
     builtInEventFallbackSuppressed,
     true,
     "built-in event call should not fabricate fallback signature help"
+  );
+  assert.equal(
+    builtInPropertyFallbackSuppressed2,
+    true,
+    "built-in property call should stay suppressed for Application.ActiveCell()"
+  );
+  assert.equal(
+    builtInEventFallbackSuppressed2,
+    true,
+    "built-in event call should stay suppressed for Application.NewWorkbook()"
   );
   assert.ok(
     builtInHoverText.includes("Calculate()"),

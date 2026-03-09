@@ -17,7 +17,27 @@ const signatureMemberAllowList = new Map([
   ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
   [
     "WorksheetFunction",
-    new Set(["Average", "Count", "EDate", "EoMonth", "Find", "Max", "Median", "Min", "Power", "Round", "Search", "Sum", "Text", "VLookup"])
+    new Set([
+      "And",
+      "Average",
+      "Count",
+      "CountA",
+      "CountBlank",
+      "EDate",
+      "EoMonth",
+      "Find",
+      "Max",
+      "Median",
+      "Min",
+      "Or",
+      "Power",
+      "Round",
+      "Search",
+      "Sum",
+      "Text",
+      "VLookup",
+      "Xor",
+    ])
   ],
 ]);
 const signatureMetadataOverrides = new Map([
@@ -565,7 +585,10 @@ function expandSignatureParameterNames(parameterName, syntaxParameterNames) {
     return [parameterName];
   }
 
-  const rangeMatch = parameterName.match(/^([A-Za-z_]+)(\d+)\s*-\s*(?:([A-Za-z_]+))?(\d+)$/u);
+  const compactParameterName = parameterName.replace(/\s+/g, "");
+  const rangeMatch =
+    compactParameterName.match(/^([A-Za-z_]+)(\d+)(?:,?(?:\.{3}|…|-),?)(?:([A-Za-z_]+))?(\d+)$/u) ??
+    parameterName.match(/^([A-Za-z_]+)(\d+)\s*-\s*(?:([A-Za-z_]+))?(\d+)$/u);
 
   if (!rangeMatch) {
     return [parameterName];
@@ -590,6 +613,51 @@ function expandSignatureParameterNames(parameterName, syntaxParameterNames) {
 function getTrailingNumericSuffix(value) {
   const match = value.match(/(\d+)$/u);
   return match?.[1];
+}
+
+function hasVariadicSyntaxMarker(syntaxLine) {
+  return /(?:\.{3}|…)/u.test(syntaxLine ?? "");
+}
+
+function fillMissingSequentialParameterMetadata(syntaxLine, parameters) {
+  if (!hasSequentialNumericSuffixParameters(parameters) || parameters.length < 10) {
+    return parameters;
+  }
+
+  const hasMissingMetadata = parameters.some(
+    (parameter, index) =>
+      index > 0 && !parameter.dataType && !parameter.description && parameter.isRequired === undefined,
+  );
+
+  if (!hasMissingMetadata) {
+    return parameters;
+  }
+
+  const templateParameter = parameters.find((parameter) => parameter.dataType || parameter.description);
+
+  if (!templateParameter) {
+    return parameters;
+  }
+
+  const fallbackDataType = templateParameter.dataType ?? "Variant";
+
+  return parameters.map((parameter, index) => {
+    if (index === 0) {
+      return parameter;
+    }
+
+    if (parameter.dataType || parameter.description || parameter.isRequired !== undefined) {
+      return parameter;
+    }
+
+    return {
+      ...parameter,
+      dataType: fallbackDataType,
+      description: templateParameter.description,
+      isRequired: false,
+      label: `${parameter.name} As ${fallbackDataType}`,
+    };
+  });
 }
 
 function buildSignatureParameterMetadata(syntaxParameterNames, tableRows) {
@@ -639,7 +707,7 @@ function expandTableParameterNames(tableRows, syntaxParameterNames) {
 
   for (const row of tableRows) {
     for (const parameterName of expandSignatureParameterNames(row.name, syntaxParameterNames)) {
-      if (parameterName.length === 0 || parameterName === "..." || names.includes(parameterName)) {
+      if (parameterName.length === 0 || parameterName === "..." || parameterName === "…" || names.includes(parameterName)) {
         continue;
       }
 
@@ -651,8 +719,10 @@ function expandTableParameterNames(tableRows, syntaxParameterNames) {
 }
 
 function resolveSignatureParameterNames(syntaxParameterNames, tableRows) {
-  const syntaxNames = syntaxParameterNames.filter((parameterName) => parameterName.length > 0 && parameterName !== "...");
-  const hasVariadicMarker = syntaxParameterNames.includes("...");
+  const syntaxNames = syntaxParameterNames.filter(
+    (parameterName) => parameterName.length > 0 && parameterName !== "..." && parameterName !== "…",
+  );
+  const hasVariadicMarker = syntaxParameterNames.includes("...") || syntaxParameterNames.includes("…");
 
   if (!hasVariadicMarker) {
     return syntaxNames;
@@ -735,7 +805,7 @@ function hasVariadicCountDescription(parameters) {
 
 function applyVariadicTailOptionalRule(syntaxLine, parameters) {
   if (
-    (!syntaxLine?.includes("...") && !hasVariadicCountDescription(parameters)) ||
+    (!hasVariadicSyntaxMarker(syntaxLine) && !hasVariadicCountDescription(parameters)) ||
     !hasSequentialNumericSuffixParameters(parameters) ||
     parameters[0]?.isRequired !== true ||
     parameters.slice(1).some((parameter) => parameter.isRequired !== true)
@@ -776,11 +846,14 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
   const syntaxParameterNames = extractSyntaxParameterNames(syntaxLine);
   const parameterTableRows = parseParameterTableRows(parametersSection);
   const signatureParameterNames = resolveSignatureParameterNames(syntaxParameterNames, parameterTableRows);
-  const parameters = applyVariadicTailOptionalRule(
+  const parameters = fillMissingSequentialParameterMetadata(
     syntaxLine,
-    applySyntaxOptionalParameterRequirements(
+    applyVariadicTailOptionalRule(
       syntaxLine,
-      buildSignatureParameterMetadata(signatureParameterNames, parameterTableRows),
+      applySyntaxOptionalParameterRequirements(
+        syntaxLine,
+        buildSignatureParameterMetadata(signatureParameterNames, parameterTableRows),
+      ),
     ),
   );
   const returnType = extractReturnType(returnValueSection);

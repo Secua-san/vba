@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T15:18:11.425Z",
+  "generatedAt": "2026-03-09T15:56:47.081Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -28300,7 +28300,225 @@
                 {
                   "name": "And",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.and",
-                  "tocHref": "excel.worksheetfunction.and"
+                  "tocHref": "excel.worksheetfunction.and",
+                  "summary": "Returns True if all its arguments are True; returns False if one or more arguments is False.",
+                  "signature": {
+                    "label": "And(Arg1, Arg2, Arg3, ..., Arg30) As Boolean",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Boolean"
+                  }
                 },
                 {
                   "name": "Arabic",
@@ -29026,12 +29244,245 @@
                 {
                   "name": "CountA",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.counta",
-                  "tocHref": "excel.worksheetfunction.counta"
+                  "tocHref": "excel.worksheetfunction.counta",
+                  "summary": "Counts the number of cells that are not empty and the values within the list of arguments.",
+                  "signature": {
+                    "label": "CountA(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 30 arguments representing the values that you want to count.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "CountBlank",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.countblank",
-                  "tocHref": "excel.worksheetfunction.countblank"
+                  "tocHref": "excel.worksheetfunction.countblank",
+                  "summary": "Counts empty cells in a specified range of cells.",
+                  "signature": {
+                    "label": "CountBlank(Arg1) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Range",
+                        "description": "The range from which you want to count the blank cells.",
+                        "isRequired": true,
+                        "label": "Arg1 As Range",
+                        "name": "Arg1"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "CountIf",
@@ -29930,115 +30381,199 @@
                         "name": "Arg1"
                       },
                       {
-                        "label": "Arg2",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
                         "name": "Arg2"
                       },
                       {
-                        "label": "Arg3",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
                         "name": "Arg3"
                       },
                       {
-                        "label": "Arg4",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
                         "name": "Arg4"
                       },
                       {
-                        "label": "Arg5",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
                         "name": "Arg5"
                       },
                       {
-                        "label": "Arg6",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
                         "name": "Arg6"
                       },
                       {
-                        "label": "Arg7",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
                         "name": "Arg7"
                       },
                       {
-                        "label": "Arg8",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
                         "name": "Arg8"
                       },
                       {
-                        "label": "Arg9",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
                         "name": "Arg9"
                       },
                       {
-                        "label": "Arg10",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
                         "name": "Arg10"
                       },
                       {
-                        "label": "Arg11",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
                         "name": "Arg11"
                       },
                       {
-                        "label": "Arg12",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
                         "name": "Arg12"
                       },
                       {
-                        "label": "Arg13",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
                         "name": "Arg13"
                       },
                       {
-                        "label": "Arg14",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
                         "name": "Arg14"
                       },
                       {
-                        "label": "Arg15",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
                         "name": "Arg15"
                       },
                       {
-                        "label": "Arg16",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
                         "name": "Arg16"
                       },
                       {
-                        "label": "Arg17",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
                         "name": "Arg17"
                       },
                       {
-                        "label": "Arg18",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
                         "name": "Arg18"
                       },
                       {
-                        "label": "Arg19",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
                         "name": "Arg19"
                       },
                       {
-                        "label": "Arg20",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
                         "name": "Arg20"
                       },
                       {
-                        "label": "Arg21",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
                         "name": "Arg21"
                       },
                       {
-                        "label": "Arg22",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
                         "name": "Arg22"
                       },
                       {
-                        "label": "Arg23",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
                         "name": "Arg23"
                       },
                       {
-                        "label": "Arg24",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
                         "name": "Arg24"
                       },
                       {
-                        "label": "Arg25",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
                         "name": "Arg25"
                       },
                       {
-                        "label": "Arg26",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
                         "name": "Arg26"
                       },
                       {
-                        "label": "Arg27",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
                         "name": "Arg27"
                       },
                       {
-                        "label": "Arg28",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
                         "name": "Arg28"
                       },
                       {
-                        "label": "Arg29",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
                         "name": "Arg29"
                       },
                       {
@@ -30299,115 +30834,199 @@
                         "name": "Arg1"
                       },
                       {
-                        "label": "Arg2",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
                         "name": "Arg2"
                       },
                       {
-                        "label": "Arg3",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
                         "name": "Arg3"
                       },
                       {
-                        "label": "Arg4",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
                         "name": "Arg4"
                       },
                       {
-                        "label": "Arg5",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
                         "name": "Arg5"
                       },
                       {
-                        "label": "Arg6",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
                         "name": "Arg6"
                       },
                       {
-                        "label": "Arg7",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
                         "name": "Arg7"
                       },
                       {
-                        "label": "Arg8",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
                         "name": "Arg8"
                       },
                       {
-                        "label": "Arg9",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
                         "name": "Arg9"
                       },
                       {
-                        "label": "Arg10",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
                         "name": "Arg10"
                       },
                       {
-                        "label": "Arg11",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
                         "name": "Arg11"
                       },
                       {
-                        "label": "Arg12",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
                         "name": "Arg12"
                       },
                       {
-                        "label": "Arg13",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
                         "name": "Arg13"
                       },
                       {
-                        "label": "Arg14",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
                         "name": "Arg14"
                       },
                       {
-                        "label": "Arg15",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
                         "name": "Arg15"
                       },
                       {
-                        "label": "Arg16",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
                         "name": "Arg16"
                       },
                       {
-                        "label": "Arg17",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
                         "name": "Arg17"
                       },
                       {
-                        "label": "Arg18",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
                         "name": "Arg18"
                       },
                       {
-                        "label": "Arg19",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
                         "name": "Arg19"
                       },
                       {
-                        "label": "Arg20",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
                         "name": "Arg20"
                       },
                       {
-                        "label": "Arg21",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
                         "name": "Arg21"
                       },
                       {
-                        "label": "Arg22",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
                         "name": "Arg22"
                       },
                       {
-                        "label": "Arg23",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
                         "name": "Arg23"
                       },
                       {
-                        "label": "Arg24",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
                         "name": "Arg24"
                       },
                       {
-                        "label": "Arg25",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
                         "name": "Arg25"
                       },
                       {
-                        "label": "Arg26",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
                         "name": "Arg26"
                       },
                       {
-                        "label": "Arg27",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
                         "name": "Arg27"
                       },
                       {
-                        "label": "Arg28",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
                         "name": "Arg28"
                       },
                       {
-                        "label": "Arg29",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
                         "name": "Arg29"
                       },
                       {
@@ -30589,7 +31208,225 @@
                 {
                   "name": "Or",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.or",
-                  "tocHref": "excel.worksheetfunction.or"
+                  "tocHref": "excel.worksheetfunction.or",
+                  "summary": "Returns True if any argument is True; returns False if all arguments are False.",
+                  "signature": {
+                    "label": "Or(Arg1, Arg2, Arg3, ..., Arg30) As Boolean",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Logical1, logical2, ... - 1 to 30 conditions that you want to test that can be either True or False.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Boolean"
+                  }
                 },
                 {
                   "name": "PDuration",
@@ -31498,7 +32335,225 @@
                 {
                   "name": "Xor",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.xor",
-                  "tocHref": "excel.worksheetfunction.xor"
+                  "tocHref": "excel.worksheetfunction.xor",
+                  "summary": "Returns a logical exclusive OR of all arguments.",
+                  "signature": {
+                    "label": "Xor(Arg1, Arg2, Arg3, ..., Arg30) As Boolean",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 254 conditions that you want to test that can be either True or False; can be logical values, arrays, or references.",
+                        "isRequired": false,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Boolean"
+                  }
                 },
                 {
                   "name": "YearFrac",
