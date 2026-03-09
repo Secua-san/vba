@@ -178,19 +178,24 @@ export async function run(): Promise<void> {
     new vscode.Position(6, 56),
     (help) => help.signatures.length > 0
   );
+  const builtInAverageSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(7, 46),
+    (help) => help.signatures.length > 0
+  );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(7, 35),
+    new vscode.Position(8, 35),
     (help) => help.signatures.length > 0
   );
   const builtInFallbackSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(8, 36),
+    new vscode.Position(9, 36),
     (help) => help.signatures.length > 0
   );
   const builtInHover = await waitForHover(
     builtInSignatureDocument,
-    new vscode.Position(9, 30),
+    new vscode.Position(10, 30),
     (hovers) => hovers.length > 0
   );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
@@ -234,6 +239,15 @@ export async function run(): Promise<void> {
     builtInPowerSignatureHelp.signatures[0]?.parameters.length,
     2,
     "built-in member signature should expose fixed parameter metadata"
+  );
+  assert.equal(
+    builtInAverageSignatureHelp.signatures[0]?.label,
+    "Average(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+    "built-in member signature should expand WorksheetFunction.Average with variadic metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInAverageSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member average second argument should be optional"
   );
   assert.equal(
     builtInExtractedZeroArgSignatureHelp.signatures[0]?.label,

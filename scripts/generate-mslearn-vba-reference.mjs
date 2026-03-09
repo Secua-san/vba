@@ -15,7 +15,7 @@ const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
 const signatureMemberAllowList = new Map([
   ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
-  ["WorksheetFunction", new Set(["Power", "Round", "Sum"])],
+  ["WorksheetFunction", new Set(["Average", "Count", "Max", "Median", "Min", "Power", "Round", "Sum"])],
 ]);
 const signatureOwnerNames = new Set(signatureMemberAllowList.keys());
 const microsoftLearnClient = createMcpRequestClient({
@@ -591,12 +591,83 @@ function buildSignatureParameterMetadata(syntaxParameterNames, tableRows) {
   });
 }
 
-function adjustSignatureParameterRequirements(ownerName, memberName, parameters) {
+function extractOptionalSyntaxParameterNames(syntaxLine) {
+  if (!syntaxLine) {
+    return new Set();
+  }
+
+  const openParenIndex = syntaxLine.indexOf("(");
+  const closeParenIndex = syntaxLine.lastIndexOf(")");
+
+  if (openParenIndex === -1 || closeParenIndex <= openParenIndex) {
+    return new Set();
+  }
+
+  return new Set(
+    syntaxLine
+      .slice(openParenIndex + 1, closeParenIndex)
+      .split(",")
+      .map((rawValue) => rawValue.trim())
+      .filter((rawValue) => rawValue.startsWith("[") && rawValue.endsWith("]"))
+      .map((rawValue) => normalizeSignatureParameterName(rawValue))
+      .filter((value) => value.length > 0),
+  );
+}
+
+function applySyntaxOptionalParameterRequirements(syntaxLine, parameters) {
+  const optionalParameterNames = extractOptionalSyntaxParameterNames(syntaxLine);
+
+  if (optionalParameterNames.size === 0) {
+    return parameters;
+  }
+
+  return parameters.map((parameter) =>
+    optionalParameterNames.has(parameter.name)
+      ? {
+          ...parameter,
+          isRequired: false,
+        }
+      : parameter,
+  );
+}
+
+function hasSequentialNumericSuffixParameters(parameters) {
+  if (parameters.length < 3) {
+    return false;
+  }
+
+  const matches = parameters.map((parameter) => parameter.name.match(/^([A-Za-z_]+)(\d+)$/u));
+
+  if (matches.some((match) => !match?.[1] || !match[2])) {
+    return false;
+  }
+
+  const prefix = matches[0][1].toLowerCase();
+  return matches.every((match, index) => match[1].toLowerCase() === prefix && Number(match[2]) === index + 1);
+}
+
+function hasVariadicCountDescription(parameters) {
+  const firstDescription = parameters[0]?.description?.trim();
+
+  if (!firstDescription) {
+    return false;
+  }
+
+  const normalizedDescriptions = parameters.map((parameter) => parameter.description?.trim() ?? "");
+
+  if (!normalizedDescriptions.every((description) => description === firstDescription)) {
+    return false;
+  }
+
+  return /\b1\s*(?:to|-)\s*\d+\b/iu.test(firstDescription) || /\bbetween\s+1\s+and\s+\d+\b/iu.test(firstDescription);
+}
+
+function applyVariadicTailOptionalRule(syntaxLine, parameters) {
   if (
-    ownerName !== "WorksheetFunction" ||
-    memberName !== "Sum" ||
-    parameters.length === 0 ||
-    parameters[0].name !== "Arg1"
+    (!syntaxLine?.includes("...") && !hasVariadicCountDescription(parameters)) ||
+    !hasSequentialNumericSuffixParameters(parameters) ||
+    parameters[0]?.isRequired !== true ||
+    parameters.slice(1).some((parameter) => parameter.isRequired !== true)
   ) {
     return parameters;
   }
@@ -629,10 +700,12 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
   const syntaxLine = extractSyntaxLine(syntaxSection);
   const syntaxParameterNames = extractSyntaxParameterNames(syntaxLine);
   const parameterTableRows = parseParameterTableRows(parametersSection);
-  const parameters = adjustSignatureParameterRequirements(
-    ownerName,
-    memberName,
-    buildSignatureParameterMetadata(syntaxParameterNames, parameterTableRows),
+  const parameters = applyVariadicTailOptionalRule(
+    syntaxLine,
+    applySyntaxOptionalParameterRequirements(
+      syntaxLine,
+      buildSignatureParameterMetadata(syntaxParameterNames, parameterTableRows),
+    ),
   );
   const returnType = extractReturnType(returnValueSection);
 
