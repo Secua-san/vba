@@ -64,6 +64,47 @@ export async function run(): Promise<void> {
   assert.ok(excelConstantCompletion, "built-in completion should include Excel constants");
   assert.ok(excelConstantCompletion.detail?.includes("Excel"), "built-in constant should include source detail");
 
+  const builtInMemberCompletionDocument = await vscode.workspace.openTextDocument(
+    path.resolve(fixturesPath, "BuiltInMemberCompletion.bas")
+  );
+  await vscode.window.showTextDocument(builtInMemberCompletionDocument);
+
+  const applicationMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    new vscode.Position(4, 28),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "WorksheetFunction")
+  );
+  const worksheetFunctionMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    new vscode.Position(5, 36),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Sum")
+  );
+  const chainedWorksheetFunctionMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    new vscode.Position(6, 48),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Sum")
+  );
+  const worksheetFunctionPropertyCompletion = applicationMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "WorksheetFunction"
+  );
+  const worksheetFunctionSumCompletion = worksheetFunctionMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Sum"
+  );
+
+  assert.ok(worksheetFunctionPropertyCompletion, "built-in member completion should include Application.WorksheetFunction");
+  assert.ok(
+    worksheetFunctionPropertyCompletion.detail?.includes("Excel Application property"),
+    "built-in member completion should include owner detail"
+  );
+  assert.ok(
+    worksheetFunctionSumCompletion?.detail?.includes("Excel WorksheetFunction method"),
+    "built-in member completion should include method detail"
+  );
+  assert.ok(
+    chainedWorksheetFunctionMemberCompletionItems.some((item) => getCompletionItemLabel(item) === "Sum"),
+    "built-in chained member completion should resolve through known member types"
+  );
+
   const definitions = await waitForDefinitions(
     consumerDocument,
     new vscode.Position(5, 18),
@@ -181,6 +222,18 @@ export async function run(): Promise<void> {
   assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 5, "xlAll", {
     modifiers: ["readonly"],
     type: "variable"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 6, "Name", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 7, "WorksheetFunction", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 7, "Sum", {
+    modifiers: [],
+    type: "function"
   });
 
   const formatDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "FormatDocument.bas"));

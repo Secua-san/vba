@@ -61,6 +61,43 @@ End Sub`
   assert.equal(excelConstant?.typeName, "Long");
 });
 
+test("document service exposes built-in member completion items from the reference index", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInMemberCompletion.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "BuiltInMemberCompletion"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print Application.
+    Debug.Print WorksheetFunction.Su
+    Debug.Print Application.WorksheetFunction.Su
+End Sub`
+  );
+
+  const applicationMembers = service.getCompletionSymbols(uri, { character: 28, line: 4 });
+  const worksheetFunctionMembers = service.getCompletionSymbols(uri, { character: 36, line: 5 });
+  const chainedWorksheetFunctionMembers = service.getCompletionSymbols(uri, { character: 48, line: 6 });
+
+  const worksheetFunctionProperty = applicationMembers.find((resolution) => resolution.symbol.name === "WorksheetFunction");
+  const activeCellProperty = applicationMembers.find((resolution) => resolution.symbol.name === "ActiveCell");
+  const worksheetFunctionSum = worksheetFunctionMembers.find((resolution) => resolution.symbol.name === "Sum");
+  const chainedWorksheetFunctionSum = chainedWorksheetFunctionMembers.find((resolution) => resolution.symbol.name === "Sum");
+
+  assert.equal(worksheetFunctionProperty?.isBuiltIn, true);
+  assert.equal(worksheetFunctionProperty?.moduleName, "Excel Application property");
+  assert.equal(worksheetFunctionProperty?.typeName, "WorksheetFunction");
+  assert.equal(worksheetFunctionProperty?.documentation?.includes("excel.application.worksheetfunction"), true);
+  assert.equal(activeCellProperty?.moduleName, "Excel Application property");
+  assert.equal(worksheetFunctionSum?.moduleName, "Excel WorksheetFunction method");
+  assert.equal(worksheetFunctionSum?.documentation?.includes("excel.worksheetfunction.sum"), true);
+  assert.equal(chainedWorksheetFunctionSum?.moduleName, "Excel WorksheetFunction method");
+});
+
 test("document service offers an Option Explicit code action after existing option lines", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/MissingOptionExplicit.bas";
@@ -730,7 +767,7 @@ End Sub`;
   });
 });
 
-test("document service exposes semantic tokens for built-in keywords, functions, and constants", () => {
+test("document service exposes semantic tokens for built-in keywords, functions, constants, and members", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInSemantic.bas";
   const text = `Attribute VB_Name = "BuiltInSemantic"
@@ -740,6 +777,7 @@ Public Sub Demo()
     Beep
     MsgBox xlAll
     Debug.Print Application.Name
+    Debug.Print Application.WorksheetFunction.Sum(1, 2)
 End Sub`;
 
   service.analyzeText(uri, "vba", 1, text);
@@ -761,6 +799,18 @@ End Sub`;
   assertSemanticToken(text, tokens, 6, "Application", {
     modifiers: [],
     type: "type"
+  });
+  assertSemanticToken(text, tokens, 6, "Name", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 7, "WorksheetFunction", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 7, "Sum", {
+    modifiers: [],
+    type: "function"
   });
 });
 

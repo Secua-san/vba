@@ -18,10 +18,17 @@ export interface BuiltinReferenceItem {
   typeName?: string;
 }
 
+export interface BuiltinMemberReferenceItem extends BuiltinReferenceItem {
+  ownerName: string;
+  ownerNormalizedName: string;
+}
+
 interface DerivedReferenceData {
   builtinIdentifiers: Set<string>;
   completionItems: BuiltinReferenceItem[];
   byNormalizedName: Map<string, BuiltinReferenceItem>;
+  memberItemsByOwnerAndName: Map<string, BuiltinMemberReferenceItem>;
+  memberItemsByOwnerNormalizedName: Map<string, BuiltinMemberReferenceItem[]>;
   reservedIdentifiers: Set<string>;
 }
 
@@ -124,12 +131,57 @@ export function getBuiltinReferenceItem(name: string): BuiltinReferenceItem | un
   return derivedReferenceData.byNormalizedName.get(normalizeIdentifier(name));
 }
 
+export function getBuiltinMemberCompletionItems(ownerName: string, prefix?: string): BuiltinMemberReferenceItem[] {
+  const items = derivedReferenceData.memberItemsByOwnerNormalizedName.get(normalizeIdentifier(ownerName)) ?? [];
+
+  if (!prefix) {
+    return items;
+  }
+
+  const normalizedPrefix = normalizeIdentifier(prefix);
+  return items.filter((item) => item.normalizedName.startsWith(normalizedPrefix));
+}
+
+export function getBuiltinMemberReferenceItem(ownerName: string, memberName: string): BuiltinMemberReferenceItem | undefined {
+  return derivedReferenceData.memberItemsByOwnerAndName.get(createOwnerMemberKey(ownerName, memberName));
+}
+
+export function resolveBuiltinMemberOwner(pathSegments: string[]): string | undefined {
+  if (pathSegments.length === 0) {
+    return undefined;
+  }
+
+  const [rootSegment, ...memberSegments] = pathSegments;
+  const rootReference = getBuiltinReferenceItem(rootSegment);
+
+  if (!rootReference) {
+    return undefined;
+  }
+
+  let currentOwnerName = rootReference.name;
+
+  for (const memberSegment of memberSegments) {
+    const memberReference = getBuiltinMemberReferenceItem(currentOwnerName, memberSegment);
+
+    if (!memberReference?.typeName) {
+      return undefined;
+    }
+
+    currentOwnerName = memberReference.typeName;
+  }
+
+  return currentOwnerName;
+}
+
 export function isReservedOrBuiltinIdentifier(name: string): boolean {
   return RESERVED_IDENTIFIERS.has(normalizeIdentifier(name));
 }
 
 function createDerivedReferenceData(): DerivedReferenceData {
   const byNormalizedName = new Map<string, BuiltinReferenceItem>();
+  const memberItemsByOwnerAndName = new Map<string, BuiltinMemberReferenceItem>();
+  const memberItemsByOwnerNormalizedName = new Map<string, BuiltinMemberReferenceItem[]>();
+  const memberPriorities = new Map<string, number>();
   const priorities = new Map<string, number>();
   const builtinIdentifiers = new Set<string>();
   const reservedIdentifiers = new Set<string>();
@@ -150,6 +202,18 @@ function createDerivedReferenceData(): DerivedReferenceData {
 
     priorities.set(entry.normalizedName, priority);
     byNormalizedName.set(entry.normalizedName, entry);
+  };
+
+  const addMemberEntry = (entry: BuiltinMemberReferenceItem, priority: number): void => {
+    const entryKey = createOwnerMemberKey(entry.ownerName, entry.name);
+    const currentPriority = memberPriorities.get(entryKey) ?? -1;
+
+    if (currentPriority > priority) {
+      return;
+    }
+
+    memberPriorities.set(entryKey, priority);
+    memberItemsByOwnerAndName.set(entryKey, entry);
   };
 
   for (const keyword of VBA_KEYWORDS) {
@@ -251,10 +315,41 @@ function createDerivedReferenceData(): DerivedReferenceData {
     );
   }
 
+  addObjectMemberEntries(
+    readEntryArray(rawReferenceData, "excel", "objectModel", "items"),
+    "Excel",
+    byNormalizedName,
+    addMemberEntry,
+    120
+  );
+  addObjectMemberEntries(
+    readEntryArray(rawReferenceData, "libraryReference", "reference", "items"),
+    "Office",
+    byNormalizedName,
+    addMemberEntry,
+    130
+  );
+
+  for (const memberItem of memberItemsByOwnerAndName.values()) {
+    const ownerItems = memberItemsByOwnerNormalizedName.get(memberItem.ownerNormalizedName);
+
+    if (ownerItems) {
+      ownerItems.push(memberItem);
+    } else {
+      memberItemsByOwnerNormalizedName.set(memberItem.ownerNormalizedName, [memberItem]);
+    }
+  }
+
+  for (const ownerItems of memberItemsByOwnerNormalizedName.values()) {
+    ownerItems.sort((left, right) => left.name.localeCompare(right.name));
+  }
+
   return {
     builtinIdentifiers,
     byNormalizedName,
     completionItems: [...byNormalizedName.values()].sort((left, right) => left.name.localeCompare(right.name)),
+    memberItemsByOwnerAndName,
+    memberItemsByOwnerNormalizedName,
     reservedIdentifiers
   };
 }
@@ -280,6 +375,43 @@ function createReferenceItem(
     normalizedName: normalizeIdentifier(safeName),
     semanticType: mapSemanticType(completionKind),
     typeName: options.typeName
+  };
+}
+
+function createMemberReferenceItem(
+  ownerName: string,
+  name: string | undefined,
+  sectionTitle: string | undefined,
+  sourceLabel: string,
+  knownItemsByNormalizedName: ReadonlyMap<string, BuiltinReferenceItem>,
+  learnUrl?: string
+): BuiltinMemberReferenceItem {
+  const safeName = name ?? "";
+  const normalizedSectionTitle = normalizeIdentifier(sectionTitle ?? "");
+  const completionKind =
+    normalizedSectionTitle === "methods" || normalizedSectionTitle === "events" ? "function" : "variable";
+  const memberKindLabel =
+    normalizedSectionTitle === "methods"
+      ? "method"
+      : normalizedSectionTitle === "properties"
+        ? "property"
+        : normalizedSectionTitle === "events"
+          ? "event"
+          : "member";
+  const inferredTypeName = inferBuiltinMemberTypeName(safeName, knownItemsByNormalizedName);
+
+  return {
+    ...createReferenceItem(
+      safeName,
+      completionKind,
+      `${sourceLabel} ${ownerName} ${memberKindLabel}`,
+      readDocumentation(`${sourceLabel} ${ownerName} ${memberKindLabel}`, learnUrl),
+      {
+        typeName: inferredTypeName
+      }
+    ),
+    ownerName,
+    ownerNormalizedName: normalizeIdentifier(ownerName)
   };
 }
 
@@ -313,6 +445,40 @@ function loadReferenceData(): RawReferenceData {
   }
 }
 
+function addObjectMemberEntries(
+  items: RawReferenceEntry[],
+  sourceLabel: string,
+  knownItemsByNormalizedName: ReadonlyMap<string, BuiltinReferenceItem>,
+  addMemberEntry: (entry: BuiltinMemberReferenceItem, priority: number) => void,
+  priority: number
+): void {
+  for (const item of items) {
+    const ownerName = readString(item, "name");
+
+    if (!ownerName) {
+      continue;
+    }
+
+    for (const section of readNestedEntryArray(item, "sections")) {
+      const sectionTitle = readString(section, "title");
+
+      for (const member of readNestedEntryArray(section, "members")) {
+        addMemberEntry(
+          createMemberReferenceItem(
+            ownerName,
+            readString(member, "name"),
+            sectionTitle,
+            sourceLabel,
+            knownItemsByNormalizedName,
+            readString(member, "learnUrl")
+          ),
+          priority
+        );
+      }
+    }
+  }
+}
+
 function resolveReferenceFilePath(): string | undefined {
   const candidatePaths = [
     process.env.VBA_REFERENCE_DATA_PATH,
@@ -327,6 +493,11 @@ function resolveReferenceFilePath(): string | undefined {
 
 function readEntryArray(source: RawReferenceData, ...pathSegments: string[]): RawReferenceEntry[] {
   const value = readNestedValue(source, ...pathSegments);
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function readNestedEntryArray(source: RawReferenceEntry, key: string): RawReferenceEntry[] {
+  const value = source[key];
   return Array.isArray(value) ? value.filter(isRecord) : [];
 }
 
@@ -370,6 +541,18 @@ function resolveKeywordUrl(source: RawReferenceEntry): string | undefined {
 
 function readDocumentation(detail: string, learnUrl?: string): string | undefined {
   return learnUrl ? `${detail}\n${learnUrl}` : undefined;
+}
+
+function inferBuiltinMemberTypeName(
+  memberName: string,
+  knownItemsByNormalizedName: ReadonlyMap<string, BuiltinReferenceItem>
+): string | undefined {
+  const knownItem = knownItemsByNormalizedName.get(normalizeIdentifier(memberName));
+  return knownItem?.completionKind === "type" ? knownItem.name : undefined;
+}
+
+function createOwnerMemberKey(ownerName: string, memberName: string): string {
+  return `${normalizeIdentifier(ownerName)}:${normalizeIdentifier(memberName)}`;
 }
 
 function isRecord(value: unknown): value is RawReferenceEntry {

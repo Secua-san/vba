@@ -11,11 +11,20 @@ export {
   BUILTIN_IDENTIFIERS,
   BUILTIN_REFERENCE_ITEMS,
   getBuiltinCompletionItems,
+  getBuiltinMemberCompletionItems,
+  getBuiltinMemberReferenceItem,
   getBuiltinReferenceItem,
   isReservedOrBuiltinIdentifier,
+  resolveBuiltinMemberOwner,
   RESERVED_IDENTIFIERS
 } from "./reference/builtinReference";
-export type { BuiltinCompletionKind, BuiltinReferenceItem, BuiltinSemanticModifier, BuiltinSemanticType } from "./reference/builtinReference";
+export type {
+  BuiltinCompletionKind,
+  BuiltinMemberReferenceItem,
+  BuiltinReferenceItem,
+  BuiltinSemanticModifier,
+  BuiltinSemanticType
+} from "./reference/builtinReference";
 export { buildModuleSymbols, getAccessibleSymbolsAtLine } from "./symbol/buildModuleSymbols";
 export { normalizeIdentifier } from "./types/helpers";
 export type {

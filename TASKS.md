@@ -137,11 +137,16 @@
   - 未宣言診断と rename 禁止名に同じ reserved / built-in 判定を使い、`Application`、`xlAll`、`Beep` などの誤警告を抑制する
   - semantic token に built-in function / constant / keyword を追加し、server / extension のテストで legend と token を確認する
 
+- [x] 組み込みメンバー補完
+  - `Application.` や `WorksheetFunction.` のような member access に対して、Microsoft Learn 由来のメソッド / プロパティ候補を返す
+  - `Application.WorksheetFunction.` のような既知 chain も、built-in member の型名を使って段階的に解決する
+  - built-in member の簡易ドキュメントと semantic token を server / extension のテストで確認する
+
 ## 次候補
 
-- [ ] 組み込みメンバー補完
-  - `Application.` や `WorksheetFunction.` のような member access に対して、Microsoft Learn 由来のメソッド / プロパティ候補を返す
-  - object / enum / constant まで追加した参照索引を、member completion と簡易ドキュメント表示へ拡張する
+- [ ] 組み込みメンバーのシグネチャ支援
+  - `WorksheetFunction.Sum` など built-in callable に対して、Microsoft Learn 由来の署名候補を signature help / hover へ出せるようにする
+  - 現在の completion 用 member index を、引数情報と説明文の索引へ拡張する
 
 ## メモ
 
