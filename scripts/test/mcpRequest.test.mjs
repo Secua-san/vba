@@ -50,6 +50,16 @@ test("computeBackoffDelayMs uses exponential delay and optional jitter", () => {
     }),
     2_500,
   );
+
+  assert.equal(
+    computeBackoffDelayMs({
+      baseDelayMs: 1_000,
+      jitterRatio: 0,
+      maxDelayMs: 60_000,
+      random: () => 0.5,
+    }),
+    1_000,
+  );
 });
 
 test("request waits for Retry-After on 429 responses and logs retry metadata", async () => {
@@ -231,6 +241,43 @@ test("request deduplicates in-flight calls with the same request key", async () 
   assert.equal(fetchCount, 1);
   assert.strictEqual(firstResult, secondResult);
   assert.deepEqual(firstResult, { ok: true });
+});
+
+test("request does not deduplicate different parseResponse functions by default request key", async () => {
+  let fetchCount = 0;
+
+  const client = createMcpRequestClient({
+    fetchImpl: async () => {
+      fetchCount += 1;
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: {
+          "content-type": "application/json",
+        },
+        status: 200,
+      });
+    },
+    logger: createJsonLogger(),
+    mcpName: "microsoft-learn",
+    minIntervalMs: 0,
+  });
+
+  const [jsonResult, textResult] = await Promise.all([
+    client.request({
+      operationName: "fetch-json",
+      parseResponse: (response) => response.json(),
+      url: "https://example.test/default-key",
+    }),
+    client.request({
+      operationName: "fetch-text",
+      parseResponse: (response) => response.text(),
+      url: "https://example.test/default-key",
+    }),
+  ]);
+
+  assert.equal(fetchCount, 2);
+  assert.deepEqual(jsonResult, { ok: true });
+  assert.equal(textResult, "{\"ok\":true}");
+  assert.notStrictEqual(jsonResult, textResult);
 });
 
 test("request fails clearly after exceeding the maximum retry count", async () => {

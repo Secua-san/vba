@@ -4,6 +4,8 @@ const DEFAULT_MAX_DELAY_MS = 60_000;
 const DEFAULT_MAX_RETRIES = 5;
 const DEFAULT_MIN_INTERVAL_MS = 250;
 const DEFAULT_TIMEOUT_MS = 30_000;
+const parseResponseKeys = new WeakMap();
+let nextParseResponseKey = 1;
 
 export class McpRequestError extends Error {
   constructor(message, { cause, finalReason, mcpName, operationName, retryCount } = {}) {
@@ -40,9 +42,10 @@ export function computeBackoffDelayMs({
   jitterRatio = DEFAULT_JITTER_RATIO,
   maxDelayMs = DEFAULT_MAX_DELAY_MS,
   random = Math.random,
-  retryCount,
+  retryCount = 1,
 }) {
-  const normalizedRetryCount = Math.max(1, retryCount);
+  const safeRetryCount = Number.isFinite(retryCount) ? retryCount : 1;
+  const normalizedRetryCount = Math.max(1, safeRetryCount);
   const baseDelay = Math.min(maxDelayMs, baseDelayMs * 2 ** (normalizedRetryCount - 1));
 
   if (jitterRatio <= 0) {
@@ -97,14 +100,52 @@ function createLogger(logger, mcpName) {
   };
 }
 
-function buildRequestKey(url, init, requestKey) {
+function formatHeaders(headers) {
+  const values = new Headers(headers);
+  return [...values.entries()]
+    .sort(([leftName], [rightName]) => leftName.localeCompare(rightName))
+    .map(([name, value]) => `${name}:${value}`)
+    .join("|");
+}
+
+function describeBody(body) {
+  if (typeof body === "string") {
+    return `string:${body}`;
+  }
+
+  if (body instanceof URLSearchParams) {
+    return `urlsearchparams:${body.toString()}`;
+  }
+
+  if (body && typeof body === "object" && "constructor" in body && body.constructor?.name) {
+    return `object:${body.constructor.name}`;
+  }
+
+  return typeof body === "undefined" ? "" : `${typeof body}:${String(body)}`;
+}
+
+function getParseResponseKey(parseResponse) {
+  const existing = parseResponseKeys.get(parseResponse);
+  if (existing) {
+    return existing;
+  }
+
+  const value = String(nextParseResponseKey);
+  nextParseResponseKey += 1;
+  parseResponseKeys.set(parseResponse, value);
+  return value;
+}
+
+function buildRequestKey(url, init, operationName, parseResponse, requestKey) {
   if (requestKey) {
     return requestKey;
   }
 
   const method = String(init.method || "GET").toUpperCase();
-  const body = typeof init.body === "string" && init.body.length > 0 ? ` ${init.body}` : "";
-  return `${method} ${url}${body}`;
+  const headers = formatHeaders(init.headers);
+  const body = describeBody(init.body);
+  const parserKey = getParseResponseKey(parseResponse);
+  return [method, url, operationName, headers, body, parserKey].join(" ");
 }
 
 function withTimeoutSignal(init, timeoutMs) {
@@ -316,7 +357,7 @@ export function createMcpRequestClient({
       throw new Error("parseResponse must be a function.");
     }
 
-    const normalizedRequestKey = buildRequestKey(url, init, requestKey);
+    const normalizedRequestKey = buildRequestKey(url, init, operationName, parseResponse, requestKey);
     const existing = inFlightRequests.get(normalizedRequestKey);
 
     if (existing) {
