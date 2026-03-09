@@ -105,6 +105,7 @@ function stripMarkdownText(value) {
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
+    .replace(/\\([\\`*_{}\[\]()#+\-.!])/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 }

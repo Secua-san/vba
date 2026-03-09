@@ -1081,7 +1081,10 @@ function resolveBuiltinCallableMember(
     return undefined;
   }
 
-  return memberReference.signature || memberReference.completionKind === "function" ? memberReference : undefined;
+  return memberReference.signature ||
+    (memberReference.completionKind === "function" && memberReference.memberKind === "method")
+    ? memberReference
+    : undefined;
 }
 
 function createSignatureHint(

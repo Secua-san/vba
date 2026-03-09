@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T14:08:32.246Z",
+  "generatedAt": "2026-03-09T14:19:30.620Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
@@ -29842,7 +29842,7 @@
                       },
                       {
                         "dataType": "Double",
-                        "description": "Num\\_digits - specifies the number of digits to which you want to round number.",
+                        "description": "Num_digits - specifies the number of digits to which you want to round number.",
                         "isRequired": true,
                         "label": "Arg2 As Double",
                         "name": "Arg2"

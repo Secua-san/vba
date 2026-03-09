@@ -22,6 +22,7 @@ export {
 export type {
   BuiltinCallableSignature,
   BuiltinCompletionKind,
+  BuiltinMemberKind,
   BuiltinMemberReferenceItem,
   BuiltinReferenceItem,
   BuiltinSemanticModifier,

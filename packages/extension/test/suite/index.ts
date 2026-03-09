@@ -178,14 +178,19 @@ export async function run(): Promise<void> {
     new vscode.Position(6, 56),
     (help) => help.signatures.length > 0
   );
+  const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(7, 35),
+    (help) => help.signatures.length > 0
+  );
   const builtInFallbackSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(7, 36),
+    new vscode.Position(8, 36),
     (help) => help.signatures.length > 0
   );
   const builtInHover = await waitForHover(
     builtInSignatureDocument,
-    new vscode.Position(8, 30),
+    new vscode.Position(9, 30),
     (hovers) => hovers.length > 0
   );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
@@ -229,6 +234,16 @@ export async function run(): Promise<void> {
     builtInPowerSignatureHelp.signatures[0]?.parameters.length,
     2,
     "built-in member signature should expose fixed parameter metadata"
+  );
+  assert.equal(
+    builtInExtractedZeroArgSignatureHelp.signatures[0]?.label,
+    "CalculateFull()",
+    "built-in zero-arg allow-listed signature should use extracted short label"
+  );
+  assert.equal(
+    builtInExtractedZeroArgSignatureHelp.signatures[0]?.parameters.length,
+    0,
+    "built-in zero-arg allow-listed signature should not fabricate parameters"
   );
   assert.equal(
     builtInFallbackSignatureHelp.signatures[0]?.label,
