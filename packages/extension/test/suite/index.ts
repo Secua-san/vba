@@ -238,35 +238,55 @@ export async function run(): Promise<void> {
     new vscode.Position(18, 63),
     (help) => help.signatures.length > 0
   );
+  const builtInMatchSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(19, 45),
+    (help) => help.signatures.length > 0
+  );
+  const builtInIndexSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(20, 45),
+    (help) => help.signatures.length > 0
+  );
+  const builtInLookupSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(21, 46),
+    (help) => help.signatures.length > 0
+  );
+  const builtInHlookupSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(22, 47),
+    (help) => help.signatures.length > 0
+  );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(19, 35),
+    new vscode.Position(23, 35),
     (help) => help.signatures.length > 0
   );
   const builtInFallbackSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(20, 36),
+    new vscode.Position(24, 36),
     (help) => help.signatures.length > 0
   );
   const builtInPropertyFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(21, 39)
+    new vscode.Position(25, 39)
   );
   const builtInEventFallbackSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(22, 35)
+    new vscode.Position(26, 35)
   );
   const builtInPropertyFallbackSuppressed2 = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(23, 32)
+    new vscode.Position(27, 32)
   );
   const builtInEventFallbackSuppressed2 = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(24, 33)
+    new vscode.Position(28, 33)
   );
   const builtInHover = await waitForHover(
     builtInSignatureDocument,
-    new vscode.Position(25, 30),
+    new vscode.Position(29, 30),
     (hovers) => hovers.length > 0
   );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
@@ -460,6 +480,46 @@ export async function run(): Promise<void> {
   assert.ok(
     getSignatureDocumentation(builtInVlookupSignatureHelp.signatures[0]?.parameters[3]?.documentation).includes("省略可能"),
     "built-in member VLookup fourth argument should be optional"
+  );
+  assert.equal(
+    builtInMatchSignatureHelp.signatures[0]?.label,
+    "Match(Arg1, Arg2, Arg3) As Double",
+    "built-in member signature should be available for WorksheetFunction.Match"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMatchSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes("省略可能"),
+    "built-in member Match third argument should be optional"
+  );
+  assert.equal(
+    builtInIndexSignatureHelp.signatures[0]?.label,
+    "Index(Arg1, Arg2, Arg3, Arg4) As Variant",
+    "built-in member signature should be available for WorksheetFunction.Index"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInIndexSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes("省略可能"),
+    "built-in member Index third argument should be optional"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInIndexSignatureHelp.signatures[0]?.parameters[3]?.documentation).includes("省略可能"),
+    "built-in member Index fourth argument should be optional"
+  );
+  assert.equal(
+    builtInLookupSignatureHelp.signatures[0]?.label,
+    "Lookup(Arg1, Arg2, Arg3) As Variant",
+    "built-in member signature should be available for WorksheetFunction.Lookup"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInLookupSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes("省略可能"),
+    "built-in member Lookup third argument should be optional"
+  );
+  assert.equal(
+    builtInHlookupSignatureHelp.signatures[0]?.label,
+    "HLookup(Arg1, Arg2, Arg3, Arg4) As Variant",
+    "built-in member signature should be available for WorksheetFunction.HLookup"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInHlookupSignatureHelp.signatures[0]?.parameters[3]?.documentation).includes("省略可能"),
+    "built-in member HLookup fourth argument should be optional"
   );
   assert.equal(
     builtInExtractedZeroArgSignatureHelp.signatures[0]?.label,
