@@ -1,11 +1,12 @@
 {
-  "generatedAt": "2026-03-08T14:49:35.076Z",
+  "generatedAt": "2026-03-09T13:31:08.960Z",
   "source": {
     "provider": "Microsoft Learn",
     "notes": [
       "Excel and Office library reference items are extracted from the official Office VBA API TOC JSON.",
       "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
-      "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn."
+      "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
+      "Method summaries and signature metadata are currently enriched for selected Excel methods."
     ],
     "urls": {
       "apiToc": "https://learn.microsoft.com/en-us/office/vba/api/toc.json",
@@ -816,7 +817,13 @@
                 {
                   "name": "Calculate",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.application.calculate",
-                  "tocHref": "excel.application.calculate"
+                  "tocHref": "excel.application.calculate",
+                  "summary": "Calculates all open workbooks, a specific worksheet in a workbook, or a specified range of cells on a worksheet, as shown in the following table.",
+                  "signature": {
+                    "label": "Calculate()",
+                    "ownerName": "Application",
+                    "parameters": []
+                  }
                 },
                 {
                   "name": "CalculateFull",
@@ -29910,7 +29917,225 @@
                 {
                   "name": "Sum",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.sum",
-                  "tocHref": "excel.worksheetfunction.sum"
+                  "tocHref": "excel.worksheetfunction.sum",
+                  "summary": "Adds all the numbers in a range of cells.",
+                  "signature": {
+                    "label": "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 arguments for which you want the total value or sum.",
+                        "isRequired": true,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Double"
+                  }
                 },
                 {
                   "name": "SumIf",

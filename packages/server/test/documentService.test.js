@@ -352,6 +352,60 @@ End Sub`
   assert.equal(signature?.parameters[1]?.documentation?.includes("現在の引数型: Long"), true);
 });
 
+test("document service exposes built-in member signature help and hover", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInSignature.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "BuiltInSignature"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print WorksheetFunction.Sum(1, 2)
+    Debug.Print Application.WorksheetFunction.Sum(1, 2)
+    Debug.Print Application.Calculate
+End Sub`
+  );
+
+  const worksheetSignature = service.getSignatureHelp(uri, { character: 42, line: 4 });
+  const chainedSignature = service.getSignatureHelp(uri, { character: 54, line: 5 });
+  const hover = service.getHover(uri, { character: 30, line: 6 });
+
+  assert.equal(worksheetSignature?.activeParameter, 1);
+  assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(worksheetSignature?.parameters.length, 30);
+  assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("想定型: Variant"), true);
+  assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("必須引数"), true);
+  assert.equal(worksheetSignature?.parameters[1]?.documentation?.includes("現在の引数型: Long"), true);
+  assert.equal(chainedSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(hover?.contents.includes("Calculate()"), true);
+  assert.equal(hover?.contents.includes("Microsoft Learn"), true);
+});
+
+test("document service keeps built-in signature and hover conservative for shadowed roots", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInSignatureShadowed.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "BuiltInSignatureShadowed"
+Option Explicit
+
+Public Sub Demo()
+    Dim WorksheetFunction As String
+    Debug.Print WorksheetFunction.Sum(1, 2)
+End Sub`
+  );
+
+  assert.equal(service.getSignatureHelp(uri, { character: 38, line: 5 }), undefined);
+  assert.equal(service.getHover(uri, { character: 35, line: 5 }), undefined);
+});
+
 test("document service formats VBA indentation through the shared core formatter", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/FormatDocument.bas";

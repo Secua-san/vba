@@ -13,6 +13,11 @@ const apiBaseUrl = "https://learn.microsoft.com/en-us/office/vba/api/";
 const fetchTimeoutMs = 30_000;
 const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
+const signatureOwnerNames = new Set(["Application", "WorksheetFunction"]);
+const signatureMemberAllowList = new Map([
+  ["Application", new Set(["Calculate"])],
+  ["WorksheetFunction", new Set(["Sum"])],
+]);
 const microsoftLearnClient = createMcpRequestClient({
   baseDelayMs: 2_000,
   maxDelayMs: 60_000,
@@ -314,6 +319,53 @@ function parseApiReferenceSection(node) {
   };
 }
 
+async function enrichApiMethodSignatures(items) {
+  const targets = [];
+
+  for (const item of items) {
+    const allowedMembers = signatureMemberAllowList.get(item.name);
+
+    if (!allowedMembers || !signatureOwnerNames.has(item.name)) {
+      continue;
+    }
+
+    for (const section of item.sections) {
+      if (!/^methods$/i.test(section.title)) {
+        continue;
+      }
+
+      for (const member of section.members) {
+        if (!member.learnUrl || !allowedMembers.has(member.name)) {
+          continue;
+        }
+
+        targets.push({
+          member,
+          ownerName: item.name,
+        });
+      }
+    }
+  }
+
+  for (const target of targets) {
+    const markdown = await fetchText(withMarkdown(target.member.learnUrl));
+    const signatureMetadata = parseApiMethodReference(markdown, target.ownerName, target.member.name);
+
+    if (signatureMetadata.summary) {
+      target.member.summary = signatureMetadata.summary;
+    }
+
+    if (signatureMetadata.signature) {
+      target.member.signature = signatureMetadata.signature;
+    }
+  }
+
+  return {
+    attempted: targets.length,
+    resolved: targets.filter((target) => Boolean(target.member.signature)).length,
+  };
+}
+
 function summarizeApiItems(items, enumerations) {
   const counts = {
     total: items.length + enumerations.length,
@@ -341,6 +393,240 @@ function summarizeApiItems(items, enumerations) {
   }
 
   return counts;
+}
+
+function extractSummaryParagraph(markdown) {
+  const lines = stripFrontMatter(markdown).split("\n");
+  let titleSeen = false;
+  const paragraph = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (!titleSeen) {
+      if (/^#\s+/u.test(line)) {
+        titleSeen = true;
+      }
+      continue;
+    }
+
+    if (line.length === 0) {
+      if (paragraph.length > 0) {
+        break;
+      }
+      continue;
+    }
+
+    if (/^##\s+/u.test(line)) {
+      break;
+    }
+
+    paragraph.push(line);
+  }
+
+  return paragraph.length > 0 ? stripMarkdownText(paragraph.join(" ")) : undefined;
+}
+
+function extractMarkdownSection(markdown, headingTitle) {
+  const lines = stripFrontMatter(markdown).split("\n");
+  const normalizedHeading = headingTitle.trim().toLowerCase();
+  const sectionLines = [];
+  let collecting = false;
+
+  for (const rawLine of lines) {
+    const headingMatch = rawLine.match(/^##\s+(.+)$/u);
+
+    if (headingMatch) {
+      const currentHeading = stripMarkdownText(headingMatch[1]).toLowerCase();
+
+      if (collecting) {
+        break;
+      }
+
+      if (currentHeading === normalizedHeading) {
+        collecting = true;
+      }
+
+      continue;
+    }
+
+    if (collecting) {
+      sectionLines.push(rawLine);
+    }
+  }
+
+  return sectionLines.join("\n").trim();
+}
+
+function extractSyntaxLine(sectionMarkdown) {
+  if (!sectionMarkdown) {
+    return undefined;
+  }
+
+  const lines = sectionMarkdown.split("\n");
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (line.length === 0) {
+      continue;
+    }
+
+    return line;
+  }
+
+  return undefined;
+}
+
+function extractReturnType(sectionMarkdown) {
+  if (!sectionMarkdown) {
+    return undefined;
+  }
+
+  for (const rawLine of sectionMarkdown.split("\n")) {
+    const line = stripMarkdownText(rawLine);
+
+    if (line.length > 0) {
+      return line;
+    }
+  }
+
+  return undefined;
+}
+
+function extractSyntaxParameterNames(syntaxLine) {
+  if (!syntaxLine) {
+    return [];
+  }
+
+  const openParenIndex = syntaxLine.indexOf("(");
+  const closeParenIndex = syntaxLine.lastIndexOf(")");
+
+  if (openParenIndex === -1 || closeParenIndex <= openParenIndex) {
+    return [];
+  }
+
+  return syntaxLine
+    .slice(openParenIndex + 1, closeParenIndex)
+    .split(",")
+    .map((value) => normalizeSignatureParameterName(value))
+    .filter((value) => value.length > 0);
+}
+
+function normalizeSignatureParameterName(value) {
+  return stripMarkdownText(value)
+    .replace(/^\*+|\*+$/g, "")
+    .replace(/^\[+|\]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseParameterTableRows(sectionMarkdown) {
+  const table = parseMarkdownTableBlocks(sectionMarkdown)[0];
+
+  if (!table) {
+    return [];
+  }
+
+  return table.rows.map((cells) => {
+    const [nameCell = "", requiredCell = "", dataTypeCell = "", descriptionCell = ""] = cells;
+    return {
+      dataType: stripMarkdownText(dataTypeCell) || undefined,
+      description: stripMarkdownText(descriptionCell) || undefined,
+      isRequired: /^required$/iu.test(stripMarkdownText(requiredCell)),
+      name: normalizeSignatureParameterName(nameCell),
+    };
+  });
+}
+
+function expandSignatureParameterNames(parameterName, syntaxParameterNames) {
+  if (!parameterName) {
+    return [];
+  }
+
+  if (syntaxParameterNames.includes(parameterName)) {
+    return [parameterName];
+  }
+
+  const rangeMatch = parameterName.match(/^([A-Za-z_]+)(\d+)\s*-\s*(?:([A-Za-z_]+))?(\d+)$/u);
+
+  if (!rangeMatch) {
+    return [parameterName];
+  }
+
+  const [, startPrefix, startValueText, endPrefix = startPrefix, endValueText] = rangeMatch;
+
+  if (startPrefix.toLowerCase() !== endPrefix.toLowerCase()) {
+    return [parameterName];
+  }
+
+  const startValue = Number(startValueText);
+  const endValue = Number(endValueText);
+
+  if (!Number.isInteger(startValue) || !Number.isInteger(endValue) || startValue > endValue) {
+    return [parameterName];
+  }
+
+  return Array.from({ length: endValue - startValue + 1 }, (_, index) => `${startPrefix}${startValue + index}`);
+}
+
+function buildSignatureParameterMetadata(syntaxParameterNames, tableRows) {
+  const rowEntries = tableRows.flatMap((row) =>
+    expandSignatureParameterNames(row.name, syntaxParameterNames).map((parameterName) => [parameterName, row]),
+  );
+  const metadataByName = new Map(rowEntries);
+
+  return syntaxParameterNames.map((parameterName) => {
+    const metadata = metadataByName.get(parameterName);
+    const dataType = metadata?.dataType;
+    const label = dataType ? `${parameterName} As ${dataType}` : parameterName;
+    return {
+      dataType,
+      description: metadata?.description,
+      isRequired: metadata?.isRequired,
+      label,
+      name: parameterName,
+    };
+  });
+}
+
+function summarizeSignatureLabelParameters(parameterNames) {
+  if (parameterNames.length <= 6) {
+    return parameterNames;
+  }
+
+  return [...parameterNames.slice(0, 3), "...", parameterNames[parameterNames.length - 1]];
+}
+
+function buildSignatureLabel(memberName, syntaxParameterNames, returnType) {
+  const parameterList = summarizeSignatureLabelParameters(syntaxParameterNames).join(", ");
+  const baseLabel = `${memberName}(${parameterList})`;
+  return returnType ? `${baseLabel} As ${returnType}` : baseLabel;
+}
+
+function parseApiMethodReference(markdown, ownerName, memberName) {
+  const summary = extractSummaryParagraph(markdown);
+  const syntaxSection = extractMarkdownSection(markdown, "Syntax");
+  const parametersSection = extractMarkdownSection(markdown, "Parameters");
+  const returnValueSection = extractMarkdownSection(markdown, "Return value");
+  const syntaxLine = extractSyntaxLine(syntaxSection);
+  const syntaxParameterNames = extractSyntaxParameterNames(syntaxLine);
+  const parameterTableRows = parseParameterTableRows(parametersSection);
+  const parameters = buildSignatureParameterMetadata(syntaxParameterNames, parameterTableRows);
+  const returnType = extractReturnType(returnValueSection);
+
+  return {
+    signature:
+      syntaxLine || parameters.length > 0 || returnType
+        ? {
+            label: buildSignatureLabel(memberName, syntaxParameterNames, returnType),
+            ownerName,
+            parameters,
+            returnType,
+          }
+        : undefined,
+    summary,
+  };
 }
 
 function parseKeywords(markdown, baseUrl) {
@@ -429,6 +715,7 @@ async function main() {
   const excelReference = parseApiReferenceSection(excelObjectModelNode);
   const libraryReference = parseApiReferenceSection(libraryReferenceNode);
   const languageFunctions = toSectionMap(parseSectionedLinks(functionsMarkdown, sourceUrls.functions));
+  const signatureStats = await enrichApiMethodSignatures(excelReference.items);
 
   const output = {
     generatedAt: new Date().toISOString(),
@@ -438,6 +725,7 @@ async function main() {
         "Excel and Office library reference items are extracted from the official Office VBA API TOC JSON.",
         "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
         "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
+        "Method summaries and signature metadata are currently enriched for selected Excel methods.",
       ],
       urls: sourceUrls,
     },
@@ -493,6 +781,8 @@ async function main() {
       {
         outputFile,
         excel: output.excel.objectModel.counts,
+        excelSignatureOwners: [...signatureOwnerNames],
+        excelSignatures: signatureStats,
         excelConstants: output.excel.constantsEnumeration.length,
         language: {
           landingSections: output.languageReference.landingSections.length,

@@ -5,6 +5,7 @@ import {
   extractIdentifierAtPosition,
   findDefinition,
   formatModuleIndentation,
+  getBuiltinMemberSignature,
   getBuiltinCompletionItems,
   getBuiltinMemberCompletionItems,
   getBuiltinMemberReferenceItem,
@@ -19,6 +20,7 @@ import {
   resolveBuiltinMemberOwner,
   splitCodeAndComment,
   type AnalysisResult,
+  type BuiltinCallableSignature,
   type BuiltinCompletionKind,
   type BuiltinMemberReferenceItem,
   type BuiltinReferenceItem,
@@ -72,6 +74,11 @@ export interface DocumentCodeAction {
   title: string;
 }
 
+export interface HoverHint {
+  contents: string;
+  range?: SourceRange;
+}
+
 export interface SignatureParameterHint {
   documentation?: string;
   label: string;
@@ -105,6 +112,7 @@ export interface DocumentService {
   getDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined;
   getDiagnostics: (uri: string) => Diagnostic[];
   getDocumentSymbols: (uri: string) => ReturnType<typeof getDocumentOutline>;
+  getHover: (uri: string, position: LinePosition) => HoverHint | undefined;
   getRenameEdits: (uri: string, position: LinePosition, newName: string) => RenameTextEdit[] | undefined;
   getReferences: (uri: string, position: LinePosition, includeDeclaration: boolean) => WorkspaceReference[];
   getSemanticTokens: (uri: string) => SemanticTokenEntry[];
@@ -344,6 +352,15 @@ export function createDocumentService(): DocumentService {
       const state = documentStates.get(uri);
       return state ? getDocumentOutline(state.analysis) : [];
     },
+    getHover(uri: string, position: LinePosition): HoverHint | undefined {
+      const state = documentStates.get(uri);
+
+      if (!state) {
+        return undefined;
+      }
+
+      return getBuiltinMemberHover(state, uri, position, resolveDefinition);
+    },
     getRenameEdits(uri: string, position: LinePosition, newName: string): RenameTextEdit[] | undefined {
       const renameTarget = resolveLocalRenameTarget(uri, position);
 
@@ -398,23 +415,27 @@ export function createDocumentService(): DocumentService {
         line: position.line
       });
 
-      if (!target || !isCallableSymbol(target.symbol)) {
-        return undefined;
+      if (target && isCallableSymbol(target.symbol)) {
+        const targetState = documentStates.get(target.uri);
+
+        if (!targetState) {
+          return undefined;
+        }
+
+        const callable = findCallableMember(targetState.analysis, target.symbol);
+
+        if (!callable) {
+          return undefined;
+        }
+
+        return createSignatureHint(state.analysis, uri, target, callable, position.line, callContext, resolveDefinition);
       }
 
-      const targetState = documentStates.get(target.uri);
+      const builtinMember = resolveBuiltinCallableMember(uri, position.line, callContext, resolveDefinition);
 
-      if (!targetState) {
-        return undefined;
-      }
-
-      const callable = findCallableMember(targetState.analysis, target.symbol);
-
-      if (!callable) {
-        return undefined;
-      }
-
-      return createSignatureHint(state.analysis, uri, target, callable, position.line, callContext, resolveDefinition);
+      return builtinMember
+        ? createBuiltinSignatureHint(state.analysis, uri, position.line, callContext, builtinMember, resolveDefinition)
+        : undefined;
     },
     getState(uri: string): DocumentState | undefined {
       return documentStates.get(uri);
@@ -437,6 +458,8 @@ type SemanticTokenShape = Pick<SemanticTokenEntry, "modifiers" | "type">;
 
 interface CallContext {
   activeParameter: number;
+  callPath: string[];
+  callPathStartCharacter: number;
   currentArgumentStartCharacter: number;
   currentArgumentText: string;
   identifierStartCharacter: number;
@@ -1029,6 +1052,33 @@ function filterCompletionsByPrefix(
   return completions.filter((resolution) => resolution.symbol.normalizedName.startsWith(normalizedPrefix));
 }
 
+function resolveBuiltinCallableMember(
+  uri: string,
+  line: number,
+  callContext: CallContext,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): BuiltinMemberReferenceItem | undefined {
+  if (callContext.callPath.length < 2) {
+    return undefined;
+  }
+
+  const rootResolution = resolveDefinition(uri, {
+    character: callContext.callPathStartCharacter,
+    line
+  });
+
+  if (rootResolution) {
+    return undefined;
+  }
+
+  const ownerName = resolveBuiltinMemberOwner(callContext.callPath.slice(0, -1));
+  const memberName = callContext.callPath[callContext.callPath.length - 1];
+
+  return ownerName && getBuiltinMemberSignature(ownerName, memberName)
+    ? getBuiltinMemberReferenceItem(ownerName, memberName)
+    : undefined;
+}
+
 function createSignatureHint(
   analysis: AnalysisResult,
   sourceUri: string,
@@ -1052,6 +1102,139 @@ function createSignatureHint(
       label: buildParameterLabel(parameter)
     }))
   };
+}
+
+function createBuiltinSignatureHint(
+  analysis: AnalysisResult,
+  sourceUri: string,
+  line: number,
+  callContext: CallContext,
+  memberReference: BuiltinMemberReferenceItem,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): SignatureHint {
+  const signature = memberReference.signature;
+  const currentArgumentTypeName = getCurrentArgumentTypeName(analysis, sourceUri, line, callContext, resolveDefinition);
+  const activeParameter =
+    !signature || signature.parameters.length === 0 ? undefined : Math.min(callContext.activeParameter, signature.parameters.length - 1);
+
+  return {
+    activeParameter,
+    activeSignature: 0,
+    documentation: buildBuiltinSignatureDocumentation(memberReference),
+    label: signature?.label ?? `${memberReference.ownerName}.${memberReference.name}()`,
+    parameters:
+      signature?.parameters.map((parameter, index) => ({
+        documentation: buildBuiltinSignatureParameterDocumentation(
+          parameter,
+          index === activeParameter ? currentArgumentTypeName : undefined
+        ),
+        label: parameter.label
+      })) ?? []
+  };
+}
+
+function getBuiltinMemberHover(
+  state: DocumentState,
+  uri: string,
+  position: LinePosition,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): HoverHint | undefined {
+  const builtinMember = resolveBuiltinMemberAtPosition(state.text, uri, position, resolveDefinition);
+
+  if (!builtinMember?.reference.signature) {
+    return undefined;
+  }
+
+  return {
+    contents: buildBuiltinHoverMarkdown(builtinMember.reference),
+    range: builtinMember.range
+  };
+}
+
+function resolveBuiltinMemberAtPosition(
+  text: string,
+  uri: string,
+  position: LinePosition,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): { range: SourceRange; reference: BuiltinMemberReferenceItem } | undefined {
+  const range = getIdentifierRangeAtPosition(text, position);
+
+  if (!range) {
+    return undefined;
+  }
+
+  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line] ?? "";
+  const { code } = splitCodeAndComment(line.slice(0, range.end.character));
+  const memberAccess = parseTrailingMemberAccess(code);
+
+  if (
+    !memberAccess ||
+    normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(line.slice(range.start.character, range.end.character)) ||
+    resolveDefinition(uri, {
+      character: memberAccess.memberPathStartCharacter,
+      line: position.line
+    })
+  ) {
+    return undefined;
+  }
+
+  const ownerName = resolveBuiltinMemberOwner(memberAccess.memberPath);
+  const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberAccess.prefix) : undefined;
+
+  return memberReference ? { range, reference: memberReference } : undefined;
+}
+
+function buildBuiltinSignatureDocumentation(memberReference: BuiltinMemberReferenceItem): string | undefined {
+  const lines = [];
+
+  if (memberReference.summary) {
+    lines.push(memberReference.summary);
+  }
+
+  if (memberReference.learnUrl) {
+    lines.push(memberReference.learnUrl);
+  }
+
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+function buildBuiltinSignatureParameterDocumentation(
+  parameter: BuiltinCallableSignature["parameters"][number],
+  currentArgumentTypeName?: string
+): string | undefined {
+  const lines = [];
+
+  if (parameter.dataType) {
+    lines.push(`想定型: ${parameter.dataType}`);
+  }
+
+  if (parameter.isRequired !== undefined) {
+    lines.push(parameter.isRequired ? "必須引数" : "省略可能");
+  }
+
+  if (parameter.description) {
+    lines.push(parameter.description);
+  }
+
+  if (currentArgumentTypeName) {
+    lines.push(`現在の引数型: ${currentArgumentTypeName}`);
+  }
+
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+function buildBuiltinHoverMarkdown(memberReference: BuiltinMemberReferenceItem): string {
+  const lines = ["```vb", memberReference.signature?.label ?? `${memberReference.ownerName}.${memberReference.name}()`, "```"];
+
+  if (memberReference.summary) {
+    lines.push(memberReference.summary);
+  }
+
+  if (memberReference.learnUrl) {
+    lines.push(`[Microsoft Learn](${memberReference.learnUrl})`);
+  }
+
+  return lines.join("\n\n");
 }
 
 function getCurrentArgumentTypeName(
@@ -1095,6 +1278,8 @@ function getCallContext(text: string, position: LinePosition): CallContext | und
 
   const { code } = splitCodeAndComment(line.slice(0, position.character));
   const frames: Array<{
+    callPath?: string[];
+    callPathStartCharacter?: number;
     commaCount: number;
     identifier?: string;
     identifierStartCharacter?: number;
@@ -1116,12 +1301,14 @@ function getCallContext(text: string, position: LinePosition): CallContext | und
     }
 
     if (character === "(") {
-      const identifier = getIdentifierBeforeOpenParen(code, index);
+      const callable = getCallableBeforeOpenParen(code, index);
 
       frames.push({
+        callPath: callable?.path,
+        callPathStartCharacter: callable?.pathStartCharacter,
         commaCount: 0,
-        identifier: identifier?.text,
-        identifierStartCharacter: identifier?.startCharacter,
+        identifier: callable?.identifier,
+        identifierStartCharacter: callable?.identifierStartCharacter,
         lastCommaIndex: index
       });
       index += 1;
@@ -1155,6 +1342,8 @@ function getCallContext(text: string, position: LinePosition): CallContext | und
 
   return {
     activeParameter: currentFrame.commaCount,
+    callPath: currentFrame.callPath ?? [currentFrame.identifier],
+    callPathStartCharacter: currentFrame.callPathStartCharacter ?? currentFrame.identifierStartCharacter,
     currentArgumentStartCharacter: currentFrame.lastCommaIndex + 1,
     currentArgumentText: code.slice(currentFrame.lastCommaIndex + 1),
     identifierStartCharacter: currentFrame.identifierStartCharacter
@@ -1223,6 +1412,40 @@ function buildParameterDocumentation(
   }
 
   return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+function getCallableBeforeOpenParen(
+  text: string,
+  openParenIndex: number
+):
+  | {
+      identifier: string;
+      identifierStartCharacter: number;
+      path: string[];
+      pathStartCharacter: number;
+    }
+  | undefined {
+  const memberAccess = parseTrailingMemberAccess(text.slice(0, openParenIndex));
+
+  if (memberAccess) {
+    return {
+      identifier: memberAccess.prefix,
+      identifierStartCharacter: memberAccess.prefixStartCharacter,
+      path: [...memberAccess.memberPath, memberAccess.prefix],
+      pathStartCharacter: memberAccess.memberPathStartCharacter
+    };
+  }
+
+  const identifier = getIdentifierBeforeOpenParen(text, openParenIndex);
+
+  return identifier
+    ? {
+        identifier: identifier.text,
+        identifierStartCharacter: identifier.startCharacter,
+        path: [identifier.text],
+        pathStartCharacter: identifier.startCharacter
+      }
+    : undefined;
 }
 
 function getIdentifierBeforeOpenParen(
@@ -1593,6 +1816,7 @@ function parseTrailingMemberAccess(
   memberPath: string[];
   memberPathStartCharacter: number;
   prefix: string;
+  prefixStartCharacter: number;
 } | undefined {
   let index = text.length - 1;
 
@@ -1607,6 +1831,7 @@ function parseTrailingMemberAccess(
   }
 
   const prefix = text.slice(index + 1, prefixEnd);
+  const prefixStartCharacter = index + 1;
 
   if (prefix.length > 0 && !/^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(prefix)) {
     return undefined;
@@ -1654,7 +1879,8 @@ function parseTrailingMemberAccess(
     ? {
         memberPath,
         memberPathStartCharacter: memberPathStartCharacter ?? 0,
-        prefix
+        prefix,
+        prefixStartCharacter
       }
     : undefined;
 }

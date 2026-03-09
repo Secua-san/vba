@@ -8,9 +8,11 @@ import {
   DiagnosticSeverity,
   DocumentSymbol,
   FileChangeType,
+  Hover,
   InitializeParams,
   InitializeResult,
   Location,
+  MarkupKind,
   ParameterInformation,
   Position,
   ProposedFeatures,
@@ -66,6 +68,7 @@ export function startServer(): void {
         definitionProvider: true,
         documentFormattingProvider: true,
         documentSymbolProvider: true,
+        hoverProvider: true,
         renameProvider: {
           prepareProvider: true
         },
@@ -186,6 +189,20 @@ export function startServer(): void {
     }
 
     return Location.create(resolution.uri, toLspRange(resolution.symbol.selectionRange));
+  });
+
+  connection.onHover((params): Hover | undefined => {
+    const hover = documentService.getHover(params.textDocument.uri, toCorePosition(params.position));
+
+    return hover
+      ? {
+          contents: {
+            kind: MarkupKind.Markdown,
+            value: hover.contents
+          },
+          range: hover.range ? toLspRange(hover.range) : undefined
+        }
+      : undefined;
   });
 
   connection.onDocumentSymbol((params): DocumentSymbol[] => {

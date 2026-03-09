@@ -13,15 +13,18 @@ export {
   getBuiltinCompletionItems,
   getBuiltinMemberCompletionItems,
   getBuiltinMemberReferenceItem,
+  getBuiltinMemberSignature,
   getBuiltinReferenceItem,
   isReservedOrBuiltinIdentifier,
   resolveBuiltinMemberOwner,
   RESERVED_IDENTIFIERS
 } from "./reference/builtinReference";
 export type {
+  BuiltinCallableSignature,
   BuiltinCompletionKind,
   BuiltinMemberReferenceItem,
   BuiltinReferenceItem,
+  BuiltinSignatureParameter,
   BuiltinSemanticModifier,
   BuiltinSemanticType
 } from "./reference/builtinReference";

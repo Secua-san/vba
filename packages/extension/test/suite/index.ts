@@ -160,6 +160,62 @@ export async function run(): Promise<void> {
     "signature help should include inferred argument type information"
   );
 
+  const builtInSignatureDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "BuiltInMemberSignature.bas"));
+  await vscode.window.showTextDocument(builtInSignatureDocument);
+
+  const builtInSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(4, 42),
+    (help) => help.signatures.length > 0
+  );
+  const builtInChainedSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    new vscode.Position(5, 54),
+    (help) => help.signatures.length > 0
+  );
+  const builtInHover = await waitForHover(
+    builtInSignatureDocument,
+    new vscode.Position(6, 30),
+    (hovers) => hovers.length > 0
+  );
+  const builtInHoverText = getHoverContentsText(builtInHover[0]);
+
+  assert.equal(
+    builtInSignatureHelp.signatures[0]?.label,
+    "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+    "built-in member signature should be available for WorksheetFunction.Sum"
+  );
+  assert.equal(
+    builtInSignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member signature should include expanded argument metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("想定型: Variant"),
+    "built-in member parameter should include expected type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("必須引数"),
+    "built-in member parameter should include required metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("現在の引数型: Long"),
+    "built-in member parameter should include inferred argument type information"
+  );
+  assert.equal(
+    builtInChainedSignatureHelp.signatures[0]?.label,
+    "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+    "built-in member signature should resolve through Application.WorksheetFunction"
+  );
+  assert.ok(
+    builtInHoverText.includes("Calculate()"),
+    "built-in hover should include callable signature label"
+  );
+  assert.ok(
+    builtInHoverText.includes("Microsoft Learn"),
+    "built-in hover should include source link"
+  );
+
   const renameDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "RenameLocal.bas"));
   await vscode.window.showTextDocument(renameDocument);
 
@@ -668,6 +724,28 @@ async function waitForSignatureHelp(
   };
 }
 
+async function waitForHover(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  predicate: (hovers: readonly vscode.Hover[]) => boolean
+): Promise<readonly vscode.Hover[]> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const hovers = await vscode.commands.executeCommand<readonly vscode.Hover[]>(
+      "vscode.executeHoverProvider",
+      document.uri,
+      position
+    );
+
+    if (hovers && predicate(hovers)) {
+      return hovers;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return [];
+}
+
 async function waitForRename(
   document: vscode.TextDocument,
   position: vscode.Position,
@@ -759,6 +837,28 @@ function getSignatureDocumentation(
   }
 
   return typeof documentation === "string" ? documentation : documentation.value;
+}
+
+function getHoverContentsText(hover: vscode.Hover | undefined): string {
+  if (!hover) {
+    return "";
+  }
+
+  const contents = Array.isArray(hover.contents) ? hover.contents : [hover.contents];
+
+  return contents
+    .map((content) => {
+      if (typeof content === "string") {
+        return content;
+      }
+
+      if ("language" in content && "value" in content) {
+        return content.value;
+      }
+
+      return content.value;
+    })
+    .join("\n");
 }
 
 function getCompletionItemLabel(item: vscode.CompletionItem): string {
