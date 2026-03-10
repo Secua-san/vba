@@ -15,6 +15,7 @@ const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
 const signatureMemberAllowList = new Map([
   ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
+  ["Range", new Set(["Address", "AddressLocal"])],
   [
     "WorksheetFunction",
     new Set([
@@ -373,10 +374,6 @@ async function enrichApiMethodSignatures(items) {
     }
 
     for (const section of item.sections) {
-      if (!/^methods$/i.test(section.title)) {
-        continue;
-      }
-
       for (const member of section.members) {
         if (!member.learnUrl || !allowedMembers.has(member.name)) {
           continue;
@@ -535,6 +532,27 @@ function extractReturnType(sectionMarkdown) {
   }
 
   return undefined;
+}
+
+function inferReturnTypeFromSummary(summary) {
+  if (!summary) {
+    return undefined;
+  }
+
+  const readOnlyMatch = summary.match(/\bRead-only\s+([A-Z][A-Za-z0-9_]*)\b/u);
+
+  if (readOnlyMatch?.[1]) {
+    return readOnlyMatch[1];
+  }
+
+  const returnsValueMatch = summary.match(/\bReturns\s+(?:an?\s+)?([A-Z][A-Za-z0-9_]*)\s+value\b/u);
+
+  if (returnsValueMatch?.[1]) {
+    return returnsValueMatch[1];
+  }
+
+  const returnsTypeMatch = summary.match(/\bReturns\s+(?:an?\s+)?([A-Z][A-Za-z0-9_]*)\b/u);
+  return returnsTypeMatch?.[1];
 }
 
 function extractSyntaxParameterNames(syntaxLine) {
@@ -862,7 +880,7 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
       ),
     ),
   );
-  const returnType = extractReturnType(returnValueSection);
+  const returnType = extractReturnType(returnValueSection) ?? inferReturnTypeFromSummary(summary);
   const signatureMetadataOverride = signatureMetadataOverrides.get(createSignatureMetadataOverrideKey(ownerName, memberName));
   const overriddenParameters = signatureMetadataOverride
     ? parameters.map((parameter) => ({
@@ -984,7 +1002,7 @@ async function main() {
         "Excel and Office library reference items are extracted from the official Office VBA API TOC JSON.",
         "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
         "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
-        "Method summaries and signature metadata are currently enriched for selected Excel methods.",
+        "Member summaries and signature metadata are currently enriched for selected Excel members.",
       ],
       urls: sourceUrls,
     },

@@ -268,6 +268,16 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Transpose("),
     (help) => help.signatures.length > 0
   );
+  const builtInAddressSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "ActiveCell.Address("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInAddressLocalSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Cells.AddressLocal("),
+    (help) => help.signatures.length > 0
+  );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "Application.CalculateFull("),
@@ -568,6 +578,52 @@ export async function run(): Promise<void> {
   assert.ok(
     getSignatureDocumentation(builtInTransposeSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
     "built-in member Transpose argument should stay required"
+  );
+  assert.equal(
+    builtInAddressSignatureHelp.signatures[0]?.label,
+    "Address(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String",
+    "built-in member signature should be available for ActiveCell.Address"
+  );
+  assert.equal(
+    builtInAddressSignatureHelp.signatures[0]?.parameters.length,
+    5,
+    "built-in Address signature should expose fixed parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInAddressSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("省略可能"),
+    "built-in Address first argument should be optional"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInAddressSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes(
+      "想定型: XlReferenceStyle"
+    ),
+    "built-in Address reference style should include the expected enum type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInAddressSignatureHelp.signatures[0]?.parameters[4]?.documentation).includes("省略可能"),
+    "built-in Address RelativeTo argument should be optional"
+  );
+  assert.equal(
+    builtInAddressLocalSignatureHelp.signatures[0]?.label,
+    "AddressLocal(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String",
+    "built-in member signature should be available for Cells.AddressLocal"
+  );
+  assert.equal(
+    builtInAddressLocalSignatureHelp.signatures[0]?.parameters.length,
+    5,
+    "built-in AddressLocal signature should expose fixed parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInAddressLocalSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes(
+      "想定型: XlReferenceStyle"
+    ),
+    "built-in AddressLocal reference style should include the expected enum type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInAddressLocalSignatureHelp.signatures[0]?.parameters[4]?.documentation).includes(
+      "省略可能"
+    ),
+    "built-in AddressLocal RelativeTo argument should be optional"
   );
   assert.equal(
     builtInExtractedZeroArgSignatureHelp.signatures[0]?.label,

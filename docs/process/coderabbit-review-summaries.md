@@ -88,3 +88,21 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - extension / server テストに `Choose` 最終引数の required 確認を追加。
 - 残課題:
   - `Choose` の required / optional 判定を Microsoft Learn 準拠のまま維持するか、Excel 実動作優先へ寄せるかは別途方針整理が必要。
+
+## 2026-03-10 PR #43 組み込みメンバー署名データ第7弾: Address 系シグネチャを追加
+- レビュー状況: `SUCCESS`
+- 要約:
+  - CodeRabbit から妥当な修正指摘は出ず、`No actionable comments were generated` で完了した。
+  - `Docstring Coverage` 警告は出たが、このリポジトリの現行品質ゲート対象ではなく、今回差分の妥当性を崩す指摘ではないため対応対象外とした。
+- 指摘一覧:
+  - [非採用] 指摘なし。CodeRabbit の walkthrough と pre-merge check 警告のみで、コード修正を要するコメントは無かった。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - allow list で property ページの署名を取り込む場合、enrich 対象が `Methods` に固定されていないかを先に確認すると手戻りが減る。
+  - `Return value` 節が無い Microsoft Learn ページでは、summary から戻り値を補完できるかを検討すると署名ラベルの欠損を防ぎやすい。
+  - `ActiveCell` や `Cells` のような built-in root は、実際の返却型を `typeName` で持たせるとメンバー補完と署名解決の両方に効く。
+- 実施:
+  - `Range.Address` / `Range.AddressLocal` の署名を参照 JSON へ追加。
+  - `ActiveCell.Address` / `Cells.AddressLocal` の signature help と shadowing 抑止を server / extension テストで確認。
+  - PR 前 `reviewer` では重大度付き指摘なし、追加で `ActiveCell.Address` の shadowing 抑止テストを補強した。
+- 残課題:
+  - `XLookup` / `XMATCH` は現行 Microsoft Learn では未掲載のため、次回の参照再生成時に再確認する。

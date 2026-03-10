@@ -5,7 +5,7 @@
       "Excel and Office library reference items are extracted from the official Office VBA API TOC JSON.",
       "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
       "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
-      "Method summaries and signature metadata are currently enriched for selected Excel methods."
+      "Member summaries and signature metadata are currently enriched for selected Excel members."
     ],
     "urls": {
       "apiToc": "https://learn.microsoft.com/en-us/office/vba/api/toc.json",
@@ -18879,12 +18879,98 @@
                 {
                   "name": "Address",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.address",
-                  "tocHref": "excel.range.address"
+                  "tocHref": "excel.range.address",
+                  "summary": "Returns a String value that represents the range reference in the language of the macro.",
+                  "signature": {
+                    "label": "Address(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String",
+                    "ownerName": "Range",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "True to return the row part of the reference as an absolute reference. The default value is True.",
+                        "isRequired": false,
+                        "label": "RowAbsolute As Variant",
+                        "name": "RowAbsolute"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to return the column part of the reference as an absolute reference. The default value is True.",
+                        "isRequired": false,
+                        "label": "ColumnAbsolute As Variant",
+                        "name": "ColumnAbsolute"
+                      },
+                      {
+                        "dataType": "XlReferenceStyle",
+                        "description": "The reference style. The default value is xlA1.",
+                        "isRequired": false,
+                        "label": "ReferenceStyle As XlReferenceStyle",
+                        "name": "ReferenceStyle"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to return an external reference. False to return a local reference. The default value is False.",
+                        "isRequired": false,
+                        "label": "External As Variant",
+                        "name": "External"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "If *RowAbsolute* and *ColumnAbsolute* are False, and *ReferenceStyle* is xlR1C1, you must include a starting point for the relative reference. This argument is a Range object that defines the starting point.NOTE: Testing with Excel VBA 7.1 shows that an explicit starting point is not mandatory. There appears to be a default reference of $A$1.",
+                        "isRequired": false,
+                        "label": "RelativeTo As Variant",
+                        "name": "RelativeTo"
+                      }
+                    ],
+                    "returnType": "String"
+                  }
                 },
                 {
                   "name": "AddressLocal",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.addresslocal",
-                  "tocHref": "excel.range.addresslocal"
+                  "tocHref": "excel.range.addresslocal",
+                  "summary": "Returns the range reference for the specified range in the language of the user. Read-only String.",
+                  "signature": {
+                    "label": "AddressLocal(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String",
+                    "ownerName": "Range",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "True to return the row part of the reference as an absolute reference. The default value is True.",
+                        "isRequired": false,
+                        "label": "RowAbsolute As Variant",
+                        "name": "RowAbsolute"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to return the column part of the reference as an absolute reference. The default value is True.",
+                        "isRequired": false,
+                        "label": "ColumnAbsolute As Variant",
+                        "name": "ColumnAbsolute"
+                      },
+                      {
+                        "dataType": "XlReferenceStyle",
+                        "description": "One of the constants for XlReferenceStyle specifying A1-style or R1C1-style reference.",
+                        "isRequired": false,
+                        "label": "ReferenceStyle As XlReferenceStyle",
+                        "name": "ReferenceStyle"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to return an external reference. False to return a local reference. The default value is False.",
+                        "isRequired": false,
+                        "label": "External As Variant",
+                        "name": "External"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "If *RowAbsolute* and *ColumnAbsolute* are both set to False and *ReferenceStyle* is set to xlR1C1, you must include a starting point for the relative reference. This argument is a Range object that defines the starting point for the reference.",
+                        "isRequired": false,
+                        "label": "RelativeTo As Variant",
+                        "name": "RelativeTo"
+                      }
+                    ],
+                    "returnType": "String"
+                  }
                 },
                 {
                   "name": "AllowEdit",

@@ -382,6 +382,8 @@ Public Sub Demo()
     Debug.Print WorksheetFunction.Choose(1, "A", "B")
     transposedResult = WorksheetFunction.Transpose(Range("A1:B2"))
     Debug.Print UBound(transposedResult, 1), UBound(transposedResult, 2)
+    Debug.Print ActiveCell.Address(False, False, xlA1, False)
+    Debug.Print Cells.AddressLocal(False, False)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Call Application.WorksheetFunction()
@@ -426,6 +428,8 @@ End Sub`;
     uri,
     findPositionAfterTokenInText(text, "WorksheetFunction.Transpose(")
   );
+  const addressSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ActiveCell.Address("));
+  const addressLocalSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Cells.AddressLocal("));
   const extractedZeroArgSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.CalculateFull("));
   const fallbackSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.OnTime("));
   const propertyFallbackSignature = service.getSignatureHelp(
@@ -500,6 +504,15 @@ End Sub`;
   assert.equal(transposeSignature?.label, "Transpose(Arg1) As Variant");
   assert.equal(transposeSignature?.parameters.length, 1);
   assert.equal(transposeSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(addressSignature?.label, "Address(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String");
+  assert.equal(addressSignature?.parameters.length, 5);
+  assert.equal(addressSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
+  assert.equal(addressSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
+  assert.equal(addressSignature?.parameters[4]?.documentation?.includes("省略可能"), true);
+  assert.equal(addressLocalSignature?.label, "AddressLocal(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String");
+  assert.equal(addressLocalSignature?.parameters.length, 5);
+  assert.equal(addressLocalSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
+  assert.equal(addressLocalSignature?.parameters[4]?.documentation?.includes("省略可能"), true);
   assert.equal(extractedZeroArgSignature?.label, "CalculateFull()");
   assert.equal(extractedZeroArgSignature?.parameters.length, 0);
   assert.equal(fallbackSignature?.label, "Application.OnTime()");
@@ -551,22 +564,22 @@ End Sub`
 test("document service keeps built-in signature and hover conservative for shadowed roots", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInSignatureShadowed.bas";
-
-  service.analyzeText(
-    uri,
-    "vba",
-    1,
-    `Attribute VB_Name = "BuiltInSignatureShadowed"
+  const text = `Attribute VB_Name = "BuiltInSignatureShadowed"
 Option Explicit
 
 Public Sub Demo()
     Dim WorksheetFunction As String
+    Dim ActiveCell As String
     Debug.Print WorksheetFunction.Sum(1, 2)
-End Sub`
-  );
+    Debug.Print ActiveCell.Address(False, False)
+End Sub`;
 
-  assert.equal(service.getSignatureHelp(uri, { character: 38, line: 5 }), undefined);
-  assert.equal(service.getHover(uri, { character: 35, line: 5 }), undefined);
+  service.analyzeText(uri, "vba", 1, text);
+
+  assert.equal(service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Sum(")), undefined);
+  assert.equal(service.getHover(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Su")), undefined);
+  assert.equal(service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ActiveCell.Address(")), undefined);
+  assert.equal(service.getHover(uri, findPositionAfterTokenInText(text, "ActiveCell.Addre")), undefined);
 });
 
 test("document service formats VBA indentation through the shared core formatter", () => {
