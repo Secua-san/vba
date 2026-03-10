@@ -52,3 +52,18 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - 生成スクリプトから `generatedAt` 出力を削除し、参照 JSON を再生成。
 - 残課題:
   - 他テストにも固定オフセットが残っているため、必要に応じて段階的にヘルパー化する。
+
+## 2026-03-09 PR #41 docs: PR前レビューの既定エージェントを reviewer に統一
+- レビュー状況: `SKIPPED`
+- 要約:
+  - CodeRabbit は path filters により docs-only 差分をレビュー対象外とし、指摘は出なかった。
+- 指摘一覧:
+  - [非採用] 指摘なし。`AGENTS.md` / `docs/process/` / `TASKS.md` はすべて path filters により review skipped。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - docs-only PR は CodeRabbit の path filters でスキップされることがあるため、事前のサブエージェントレビューと人手確認の重要度が上がる。
+  - 運用ルール変更時は、正本ドキュメントだけでなく `AGENTS.md` と `TASKS.md` の整合も同時に見ると漏れが減る。
+- 実施:
+  - `reviewer` を PR 前レビューの既定エージェントに統一する文言を `AGENTS.md` / `docs/process/` / `TASKS.md` に反映。
+  - CodeRabbit レビュー要約ログ運用を追加し、過去 PR のレビュー要約も記録開始。
+- 残課題:
+  - docs 系ファイルも CodeRabbit 対象に含めるかは `.coderabbit.yaml` の方針として別途判断が必要。
