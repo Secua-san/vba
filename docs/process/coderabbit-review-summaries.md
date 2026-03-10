@@ -106,3 +106,25 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - PR 前 `reviewer` では重大度付き指摘なし、追加で `ActiveCell.Address` の shadowing 抑止テストを補強した。
 - 残課題:
   - `XLookup` / `XMATCH` は現行 Microsoft Learn では未掲載のため、次回の参照再生成時に再確認する。
+
+## 2026-03-10 PR #44 fix: 既存署名メタデータ監査と Max/Min 補完
+- レビュー状況: `COMMENTED`
+- 要約:
+  - `Max` / `Min` 補完自体への重大指摘はなく、可読性と保守性に関する nit が 3 件出た。
+  - 監査テストの variadic 判定で `label` に依存していたため、構造化データだけを見る形へ寄せた。
+- 指摘一覧:
+  - [採用] `scripts/generate-mslearn-vba-reference.mjs` の variadic tail optional 正規化に短い意図コメントを追加。
+  - [採用] `packages/extension/test/suite/index.ts` の `Max` / `Min` 署名検証を helper 化して重複を削減。
+  - [採用] `scripts/test/mslearnReferenceAudit.test.mjs` の variadic 監査条件から `signature.label.includes(\"...\")` を外し、`parameters` / `description` ベースへ寄せた。
+  - [非採用] `Docstring Coverage` 警告。
+    理由: このリポジトリの現行品質ゲート対象外であり、今回差分の正当性を崩すものではないため。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - 監査ロジックは表示用ラベルより、`parameters` や `description` のような構造化データを優先したほうがフォーマット変更に強い。
+  - built-in signature 系テストは、関数ごとの差分が薄い場合 helper 化しておくと後続メソッド追加時のレビュー負荷を下げやすい。
+  - 生成スクリプトの allow-list と監査対象は同じ設定ファイルを参照させると更新漏れを減らせる。
+- 実施:
+  - `WorksheetFunction.Max` / `Min` の `Arg1` metadata 欠落と `Arg30` required 誤判定を修正。
+  - `scripts/lib/referenceSignatureConfig.mjs` を追加し、allow-list を生成スクリプトと監査テストで共有化。
+  - CodeRabbit 指摘に合わせて extension テスト helper 化、variadic 判定の構造化、意図コメント追加を反映。
+- 残課題:
+  - `XLookup` / `XMATCH` は引き続き現行 Microsoft Learn に未掲載のため、再生成時にテスト failure を入口として更新要否を判断する。
