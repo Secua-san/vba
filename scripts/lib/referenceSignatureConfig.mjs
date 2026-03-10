@@ -34,5 +34,6 @@ export const signatureMemberAllowList = new Map([
 ]);
 
 export const signatureMissingMemberWatchList = new Map([
+  ["Range", new Set(["HasSpill", "SavedAsArray", "SpillParent"])],
   ["WorksheetFunction", new Set(["XLookup", "XMATCH"])],
 ]);
