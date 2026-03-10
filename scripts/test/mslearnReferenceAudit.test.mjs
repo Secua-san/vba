@@ -28,7 +28,7 @@ function getSignature(data, ownerName, memberName) {
 function getOwnerMemberNames(data, ownerName) {
   const owner = data.excel.objectModel.items.find((item) => item.name === ownerName);
   const memberNames = new Set(
-    owner?.sections.flatMap((section) => section.members).map((member) => String(member.name).toLowerCase()) ?? [],
+    owner?.sections.flatMap((section) => section.members).map((member) => normalizeMemberName(member.name)) ?? [],
   );
 
   return {
@@ -38,7 +38,7 @@ function getOwnerMemberNames(data, ownerName) {
 }
 
 function buildMissingMemberGuidance(ownerName, memberName) {
-  return `${ownerName}.${memberName} が Learn スナップショットへ追加されました。scripts/lib/referenceSignatureConfig.mjs の watch list から外し、allow list / 再生成 / server・extension テストの更新を docs/process/mslearn-signature-regeneration.md に従って進めてください。`;
+  return `${ownerName}.${memberName} が Learn スナップショットへ追加されました。scripts/lib/referenceSignatureConfig.mjs の watch list から外し、docs/process/mslearn-signature-regeneration.md の手順に従って更新してください。`;
 }
 
 function normalizeMemberName(memberName) {
