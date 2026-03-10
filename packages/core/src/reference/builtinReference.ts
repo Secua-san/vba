@@ -64,7 +64,7 @@ const BASE_BUILTIN_COMPLETIONS: Array<
     priority: number;
   }
 > = [
-  { completionKind: "variable", detail: "Excel built-in object", name: "ActiveCell", priority: 10, semanticType: "variable" },
+  { completionKind: "variable", detail: "Excel built-in object", name: "ActiveCell", priority: 10, semanticType: "variable", typeName: "Range" },
   { completionKind: "variable", detail: "Excel built-in object", name: "ActiveChart", priority: 10, semanticType: "variable" },
   { completionKind: "variable", detail: "Excel built-in object", name: "ActivePrinter", priority: 10, semanticType: "variable" },
   { completionKind: "variable", detail: "Excel built-in object", name: "ActiveSheet", priority: 10, semanticType: "variable" },
@@ -74,7 +74,7 @@ const BASE_BUILTIN_COMPLETIONS: Array<
   { completionKind: "function", detail: "VBA function", name: "Asc", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "CBool", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "CByte", priority: 10, semanticType: "function" },
-  { completionKind: "variable", detail: "Excel built-in object", name: "Cells", priority: 10, semanticType: "variable" },
+  { completionKind: "variable", detail: "Excel built-in object", name: "Cells", priority: 10, semanticType: "variable", typeName: "Range" },
   { completionKind: "function", detail: "VBA function", name: "CDate", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "CDbl", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "CInt", priority: 10, semanticType: "function" },
@@ -182,7 +182,7 @@ export function resolveBuiltinMemberOwner(pathSegments: string[]): string | unde
     return undefined;
   }
 
-  let currentOwnerName = rootReference.name;
+  let currentOwnerName = rootReference.typeName ?? rootReference.name;
 
   for (const memberSegment of memberSegments) {
     const memberReference = getBuiltinMemberReferenceItem(currentOwnerName, memberSegment);
