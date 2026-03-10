@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Microsoft Learn 監視対象 owner の拡張
+  - `scripts/lib/referenceSignatureConfig.mjs` の watch list に `Range.HasSpill` / `SavedAsArray` / `SpillParent` を追加し、`WorksheetFunction` 以外も未掲載監視できるようにした
+  - `docs/process/mslearn-signature-regeneration.md` に現在の watch list と owner 選定基準を追加し、`Range` 動的配列メンバーの更新導線を明記した
+  - `WorksheetFunction` だけを前提にしない形へ手順書を更新し、次回の owner 拡張候補整理につなげた
+
 - [x] Microsoft Learn 監視対象メンバーの自動検知見直し
   - `scripts/lib/referenceSignatureConfig.mjs` に owner 単位の `signatureMissingMemberWatchList` を追加し、未掲載監視を共有設定化
   - `scripts/test/mslearnReferenceAudit.test.mjs` を watch list ベースの監視と allow list 重複検知へ更新
@@ -248,8 +253,8 @@
 
 ## 次候補
 
-- [ ] Microsoft Learn 監視対象 owner の拡張
-  - `WorksheetFunction` 以外に監視価値の高い owner を整理し、watch list へ追加する候補を決める
+- [ ] Application / Workbook / Worksheet 系の未掲載監視候補整理
+  - built-in root から到達しやすい owner について、Microsoft Learn の個別ページ有無とローカル参照 JSON の差分を洗い出す
 
 ## メモ
 

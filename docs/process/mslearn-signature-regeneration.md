@@ -1,13 +1,26 @@
 # Microsoft Learn 組み込み署名再生成メモ
 
 ## 目的
-- `WorksheetFunction` などの Microsoft Learn 由来メンバーが追加されたときに、署名データの更新箇所を迷わず追えるようにする
-- 特に `XLookup` / `XMATCH` のような監視対象メンバーが Learn に掲載された際の作業を、1 本の手順へ集約する
+- `WorksheetFunction` や `Range` などの Microsoft Learn 由来メンバーが追加されたときに、署名データの更新箇所を迷わず追えるようにする
+- `XLookup` / `XMATCH` や動的配列関連の `Range` メンバーのような監視対象が Learn に掲載された際の作業を、1 本の手順へ集約する
 
 ## トリガー
-- `scripts/test/mslearnReferenceAudit.test.mjs` の監視テストが失敗し、`XLookup` / `XMATCH` が Learn スナップショットへ追加されたことを示したとき
+- `scripts/test/mslearnReferenceAudit.test.mjs` の監視テストが失敗し、watch list に置いていたメンバーが Learn スナップショットへ追加されたことを示したとき
 - `resources/reference/mslearn-vba-reference.json` の再生成結果に、これまで無かった `WorksheetFunction` メンバーが現れたとき
 - Microsoft Learn のページを手動確認し、署名ヘルプ対象へ取り込みたいメンバーが増えたと判断したとき
+
+## 現在の優先 watch list
+
+| owner | member | 背景 |
+| --- | --- | --- |
+| `WorksheetFunction` | `XLookup`, `XMATCH` | 現行 Learn スナップショットには未掲載だが、Excel の近年の lookup 系で実利用価値が高い |
+| `Range` | `HasSpill`, `SavedAsArray`, `SpillParent` | 動的配列と spill 挙動の確認で使う代表的メンバーだが、現行 Learn スナップショットには未掲載 |
+
+## owner 候補の選び方
+- まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
+- 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
+- 既に Learn スナップショットへ載っているメンバーは watch list に入れず、allow list 追加または built-in 解決の検討へ進める
+- watch list へ入れるメンバーは、Microsoft Learn に個別ページがあり、将来スナップショットへ取り込まれた時点で署名化したいものに絞る
 
 ## 更新箇所の一覧
 
@@ -87,6 +100,13 @@
 - `scripts/test/mslearnReferenceAudit.test.mjs`
 - `packages/server/test/documentService.test.js`
 - `packages/extension/test/fixtures/BuiltInMemberSignature.bas`
+- `packages/extension/test/suite/index.ts`
+
+## `Range` 動的配列メンバーで最初に触る場所
+- `scripts/lib/referenceSignatureConfig.mjs`
+- `scripts/test/mslearnReferenceAudit.test.mjs`
+- `packages/core/src/reference/builtinReference.ts`
+- `packages/server/test/documentService.test.js`
 - `packages/extension/test/suite/index.ts`
 
 ## 判断メモ
