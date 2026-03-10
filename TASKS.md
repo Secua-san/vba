@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] レビュー判断ルールの更新
+  - PR 前自己レビューと CodeRabbit が同じ論点を指摘した場合は、原則として修正する運用へ変更
+  - `required` / `optional` のような運用時挙動については、互換性、既存テスト、誤案内防止を基準に判断する方針を正本へ明記
+  - 正本の `docs/process/coderabbit-review.md` に集約し、`sub-agent` / `AGENTS` / `TASKS` へ反映
+
 - [x] 既存署名メタデータの横断点検
   - `WorksheetFunction.Max` / `Min` の第1引数 metadata 欠落と `Arg30` の required 誤判定を生成スクリプト側で修正し、参照 JSON を再生成
   - `WorksheetFunction` / `Range` の既存署名について、型・説明・必須/省略可能・戻り値型の欠落監査を `scripts/test` に追加
