@@ -689,15 +689,19 @@ function collectSemanticTokensForState(
       }
 
       const resolution = resolveDefinition(state.uri, range.start);
-      const tokenShape = resolution
-        ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
-        : mapBuiltinSemanticToken(identifier);
+      const builtinAliasTokenShape =
+        resolution && isBuiltinAliasDocumentModule(resolution, identifier) ? mapBuiltinSemanticToken(identifier) : undefined;
+      const tokenShape = builtinAliasTokenShape
+        ? builtinAliasTokenShape
+        : resolution
+          ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
+          : mapBuiltinSemanticToken(identifier);
 
       if (!tokenShape) {
         continue;
       }
 
-      const declarationRange = resolution
+      const declarationRange = resolution && !builtinAliasTokenShape
         ? getDeclarationRange(documentStates.get(resolution.uri), resolution, resolveDefinition)
         : undefined;
       const isDeclaration =
@@ -1003,7 +1007,7 @@ function resolveConfirmedBuiltinMemberOwner(
     line
   });
 
-  if (rootResolution) {
+  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, completionContext.memberPath[0])) {
     return undefined;
   }
 
@@ -1069,7 +1073,7 @@ function resolveBuiltinCallableMember(
     line
   });
 
-  if (rootResolution) {
+  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, callContext.callPath[0])) {
     return undefined;
   }
 
@@ -1149,7 +1153,7 @@ function getBuiltinMemberHover(
 ): HoverHint | undefined {
   const builtinMember = resolveBuiltinMemberAtPosition(state.text, uri, position, resolveDefinition);
 
-  if (!builtinMember?.reference.signature) {
+  if (!builtinMember) {
     return undefined;
   }
 
@@ -1178,10 +1182,7 @@ function resolveBuiltinMemberAtPosition(
   if (
     !memberAccess ||
     normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(line.slice(range.start.character, range.end.character)) ||
-    resolveDefinition(uri, {
-      character: memberAccess.memberPathStartCharacter,
-      line: position.line
-    })
+    !canResolveBuiltinAliasMemberAccess(uri, position.line, memberAccess.memberPath[0], memberAccess.memberPathStartCharacter, resolveDefinition)
   ) {
     return undefined;
   }
@@ -1232,7 +1233,7 @@ function buildBuiltinSignatureParameterDocumentation(
 }
 
 function buildBuiltinHoverMarkdown(memberReference: BuiltinMemberReferenceItem): string {
-  const lines = ["```vb", memberReference.signature?.label ?? `${memberReference.ownerName}.${memberReference.name}()`, "```"];
+  const lines = ["```vb", buildBuiltinMemberLabel(memberReference), "```"];
 
   if (memberReference.summary) {
     lines.push(memberReference.summary);
@@ -1243,6 +1244,35 @@ function buildBuiltinHoverMarkdown(memberReference: BuiltinMemberReferenceItem):
   }
 
   return lines.join("\n\n");
+}
+
+function buildBuiltinMemberLabel(memberReference: BuiltinMemberReferenceItem): string {
+  if (memberReference.signature?.label) {
+    return memberReference.signature.label;
+  }
+
+  return memberReference.memberKind === "method"
+    ? `${memberReference.ownerName}.${memberReference.name}()`
+    : `${memberReference.ownerName}.${memberReference.name}`;
+}
+
+function canResolveBuiltinAliasMemberAccess(
+  uri: string,
+  line: number,
+  rootSegment: string,
+  rootStartCharacter: number,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+): boolean {
+  const rootResolution = resolveDefinition(uri, {
+    character: rootStartCharacter,
+    line
+  });
+
+  return !rootResolution || isBuiltinAliasDocumentModule(rootResolution, rootSegment);
+}
+
+function isBuiltinAliasDocumentModule(resolution: WorkspaceSymbolResolution, rootSegment: string): boolean {
+  return normalizeIdentifier(rootSegment) === "thisworkbook" && resolution.symbol.kind === "module";
 }
 
 function getCurrentArgumentTypeName(
@@ -1774,10 +1804,13 @@ function mapBuiltinMemberSemanticToken(
     !memberAccess ||
     memberAccess.memberPathStartCharacter === undefined ||
     normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier) ||
-    resolveDefinition(uri, {
-      character: memberAccess.memberPathStartCharacter,
-      line
-    })
+    !canResolveBuiltinAliasMemberAccess(
+      uri,
+      line,
+      memberAccess.memberPath[0],
+      memberAccess.memberPathStartCharacter,
+      resolveDefinition
+    )
   ) {
     return undefined;
   }

@@ -68,7 +68,7 @@ const BASE_BUILTIN_COMPLETIONS: Array<
   { completionKind: "variable", detail: "Excel built-in object", name: "ActiveChart", priority: 10, semanticType: "variable" },
   { completionKind: "variable", detail: "Excel built-in object", name: "ActivePrinter", priority: 10, semanticType: "variable" },
   { completionKind: "variable", detail: "Excel built-in object", name: "ActiveSheet", priority: 10, semanticType: "variable" },
-  { completionKind: "variable", detail: "Excel built-in object", name: "ActiveWorkbook", priority: 10, semanticType: "variable" },
+  { completionKind: "variable", detail: "Excel built-in object", name: "ActiveWorkbook", priority: 10, semanticType: "variable", typeName: "Workbook" },
   { completionKind: "function", detail: "VBA function", name: "Abs", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "Array", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "Asc", priority: 10, semanticType: "function" },
@@ -113,6 +113,7 @@ const BASE_BUILTIN_COMPLETIONS: Array<
   { completionKind: "function", detail: "VBA function", name: "Round", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "Split", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "Time", priority: 10, semanticType: "function" },
+  { completionKind: "variable", detail: "Excel built-in object", name: "ThisWorkbook", priority: 10, semanticType: "variable", typeName: "Workbook" },
   { completionKind: "function", detail: "VBA function", name: "Trim", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "TypeName", priority: 10, semanticType: "function" },
   { completionKind: "function", detail: "VBA function", name: "UBound", priority: 10, semanticType: "function" },
@@ -594,7 +595,12 @@ function inferBuiltinMemberTypeName(
   knownItemsByNormalizedName: ReadonlyMap<string, BuiltinReferenceItem>
 ): string | undefined {
   const knownItem = knownItemsByNormalizedName.get(normalizeIdentifier(memberName));
-  return knownItem?.completionKind === "type" ? knownItem.name : undefined;
+
+  if (!knownItem) {
+    return undefined;
+  }
+
+  return knownItem.typeName ?? (knownItem.completionKind === "type" ? knownItem.name : undefined);
 }
 
 function readBuiltinSignature(source: RawReferenceEntry): BuiltinCallableSignature | undefined {

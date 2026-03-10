@@ -16,6 +16,12 @@
 | `WorksheetFunction` | `XLookup`, `XMATCH` | 現行 Learn スナップショットには未掲載だが、Excel の近年の lookup 系で実利用価値が高い |
 | `Range` | `HasSpill`, `SavedAsArray`, `SpillParent` | 動的配列と spill 挙動の確認で使う代表的メンバーだが、現行 Learn スナップショットには未掲載 |
 
+## 2026-03-11 の owner inventory 結果
+- `Application` / `Workbook` / `Worksheet` の object page を現行 Microsoft Learn で確認し、methods / properties / events の一覧をローカル参照 JSON と照合した
+- 2026-03-11 時点では、この 3 owner の object page に載っている member はローカル参照 JSON へ既に入っていたため、watch list 追加は行っていない
+- 次の改善対象は、未掲載監視ではなく、`ActiveWorkbook` / `ThisWorkbook` のような root alias から既存 built-in member データへ到達できるようにすること
+- `ActiveSheet` は Excel で chart sheet を返す場合もあるため、現時点では `Worksheet` 固定の `typeName` は付けず、保守的なまま維持する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
