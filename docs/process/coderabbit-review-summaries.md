@@ -146,3 +146,21 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - `TASKS.md` に今回の運用更新を反映。
 - 残課題:
   - docs 系ファイルを CodeRabbit の対象へ含めるかどうかは、引き続き `.coderabbit.yaml` 側の方針として検討余地がある。
+
+## 2026-03-11 PR #46 docs: Microsoft Learn 署名再生成手順を追加
+- レビュー状況: `SUCCESS`
+- 要約:
+  - CodeRabbit は `scripts/test/mslearnReferenceAudit.test.mjs` のみを処理対象とし、`No actionable comments were generated` で完了した。
+  - docs 本体は path filters で review 対象外だったが、監視テストの失敗メッセージ強化については問題なしと判断された。
+- 指摘一覧:
+  - [非採用] 指摘なし。`scripts/test/mslearnReferenceAudit.test.mjs` に対する actionable comment は出なかった。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - path filters で docs が除外される場合でも、レビュー対象に残る test や script から正本ドキュメントへ誘導しておくと運用の実効性が上がる。
+  - 監視テストは単に「未掲載」を示すだけでなく、追加時の次アクションまでメッセージに含めると手戻りが減る。
+  - `WorksheetFunction` 以外の監視対象を増やす場合も、owner ごとに同じ手順書へ集約しておくと update point の分散を防ぎやすい。
+- 実施:
+  - `docs/process/mslearn-signature-regeneration.md` を新規追加し、allow list、再生成、built-in index、server / extension テスト、レビュー記録までの更新箇所を整理。
+  - `scripts/test/mslearnReferenceAudit.test.mjs` の監視失敗メッセージから手順書へ誘導する文言を追加。
+  - `AGENTS.md` と `TASKS.md` に導線と完了記録を反映。
+- 残課題:
+  - `WorksheetFunction` 以外の監視対象を owner 単位で共通化するかは、次候補として検討を続ける。
