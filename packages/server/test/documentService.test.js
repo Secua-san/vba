@@ -355,12 +355,7 @@ End Sub`
 test("document service exposes built-in member signature help and hover", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInSignature.bas";
-
-  service.analyzeText(
-    uri,
-    "vba",
-    1,
-    `Attribute VB_Name = "BuiltInSignature"
+  const text = `Attribute VB_Name = "BuiltInSignature"
 Option Explicit
 
 Public Sub Demo()
@@ -383,6 +378,8 @@ Public Sub Demo()
     Debug.Print WorksheetFunction.Index(Range("A1:B2"), 1, 2)
     Debug.Print WorksheetFunction.Lookup("A", Range("A1:A2"), Range("B1:B2"))
     Debug.Print WorksheetFunction.HLookup("A", Range("A1:B2"), 2, False)
+    Debug.Print WorksheetFunction.Choose(1, "A", "B")
+    Debug.Print WorksheetFunction.Transpose(Range("A1:B2"))
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Call Application.WorksheetFunction()
@@ -390,35 +387,53 @@ Public Sub Demo()
     Call Application.ActiveCell()
     Call Application.NewWorkbook()
     Debug.Print Application.Calculate
-End Sub`
-  );
+End Sub`;
 
-  const worksheetSignature = service.getSignatureHelp(uri, { character: 42, line: 4 });
-  const chainedSignature = service.getSignatureHelp(uri, { character: 54, line: 5 });
-  const powerSignature = service.getSignatureHelp(uri, { character: 56, line: 6 });
-  const averageSignature = service.getSignatureHelp(uri, { character: 46, line: 7 });
-  const edateSignature = service.getSignatureHelp(uri, { character: 46, line: 8 });
-  const eomonthSignature = service.getSignatureHelp(uri, { character: 48, line: 9 });
-  const findSignature = service.getSignatureHelp(uri, { character: 42, line: 10 });
-  const searchSignature = service.getSignatureHelp(uri, { character: 44, line: 11 });
-  const andSignature = service.getSignatureHelp(uri, { character: 44, line: 12 });
-  const orSignature = service.getSignatureHelp(uri, { character: 43, line: 13 });
-  const xorSignature = service.getSignatureHelp(uri, { character: 44, line: 14 });
-  const countASignature = service.getSignatureHelp(uri, { character: 45, line: 15 });
-  const countBlankSignature = service.getSignatureHelp(uri, { character: 45, line: 16 });
-  const textSignature = service.getSignatureHelp(uri, { character: 44, line: 17 });
-  const vlookupSignature = service.getSignatureHelp(uri, { character: 63, line: 18 });
-  const matchSignature = service.getSignatureHelp(uri, { character: 45, line: 19 });
-  const indexSignature = service.getSignatureHelp(uri, { character: 45, line: 20 });
-  const lookupSignature = service.getSignatureHelp(uri, { character: 46, line: 21 });
-  const hlookupSignature = service.getSignatureHelp(uri, { character: 47, line: 22 });
-  const extractedZeroArgSignature = service.getSignatureHelp(uri, { character: 35, line: 23 });
-  const fallbackSignature = service.getSignatureHelp(uri, { character: 36, line: 24 });
-  const propertyFallbackSignature = service.getSignatureHelp(uri, { character: 39, line: 25 });
-  const eventFallbackSignature = service.getSignatureHelp(uri, { character: 35, line: 26 });
-  const propertyFallbackSignature2 = service.getSignatureHelp(uri, { character: 32, line: 27 });
-  const eventFallbackSignature2 = service.getSignatureHelp(uri, { character: 33, line: 28 });
-  const hover = service.getHover(uri, { character: 30, line: 29 });
+  service.analyzeText(uri, "vba", 1, text);
+
+  const worksheetSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Sum(1, 2"));
+  const chainedSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Application.WorksheetFunction.Sum(")
+  );
+  const powerSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Application.WorksheetFunction.Power(")
+  );
+  const averageSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Average("));
+  const edateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.EDate("));
+  const eomonthSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.EoMonth("));
+  const findSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Find("));
+  const searchSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Search("));
+  const andSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.And("));
+  const orSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Or("));
+  const xorSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Xor("));
+  const countASignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.CountA("));
+  const countBlankSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "WorksheetFunction.CountBlank(")
+  );
+  const textSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Text("));
+  const vlookupSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.VLookup("));
+  const matchSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Match("));
+  const indexSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Index("));
+  const lookupSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Lookup("));
+  const hlookupSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.HLookup("));
+  const chooseSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Choose("));
+  const transposeSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "WorksheetFunction.Transpose(")
+  );
+  const extractedZeroArgSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.CalculateFull("));
+  const fallbackSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.OnTime("));
+  const propertyFallbackSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Application.WorksheetFunction(")
+  );
+  const eventFallbackSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.AfterCalculate("));
+  const propertyFallbackSignature2 = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.ActiveCell("));
+  const eventFallbackSignature2 = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.NewWorkbook("));
+  const hover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print Application.Calcu"));
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -475,6 +490,13 @@ End Sub`
   assert.equal(hlookupSignature?.label, "HLookup(Arg1, Arg2, Arg3, Arg4) As Variant");
   assert.equal(hlookupSignature?.parameters.length, 4);
   assert.equal(hlookupSignature?.parameters[3]?.documentation?.includes("省略可能"), true);
+  assert.equal(chooseSignature?.label, "Choose(Arg1, Arg2, Arg3, ..., Arg30) As Variant");
+  assert.equal(chooseSignature?.parameters.length, 30);
+  assert.equal(chooseSignature?.parameters[1]?.documentation?.includes("想定型: Variant"), true);
+  assert.equal(chooseSignature?.parameters[1]?.documentation?.includes("省略可能"), false);
+  assert.equal(transposeSignature?.label, "Transpose(Arg1) As Variant");
+  assert.equal(transposeSignature?.parameters.length, 1);
+  assert.equal(transposeSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
   assert.equal(extractedZeroArgSignature?.label, "CalculateFull()");
   assert.equal(extractedZeroArgSignature?.parameters.length, 0);
   assert.equal(fallbackSignature?.label, "Application.OnTime()");
@@ -1421,6 +1443,15 @@ function applyTextEdit(text, edit) {
   return normalizedText.slice(0, startOffset) + edit.newText + normalizedText.slice(endOffset);
 }
 
+function findPositionAfterTokenInText(text, token, offsetFromEnd = 0) {
+  const normalizedText = text.replace(/\r\n?/g, "\n");
+  const startOffset = normalizedText.indexOf(token);
+
+  assert.notEqual(startOffset, -1, `token not found in text: ${token}`);
+
+  return toPosition(normalizedText, startOffset + token.length + offsetFromEnd);
+}
+
 function toOffset(text, position) {
   const lines = text.split("\n");
   let offset = 0;
@@ -1430,4 +1461,20 @@ function toOffset(text, position) {
   }
 
   return offset + position.character;
+}
+
+function toPosition(text, offset) {
+  const lines = text.split("\n");
+  let remaining = offset;
+
+  for (let line = 0; line < lines.length; line += 1) {
+    const lineLength = lines[line]?.length ?? 0;
+    if (remaining <= lineLength) {
+      return { character: remaining, line };
+    }
+
+    remaining -= lineLength + 1;
+  }
+
+  return { character: 0, line: lines.length - 1 };
 }

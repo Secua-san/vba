@@ -20,6 +20,7 @@ const signatureMemberAllowList = new Map([
     new Set([
       "And",
       "Average",
+      "Choose",
       "Count",
       "CountA",
       "CountBlank",
@@ -39,6 +40,7 @@ const signatureMemberAllowList = new Map([
       "Search",
       "Sum",
       "Text",
+      "Transpose",
       "VLookup",
       "Xor",
     ])

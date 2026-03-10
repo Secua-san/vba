@@ -258,6 +258,16 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.HLookup("),
     (help) => help.signatures.length > 0
   );
+  const builtInChooseSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Choose("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInTransposeSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Transpose("),
+    (help) => help.signatures.length > 0
+  );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "Application.CalculateFull("),
@@ -520,6 +530,39 @@ export async function run(): Promise<void> {
   assert.ok(
     getSignatureDocumentation(builtInHlookupSignatureHelp.signatures[0]?.parameters[3]?.documentation).includes("省略可能"),
     "built-in member HLookup fourth argument should be optional"
+  );
+  assert.equal(
+    builtInChooseSignatureHelp.signatures[0]?.label,
+    "Choose(Arg1, Arg2, Arg3, ..., Arg30) As Variant",
+    "built-in member signature should be available for WorksheetFunction.Choose"
+  );
+  assert.equal(
+    builtInChooseSignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member Choose signature should expose expanded parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInChooseSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("想定型: Variant"),
+    "built-in member Choose second argument should include expected type"
+  );
+  assert.equal(
+    getSignatureDocumentation(builtInChooseSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    false,
+    "built-in member Choose second argument should stay required"
+  );
+  assert.equal(
+    builtInTransposeSignatureHelp.signatures[0]?.label,
+    "Transpose(Arg1) As Variant",
+    "built-in member signature should be available for WorksheetFunction.Transpose"
+  );
+  assert.equal(
+    builtInTransposeSignatureHelp.signatures[0]?.parameters.length,
+    1,
+    "built-in member Transpose signature should keep single-argument metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInTransposeSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
+    "built-in member Transpose argument should stay required"
   );
   assert.equal(
     builtInExtractedZeroArgSignatureHelp.signatures[0]?.label,
