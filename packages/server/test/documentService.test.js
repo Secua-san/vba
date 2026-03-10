@@ -359,6 +359,7 @@ test("document service exposes built-in member signature help and hover", () => 
 Option Explicit
 
 Public Sub Demo()
+    Dim transposedResult As Variant
     Debug.Print WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Power(2, 3)
@@ -379,7 +380,8 @@ Public Sub Demo()
     Debug.Print WorksheetFunction.Lookup("A", Range("A1:A2"), Range("B1:B2"))
     Debug.Print WorksheetFunction.HLookup("A", Range("A1:B2"), 2, False)
     Debug.Print WorksheetFunction.Choose(1, "A", "B")
-    Debug.Print WorksheetFunction.Transpose(Range("A1:B2"))
+    transposedResult = WorksheetFunction.Transpose(Range("A1:B2"))
+    Debug.Print UBound(transposedResult, 1), UBound(transposedResult, 2)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Call Application.WorksheetFunction()
@@ -494,6 +496,7 @@ End Sub`;
   assert.equal(chooseSignature?.parameters.length, 30);
   assert.equal(chooseSignature?.parameters[1]?.documentation?.includes("想定型: Variant"), true);
   assert.equal(chooseSignature?.parameters[1]?.documentation?.includes("省略可能"), false);
+  assert.equal(chooseSignature?.parameters[29]?.documentation?.includes("省略可能"), false);
   assert.equal(transposeSignature?.label, "Transpose(Arg1) As Variant");
   assert.equal(transposeSignature?.parameters.length, 1);
   assert.equal(transposeSignature?.parameters[0]?.documentation?.includes("必須引数"), true);

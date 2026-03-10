@@ -165,77 +165,77 @@ export async function run(): Promise<void> {
 
   const builtInSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(4, 42),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Sum(1, 2"),
     (help) => help.signatures.length > 0
   );
   const builtInChainedSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(5, 54),
+    findPositionAfterToken(builtInSignatureDocument, "Application.WorksheetFunction.Sum("),
     (help) => help.signatures.length > 0
   );
   const builtInPowerSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(6, 56),
+    findPositionAfterToken(builtInSignatureDocument, "Application.WorksheetFunction.Power("),
     (help) => help.signatures.length > 0
   );
   const builtInAverageSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(7, 46),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Average("),
     (help) => help.signatures.length > 0
   );
   const builtInEdateSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(8, 46),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.EDate("),
     (help) => help.signatures.length > 0
   );
   const builtInEomonthSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(9, 48),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.EoMonth("),
     (help) => help.signatures.length > 0
   );
   const builtInFindSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(10, 42),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Find("),
     (help) => help.signatures.length > 0
   );
   const builtInSearchSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(11, 44),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Search("),
     (help) => help.signatures.length > 0
   );
   const builtInAndSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(12, 44),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.And("),
     (help) => help.signatures.length > 0
   );
   const builtInOrSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(13, 43),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Or("),
     (help) => help.signatures.length > 0
   );
   const builtInXorSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(14, 44),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Xor("),
     (help) => help.signatures.length > 0
   );
   const builtInCountASignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(15, 45),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.CountA("),
     (help) => help.signatures.length > 0
   );
   const builtInCountBlankSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(16, 45),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.CountBlank("),
     (help) => help.signatures.length > 0
   );
   const builtInTextSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(17, 44),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Text("),
     (help) => help.signatures.length > 0
   );
   const builtInVlookupSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
-    new vscode.Position(18, 63),
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.VLookup("),
     (help) => help.signatures.length > 0
   );
   const builtInMatchSignatureHelp = await waitForSignatureHelp(
@@ -549,6 +549,11 @@ export async function run(): Promise<void> {
     getSignatureDocumentation(builtInChooseSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
     false,
     "built-in member Choose second argument should stay required"
+  );
+  assert.equal(
+    getSignatureDocumentation(builtInChooseSignatureHelp.signatures[0]?.parameters[29]?.documentation).includes("省略可能"),
+    false,
+    "built-in member Choose last argument should stay required"
   );
   assert.equal(
     builtInTransposeSignatureHelp.signatures[0]?.label,

@@ -2,6 +2,8 @@ Attribute VB_Name = "BuiltInMemberSignature"
 Option Explicit
 
 Public Sub Demo()
+    Dim transposedResult As Variant
+
     Debug.Print WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Power(2, 3)
@@ -22,7 +24,8 @@ Public Sub Demo()
     Debug.Print WorksheetFunction.Lookup("A", Range("A1:A2"), Range("B1:B2"))
     Debug.Print WorksheetFunction.HLookup("A", Range("A1:B2"), 2, False)
     Debug.Print WorksheetFunction.Choose(1, "A", "B")
-    Debug.Print WorksheetFunction.Transpose(Range("A1:B2"))
+    transposedResult = WorksheetFunction.Transpose(Range("A1:B2"))
+    Debug.Print UBound(transposedResult, 1), UBound(transposedResult, 2)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInMemberSignature.Demo")
     Call Application.WorksheetFunction()
