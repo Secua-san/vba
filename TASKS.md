@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名データの拡張（第6弾）
+  - `WorksheetFunction.Choose` / `WorksheetFunction.Transpose` を Microsoft Learn 由来の署名抽出対象へ追加し、参照 JSON を再生成
+  - `Choose` の可変長必須引数と `Transpose` の単一必須引数を server / extension テストで回帰確認
+  - `XLookup` / `XMATCH` / `Address` は現行 Learn JSON で確認できなかったため、次候補で再整理する
+
 - [x] CodeRabbit レビュー要約ログ運用の追加
   - `docs/process/coderabbit-review-summaries.md` を新規追加し、PR ごとのレビュー要約テンプレートと記録を追加
   - 要約には「この作業で当てはまりそうな内容（横展開候補）」を必須項目として定義
@@ -218,9 +223,9 @@
 
 ## 次候補
 
-- [ ] 組み込みメンバー署名データの拡張（第6弾）
-  - `WorksheetFunction` の検索・参照系メソッド（`XLookup` / `XMATCH` / `Address` / `Choose` など）を段階拡張する
-  - 既存署名の optional 引数メタデータに欠落がないか、追加メソッドを含めて回帰確認を強化する
+- [ ] 組み込みメンバー署名データの拡張（第7弾）
+  - 現行 Microsoft Learn で未確認だった `XLookup` / `XMATCH` と、`WorksheetFunction` 以外を含む `Address` 系シグネチャの扱いを再整理する
+  - 既存署名の optional 引数メタデータに欠落がないか、追加メソッドを含めて回帰確認を継続する
 
 ## メモ
 

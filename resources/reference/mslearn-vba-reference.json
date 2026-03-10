@@ -28955,7 +28955,225 @@
                 {
                   "name": "Choose",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.choose",
-                  "tocHref": "excel.worksheetfunction.choose"
+                  "tocHref": "excel.worksheetfunction.choose",
+                  "summary": "Uses *Arg1* as the index to return a value from the list of value arguments.",
+                  "signature": {
+                    "label": "Choose(Arg1, Arg2, Arg3, ..., Arg30) As Variant",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Specifies which value argument is selected. *Arg1* must be a number between 1 and 29, or a formula or reference to a cell containing a number between 1 and 29.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg2 As Variant",
+                        "name": "Arg2"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg3 As Variant",
+                        "name": "Arg3"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg4 As Variant",
+                        "name": "Arg4"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg5 As Variant",
+                        "name": "Arg5"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg6 As Variant",
+                        "name": "Arg6"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg7 As Variant",
+                        "name": "Arg7"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg8 As Variant",
+                        "name": "Arg8"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg9 As Variant",
+                        "name": "Arg9"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg10 As Variant",
+                        "name": "Arg10"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg11 As Variant",
+                        "name": "Arg11"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg12 As Variant",
+                        "name": "Arg12"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg13 As Variant",
+                        "name": "Arg13"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg14 As Variant",
+                        "name": "Arg14"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg15 As Variant",
+                        "name": "Arg15"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg16 As Variant",
+                        "name": "Arg16"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg17 As Variant",
+                        "name": "Arg17"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg18 As Variant",
+                        "name": "Arg18"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg19 As Variant",
+                        "name": "Arg19"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg20 As Variant",
+                        "name": "Arg20"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg21 As Variant",
+                        "name": "Arg21"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg22 As Variant",
+                        "name": "Arg22"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg23 As Variant",
+                        "name": "Arg23"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg24 As Variant",
+                        "name": "Arg24"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg25 As Variant",
+                        "name": "Arg25"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg26 As Variant",
+                        "name": "Arg26"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg27 As Variant",
+                        "name": "Arg27"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg28 As Variant",
+                        "name": "Arg28"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg29 As Variant",
+                        "name": "Arg29"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "1 to 29 value arguments from which Choose selects a value or an action to perform based on *Arg1*. The arguments can be numbers, cell references, defined names, formulas, functions, or text.",
+                        "isRequired": true,
+                        "label": "Arg30 As Variant",
+                        "name": "Arg30"
+                      }
+                    ],
+                    "returnType": "Variant"
+                  }
                 },
                 {
                   "name": "Clean",
@@ -32313,7 +32531,22 @@
                 {
                   "name": "Transpose",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheetfunction.transpose",
-                  "tocHref": "excel.worksheetfunction.transpose"
+                  "tocHref": "excel.worksheetfunction.transpose",
+                  "summary": "Returns a vertical range of cells as a horizontal range, or vice versa. Transpose must be entered as an array formula in a range that has the same number of rows and columns, respectively, as an array has columns and rows. Use Transpose to shift the vertical and horizontal orientation of an array on a worksheet.",
+                  "signature": {
+                    "label": "Transpose(Arg1) As Variant",
+                    "ownerName": "WorksheetFunction",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "Array - an array or range of cells on a worksheet that you want to transpose. The transpose of an array is created by using the first row of the array as the first column of the new array, the second row of the array as the second column of the new array, and so on.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
+                        "name": "Arg1"
+                      }
+                    ],
+                    "returnType": "Variant"
+                  }
                 },
                 {
                   "name": "Trend",

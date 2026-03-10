@@ -67,3 +67,24 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - CodeRabbit レビュー要約ログ運用を追加し、過去 PR のレビュー要約も記録開始。
 - 残課題:
   - docs 系ファイルも CodeRabbit 対象に含めるかは `.coderabbit.yaml` の方針として別途判断が必要。
+
+## 2026-03-10 PR #42 feat: 組み込み署名データ第6弾を追加
+- レビュー状況: `COMMENTED`
+- 要約:
+  - `Transpose` の fixture が配列を `Debug.Print` へ直接渡しており、実行可能性に難があった。
+  - `Choose` の required 引数確認が `Arg2` のみで、末尾引数までの回帰監視が不足していた。
+  - `Choose` の `Arg3..Arg30` を optional とみなすべきではないかという指摘もあったが、現行 Microsoft Learn 記述との整合を優先して今回は保留した。
+- 指摘一覧:
+  - [採用] `WorksheetFunction.Transpose` の結果を Variant で受け、配列サイズだけを `Debug.Print` する形へ fixture を修正。
+  - [採用] `Choose` の required 検証を末尾引数 (`Arg30`) まで追加し、回帰検知を強化。
+  - [非採用] `Choose` の `Arg3..Arg30` を optional へ変更する提案。
+    理由: 現行 Microsoft Learn の VBA API 記述では `Arg2 - Arg30` が required 扱いであり、このリポジトリではまず Microsoft Learn 由来データとの一致を優先するため。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - 署名 fixture に実行結果が配列になる呼び出しを置く場合は、直接 `Debug.Print` せず、型や境界値の出力へ寄せると誤解が減る。
+  - 可変長引数テストは先頭だけでなく末尾側も押さえておくと、途中の補完ロジック変更に強くなる。
+  - Microsoft Learn と実ランタイムの差が疑われる項目は、生成データの出典優先順位を事前に明文化しておくと判断がぶれにくい。
+- 実施:
+  - extension / server の `BuiltInMemberSignature` 系ケースを修正し、`Transpose` を安全な fixture へ変更。
+  - extension / server テストに `Choose` 最終引数の required 確認を追加。
+- 残課題:
+  - `Choose` の required / optional 判定を Microsoft Learn 準拠のまま維持するか、Excel 実動作優先へ寄せるかは別途方針整理が必要。
