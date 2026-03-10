@@ -164,3 +164,23 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - `AGENTS.md` と `TASKS.md` に導線と完了記録を反映。
 - 残課題:
   - `WorksheetFunction` 以外の監視対象を owner 単位で共通化するかは、次候補として検討を続ける。
+
+## 2026-03-11 PR #47 test: Microsoft Learn 未掲載監視を watch list 化
+- レビュー状況: `COMMENTED`
+- 要約:
+  - CodeRabbit は `scripts/lib/referenceSignatureConfig.mjs` と `scripts/test/mslearnReferenceAudit.test.mjs` をレビューし、watch list 正規化の重複と失敗メッセージの正本分離について nitpick 2 件を出した。
+  - どちらも妥当だったため採用し、`@coderabbitai pause` 後に軽微修正だけを push した。
+- 指摘一覧:
+  - [採用] `getOwnerMemberNames` のインライン小文字化を `normalizeMemberName` helper に統一し、正規化ルールの二重管理を解消。
+  - [採用] `buildMissingMemberGuidance` の詳細手順を削り、`docs/process/mslearn-signature-regeneration.md` を正本として参照する文言へ整理。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - 監視系テストで大文字小文字を正規化する処理は、存在確認、重複検知、メッセージ生成の各所で helper に寄せたほうがずれにくい。
+  - テスト失敗メッセージに手順の詳細を書きすぎると docs と二重管理になるため、手順の正本は docs に寄せてテスト側は短い誘導に留めるのがよい。
+  - CodeRabbit nitpick が自己レビューの観点と噛み合う領域では、軽微修正でも横展開しやすい helper 化や正本参照化を優先すると再発を減らせる。
+- 実施:
+  - `scripts/lib/referenceSignatureConfig.mjs` に `signatureMissingMemberWatchList` を追加し、未掲載監視を owner 単位設定へ移行。
+  - `scripts/test/mslearnReferenceAudit.test.mjs` を watch list ベースの監視、allow list 重複検知、watch list 内の case-insensitive 重複検知へ更新。
+  - `docs/process/mslearn-signature-regeneration.md` と `TASKS.md` を watch list -> allow list の移行手順に合わせて更新。
+  - CodeRabbit 指摘対応として `normalizeMemberName` の再利用と失敗メッセージの正本参照化を追加。
+- 残課題:
+  - 現在の watch list 実体は `WorksheetFunction` のみなので、次段階で監視対象 owner の候補整理を続ける。
