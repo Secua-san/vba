@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] 既存署名メタデータの横断点検
+  - `WorksheetFunction.Max` / `Min` の第1引数 metadata 欠落と `Arg30` の required 誤判定を生成スクリプト側で修正し、参照 JSON を再生成
+  - `WorksheetFunction` / `Range` の既存署名について、型・説明・必須/省略可能・戻り値型の欠落監査を `scripts/test` に追加
+  - 現行 Microsoft Learn スナップショットでは `WorksheetFunction` に `XLookup` / `XMATCH` が未掲載であることを回帰確認
+
 - [x] 組み込みメンバー署名データの拡張（第7弾）
   - 現行 Microsoft Learn を再確認し、`WorksheetFunction` には `XLookup` / `XMATCH` が未掲載のままであることを確認
   - `Range.Address` / `Range.AddressLocal` の署名を取り込み、`ActiveCell` / `Cells` のような Range 系組み込みルートからも解決できるように修正
@@ -228,9 +233,8 @@
 
 ## 次候補
 
-- [ ] 既存署名メタデータの横断点検
-  - `WorksheetFunction` と `Range` を含む既存署名について、optional / variadic / return type の欠落がないかを横断確認する
-  - Microsoft Learn 側の更新で `XLookup` / `XMATCH` が追加された場合に備え、次回再生成時の確認観点を整理する
+- [ ] Microsoft Learn 追加メンバーの再生成観点整理
+  - `WorksheetFunction` に `XLookup` / `XMATCH` が追加された場合に備え、allow list、built-in index、signature help テストの更新箇所を整理する
 
 ## メモ
 

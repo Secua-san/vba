@@ -30810,7 +30810,10 @@
                     "ownerName": "WorksheetFunction",
                     "parameters": [
                       {
-                        "label": "Arg1",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
                         "name": "Arg1"
                       },
                       {
@@ -31012,7 +31015,7 @@
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 numbers for which you want to find the maximum value.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg30 As Variant",
                         "name": "Arg30"
                       }
@@ -31263,7 +31266,10 @@
                     "ownerName": "WorksheetFunction",
                     "parameters": [
                       {
-                        "label": "Arg1",
+                        "dataType": "Variant",
+                        "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
+                        "isRequired": true,
+                        "label": "Arg1 As Variant",
                         "name": "Arg1"
                       },
                       {
@@ -31465,7 +31471,7 @@
                       {
                         "dataType": "Variant",
                         "description": "Number1, number2... - 1 to 30 numbers for which you want to find the minimum value.",
-                        "isRequired": true,
+                        "isRequired": false,
                         "label": "Arg30 As Variant",
                         "name": "Arg30"
                       }

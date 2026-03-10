@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createMcpRequestClient } from "./lib/mcpRequest.mjs";
+import { signatureMemberAllowList } from "./lib/referenceSignatureConfig.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,40 +14,6 @@ const apiBaseUrl = "https://learn.microsoft.com/en-us/office/vba/api/";
 const fetchTimeoutMs = 30_000;
 const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
-const signatureMemberAllowList = new Map([
-  ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
-  ["Range", new Set(["Address", "AddressLocal"])],
-  [
-    "WorksheetFunction",
-    new Set([
-      "And",
-      "Average",
-      "Choose",
-      "Count",
-      "CountA",
-      "CountBlank",
-      "EDate",
-      "EoMonth",
-      "Find",
-      "HLookup",
-      "Index",
-      "Lookup",
-      "Max",
-      "Match",
-      "Median",
-      "Min",
-      "Or",
-      "Power",
-      "Round",
-      "Search",
-      "Sum",
-      "Text",
-      "Transpose",
-      "VLookup",
-      "Xor",
-    ])
-  ],
-]);
 const signatureMetadataOverrides = new Map([
   [
     "worksheetfunction.find",
@@ -649,8 +616,8 @@ function fillMissingSequentialParameterMetadata(syntaxLine, parameters) {
   }
 
   const hasMissingMetadata = parameters.some(
-    (parameter, index) =>
-      index > 0 && !parameter.dataType && !parameter.description && parameter.isRequired === undefined,
+    (parameter) =>
+      !parameter.dataType || !parameter.description || parameter.isRequired === undefined || parameter.label === parameter.name,
   );
 
   if (!hasMissingMetadata) {
@@ -664,22 +631,35 @@ function fillMissingSequentialParameterMetadata(syntaxLine, parameters) {
   }
 
   const fallbackDataType = templateParameter.dataType ?? "Variant";
+  const optionalParameterNames = extractOptionalSyntaxParameterNames(syntaxLine);
 
   return parameters.map((parameter, index) => {
-    if (index === 0) {
-      return parameter;
-    }
+    const dataType = parameter.dataType ?? fallbackDataType;
+    const description = parameter.description ?? templateParameter.description;
+    const isRequired =
+      parameter.isRequired ??
+      (optionalParameterNames.has(parameter.name)
+        ? false
+        : index === 0
+          ? true
+          : templateParameter.isRequired ?? false);
+    const label = dataType ? `${parameter.name} As ${dataType}` : parameter.label;
 
-    if (parameter.dataType || parameter.description || parameter.isRequired !== undefined) {
+    if (
+      parameter.dataType === dataType &&
+      parameter.description === description &&
+      parameter.isRequired === isRequired &&
+      parameter.label === label
+    ) {
       return parameter;
     }
 
     return {
       ...parameter,
-      dataType: fallbackDataType,
-      description: templateParameter.description,
-      isRequired: false,
-      label: `${parameter.name} As ${fallbackDataType}`,
+      dataType,
+      description,
+      isRequired,
+      label,
     };
   });
 }
@@ -831,16 +811,19 @@ function applyVariadicTailOptionalRule(syntaxLine, parameters) {
   if (
     (!hasVariadicSyntaxMarker(syntaxLine) && !hasVariadicCountDescription(parameters)) ||
     !hasSequentialNumericSuffixParameters(parameters) ||
-    parameters[0]?.isRequired !== true ||
-    parameters.slice(1).some((parameter) => parameter.isRequired !== true)
+    parameters[0]?.isRequired !== true
   ) {
     return parameters;
   }
 
-  return parameters.map((parameter, index) => ({
-    ...parameter,
-    isRequired: index === 0,
-  }));
+  return parameters.map((parameter, index) =>
+    parameter.isRequired === (index === 0)
+      ? parameter
+      : {
+          ...parameter,
+          isRequired: index === 0,
+        },
+  );
 }
 
 function summarizeSignatureLabelParameters(parameterNames) {
@@ -870,9 +853,9 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
   const syntaxParameterNames = extractSyntaxParameterNames(syntaxLine);
   const parameterTableRows = parseParameterTableRows(parametersSection);
   const signatureParameterNames = resolveSignatureParameterNames(syntaxParameterNames, parameterTableRows);
-  const parameters = fillMissingSequentialParameterMetadata(
+  const parameters = applyVariadicTailOptionalRule(
     syntaxLine,
-    applyVariadicTailOptionalRule(
+    fillMissingSequentialParameterMetadata(
       syntaxLine,
       applySyntaxOptionalParameterRequirements(
         syntaxLine,

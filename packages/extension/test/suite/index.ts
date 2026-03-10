@@ -183,6 +183,16 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Average("),
     (help) => help.signatures.length > 0
   );
+  const builtInMaxSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Max("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInMinSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.Min("),
+    (help) => help.signatures.length > 0
+  );
   const builtInEdateSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "WorksheetFunction.EDate("),
@@ -359,6 +369,58 @@ export async function run(): Promise<void> {
   assert.ok(
     getSignatureDocumentation(builtInAverageSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
     "built-in member average second argument should be optional"
+  );
+  assert.equal(
+    builtInMaxSignatureHelp.signatures[0]?.label,
+    "Max(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+    "built-in member signature should be available for WorksheetFunction.Max"
+  );
+  assert.equal(
+    builtInMaxSignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member Max signature should expose variadic parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("想定型: Variant"),
+    "built-in member Max first argument should include expected type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
+    "built-in member Max first argument should be required"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member Max second argument should be optional"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[29]?.documentation).includes("省略可能"),
+    "built-in member Max last argument should be optional"
+  );
+  assert.equal(
+    builtInMinSignatureHelp.signatures[0]?.label,
+    "Min(Arg1, Arg2, Arg3, ..., Arg30) As Double",
+    "built-in member signature should be available for WorksheetFunction.Min"
+  );
+  assert.equal(
+    builtInMinSignatureHelp.signatures[0]?.parameters.length,
+    30,
+    "built-in member Min signature should expose variadic parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("想定型: Variant"),
+    "built-in member Min first argument should include expected type"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
+    "built-in member Min first argument should be required"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    "built-in member Min second argument should be optional"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[29]?.documentation).includes("省略可能"),
+    "built-in member Min last argument should be optional"
   );
   assert.equal(
     builtInEdateSignatureHelp.signatures[0]?.label,

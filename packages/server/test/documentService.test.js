@@ -364,6 +364,8 @@ Public Sub Demo()
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Power(2, 3)
     Debug.Print WorksheetFunction.Average(1, 2, 3)
+    Debug.Print WorksheetFunction.Max(1, 2, 3)
+    Debug.Print WorksheetFunction.Min(1, 2, 3)
     Debug.Print WorksheetFunction.EDate(Date, 1)
     Debug.Print WorksheetFunction.EoMonth(Date, 1)
     Debug.Print WorksheetFunction.Find("A", "ABC")
@@ -405,6 +407,8 @@ End Sub`;
     findPositionAfterTokenInText(text, "Application.WorksheetFunction.Power(")
   );
   const averageSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Average("));
+  const maxSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Max("));
+  const minSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Min("));
   const edateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.EDate("));
   const eomonthSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.EoMonth("));
   const findSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Find("));
@@ -453,6 +457,18 @@ End Sub`;
   assert.equal(powerSignature?.parameters.length, 2);
   assert.equal(averageSignature?.label, "Average(Arg1, Arg2, Arg3, ..., Arg30) As Double");
   assert.equal(averageSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
+  assert.equal(maxSignature?.label, "Max(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(maxSignature?.parameters.length, 30);
+  assert.equal(maxSignature?.parameters[0]?.documentation?.includes("想定型: Variant"), true);
+  assert.equal(maxSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(maxSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
+  assert.equal(maxSignature?.parameters[29]?.documentation?.includes("省略可能"), true);
+  assert.equal(minSignature?.label, "Min(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(minSignature?.parameters.length, 30);
+  assert.equal(minSignature?.parameters[0]?.documentation?.includes("想定型: Variant"), true);
+  assert.equal(minSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(minSignature?.parameters[1]?.documentation?.includes("省略可能"), true);
+  assert.equal(minSignature?.parameters[29]?.documentation?.includes("省略可能"), true);
   assert.equal(edateSignature?.label, "EDate(Arg1, Arg2) As Double");
   assert.equal(edateSignature?.parameters.length, 2);
   assert.equal(eomonthSignature?.label, "EoMonth(Arg1, Arg2) As Double");
