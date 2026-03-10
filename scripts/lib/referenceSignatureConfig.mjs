@@ -32,3 +32,7 @@ export const signatureMemberAllowList = new Map([
     ]),
   ],
 ]);
+
+export const signatureMissingMemberWatchList = new Map([
+  ["WorksheetFunction", new Set(["XLookup", "XMATCH"])],
+]);

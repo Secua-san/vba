@@ -13,7 +13,7 @@
 
 | ファイル | 役割 | 更新が必要なケース |
 | --- | --- | --- |
-| `scripts/lib/referenceSignatureConfig.mjs` | 署名抽出対象の allow list | 新しいメソッドを署名抽出対象に加えるとき |
+| `scripts/lib/referenceSignatureConfig.mjs` | 署名抽出対象の allow list と未掲載監視の watch list | 新しいメソッドを署名抽出対象に加えるとき、または未掲載監視を追加・解除するとき |
 | `scripts/generate-mslearn-vba-reference.mjs` | Learn 取得、署名抽出、override | Learn 側の表記ゆれ、要約補正、optional/required 補正が必要なとき |
 | `resources/reference/mslearn-vba-reference.json` | 生成済み参照データ | 再生成後の成果物をコミットするとき |
 | `scripts/test/mslearnReferenceAudit.test.mjs` | 監視と生成データ監査 | 監視対象の状態や audit 条件を見直すとき |
@@ -30,10 +30,12 @@
 - `npm run test:scripts` または `npm test` を実行し、監視テストの失敗内容を確認する
 - `resources/reference/mslearn-vba-reference.json` で対象 owner と member を検索し、既に取得されているかを確認する
 - Learn ページの `Syntax` / `Parameters` / `Return value` を見て、既存抽出ロジックで足りるかを判断する
+- `scripts/lib/referenceSignatureConfig.mjs` の watch list に残っている対象が失敗した場合は、以降の手順で watch list から allow list への移動を行う
 
 ### 2. 署名抽出対象へ追加する
-- `scripts/lib/referenceSignatureConfig.mjs` の owner に対象メンバー名を追加する
+- `scripts/lib/referenceSignatureConfig.mjs` の watch list から対象メンバー名を外し、allow list の owner に追加する
 - `WorksheetFunction` のように既存 owner 配下へ足すだけでよいか、別 owner の追加が必要かを確認する
+- 追加後に watch list と allow list の重複が無いことを確認する
 
 ### 3. 抽出ロジックの補正要否を確認する
 - Learn の parameter table が連番省略、表記ゆれ、説明欠落を含む場合は `scripts/generate-mslearn-vba-reference.mjs` の共通ロジックで吸収できるかを確認する
@@ -67,7 +69,8 @@
 - variadic な `WorksheetFunction` 系は、先頭だけでなく末尾引数も確認する
 
 ### 7. 監視テストを更新する
-- `scripts/test/mslearnReferenceAudit.test.mjs` の「未掲載」監視は、掲載後に別の監視へ置き換える
+- `scripts/lib/referenceSignatureConfig.mjs` の watch list から、掲載済みメンバーを外す
+- `scripts/test/mslearnReferenceAudit.test.mjs` は watch list 定義を参照しているため、通常は個別の member 名編集は不要
 - 追加メンバーを audit 対象に含め、型、説明、required/optional の欠落がないことを確認する
 
 ### 8. 品質ゲートを通す
