@@ -36,6 +36,8 @@
 - PR 前レビューの結果要約は `docs/process/coderabbit-review-summaries.md` へ追記する
 - 指摘が 0 件でも結果を要約して記録し、PR 本文作成に進む
 - 重大な指摘が残る場合は PR を作成せず、先に修正する
+- PR 前レビューの指摘と CodeRabbit の指摘が同一論点で重なった場合は、`docs/process/coderabbit-review.md` の重複指摘ルールに従って原則修正する
+- `required` / `optional` のような運用上の挙動差の判断基準も、`docs/process/coderabbit-review.md` を正本として扱う
 
 ## 避けること
 - まだ調べていない基本情報の代行として毎回使う
