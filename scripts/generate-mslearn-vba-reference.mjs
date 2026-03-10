@@ -817,6 +817,7 @@ function applyVariadicTailOptionalRule(syntaxLine, parameters) {
   }
 
   return parameters.map((parameter, index) =>
+    // Variadic な sequential parameters は先頭だけ必須にそろえ、既に期待値どおりなら再生成しない。
     parameter.isRequired === (index === 0)
       ? parameter
       : {

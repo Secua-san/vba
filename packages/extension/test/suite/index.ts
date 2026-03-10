@@ -370,57 +370,15 @@ export async function run(): Promise<void> {
     getSignatureDocumentation(builtInAverageSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
     "built-in member average second argument should be optional"
   );
-  assert.equal(
-    builtInMaxSignatureHelp.signatures[0]?.label,
+  assertVariadicWorksheetFunctionSignature(
+    builtInMaxSignatureHelp,
     "Max(Arg1, Arg2, Arg3, ..., Arg30) As Double",
-    "built-in member signature should be available for WorksheetFunction.Max"
+    "Max"
   );
-  assert.equal(
-    builtInMaxSignatureHelp.signatures[0]?.parameters.length,
-    30,
-    "built-in member Max signature should expose variadic parameter metadata"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("想定型: Variant"),
-    "built-in member Max first argument should include expected type"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
-    "built-in member Max first argument should be required"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
-    "built-in member Max second argument should be optional"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMaxSignatureHelp.signatures[0]?.parameters[29]?.documentation).includes("省略可能"),
-    "built-in member Max last argument should be optional"
-  );
-  assert.equal(
-    builtInMinSignatureHelp.signatures[0]?.label,
+  assertVariadicWorksheetFunctionSignature(
+    builtInMinSignatureHelp,
     "Min(Arg1, Arg2, Arg3, ..., Arg30) As Double",
-    "built-in member signature should be available for WorksheetFunction.Min"
-  );
-  assert.equal(
-    builtInMinSignatureHelp.signatures[0]?.parameters.length,
-    30,
-    "built-in member Min signature should expose variadic parameter metadata"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("想定型: Variant"),
-    "built-in member Min first argument should include expected type"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
-    "built-in member Min first argument should be required"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
-    "built-in member Min second argument should be optional"
-  );
-  assert.ok(
-    getSignatureDocumentation(builtInMinSignatureHelp.signatures[0]?.parameters[29]?.documentation).includes("省略可能"),
-    "built-in member Min last argument should be optional"
+    "Min"
   );
   assert.equal(
     builtInEdateSignatureHelp.signatures[0]?.label,
@@ -1379,6 +1337,39 @@ function findPositionAfterToken(document: vscode.TextDocument, token: string, of
   const startIndex = source.indexOf(token);
   assert.notEqual(startIndex, -1, `token not found in document: ${token}`);
   return document.positionAt(startIndex + token.length + offsetFromEnd);
+}
+
+function assertVariadicWorksheetFunctionSignature(
+  signatureHelp: vscode.SignatureHelp,
+  expectedLabel: string,
+  memberName: string
+): void {
+  assert.equal(
+    signatureHelp.signatures[0]?.label,
+    expectedLabel,
+    `built-in member signature should be available for WorksheetFunction.${memberName}`
+  );
+  assert.equal(
+    signatureHelp.signatures[0]?.parameters.length,
+    30,
+    `built-in member ${memberName} signature should expose variadic parameter metadata`
+  );
+  assert.ok(
+    getSignatureDocumentation(signatureHelp.signatures[0]?.parameters[0]?.documentation).includes("想定型: Variant"),
+    `built-in member ${memberName} first argument should include expected type`
+  );
+  assert.ok(
+    getSignatureDocumentation(signatureHelp.signatures[0]?.parameters[0]?.documentation).includes("必須引数"),
+    `built-in member ${memberName} first argument should be required`
+  );
+  assert.ok(
+    getSignatureDocumentation(signatureHelp.signatures[0]?.parameters[1]?.documentation).includes("省略可能"),
+    `built-in member ${memberName} second argument should be optional`
+  );
+  assert.ok(
+    getSignatureDocumentation(signatureHelp.signatures[0]?.parameters[29]?.documentation).includes("省略可能"),
+    `built-in member ${memberName} last argument should be optional`
+  );
 }
 
 function getSignatureDocumentation(
