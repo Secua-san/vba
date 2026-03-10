@@ -202,3 +202,23 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - `TASKS.md` を更新し、本作業を完了済みに移し、次候補を `Application / Workbook / Worksheet` 系の未掲載監視候補整理へ更新。
 - 残課題:
   - `Application` / `Workbook` / `Worksheet` 系で、個別ページはあるが現行スナップショットへ未掲載のメンバー候補を引き続き洗い出す。
+
+## 2026-03-11 PR #49 feat: Workbook root alias から組み込みメンバーを解決
+- レビュー状況: `reviewer 済み / CodeRabbit 待ち`
+- 要約:
+  - `Application` / `Workbook` / `Worksheet` の owner inventory では object page 由来の未掲載 member は見つからず、既存参照データの到達性改善として `ActiveWorkbook` / `ThisWorkbook` / `Application.ActiveCell` の root alias 解決を追加した。
+  - PR 前の `reviewer` 自己レビューでは、`ThisWorkbook.cls` fixture の未追跡と、`ThisWorkbook` alias に対する semantic token 分岐漏れが指摘され、どちらも修正した。
+- 指摘一覧:
+  - [採用] extension / server テストで読む `ThisWorkbook.cls` fixture を追加し、PR 差分へ含めた。
+  - [採用] `ThisWorkbook` document module と built-in alias が衝突する場合でも、semantic token では built-in alias を優先する分岐を追加した。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - built-in alias を文書モジュールと両立させる場合、completion / hover / signature / semantic token の各入口で同じ shadowing ルールを適用しているかを横断確認したほうがよい。
+  - fixture を新規追加したテスト変更では、コード差分だけでなく追跡状態も確認しないと、クリーン checkout 環境でだけ壊れる取りこぼしが起きやすい。
+  - object page の inventory で未掲載が無かった owner でも、既存参照データへ到達できていない root alias が残っていないかは別軸で確認する価値がある。
+- 実施:
+  - `ActiveWorkbook` / `ThisWorkbook` に `Workbook` の `typeName` を付与し、`Application.ActiveCell` の chain でも `Range` member 解決を引き継げるようにした。
+  - `ThisWorkbook.SaveAs` の completion / hover / semantic token、および `Application.ActiveCell.Address` の completion / signature / semantic token を server / extension テストへ追加した。
+  - `TASKS.md` と `docs/process/mslearn-signature-regeneration.md` に owner inventory 結果と今回の到達性改善を反映した。
+- 残課題:
+  - CodeRabbit の初回レビュー待ち。
+  - 次候補は `Workbook / Worksheet callable` の signature help への昇格整理。
