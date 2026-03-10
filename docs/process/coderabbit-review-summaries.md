@@ -184,3 +184,21 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - CodeRabbit 指摘対応として `normalizeMemberName` の再利用と失敗メッセージの正本参照化を追加。
 - 残課題:
   - 現在の watch list 実体は `WorksheetFunction` のみなので、次段階で監視対象 owner の候補整理を続ける。
+
+## 2026-03-11 PR #48 test: Range の未掲載監視を追加
+- レビュー状況: `SUCCESS`
+- 要約:
+  - CodeRabbit は `scripts/lib/referenceSignatureConfig.mjs` のみを処理対象とし、`No actionable comments were generated` で完了した。
+  - `docs/process/mslearn-signature-regeneration.md` と `TASKS.md` は path filters で review 対象外だったが、watch list の `Range` 追加自体には指摘が出なかった。
+- 指摘一覧:
+  - [非採用] 指摘なし。`scripts/lib/referenceSignatureConfig.mjs` に対する actionable comment は出なかった。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - watch list の owner を増やすときは、まず Microsoft Learn に個別ページがあり、かつローカル参照 JSON に未掲載のメンバーへ絞ると監視の意味が明確になる。
+  - docs が path filters で除外される運用では、CodeRabbit 指摘の有無にかかわらず、なぜその owner を監視するのかを要約ログへ残しておくと次回判断が速い。
+  - 動的配列のような近年の Excel 機能は `WorksheetFunction` とは別 owner に散らばるため、owner 単位 watch list を継続的に広げる価値が高い。
+- 実施:
+  - `scripts/lib/referenceSignatureConfig.mjs` の watch list に `Range.HasSpill` / `SavedAsArray` / `SpillParent` を追加。
+  - `docs/process/mslearn-signature-regeneration.md` に現在の watch list、owner 選定基準、`Range` 動的配列メンバーの更新導線を追記。
+  - `TASKS.md` を更新し、本作業を完了済みに移し、次候補を `Application / Workbook / Worksheet` 系の未掲載監視候補整理へ更新。
+- 残課題:
+  - `Application` / `Workbook` / `Worksheet` 系で、個別ページはあるが現行スナップショットへ未掲載のメンバー候補を引き続き洗い出す。
