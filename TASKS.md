@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Microsoft Learn 監視対象メンバーの自動検知見直し
+  - `scripts/lib/referenceSignatureConfig.mjs` に owner 単位の `signatureMissingMemberWatchList` を追加し、未掲載監視を共有設定化
+  - `scripts/test/mslearnReferenceAudit.test.mjs` を watch list ベースの監視と allow list 重複検知へ更新
+  - `docs/process/mslearn-signature-regeneration.md` を watch list から allow list への移行手順に合わせて更新
+
 - [x] Microsoft Learn 追加メンバーの再生成観点整理
   - `docs/process/mslearn-signature-regeneration.md` を追加し、allow list、再生成、built-in index、server / extension テスト、レビュー記録までの更新箇所を整理
   - `scripts/test/mslearnReferenceAudit.test.mjs` の監視失敗メッセージから手順書へ辿れるように修正
@@ -243,8 +248,8 @@
 
 ## 次候補
 
-- [ ] Microsoft Learn 監視対象メンバーの自動検知見直し
-  - `WorksheetFunction` 以外の監視対象を増やすか、既存の未掲載監視を owner 単位で共通化するかを検討する
+- [ ] Microsoft Learn 監視対象 owner の拡張
+  - `WorksheetFunction` 以外に監視価値の高い owner を整理し、watch list へ追加する候補を決める
 
 ## メモ
 
