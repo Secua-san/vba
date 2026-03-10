@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Microsoft Learn 追加メンバーの再生成観点整理
+  - `docs/process/mslearn-signature-regeneration.md` を追加し、allow list、再生成、built-in index、server / extension テスト、レビュー記録までの更新箇所を整理
+  - `scripts/test/mslearnReferenceAudit.test.mjs` の監視失敗メッセージから手順書へ辿れるように修正
+  - `AGENTS.md` に手順書への導線を追加
+
 - [x] レビュー判断ルールの更新
   - PR 前自己レビューと CodeRabbit が同じ論点を指摘した場合は、原則として修正する運用へ変更
   - `required` / `optional` のような運用時挙動については、互換性、既存テスト、誤案内防止を基準に判断する方針を正本へ明記
@@ -238,8 +243,8 @@
 
 ## 次候補
 
-- [ ] Microsoft Learn 追加メンバーの再生成観点整理
-  - `WorksheetFunction` に `XLookup` / `XMATCH` が追加された場合に備え、allow list、built-in index、signature help テストの更新箇所を整理する
+- [ ] Microsoft Learn 監視対象メンバーの自動検知見直し
+  - `WorksheetFunction` 以外の監視対象を増やすか、既存の未掲載監視を owner 単位で共通化するかを検討する
 
 ## メモ
 
