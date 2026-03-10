@@ -71,6 +71,11 @@ export async function run(): Promise<void> {
     path.resolve(fixturesPath, "BuiltInMemberCompletion.bas")
   );
   await vscode.window.showTextDocument(builtInMemberCompletionDocument);
+  const thisWorkbookDefinitions = await waitForDefinitions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "ThisWorkbook", -1),
+    (locations) => locations.some((location) => location.uri.toString() === thisWorkbookDocument.uri.toString())
+  );
 
   const applicationMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
@@ -144,6 +149,10 @@ export async function run(): Promise<void> {
   );
   assert.ok(activeWorkbookSaveAsCompletion?.detail?.includes("Excel Workbook method"));
   assert.ok(activeWorkbookWorksheetsCompletion?.detail?.includes("Excel Workbook property"));
+  assert.ok(
+    thisWorkbookDefinitions.some((location) => location.uri.toString() === thisWorkbookDocument.uri.toString()),
+    "ThisWorkbook root should resolve to the workbook document module before alias assertions"
+  );
   assert.ok(thisWorkbookSaveAsCompletion?.detail?.includes("Excel Workbook method"));
   assert.ok(workbookWorksheetsCountCompletion?.detail?.includes("Excel Worksheets property"));
   assert.ok(applicationActiveCellAddressCompletion?.detail?.includes("Excel Range"));

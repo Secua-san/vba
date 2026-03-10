@@ -83,6 +83,7 @@ End Sub`;
     "vba",
     1,
     `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
 Attribute VB_PredeclaredId = True
 Option Explicit`
   );
@@ -173,6 +174,48 @@ End Sub`;
         entry.range.start.line === 11 &&
         entry.range.start.character === 20 &&
         entry.range.end.character === 25 &&
+        entry.type === "function"
+    ),
+    false
+  );
+});
+
+test("document service keeps ThisWorkbook built-in alias conservative for non-document class modules", () => {
+  const service = createDocumentService();
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
+  const uri = "file:///C:/temp/BuiltInThisWorkbookShadowing.bas";
+  const text = `Attribute VB_Name = "BuiltInThisWorkbookShadowing"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print ThisWorkbook.
+    Debug.Print ThisWorkbook.SaveAs
+End Sub`;
+
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Option Explicit
+
+Public Sub SaveAs()
+End Sub`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "ThisWorkbook."));
+  const hover = service.getHover(uri, findPositionAfterTokenInText(text, "ThisWorkbook.Save"));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.deepEqual(completions, []);
+  assert.equal(hover, undefined);
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === 5 &&
+        entry.range.start.character === 28 &&
+        entry.range.end.character === 34 &&
         entry.type === "function"
     ),
     false
@@ -438,6 +481,7 @@ End Sub`;
     "vba",
     1,
     `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
 Attribute VB_PredeclaredId = True
 Option Explicit`
   );
@@ -1137,6 +1181,7 @@ End Sub`;
     "vba",
     1,
     `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
 Attribute VB_PredeclaredId = True
 Option Explicit`
   );
