@@ -128,3 +128,21 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - CodeRabbit 指摘に合わせて extension テスト helper 化、variadic 判定の構造化、意図コメント追加を反映。
 - 残課題:
   - `XLookup` / `XMATCH` は引き続き現行 Microsoft Learn に未掲載のため、再生成時にテスト failure を入口として更新要否を判断する。
+
+## 2026-03-10 PR #45 docs: レビュー重複指摘時の判断基準を明確化
+- レビュー状況: `SKIPPED`
+- 要約:
+  - CodeRabbit は path filters により docs-only 差分をレビュー対象外とし、指摘は出なかった。
+  - PR 前の `reviewer` 自己レビューでも追加指摘はなく、正本ドキュメントへの集約と判断基準の明確化だけを反映した。
+- 指摘一覧:
+  - [非採用] 指摘なし。`AGENTS.md`、`TASKS.md`、`docs/process/coderabbit-review.md`、`docs/process/sub-agent-escalation.md` は CodeRabbit の path filters により review skipped。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - 運用ルール変更は正本ドキュメントに判断基準を集約し、参照側は短い導線に留めると重複と矛盾を減らせる。
+  - `required` / `optional` のような挙動判断は、「出典準拠」か「運用優先」かではなく、互換性、既存テスト、誤案内防止の順で比較基準を固定するとレビュー判断がぶれにくい。
+  - docs-only PR は CodeRabbit が継続的に skipped になるため、`reviewer` の事前確認内容を要約ログへ残しておく価値が高い。
+- 実施:
+  - `docs/process/coderabbit-review.md` に、自己レビューと CodeRabbit の重複指摘を原則修正とする方針、および `required` / `optional` 判断の基準を追加。
+  - `docs/process/sub-agent-escalation.md` と `AGENTS.md` は正本参照の形へ整理し、重複記載を抑制。
+  - `TASKS.md` に今回の運用更新を反映。
+- 残課題:
+  - docs 系ファイルを CodeRabbit の対象へ含めるかどうかは、引き続き `.coderabbit.yaml` 側の方針として検討余地がある。
