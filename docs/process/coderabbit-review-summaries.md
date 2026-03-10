@@ -204,21 +204,26 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - `Application` / `Workbook` / `Worksheet` 系で、個別ページはあるが現行スナップショットへ未掲載のメンバー候補を引き続き洗い出す。
 
 ## 2026-03-11 PR #49 feat: Workbook root alias から組み込みメンバーを解決
-- レビュー状況: `reviewer 済み / CodeRabbit 待ち`
+- レビュー状況: `COMMENTED（対応済み・Reviews paused）`
 - 要約:
   - `Application` / `Workbook` / `Worksheet` の owner inventory では object page 由来の未掲載 member は見つからず、既存参照データの到達性改善として `ActiveWorkbook` / `ThisWorkbook` / `Application.ActiveCell` の root alias 解決を追加した。
   - PR 前の `reviewer` 自己レビューでは、`ThisWorkbook.cls` fixture の未追跡と、`ThisWorkbook` alias に対する semantic token 分岐漏れが指摘され、どちらも修正した。
+  - 初回 CodeRabbit は head commit 変更で失敗したため、`pause` 後に再レビューを実行した。再レビューでは 2 件の指摘が出て、どちらも採用して修正した。
 - 指摘一覧:
   - [採用] extension / server テストで読む `ThisWorkbook.cls` fixture を追加し、PR 差分へ含めた。
   - [採用] `ThisWorkbook` document module と built-in alias が衝突する場合でも、semantic token では built-in alias を優先する分岐を追加した。
+  - [採用] extension テストで `ThisWorkbook.cls` を開いたあと、`ThisWorkbook` ルートの definition が実際に `ThisWorkbook.cls` へ解決されるまで待ってから alias 系アサーションを実行するように修正した。
+  - [採用] `ThisWorkbook` alias 判定を `symbol.kind === "module"` だけに依存させず、`VB_Base` と `VB_PredeclaredId = True` を持つ workbook document module に限定するよう厳密化した。
 - この作業で当てはまりそうな内容（横展開候補）:
   - built-in alias を文書モジュールと両立させる場合、completion / hover / signature / semantic token の各入口で同じ shadowing ルールを適用しているかを横断確認したほうがよい。
   - fixture を新規追加したテスト変更では、コード差分だけでなく追跡状態も確認しないと、クリーン checkout 環境でだけ壊れる取りこぼしが起きやすい。
   - object page の inventory で未掲載が無かった owner でも、既存参照データへ到達できていない root alias が残っていないかは別軸で確認する価値がある。
+  - document module 扱いの特例は、名前一致だけでなく host object を示す属性や module kind まで見ないと、同名の class module を誤分類しやすい。
 - 実施:
   - `ActiveWorkbook` / `ThisWorkbook` に `Workbook` の `typeName` を付与し、`Application.ActiveCell` の chain でも `Range` member 解決を引き継げるようにした。
   - `ThisWorkbook.SaveAs` の completion / hover / semantic token、および `Application.ActiveCell.Address` の completion / signature / semantic token を server / extension テストへ追加した。
   - `TASKS.md` と `docs/process/mslearn-signature-regeneration.md` に owner inventory 結果と今回の到達性改善を反映した。
+  - CodeRabbit 対応で `ThisWorkbook` document module 判定を `VB_Base + VB_PredeclaredId` ベースへ狭め、非 document class module では組み込み alias を有効化しない server テストを追加した。
+  - extension テストは `ThisWorkbook` root の definition 解決待ちを追加し、built-in fallback だけで通る偽陽性を防いだ。
 - 残課題:
-  - CodeRabbit の初回レビュー待ち。
   - 次候補は `Workbook / Worksheet callable` の signature help への昇格整理。
