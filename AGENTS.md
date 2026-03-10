@@ -21,6 +21,7 @@
 - `Declare PtrSafe`、`LongPtr`、`#If VBA7 Then` などの条件付きコンパイルを優先して扱う
 - 重要な設計判断は `docs/adr/` に記録する
 - タスク管理を `TASKS.md` で行い、進捗に合わせ随時更新する
+- PR 作成前のサブエージェント自己レビューは `reviewer` を既定とする
 
 ## リポジトリ構成
 - `packages/extension/`: VS Code 拡張本体
@@ -37,6 +38,7 @@
 - ブランチ・コミット・PR ルール: [docs/process/git-workflow.md](docs/process/git-workflow.md)
 - 自動コミット / 自動 PR と品質ゲート: [docs/process/automation-policy.md](docs/process/automation-policy.md)
 - CodeRabbit 対応: [docs/process/coderabbit-review.md](docs/process/coderabbit-review.md)
+- CodeRabbit レビュー要約ログ: [docs/process/coderabbit-review-summaries.md](docs/process/coderabbit-review-summaries.md)
 - サブエージェントへのエスカレーション: [docs/process/sub-agent-escalation.md](docs/process/sub-agent-escalation.md)
 - コミットメッセージ規約: [docs/commit-message.md](docs/commit-message.md)
 - PR テンプレート: [.github/pull_request_template.md](.github/pull_request_template.md)
@@ -46,4 +48,6 @@
 - コミットや PR を扱う前に、`docs/process/` 配下の運用ドキュメントを確認する
 - 外部 MCP サーバー呼び出しは共通の retry / rate-limit 層を必ず通し、`429` 検知、`Retry-After` 優先、未指定時の指数バックオフ + ジッター、呼び出し間隔制御、同一問い合わせの重複抑止、対象 MCP 名を含む retry / wait / 最終失敗理由ログを実装する
 - 同じ論点を繰り返し検討して進まない場合は、`docs/process/sub-agent-escalation.md` に従ってサブエージェントへ切り替える
+- `reviewer` が利用できない場合は、`C:\Users\tagi0\.codex\config.toml` と `C:\Users\tagi0\.codex\agents\reviewer.toml` を確認し、設定を直してから PR 作成へ進む
+- CodeRabbit レビュー確認後は、要約と横展開候補を `docs/process/coderabbit-review-summaries.md` へ追記する
 - ルール変更時は重複記載を増やさず、正本ドキュメントを更新する
