@@ -18,6 +18,7 @@ import {
   normalizeIdentifier,
   removeStringAndDateLiterals,
   resolveBuiltinMemberOwner,
+  stripIndexedAccessMarker,
   splitCodeAndComment,
   type AnalysisResult,
   type BuiltinCallableSignature,
@@ -690,7 +691,7 @@ function collectSemanticTokensForState(
         const memberTokenShape = mapBuiltinMemberSemanticToken(
           state.uri,
           lineIndex,
-          scrubbed,
+          code,
           startCharacter,
           identifier,
           resolveDefinition,
@@ -1026,7 +1027,10 @@ function resolveConfirmedBuiltinMemberOwner(
     line
   });
 
-  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, completionContext.memberPath[0], getDocumentState)) {
+  if (
+    rootResolution &&
+    !isBuiltinAliasDocumentModule(rootResolution, stripIndexedAccessMarker(completionContext.memberPath[0]), getDocumentState)
+  ) {
     return undefined;
   }
 
@@ -1093,7 +1097,10 @@ function resolveBuiltinCallableMember(
     line
   });
 
-  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, callContext.callPath[0], getDocumentState)) {
+  if (
+    rootResolution &&
+    !isBuiltinAliasDocumentModule(rootResolution, stripIndexedAccessMarker(callContext.callPath[0]), getDocumentState)
+  ) {
     return undefined;
   }
 
@@ -1869,7 +1876,7 @@ function mapBuiltinMemberSemanticToken(
     !canResolveBuiltinAliasMemberAccess(
       uri,
       line,
-      memberAccess.memberPath[0],
+      stripIndexedAccessMarker(memberAccess.memberPath[0]),
       memberAccess.memberPathStartCharacter,
       resolveDefinition,
       getDocumentState
@@ -1959,6 +1966,9 @@ function parseTrailingMemberAccess(
       index -= 1;
     }
 
+    const indexedAccess = skipTrailingIndexedAccess(text, index);
+    index = indexedAccess.index;
+
     const identifierEnd = index + 1;
 
     while (index >= 0 && /[A-Za-z0-9_$%&!#@]/u.test(text[index] ?? "")) {
@@ -1971,7 +1981,7 @@ function parseTrailingMemberAccess(
       return undefined;
     }
 
-    memberPath.unshift(identifier);
+    memberPath.unshift(indexedAccess.isSingleItemAccess ? `${identifier}()` : identifier);
     memberPathStartCharacter = index + 1;
 
     while (index >= 0 && /\s/u.test(text[index] ?? "")) {
@@ -1991,6 +2001,137 @@ function parseTrailingMemberAccess(
 
 function getTrailingIdentifier(text: string): string {
   return /[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.exec(text)?.[0] ?? "";
+}
+
+function skipTrailingIndexedAccess(
+  text: string,
+  startIndex: number
+): {
+  index: number;
+  isIndexed: boolean;
+  isSingleItemAccess: boolean;
+} {
+  let index = startIndex;
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  if (text[index] !== ")") {
+    return {
+      index,
+      isIndexed: false,
+      isSingleItemAccess: false
+    };
+  }
+
+  const closingParenIndex = index;
+  let depth = 0;
+  let openingParenIndex = -1;
+
+  while (index >= 0) {
+    const character = text[index];
+
+    if (character === "\"") {
+      index = skipStringLiteralBackward(text, index);
+      continue;
+    }
+
+    if (character === ")") {
+      depth += 1;
+      index -= 1;
+      continue;
+    }
+
+    if (character === "(") {
+      depth -= 1;
+
+      if (depth === 0) {
+        openingParenIndex = index;
+        index -= 1;
+        break;
+      }
+
+      index -= 1;
+      continue;
+    }
+
+    index -= 1;
+  }
+
+  if (openingParenIndex === -1) {
+    return {
+      index: startIndex,
+      isIndexed: false,
+      isSingleItemAccess: false
+    };
+  }
+
+  const selectorText = text.slice(openingParenIndex + 1, closingParenIndex);
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  return {
+    index,
+    isIndexed: true,
+    isSingleItemAccess: isSingleItemCollectionSelector(selectorText)
+  };
+}
+
+function isSingleItemCollectionSelector(selectorText: string): boolean {
+  const trimmedSelector = selectorText.trim();
+
+  if (trimmedSelector.length === 0) {
+    return false;
+  }
+
+  let insideString = false;
+
+  for (let index = 0; index < trimmedSelector.length; index += 1) {
+    const character = trimmedSelector[index];
+
+    if (character === "\"") {
+      if (insideString && trimmedSelector[index + 1] === "\"") {
+        index += 1;
+        continue;
+      }
+
+      insideString = !insideString;
+      continue;
+    }
+
+    if (insideString) {
+      continue;
+    }
+
+    if (character === "(" || character === ")" || character === ",") {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function skipStringLiteralBackward(text: string, endQuoteIndex: number): number {
+  let index = endQuoteIndex - 1;
+
+  while (index >= 0) {
+    if (text[index] !== "\"") {
+      index -= 1;
+      continue;
+    }
+
+    if (index - 1 >= 0 && text[index - 1] === "\"") {
+      index -= 2;
+      continue;
+    }
+
+    return index - 1;
+  }
+
+  return -1;
 }
 
 function rangesEqual(left: SourceRange, right: SourceRange): boolean {

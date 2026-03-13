@@ -26693,7 +26693,7 @@
                   "tocHref": "excel.workbook.exportasfixedformat",
                   "summary": "The ExportAsFixedFormat method is used to publish a workbook to either the PDF or XPS format.",
                   "signature": {
-                    "label": "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+                    "label": "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
                     "ownerName": "Workbook",
                     "parameters": [
                       {
@@ -26919,7 +26919,7 @@
                   "tocHref": "excel.workbook.saveas",
                   "summary": "Saves changes to the workbook in a different file.",
                   "signature": {
-                    "label": "SaveAs(FileName, FileFormat, Password, ..., Local)",
+                    "label": "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AccessMode, ConflictResolution, AddToMru, TextCodepage, TextVisualLayout, Local)",
                     "ownerName": "Workbook",
                     "parameters": [
                       {
@@ -27001,7 +27001,7 @@
                       },
                       {
                         "dataType": "Variant",
-                        "description": "True saves files against the language of Microsoft Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks. Open is run from is an old internationalized XL5/95 VBA project).",
+                        "description": "True saves files against the language of Microsoft Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks.Open is run from is an old internationalized XL5/95 VBA project).",
                         "isRequired": false,
                         "label": "Local As Variant",
                         "name": "Local"
@@ -28084,12 +28084,98 @@
                 {
                   "name": "Evaluate",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheet.evaluate",
-                  "tocHref": "excel.worksheet.evaluate"
+                  "tocHref": "excel.worksheet.evaluate",
+                  "summary": "Converts a Microsoft Excel name to an object or a value.",
+                  "signature": {
+                    "label": "Evaluate(Name) As Variant",
+                    "ownerName": "Worksheet",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "The name of the object, using the naming convention of Excel.",
+                        "isRequired": true,
+                        "label": "Name As Variant",
+                        "name": "Name"
+                      }
+                    ],
+                    "returnType": "Variant"
+                  }
                 },
                 {
                   "name": "ExportAsFixedFormat",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheet.exportasfixedformat",
-                  "tocHref": "excel.worksheet.exportasfixedformat"
+                  "tocHref": "excel.worksheet.exportasfixedformat",
+                  "summary": "Exports to a file of the specified format.",
+                  "signature": {
+                    "label": "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
+                    "ownerName": "Worksheet",
+                    "parameters": [
+                      {
+                        "dataType": "XlFixedFormatType",
+                        "description": "The type of file format to export to.",
+                        "isRequired": true,
+                        "label": "Type As XlFixedFormatType",
+                        "name": "Type"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "The file name of the file to be saved. You can include a full path, or Excel saves the file in the current folder.",
+                        "isRequired": false,
+                        "label": "FileName As Variant",
+                        "name": "FileName"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Optional XlFixedFormatQuality. Specifies the quality of the published file.",
+                        "isRequired": false,
+                        "label": "Quality As Variant",
+                        "name": "Quality"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to include the document properties; otherwise, False.",
+                        "isRequired": false,
+                        "label": "IncludeDocProperties As Variant",
+                        "name": "IncludeDocProperties"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to ignore any print areas set when publishing; otherwise, False.",
+                        "isRequired": false,
+                        "label": "IgnorePrintAreas As Variant",
+                        "name": "IgnorePrintAreas"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "The number of the page at which to start publishing. If this argument is omitted, publishing starts at the beginning.",
+                        "isRequired": false,
+                        "label": "From As Variant",
+                        "name": "From"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "The number of the last page to publish. If this argument is omitted, publishing ends with the last page.",
+                        "isRequired": false,
+                        "label": "To As Variant",
+                        "name": "To"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to display the file in the viewer after it is published; otherwise, False.",
+                        "isRequired": false,
+                        "label": "OpenAfterPublish As Variant",
+                        "name": "OpenAfterPublish"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Pointer to the FixedFormatExt class.",
+                        "isRequired": false,
+                        "label": "FixedFormatExtClassPtr As Variant",
+                        "name": "FixedFormatExtClassPtr"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
                 },
                 {
                   "name": "Move",
@@ -28144,7 +28230,85 @@
                 {
                   "name": "SaveAs",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.worksheet.saveas",
-                  "tocHref": "excel.worksheet.saveas"
+                  "tocHref": "excel.worksheet.saveas",
+                  "summary": "Saves changes to the chart or worksheet in a different file.",
+                  "signature": {
+                    "label": "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)",
+                    "ownerName": "Worksheet",
+                    "parameters": [
+                      {
+                        "dataType": "String",
+                        "description": "Variant. A string that indicates the name of the file to be saved. You can include a full path; if you don't, Microsoft Excel saves the file in the current folder.",
+                        "isRequired": true,
+                        "label": "FileName As String",
+                        "name": "FileName"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "The file format to use when you save the file. For a list of valid choices, see the XlFileFormat enumeration. For an existing file, the default format is the last file format specified; for a new file, the default is the format of the version of Excel being used.",
+                        "isRequired": false,
+                        "label": "FileFormat As Variant",
+                        "name": "FileFormat"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "A case-sensitive string (no more than 15 characters) that indicates the protection password to be given to the file.",
+                        "isRequired": false,
+                        "label": "Password As Variant",
+                        "name": "Password"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "A string that indicates the write-reservation password for this file. If a file is saved with the password and the password isn't supplied when the file is opened, the file is opened as read-only.",
+                        "isRequired": false,
+                        "label": "WriteResPassword As Variant",
+                        "name": "WriteResPassword"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to display a message when the file is opened, recommending that the file be opened as read-only.",
+                        "isRequired": false,
+                        "label": "ReadOnlyRecommended As Variant",
+                        "name": "ReadOnlyRecommended"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to create a backup file.",
+                        "isRequired": false,
+                        "label": "CreateBackup As Variant",
+                        "name": "CreateBackup"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to add this workbook to the list of recently used files. The default value is False.",
+                        "isRequired": false,
+                        "label": "AddToMru As Variant",
+                        "name": "AddToMru"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Not used in U.S. English Microsoft Excel.",
+                        "isRequired": false,
+                        "label": "TextCodepage As Variant",
+                        "name": "TextCodepage"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Not used in U.S. English Microsoft Excel.",
+                        "isRequired": false,
+                        "label": "TextVisualLayout As Variant",
+                        "name": "TextVisualLayout"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True saves files against the language of Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks.Open is run from is an old internationalized XL5/95 VBA project).",
+                        "isRequired": false,
+                        "label": "Local As Variant",
+                        "name": "Local"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
                 },
                 {
                   "name": "Scenarios",

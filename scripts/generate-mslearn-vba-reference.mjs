@@ -24,12 +24,32 @@ const signatureMetadataOverrides = new Map([
   [
     "workbook.exportasfixedformat",
     {
+      label:
+        "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
       returnType: "Void",
     },
   ],
   [
     "workbook.saveas",
     {
+      label:
+        "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AccessMode, ConflictResolution, AddToMru, TextCodepage, TextVisualLayout, Local)",
+      returnType: "Void",
+    },
+  ],
+  [
+    "worksheet.exportasfixedformat",
+    {
+      label:
+        "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
+      returnType: "Void",
+    },
+  ],
+  [
+    "worksheet.saveas",
+    {
+      label:
+        "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)",
       returnType: "Void",
     },
   ],
@@ -136,6 +156,7 @@ function stripMarkdownText(value) {
     .replace(/\\([\\`*_{}\[\]()#+\-.!])/g, "$1")
     .replace(/([a-z0-9)])\.(?=(?:[A-Z][a-z]|[A-Z]{2,}:))/g, "$1. ")
     .replace(/\s+/g, " ")
+    .replace(/\bWorkbooks\.\s+Open\b/giu, "Workbooks.Open")
     .trim();
 }
 
@@ -901,7 +922,9 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
     signature:
       syntaxLine || overriddenParameters.length > 0 || resolvedReturnType
         ? {
-            label: buildSignatureLabel(memberName, signatureParameterNames, resolvedReturnType),
+            label:
+              signatureMetadataOverride?.label ??
+              buildSignatureLabel(memberName, signatureParameterNames, resolvedReturnType),
             ownerName,
             parameters: overriddenParameters,
             returnType: resolvedReturnType,

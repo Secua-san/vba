@@ -250,3 +250,30 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - CodeRabbit 指摘対応として description 正規化で文境界空白を補い、`scripts/test/mslearnReferenceAudit.test.mjs` に collapsed sentence boundary の監査を追加した。
 - 残課題:
   - `pause` 後の指摘修正 push を反映し、checks 緑化を確認してからマージする。
+
+## 2026-03-13 PR #51 feat: Worksheet callable の署名ヘルプを追加
+- レビュー状況: `COMMENTED（対応済み・Reviews paused）`
+- 要約:
+  - `reviewer` の事前自己レビューでは、indexed collection access の境界ケース、参照 JSON 差分範囲、server / extension テスト不足の観点で追加指摘は出なかった。
+  - 初回 CodeRabbit では、`Worksheets(Array(...))` や関数呼び出し selector を単一 `Worksheet` と誤認する点、indexed-access helper の二重化、`SaveAs` / `ExportAsFixedFormat` の省略ラベル、`Workbooks.Open` typo が指摘された。
+  - 指摘はいずれも妥当だったため採用し、selector 判定を保守化しつつ、shared helper 化、生成ラベル補正、説明文 typo 修正、監査テスト調整を行ったうえで `@coderabbitai pause` 後に修正 push する。
+- 指摘一覧:
+  - [非採用] `reviewer` 指摘なし。P0-P3 の追加修正事項は出なかった。
+  - [採用] `Worksheets(Array(...))` を単一 `Worksheet` とみなさず、collection のまま扱う保守判定へ変更。
+  - [採用] `packages/server/src/lsp/documentService.ts` の `stripIndexedAccessMarker()` 重複を廃止し、core の shared helper を利用。
+  - [採用] `Workbook` / `Worksheet` の `SaveAs` と `ExportAsFixedFormat` の署名ラベルをフル引数リストへ変更。
+  - [採用] `Workbooks.Open` の説明文 typo を生成スクリプト側で正規化。
+  - [採用] `scripts/test/mslearnReferenceAudit.test.mjs` で、正当な `Object.Member` API 名を文境界欠落と誤判定しないように監査条件を補正。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - collection selector の型昇格は、「単一要素アクセス」と「複数要素選択」を構文上区別できる範囲に限定したほうが誤補完を防ぎやすい。
+  - semantic token 判定では string literal を scrub 済みテキストから消すと、selector 解析に必要な情報まで失うことがあるため、字句探索用と owner 解決用の入力を分けると安全。
+  - 生成 JSON の監査では sentence boundary と API 名の `Object.Member` 表記を区別しないと、正当な typo 修正が false positive になりやすい。
+  - 長い fixed-arity signature は `...` 省略よりフル label の方が signature help の実用性が高い一方、variadic 系まで一律に広げないよう owner / member 単位 override で制御した方がよい。
+- 実施:
+  - `skipTrailingIndexedAccess` を、文字列リテラルを保持したまま selector の複雑度を判定する形へ見直し、`Array(...)` と関数呼び出しは collection のまま残すようにした。
+  - server / extension テストへ、`Worksheets(Array(...))` の負ケースと、`Worksheets("A(1)")` / `Worksheets(i + 1)` の正ケースを追加した。
+  - `stripIndexedAccessMarker` を core から export し、server 側の二重実装を削除した。
+  - 生成スクリプトで `SaveAs` / `ExportAsFixedFormat` の label override と `Workbooks.Open` 正規化を追加し、参照 JSON を再生成した。
+  - script / server / extension を含む `npm test`、`npm run lint`、`npm run package` を再実行して通過を確認した。
+- 残課題:
+  - `Sheet1` のような worksheet document module alias を安全に `Worksheet` へ接続する条件整理は、次候補として継続する。

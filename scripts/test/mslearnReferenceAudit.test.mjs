@@ -77,7 +77,8 @@ function hasUniformVariadicCountDescription(parameters) {
 }
 
 function hasCollapsedSentenceBoundary(value) {
-  return /([a-z0-9)])\.(?=(?:[A-Z][a-z]|[A-Z]{2,}:))/u.test(value);
+  const sanitizedValue = value.replace(/\b[A-Za-z][A-Za-z0-9_]*\.[A-Za-z][A-Za-z0-9_]*\b/gu, "ApiReference");
+  return /([a-z0-9)])\.(?=(?:[A-Z][a-z]|[A-Z]{2,}:))/u.test(sanitizedValue);
 }
 
 test("監査対象の署名データは引数メタデータ欠落なく保持される", async () => {
