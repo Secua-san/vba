@@ -68,6 +68,8 @@ export async function run(): Promise<void> {
   await vscode.window.showTextDocument(thisWorkbookDocument);
   const sheet1Document = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "Sheet1.cls"));
   await vscode.window.showTextDocument(sheet1Document);
+  const chart1Document = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "Chart1.cls"));
+  await vscode.window.showTextDocument(chart1Document);
 
   const builtInMemberCompletionDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "BuiltInMemberCompletion.bas")
@@ -82,6 +84,11 @@ export async function run(): Promise<void> {
     builtInMemberCompletionDocument,
     findPositionAfterToken(builtInMemberCompletionDocument, "Sheet1", -1),
     (locations) => locations.some((location) => location.uri.toString() === sheet1Document.uri.toString())
+  );
+  const chart1Definitions = await waitForDefinitions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Chart1", -1),
+    (locations) => locations.some((location) => location.uri.toString() === chart1Document.uri.toString())
   );
 
   const applicationMemberCompletionItems = await waitForCompletions(
@@ -113,6 +120,11 @@ export async function run(): Promise<void> {
     builtInMemberCompletionDocument,
     findPositionAfterToken(builtInMemberCompletionDocument, "Sheet1."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Evaluate")
+  );
+  const chart1MemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Chart1."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "ChartArea")
   );
   const workbookWorksheetsMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
@@ -171,6 +183,10 @@ export async function run(): Promise<void> {
   );
   const sheet1EvaluateCompletion = sheet1MemberCompletionItems.find((item) => getCompletionItemLabel(item) === "Evaluate");
   const sheet1SaveAsCompletion = sheet1MemberCompletionItems.find((item) => getCompletionItemLabel(item) === "SaveAs");
+  const chart1ChartAreaCompletion = chart1MemberCompletionItems.find((item) => getCompletionItemLabel(item) === "ChartArea");
+  const chart1SetSourceDataCompletion = chart1MemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "SetSourceData"
+  );
   const workbookWorksheetsCountCompletion = workbookWorksheetsMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Count"
   );
@@ -225,6 +241,12 @@ export async function run(): Promise<void> {
   );
   assert.ok(sheet1EvaluateCompletion?.detail?.includes("Excel Worksheet method"));
   assert.ok(sheet1SaveAsCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(
+    chart1Definitions.some((location) => location.uri.toString() === chart1Document.uri.toString()),
+    "Chart1 root should resolve to the chart document module before alias assertions"
+  );
+  assert.ok(chart1ChartAreaCompletion?.detail?.includes("Excel Chart property"));
+  assert.ok(chart1SetSourceDataCompletion?.detail?.includes("Excel Chart method"));
   assert.ok(workbookWorksheetsCountCompletion?.detail?.includes("Excel Worksheets property"));
   assert.ok(indexedWorksheetEvaluateCompletion?.detail?.includes("Excel Worksheet method"));
   assert.ok(indexedWorksheetSaveAsCompletion?.detail?.includes("Excel Worksheet method"));
@@ -483,6 +505,11 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "Sheet1.SaveAs("),
     (help) => help.signatures.length > 0
   );
+  const builtInChart1SetSourceDataSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Chart1.SetSourceData("),
+    (help) => help.signatures.length > 0
+  );
   const builtInWorkbookCloseSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.Close("),
@@ -529,8 +556,14 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "Debug.Print ThisWorkbook.Save"),
     (hovers) => hovers.length > 0
   );
+  const builtInChartHover = await waitForHover(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Debug.Print Chart1.ChartA"),
+    (hovers) => hovers.length > 0
+  );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
   const builtInWorkbookHoverText = getHoverContentsText(builtInWorkbookHover[0]);
+  const builtInChartHoverText = getHoverContentsText(builtInChartHover[0]);
 
   assert.equal(
     builtInSignatureHelp.signatures[0]?.label,
@@ -980,6 +1013,17 @@ export async function run(): Promise<void> {
     "worksheet document root should expose Worksheet.SaveAs signature"
   );
   assert.equal(
+    builtInChart1SetSourceDataSignatureHelp.signatures[0]?.label,
+    "Chart.SetSourceData()",
+    "chart document root should expose Chart.SetSourceData signature"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInChart1SetSourceDataSignatureHelp.signatures[0]?.documentation).includes(
+      "excel.chart.setsourcedata"
+    ),
+    "Chart1.SetSourceData signature should include the Chart Learn URL"
+  );
+  assert.equal(
     builtInWorkbookSaveAsSignatureHelp.signatures[0]?.parameters.length,
     12,
     "built-in Workbook.SaveAs signature should expose all parameter metadata"
@@ -1102,6 +1146,14 @@ export async function run(): Promise<void> {
     builtInWorkbookHoverText.includes("excel.workbook.saveas"),
     "ThisWorkbook hover should include the Workbook.SaveAs Learn URL"
   );
+  assert.ok(
+    builtInChartHoverText.includes("Chart.ChartArea"),
+    "Chart1 hover should resolve through Chart members"
+  );
+  assert.ok(
+    builtInChartHoverText.includes("excel.chart.chartarea"),
+    "Chart1 hover should include the Chart.ChartArea Learn URL"
+  );
 
   const renameDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "RenameLocal.bas"));
   await vscode.window.showTextDocument(renameDocument);
@@ -1195,7 +1247,11 @@ export async function run(): Promise<void> {
     modifiers: [],
     type: "function"
   });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 12, "Address", {
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 12, "SetSourceData", {
+    modifiers: [],
+    type: "function"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 13, "Address", {
     modifiers: [],
     type: "variable"
   });

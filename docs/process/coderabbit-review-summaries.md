@@ -299,3 +299,22 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - CodeRabbit 対応として `normalizeDocumentBaseGuid` の意図コメントを追記した。
 - 残課題:
   - Chart / DialogSheet など worksheet 以外の host object root の扱いは次候補で整理する。
+
+## 2026-03-13 PR #53 feat: chart document module root を解決
+- レビュー状況: `COMMENTED（対応済み・Reviews paused）`
+- 要約:
+  - `reviewer` の事前自己レビューでは、`Chart` document module の正常系だけでなく、誤って root 昇格してはいけない class module 側の負ケースを追加しておくべきだという指摘があり、`Chart2` と `DialogSheet1` の保守ケースを server テストへ追加してから PR 化した。
+  - `VB_PredeclaredId=True` かつ `VB_Base=Chart GUID` の class module だけを `Chart` owner に昇格し、`Chart1.ChartArea` と `Chart1.SetSourceData` の completion / signature help / hover / semantic token を server / extension テストで固定した。
+  - 初回 CodeRabbit では 1 件だけ actionable な指摘があり、否定ケースの semantic token 抑止テストで 0-based 行番号が stale になっていて、実際の `Chart1.Evaluate` / `DialogSheet1.ChartArea` 位置を検証できていない点が示された。
+- 指摘一覧:
+  - [採用] `packages/server/test/documentService.test.js` の semantic token 抑止テストで、`Chart1.Evaluate` の行番号期待値を `5 -> 6`、`DialogSheet1.ChartArea` の行番号期待値を `7 -> 10` へ修正した。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - semantic token の負ケースで行番号と列番号を直接固定するテストは、fixture の追記だけで簡単に stale になるため、fixture 側の対象行をコメントで明示するか、位置算出 helper を使う方が安全。
+  - CodeRabbit の status が `SUCCESS` でも outside-diff range comment に actionable な指摘が残ることがあるため、status context だけでなく review 本文も必ず確認する。
+  - document module root の特例追加では、正常系の補完だけでなく、hover / signature / semantic token も含めた「保守動作」の否定ケースを 1 セットで固定した方が回帰を見つけやすい。
+- 実施:
+  - `packages/server/src/lsp/documentService.ts` に `Chart` document module 判定を追加し、`VB_Base` GUID 正規化を経由して `Chart` owner へ接続するようにした。
+  - `packages/extension/test/fixtures/Chart1.cls` と各 fixture / server / extension テストを追加し、`Chart1` ルートの built-in member 解決を固定した。
+  - CodeRabbit 対応として、否定ケースの semantic token 抑止テストの期待位置を現在の fixture 行番号へ合わせて更新した。
+- 残課題:
+  - `DialogSheet` の document module root をどの owner へ接続すべきかは未整理なので、次候補として継続する。

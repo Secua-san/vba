@@ -10,6 +10,7 @@ Public Sub Demo()
     Debug.Print ActiveWorkbook.
     Debug.Print ThisWorkbook.
     Debug.Print Sheet1.
+    Debug.Print Chart1.
     Debug.Print ActiveWorkbook.Worksheets.
     Debug.Print Worksheets(1).
     Debug.Print Worksheets("A(1)").

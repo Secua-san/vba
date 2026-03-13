@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Chart document module root の到達性改善
+  - `VB_PredeclaredId = True` かつ `VB_Base = 0{00020821-0000-0000-C000-000000000046}` の chart document module を `Chart` root として扱い、`Chart1.` から built-in member completion / signature help / hover / semantic token へ到達できるようにした
+  - Microsoft Learn の `Chart.CodeName` / `Chart object` と Windows registry の `Excel.Chart` CLSID を根拠に、chart sheet code name を document root として扱う条件を固定した
+  - `DialogSheet` は Office VBA の object page / 参照 JSON が不足しているため今回は保守動作を維持し、次候補へ分離した
+
 - [x] Sheet document module alias の到達性改善
   - `VB_PredeclaredId = True` かつ `VB_Base = 0{00020820-0000-0000-C000-000000000046}` の worksheet document module だけを `Worksheet` root として扱い、`Sheet1.SaveAs` / `Sheet1.Evaluate` の built-in member 到達性を追加
   - `ThisWorkbook` 専用だった document module root 判定を一般化し、completion / signature help / hover / semantic token で共通に使うよう整理
@@ -275,8 +280,8 @@
 
 ## 次候補
 
-- [ ] Chart / DialogSheet document module root の扱い整理
-  - worksheet document module 以外の predeclared host object root は現状保守動作で止めているため、実際に公開したい owner と必要な Microsoft Learn / 参照データを整理する
+- [ ] DialogSheet document module root の扱い整理
+  - Office VBA の object page と参照 JSON が不足しているため、必要な参照ソースと exported module metadata を確認してから owner 公開可否を判断する
 
 ## メモ
 

@@ -44,6 +44,8 @@ Public Sub Demo()
     Call ThisWorkbook.SaveAs("Book1.xlsx")
     Debug.Print Sheet1.Evaluate("A1")
     Call Sheet1.SaveAs("Sheet1.csv")
+    Call Chart1.SetSourceData(Range("A1:B2"))
+    Debug.Print Chart1.ChartArea
     Call ActiveWorkbook.Close(False)
     Call ActiveWorkbook.ExportAsFixedFormat(xlTypePDF)
     Call Application.CalculateFull()
