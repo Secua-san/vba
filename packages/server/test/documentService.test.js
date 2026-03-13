@@ -298,7 +298,7 @@ Option Explicit`
   assert.equal(
     tokens.some(
       (entry) =>
-        entry.range.start.line === 5 &&
+        entry.range.start.line === 6 &&
         entry.range.start.character === 23 &&
         entry.range.end.character === 31 &&
         entry.type === "function"
@@ -308,7 +308,7 @@ Option Explicit`
   assert.equal(
     tokens.some(
       (entry) =>
-        entry.range.start.line === 7 &&
+        entry.range.start.line === 10 &&
         entry.range.start.character === 29 &&
         entry.range.end.character === 38 &&
         entry.type === "variable"
