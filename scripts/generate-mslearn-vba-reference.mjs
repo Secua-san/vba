@@ -130,10 +130,11 @@ function stripMarkdownText(value) {
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/<[^>]+>/g, "")
+    .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/\\([\\`*_{}\[\]()#+\-.!])/g, "$1")
+    .replace(/([a-z0-9)])\.(?=(?:[A-Z][a-z]|[A-Z]{2,}:))/g, "$1. ")
     .replace(/\s+/g, " ")
     .trim();
 }

@@ -228,20 +228,25 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
 - 残課題:
   - 次候補は `Workbook / Worksheet callable` の signature help への昇格整理。
 
-## 2026-03-13 PR 前レビュー: Workbook callable の署名ヘルプ追加
-- レビュー状況: `PR 前 reviewer 完了`
+## 2026-03-13 PR #50 feat: Workbook callable の署名ヘルプを追加
+- レビュー状況: `COMMENTED（対応済み・Reviews paused）`
 - 要約:
   - `reviewer` に現在差分の事前自己レビューを依頼し、`Workbook.SaveAs` / `Workbook.Close` / `Workbook.ExportAsFixedFormat` の署名追加、`Void` returnType 保持、関連テスト、手順書更新の整合性を確認した。
   - 修正必須の指摘はなく、回帰リスク、境界条件、テスト不足、不要差分の観点で PR 化可能と判断された。
+  - 初回 CodeRabbit では、`Workbook.Close` / `SaveAs` 系の parameter description に `workbook.If` / `Excel.NOTE:` のような文境界崩れが残っているという指摘が 1 件出た。
+  - 指摘は妥当だったため、description 正規化を生成スクリプト側で補正し、script 監査テストへ再発防止を追加したうえで `@coderabbitai pause` 後に修正 push する。
 - 指摘一覧:
   - [非採用] 指摘なし。`P0-P2` の修正必須事項は出なかった。
+  - [採用] 生 markdown の parameter table に含まれる `sentence.If` / `Excel.NOTE:` 連結を生成時に正規化し、description へ単語間空白を補う。
 - この作業で当てはまりそうな内容（横展開候補）:
   - Learn 由来の callable 追加では、signature help の増分だけでなく script 監査テストで `returnType` まで固定しておくと、後続 owner 追加時の欠落を早く検知できる。
   - `Sub` 相当の callable は、内部メタデータと UI 表示を分離して扱うと監査要件と既存 UX を両立しやすい。
   - `Workbook` と `Worksheet` のように候補が複数ある場合は、root 到達性が高い owner から先に昇格させるとテストと実利用の両方で効果が出やすい。
+  - Microsoft Learn の markdown table は HTML タグだけでなく、文末 `.` の直後に次文が無空白で連結された状態を含むことがあるため、description 抽出では sentence boundary 正規化も監査対象に含めるとよい。
 - 実施:
   - `scripts/lib/referenceSignatureConfig.mjs` に `Workbook` の allow list を追加した。
   - `scripts/generate-mslearn-vba-reference.mjs` で `Workbook.Close` / `SaveAs` / `ExportAsFixedFormat` の `returnType: "Void"` override とラベル抑止を追加した。
   - server / extension / script 監査テスト、および `TASKS.md` / 再生成手順書を更新した。
+  - CodeRabbit 指摘対応として description 正規化で文境界空白を補い、`scripts/test/mslearnReferenceAudit.test.mjs` に collapsed sentence boundary の監査を追加した。
 - 残課題:
-  - PR 作成後に CodeRabbit 結果と横展開候補の確定版を追記する。
+  - `pause` 後の指摘修正 push を反映し、checks 緑化を確認してからマージする。
