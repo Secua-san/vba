@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] DialogSheet interop 由来 member source の導入可否整理
+  - Office VBA 概念記事、Office VBA API、.NET interop `DialogSheet` page を突き合わせ、全面自動導入は不採用、補助ソースとしての限定利用は可能という結論を整理
+  - interop page は `Reserved for internal use.`、`_Dummy*`、`_SaveAs` のような legacy member を含むため、導入するなら allow list と skip rule を先に固定する必要がある
+  - `docs/process/dialogsheet-interop-source-feasibility.md` に source inventory、制約、推奨方針、最小候補 member を記録
+
 - [x] DialogSheet document module root の扱い整理
   - Microsoft Learn の `Refer to Sheets by Name` で `DialogSheets("Dialog1").Activate` を確認し、dialog sheet 自体は VBA から参照可能であることを再確認
   - ただし Office VBA 側に `DialogSheet` object page は無く、ローカル参照 JSON も owner を持たないため、現時点では built-in owner へ昇格しない方針を ADR へ記録
@@ -286,9 +291,10 @@
 
 ## 次候補
 
-- [ ] DialogSheet interop 由来 member source の導入可否整理
-  - Microsoft Learn の .NET interop `DialogSheet` page を補助ソースとして使う場合、`Reserved for internal use` と `dummy` member をどう除外するかを決める
-  - `Worksheet` / `Chart` と重複する member をどう正規化するか、VBA 向け参照 JSON へ混ぜるか別 owner にするかを整理する
+- [ ] DialogSheet common callable の最小プロトタイプ
+  - interop 補助ソースを使う場合の最小対象として、`Activate` / `Evaluate` / `ExportAsFixedFormat` / `Move` / `PrintOut` / `SaveAs` / `Select` / `Unprotect` のみを候補にする
+  - `_Dummy*`、`_SaveAs` などの legacy member を除外しつつ、既存 `Worksheet` / `Chart` と重複する signature をどう共有するかの実装案を固める
+  - 生成 JSON へ `dummy` / legacy member が混入しない監査テストと、重複正規化の回帰テストまで含めて進める
 
 ## メモ
 

@@ -338,3 +338,23 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - `AGENTS.md` と `TASKS.md` に新 ADR への導線と次候補を反映した。
 - 残課題:
   - `DialogSheet` interop page を補助ソースとして取り込むなら、owner 正規化方針と `dummy` member 除外規則を別タスクで固める必要がある。
+
+## 2026-03-13 PR #55 docs: DialogSheet interop 補助ソースの可否を整理
+- レビュー状況: `REVIEW SKIPPED（path filters）`
+- 要約:
+  - `reviewer` の事前自己レビューでは `P0-P3` の指摘は無く、全面自動導入を見送る結論、限定導入時の制約、`TASKS.md` の次候補まで整合していると確認された。
+  - CodeRabbit は `AGENTS.md` / `TASKS.md` / `docs/process/dialogsheet-interop-source-feasibility.md` / `docs/process/mslearn-signature-regeneration.md` を path filters 対象として扱い、初回レビューは `Review skipped` だった。
+  - 本 PR では、DialogSheet interop を「全面導入は不採用、補助ソースとしての限定利用は可能」と整理し、次段階の最小プロトタイプで必要な allow list / skip rule / 監査テストを明文化した。
+- 指摘一覧:
+  - [非採用] `reviewer` 指摘なし。重大度付き findings は出なかった。
+  - [非採用] CodeRabbit actionable comment なし。path filters により review skipped。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - Office VBA object page が不足する owner は、参照可否の有無だけでなく、discovery 経路、owner page の品質、member ノイズ量まで分けて評価した方が次の実装判断に使いやすい。
+  - interop page を補助ソースにする場合は、owner 単位の allow list と `_Dummy*` / legacy member 除外規則を docs 先行で固めてから実装へ進む方が、生成 JSON へのノイズ混入を防ぎやすい。
+  - docs-only PR が path filters で review skipped になっても、`reviewer` の結果と Microsoft Learn の一次ソース確認をレビュー要約へ残しておくと、後続タスクで判断根拠を再利用しやすい。
+- 実施:
+  - `docs/process/dialogsheet-interop-source-feasibility.md` を追加し、source inventory、現行生成器との相性、skip rule 候補、推奨方針を整理した。
+  - `docs/process/mslearn-signature-regeneration.md` に新ドキュメントへの導線を追加した。
+  - `AGENTS.md` と `TASKS.md` に調査メモへの導線、本タスク完了、次候補の最小プロトタイプを反映した。
+- 残課題:
+  - 次段階では `DialogSheet` common callable の最小プロトタイプを実装し、`dummy` / legacy member 除外と重複正規化の監査テストまで入れる必要がある。

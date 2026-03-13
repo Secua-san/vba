@@ -41,6 +41,7 @@
 - CodeRabbit 対応: [docs/process/coderabbit-review.md](docs/process/coderabbit-review.md)
 - CodeRabbit レビュー要約ログ: [docs/process/coderabbit-review-summaries.md](docs/process/coderabbit-review-summaries.md)
 - Microsoft Learn 組み込み署名の再生成手順: [docs/process/mslearn-signature-regeneration.md](docs/process/mslearn-signature-regeneration.md)
+- DialogSheet interop 補助ソースの調査メモ: [docs/process/dialogsheet-interop-source-feasibility.md](docs/process/dialogsheet-interop-source-feasibility.md)
 - サブエージェントへのエスカレーション: [docs/process/sub-agent-escalation.md](docs/process/sub-agent-escalation.md)
 - コミットメッセージ規約: [docs/commit-message.md](docs/commit-message.md)
 - PR テンプレート: [.github/pull_request_template.md](.github/pull_request_template.md)

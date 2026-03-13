@@ -38,6 +38,7 @@
 - `Refer to Sheets by Name` では `DialogSheets("Dialog1").Activate` が示され、dialog sheet 自体は VBA から参照できることを確認した
 - Microsoft Learn の .NET interop `DialogSheet` page には member 一覧があるが、`Reserved for internal use.` と `dummy` member を含むため、現行の VBA 参照 JSON へそのまま取り込む正本にはしない
 - そのため、`VB_Base = 0{00020830-0000-0000-C000-000000000046}` の dialog sheet document module は、owner 未公開のまま保守動作を維持する
+- interop 補助ソースとしての導入可否と制約は `docs/process/dialogsheet-interop-source-feasibility.md` に切り出して管理する
 
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
