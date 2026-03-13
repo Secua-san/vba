@@ -318,3 +318,23 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - CodeRabbit 対応として、否定ケースの semantic token 抑止テストの期待位置を現在の fixture 行番号へ合わせて更新した。
 - 残課題:
   - `DialogSheet` の document module root をどの owner へ接続すべきかは未整理なので、次候補として継続する。
+
+## 2026-03-13 PR #54 docs: DialogSheet document module の方針を整理
+- レビュー状況: `REVIEW SKIPPED（path filters）`
+- 要約:
+  - `reviewer` の事前自己レビューでは `P0-P3` の指摘は無く、`DialogSheet` を現時点では built-in owner へ昇格しない判断、根拠ソース、`TASKS.md` の更新内容は整合していると確認された。
+  - CodeRabbit は `AGENTS.md` / `TASKS.md` / `docs/adr/0004-dialogsheet-document-module-policy.md` / `docs/process/mslearn-signature-regeneration.md` を path filters 対象として扱い、初回レビューは `Review skipped` だった。
+  - そのため本 PR では、CodeRabbit の actionable comment は無く、`reviewer` 結果と公式ソース確認を根拠に docs-only の判断整理として完了扱いにした。
+- 指摘一覧:
+  - [非採用] `reviewer` 指摘なし。重大度付き findings は出なかった。
+  - [非採用] CodeRabbit actionable comment なし。path filters により review skipped。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - docs-only PR でも、CodeRabbit status が `SUCCESS` かどうかだけでなく、最新の `coderabbitai` コメントで `Review skipped` 理由を確認してから完了扱いにする。
+  - Office VBA object page が不足する owner は、即実装へ進まず、概念記事、参照 JSON、interop ページ、COM metadata を分けて整理してから ADR に落とす方が判断を共有しやすい。
+  - interop page を補助ソース候補にする場合は、`Reserved for internal use` と `dummy` member の扱いを先にルール化しないと、生成データへノイズが混ざりやすい。
+- 実施:
+  - `docs/adr/0004-dialogsheet-document-module-policy.md` を追加し、`DialogSheet` document module を未公開のまま保守動作とする方針を記録した。
+  - `docs/process/mslearn-signature-regeneration.md` に `DialogSheet` 調査結果を追記し、Office VBA / interop ソースの扱いを整理した。
+  - `AGENTS.md` と `TASKS.md` に新 ADR への導線と次候補を反映した。
+- 残課題:
+  - `DialogSheet` interop page を補助ソースとして取り込むなら、owner 正規化方針と `dummy` member 除外規則を別タスクで固める必要がある。
