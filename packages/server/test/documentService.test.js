@@ -66,6 +66,7 @@ test("document service exposes built-in member completion items from the referen
   const uri = "file:///C:/temp/BuiltInMemberCompletion.bas";
   const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
   const sheet1Uri = "file:///C:/temp/Sheet1.cls";
+  const chart1Uri = "file:///C:/temp/Chart1.cls";
   const text = `Attribute VB_Name = "BuiltInMemberCompletion"
 Option Explicit
 
@@ -78,6 +79,7 @@ Public Sub Demo()
     Debug.Print ActiveWorkbook.
     Debug.Print ThisWorkbook.
     Debug.Print Sheet1.
+    Debug.Print Chart1.
     Debug.Print ActiveWorkbook.Worksheets.
     Debug.Print Worksheets(1).
     Debug.Print Worksheets("A(1)").
@@ -110,6 +112,15 @@ Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
 Attribute VB_PredeclaredId = True
 Option Explicit`
   );
+  service.analyzeText(
+    chart1Uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Chart1"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
   service.analyzeText(uri, "vba", 1, text);
 
   const applicationMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Application."));
@@ -121,6 +132,7 @@ Option Explicit`
   const activeWorkbookMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "ActiveWorkbook."));
   const thisWorkbookMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "ThisWorkbook."));
   const sheet1Members = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1."));
+  const chart1Members = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1."));
   const workbookWorksheetsMembers = service.getCompletionSymbols(
     uri,
     findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets.")
@@ -160,6 +172,8 @@ Option Explicit`
   const thisWorkbookSaveAs = thisWorkbookMembers.find((resolution) => resolution.symbol.name === "SaveAs");
   const sheet1Evaluate = sheet1Members.find((resolution) => resolution.symbol.name === "Evaluate");
   const sheet1SaveAs = sheet1Members.find((resolution) => resolution.symbol.name === "SaveAs");
+  const chart1ChartArea = chart1Members.find((resolution) => resolution.symbol.name === "ChartArea");
+  const chart1SetSourceData = chart1Members.find((resolution) => resolution.symbol.name === "SetSourceData");
   const workbookWorksheetsCount = workbookWorksheetsMembers.find((resolution) => resolution.symbol.name === "Count");
   const indexedWorksheetEvaluate = indexedWorksheetMembers.find((resolution) => resolution.symbol.name === "Evaluate");
   const indexedWorksheetSaveAs = indexedWorksheetMembers.find((resolution) => resolution.symbol.name === "SaveAs");
@@ -194,6 +208,10 @@ Option Explicit`
   assert.equal(sheet1Evaluate?.moduleName, "Excel Worksheet method");
   assert.equal(sheet1Evaluate?.documentation?.includes("excel.worksheet.evaluate"), true);
   assert.equal(sheet1SaveAs?.documentation?.includes("excel.worksheet.saveas"), true);
+  assert.equal(chart1ChartArea?.moduleName, "Excel Chart property");
+  assert.equal(chart1ChartArea?.documentation?.includes("excel.chart.chartarea"), true);
+  assert.equal(chart1SetSourceData?.moduleName, "Excel Chart method");
+  assert.equal(chart1SetSourceData?.documentation?.includes("excel.chart.setsourcedata"), true);
   assert.equal(workbookWorksheetsCount?.moduleName, "Excel Worksheets property");
   assert.equal(indexedWorksheetEvaluate?.moduleName, "Excel Worksheet method");
   assert.equal(indexedWorksheetSaveAs?.documentation?.includes("excel.worksheet.saveas"), true);
@@ -207,9 +225,11 @@ Option Explicit`
   assert.equal(applicationActiveCellAddress?.documentation?.includes("excel.range.address"), true);
 });
 
-test("document service keeps worksheet document roots conservative for non-worksheet predeclared class modules", () => {
+test("document service keeps built-in document roots conservative for unknown predeclared class modules", () => {
   const service = createDocumentService();
   const chart1Uri = "file:///C:/temp/Chart1.cls";
+  const chart2Uri = "file:///C:/temp/Chart2.cls";
+  const dialogSheet1Uri = "file:///C:/temp/DialogSheet1.cls";
   const uri = "file:///C:/temp/BuiltInChartShadowing.bas";
   const text = `Attribute VB_Name = "BuiltInChartShadowing"
 Option Explicit
@@ -217,6 +237,12 @@ Option Explicit
 Public Sub Demo()
     Debug.Print Chart1.
     Debug.Print Chart1.Evaluate
+    Debug.Print Chart2.
+    Debug.Print Chart2.ChartArea
+    Debug.Print DialogSheet1.
+    Debug.Print DialogSheet1.ChartArea
+    Call Chart2.SetSourceData(Range("A1:B2"))
+    Call DialogSheet1.SetSourceData(Range("A1:B2"))
 End Sub`;
 
   service.analyzeText(
@@ -228,14 +254,47 @@ Attribute VB_Base = "0{11111111-1111-1111-1111-111111111111}"
 Attribute VB_PredeclaredId = True
 Option Explicit`
   );
+  service.analyzeText(
+    chart2Uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Chart2"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = False
+Option Explicit`
+  );
+  service.analyzeText(
+    dialogSheet1Uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "DialogSheet1"
+Attribute VB_Base = "0{00020830-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
   service.analyzeText(uri, "vba", 1, text);
 
-  const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1."));
-  const hover = service.getHover(uri, findPositionAfterTokenInText(text, "Chart1.Evalu"));
+  const chart1Completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1."));
+  const chart1Hover = service.getHover(uri, findPositionAfterTokenInText(text, "Chart1.Evalu"));
+  const chart2Completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart2."));
+  const chart2Hover = service.getHover(uri, findPositionAfterTokenInText(text, "Chart2.ChartA"));
+  const dialogSheet1Completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheet1."));
+  const dialogSheet1Hover = service.getHover(uri, findPositionAfterTokenInText(text, "DialogSheet1.ChartA"));
+  const chart2Signature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Chart2.SetSourceData("));
+  const dialogSheet1Signature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheet1.SetSourceData(")
+  );
   const tokens = service.getSemanticTokens(uri);
 
-  assert.deepEqual(completions, []);
-  assert.equal(hover, undefined);
+  assert.deepEqual(chart1Completions, []);
+  assert.equal(chart1Hover, undefined);
+  assert.deepEqual(chart2Completions, []);
+  assert.equal(chart2Hover, undefined);
+  assert.equal(chart2Signature, undefined);
+  assert.deepEqual(dialogSheet1Completions, []);
+  assert.equal(dialogSheet1Hover, undefined);
+  assert.equal(dialogSheet1Signature, undefined);
   assert.equal(
     tokens.some(
       (entry) =>
@@ -243,6 +302,16 @@ Option Explicit`
         entry.range.start.character === 23 &&
         entry.range.end.character === 31 &&
         entry.type === "function"
+    ),
+    false
+  );
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === 7 &&
+        entry.range.start.character === 29 &&
+        entry.range.end.character === 38 &&
+        entry.type === "variable"
     ),
     false
   );
@@ -549,6 +618,7 @@ test("document service exposes built-in member signature help and hover", () => 
   const uri = "file:///C:/temp/BuiltInSignature.bas";
   const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
   const sheet1Uri = "file:///C:/temp/Sheet1.cls";
+  const chart1Uri = "file:///C:/temp/Chart1.cls";
   const text = `Attribute VB_Name = "BuiltInSignature"
 Option Explicit
 
@@ -594,6 +664,8 @@ Public Sub Demo()
     Call ThisWorkbook.SaveAs("Book1.xlsx")
     Debug.Print Sheet1.Evaluate("A1")
     Call Sheet1.SaveAs("Sheet1.csv")
+    Call Chart1.SetSourceData(Range("A1:B2"))
+    Debug.Print Chart1.ChartArea
     Call ActiveWorkbook.Close(False)
     Call ActiveWorkbook.ExportAsFixedFormat(xlTypePDF)
     Call Application.CalculateFull()
@@ -624,6 +696,15 @@ Option Explicit`
     1,
     `Attribute VB_Name = "Sheet1"
 Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(
+    chart1Uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Chart1"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
 Attribute VB_PredeclaredId = True
 Option Explicit`
   );
@@ -695,6 +776,10 @@ Option Explicit`
   const workbookSaveAsSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ThisWorkbook.SaveAs("));
   const sheet1EvaluateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Sheet1.Evaluate("));
   const sheet1SaveAsSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Sheet1.SaveAs("));
+  const chart1SetSourceDataSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Chart1.SetSourceData(")
+  );
   const workbookCloseSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ActiveWorkbook.Close("));
   const workbookExportSignature = service.getSignatureHelp(
     uri,
@@ -711,6 +796,7 @@ Option Explicit`
   const eventFallbackSignature2 = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.NewWorkbook("));
   const hover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print Application.Calcu"));
   const workbookHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ThisWorkbook.Save"));
+  const chartHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print Chart1.ChartA"));
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -834,6 +920,8 @@ Option Explicit`
     sheet1SaveAsSignature?.label,
     "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)"
   );
+  assert.equal(chart1SetSourceDataSignature?.label, "Chart.SetSourceData()");
+  assert.equal(chart1SetSourceDataSignature?.documentation?.includes("excel.chart.setsourcedata"), true);
   assert.equal(workbookSaveAsSignature?.parameters.length, 12);
   assert.equal(workbookSaveAsSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
   assert.equal(workbookSaveAsSignature?.parameters[6]?.documentation?.includes("想定型: XlSaveAsAccessMode"), true);
@@ -867,6 +955,8 @@ Option Explicit`
     true
   );
   assert.equal(workbookHover?.contents.includes("excel.workbook.saveas"), true);
+  assert.equal(chartHover?.contents.includes("Chart.ChartArea"), true);
+  assert.equal(chartHover?.contents.includes("excel.chart.chartarea"), true);
 });
 
 test("document service prioritizes built-in member signature help over workspace callable collisions", () => {
@@ -1391,6 +1481,7 @@ test("document service exposes semantic tokens for built-in keywords, functions,
   const uri = "file:///C:/temp/BuiltInSemantic.bas";
   const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
   const sheet1Uri = "file:///C:/temp/Sheet1.cls";
+  const chart1Uri = "file:///C:/temp/Chart1.cls";
   const text = `Attribute VB_Name = "BuiltInSemantic"
 Option Explicit
 
@@ -1403,6 +1494,7 @@ Public Sub Demo()
     Debug.Print Worksheets(Array("Sheet1", "Sheet2")).Evaluate("A1")
     Debug.Print ThisWorkbook.SaveAs
     Debug.Print Sheet1.Evaluate("A1")
+    Call Chart1.SetSourceData(Range("A1:B2"))
     Debug.Print Application.ActiveCell.Address
 End Sub`;
 
@@ -1421,6 +1513,15 @@ Option Explicit`
     1,
     `Attribute VB_Name = "Sheet1"
 Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(
+    chart1Uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Chart1"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
 Attribute VB_PredeclaredId = True
 Option Explicit`
   );
@@ -1473,7 +1574,11 @@ Option Explicit`
     modifiers: [],
     type: "function"
   });
-  assertSemanticToken(text, tokens, 12, "Address", {
+  assertSemanticToken(text, tokens, 12, "SetSourceData", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 13, "Address", {
     modifiers: [],
     type: "variable"
   });

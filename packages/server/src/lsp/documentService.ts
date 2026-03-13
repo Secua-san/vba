@@ -36,6 +36,7 @@ import {
 
 const WORKBOOK_DOCUMENT_BASE_GUID = "00020819-0000-0000-c000-000000000046";
 const WORKSHEET_DOCUMENT_BASE_GUID = "00020820-0000-0000-c000-000000000046";
+const CHART_DOCUMENT_BASE_GUID = "00020821-0000-0000-c000-000000000046";
 
 export interface DocumentState {
   analysis: AnalysisResult;
@@ -1334,6 +1335,13 @@ function getDocumentModuleBuiltinOwnerName(
     return "Worksheet";
   }
 
+  if (
+    isChartDocumentState(state) &&
+    normalizeIdentifier(state.analysis.module.name) === normalizeIdentifier(rootSegment)
+  ) {
+    return "Chart";
+  }
+
   return undefined;
 }
 
@@ -1353,6 +1361,15 @@ function isWorksheetDocumentState(state: DocumentState | undefined): boolean {
     state.analysis.source.moduleKind === "class" &&
     hasModuleAttribute(state, "VB_PredeclaredId", (value) => normalizeIdentifier(value ?? "") === "true") &&
     hasModuleAttribute(state, "VB_Base", (value) => normalizeDocumentBaseGuid(value) === WORKSHEET_DOCUMENT_BASE_GUID)
+  );
+}
+
+function isChartDocumentState(state: DocumentState | undefined): boolean {
+  return (
+    !!state &&
+    state.analysis.source.moduleKind === "class" &&
+    hasModuleAttribute(state, "VB_PredeclaredId", (value) => normalizeIdentifier(value ?? "") === "true") &&
+    hasModuleAttribute(state, "VB_Base", (value) => normalizeDocumentBaseGuid(value) === CHART_DOCUMENT_BASE_GUID)
   );
 }
 

@@ -10,5 +10,6 @@ Public Sub Demo()
     Debug.Print Worksheets(Array("Sheet1", "Sheet2")).Evaluate("A1")
     Debug.Print ThisWorkbook.SaveAs
     Debug.Print Sheet1.Evaluate("A1")
+    Call Chart1.SetSourceData(Range("A1:B2"))
     Debug.Print Application.ActiveCell.Address
 End Sub
