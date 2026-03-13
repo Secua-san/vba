@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Application / Workbook / Worksheet 系 inventory と workbook root 解決
+  - 現行 Microsoft Learn の `Application` / `Workbook` / `Worksheet` object page とローカル参照 JSON を照合し、この 3 owner では object page 由来の未掲載 member が無いことを確認した
+  - `ActiveWorkbook` / `ThisWorkbook` から `Workbook` member を引けるようにし、`Application.ActiveCell` のような alias property chain でも既存 `typeName` を継承できるようにした
+  - server / extension テストで `ActiveWorkbook` / `ThisWorkbook` completion、`Application.ActiveCell.Address` signature、`ThisWorkbook.SaveAs` hover、`ThisWorkbook.SaveAs` / `Application.ActiveCell.Address` semantic token を回帰確認した
+
 - [x] Microsoft Learn 監視対象 owner の拡張
   - `scripts/lib/referenceSignatureConfig.mjs` の watch list に `Range.HasSpill` / `SavedAsArray` / `SpillParent` を追加し、`WorksheetFunction` 以外も未掲載監視できるようにした
   - `docs/process/mslearn-signature-regeneration.md` に現在の watch list と owner 選定基準を追加し、`Range` 動的配列メンバーの更新導線を明記した
@@ -253,8 +258,8 @@
 
 ## 次候補
 
-- [ ] Application / Workbook / Worksheet 系の未掲載監視候補整理
-  - built-in root から到達しやすい owner について、Microsoft Learn の個別ページ有無とローカル参照 JSON の差分を洗い出す
+- [ ] Workbook / Worksheet callable の署名抽出候補整理
+  - 既にローカル参照 JSON へ存在する `Workbook.SaveAs` / `Worksheet.Evaluate` / `Worksheet.SaveAs` などから、signature help へ昇格させる候補を優先度付きで整理する
 
 ## メモ
 

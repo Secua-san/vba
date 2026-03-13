@@ -64,31 +64,74 @@ export async function run(): Promise<void> {
   assert.ok(excelConstantCompletion, "built-in completion should include Excel constants");
   assert.ok(excelConstantCompletion.detail?.includes("Excel"), "built-in constant should include source detail");
 
+  const thisWorkbookDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ThisWorkbook.cls"));
+  await vscode.window.showTextDocument(thisWorkbookDocument);
+
   const builtInMemberCompletionDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "BuiltInMemberCompletion.bas")
   );
   await vscode.window.showTextDocument(builtInMemberCompletionDocument);
+  const thisWorkbookDefinitions = await waitForDefinitions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "ThisWorkbook", -1),
+    (locations) => locations.some((location) => location.uri.toString() === thisWorkbookDocument.uri.toString())
+  );
 
   const applicationMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
-    new vscode.Position(4, 28),
+    findPositionAfterToken(builtInMemberCompletionDocument, "Application."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "WorksheetFunction")
   );
   const worksheetFunctionMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
-    new vscode.Position(5, 36),
+    findPositionAfterToken(builtInMemberCompletionDocument, "WorksheetFunction.Su"),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Sum")
   );
   const chainedWorksheetFunctionMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
-    new vscode.Position(6, 48),
+    findPositionAfterToken(builtInMemberCompletionDocument, "Application.WorksheetFunction.Su"),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Sum")
+  );
+  const activeWorkbookMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "ActiveWorkbook."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "SaveAs")
+  );
+  const thisWorkbookMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "ThisWorkbook."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "SaveAs")
+  );
+  const workbookWorksheetsMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "ActiveWorkbook.Worksheets."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
+  );
+  const applicationActiveCellMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Application.ActiveCell."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Address")
   );
   const worksheetFunctionPropertyCompletion = applicationMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "WorksheetFunction"
   );
   const worksheetFunctionSumCompletion = worksheetFunctionMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Sum"
+  );
+  const activeWorkbookSaveAsCompletion = activeWorkbookMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "SaveAs"
+  );
+  const activeWorkbookWorksheetsCompletion = activeWorkbookMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Worksheets"
+  );
+  const thisWorkbookSaveAsCompletion = thisWorkbookMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "SaveAs"
+  );
+  const workbookWorksheetsCountCompletion = workbookWorksheetsMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Count"
+  );
+  const applicationActiveCellAddressCompletion = applicationActiveCellMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Address"
   );
 
   assert.ok(worksheetFunctionPropertyCompletion, "built-in member completion should include Application.WorksheetFunction");
@@ -104,6 +147,15 @@ export async function run(): Promise<void> {
     chainedWorksheetFunctionMemberCompletionItems.some((item) => getCompletionItemLabel(item) === "Sum"),
     "built-in chained member completion should resolve through known member types"
   );
+  assert.ok(activeWorkbookSaveAsCompletion?.detail?.includes("Excel Workbook method"));
+  assert.ok(activeWorkbookWorksheetsCompletion?.detail?.includes("Excel Workbook property"));
+  assert.ok(
+    thisWorkbookDefinitions.some((location) => location.uri.toString() === thisWorkbookDocument.uri.toString()),
+    "ThisWorkbook root should resolve to the workbook document module before alias assertions"
+  );
+  assert.ok(thisWorkbookSaveAsCompletion?.detail?.includes("Excel Workbook method"));
+  assert.ok(workbookWorksheetsCountCompletion?.detail?.includes("Excel Worksheets property"));
+  assert.ok(applicationActiveCellAddressCompletion?.detail?.includes("Excel Range"));
 
   const definitions = await waitForDefinitions(
     consumerDocument,
@@ -283,6 +335,11 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "ActiveCell.Address("),
     (help) => help.signatures.length > 0
   );
+  const builtInChainedAddressSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Application.ActiveCell.Address("),
+    (help) => help.signatures.length > 0
+  );
   const builtInAddressLocalSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "Cells.AddressLocal("),
@@ -319,7 +376,13 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "Debug.Print Application.Calcu"),
     (hovers) => hovers.length > 0
   );
+  const builtInWorkbookHover = await waitForHover(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Debug.Print ThisWorkbook.Save"),
+    (hovers) => hovers.length > 0
+  );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
+  const builtInWorkbookHoverText = getHoverContentsText(builtInWorkbookHover[0]);
 
   assert.equal(
     builtInSignatureHelp.signatures[0]?.label,
@@ -624,6 +687,22 @@ export async function run(): Promise<void> {
     "built-in Address RelativeTo argument should be optional"
   );
   assert.equal(
+    builtInChainedAddressSignatureHelp.signatures[0]?.label,
+    "Address(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String",
+    "built-in member signature should resolve through Application.ActiveCell"
+  );
+  assert.equal(
+    builtInChainedAddressSignatureHelp.signatures[0]?.parameters.length,
+    5,
+    "Application.ActiveCell.Address should preserve Range.Address parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInChainedAddressSignatureHelp.signatures[0]?.parameters[2]?.documentation).includes(
+      "想定型: XlReferenceStyle"
+    ),
+    "Application.ActiveCell.Address should keep reference style type metadata"
+  );
+  assert.equal(
     builtInAddressLocalSignatureHelp.signatures[0]?.label,
     "AddressLocal(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String",
     "built-in member signature should be available for Cells.AddressLocal"
@@ -696,6 +775,14 @@ export async function run(): Promise<void> {
   assert.ok(
     builtInHoverText.includes("Microsoft Learn"),
     "built-in hover should include source link"
+  );
+  assert.ok(
+    builtInWorkbookHoverText.includes("Workbook.SaveAs()"),
+    "ThisWorkbook hover should resolve through Workbook members"
+  );
+  assert.ok(
+    builtInWorkbookHoverText.includes("excel.workbook.saveas"),
+    "ThisWorkbook hover should include the Workbook.SaveAs Learn URL"
   );
 
   const renameDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "RenameLocal.bas"));
@@ -772,6 +859,18 @@ export async function run(): Promise<void> {
   assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 7, "Sum", {
     modifiers: [],
     type: "function"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 8, "ThisWorkbook", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 8, "SaveAs", {
+    modifiers: [],
+    type: "function"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 9, "Address", {
+    modifiers: [],
+    type: "variable"
   });
 
   const formatDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "FormatDocument.bas"));

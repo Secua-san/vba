@@ -125,6 +125,7 @@ export interface DocumentService {
 export function createDocumentService(): DocumentService {
   const documentStates = new Map<string, DocumentState>();
   let workspaceIndex = createWorkspaceIndex([]);
+  const getDocumentState = (uri: string): DocumentState | undefined => documentStates.get(uri);
 
   function resolveLocalRenameTarget(uri: string, position: LinePosition): {
     range: SourceRange;
@@ -320,7 +321,13 @@ export function createDocumentService(): DocumentService {
       const userAndWorkspaceCompletions = filterCompletionsByPrefix([...deduplicated.values()], completionContext.prefix);
 
       if (completionContext.isMemberAccess) {
-        const memberOwnerName = resolveConfirmedBuiltinMemberOwner(state, position.line, completionContext, resolveDefinition);
+        const memberOwnerName = resolveConfirmedBuiltinMemberOwner(
+          state,
+          position.line,
+          completionContext,
+          resolveDefinition,
+          getDocumentState
+        );
 
         return memberOwnerName
           ? getBuiltinMemberCompletionItems(memberOwnerName, completionContext.prefix).map(createBuiltinResolution)
@@ -359,7 +366,7 @@ export function createDocumentService(): DocumentService {
         return undefined;
       }
 
-      return getBuiltinMemberHover(state, uri, position, resolveDefinition);
+      return getBuiltinMemberHover(state, uri, position, resolveDefinition, getDocumentState);
     },
     getRenameEdits(uri: string, position: LinePosition, newName: string): RenameTextEdit[] | undefined {
       const renameTarget = resolveLocalRenameTarget(uri, position);
@@ -410,7 +417,7 @@ export function createDocumentService(): DocumentService {
         return undefined;
       }
 
-      const builtinMember = resolveBuiltinCallableMember(uri, position.line, callContext, resolveDefinition);
+      const builtinMember = resolveBuiltinCallableMember(uri, position.line, callContext, resolveDefinition, getDocumentState);
 
       if (builtinMember) {
         return createBuiltinSignatureHint(state.analysis, uri, position.line, callContext, builtinMember, resolveDefinition);
@@ -632,6 +639,7 @@ function collectSemanticTokensForState(
   documentStates: ReadonlyMap<string, DocumentState>
 ): SemanticTokenEntry[] {
   const tokens = new Map<string, SemanticTokenEntry>();
+  const getDocumentState = (uri: string): DocumentState | undefined => documentStates.get(uri);
   const declarationResolutions = [
     ...state.analysis.symbols.moduleSymbols.map((symbol) => createResolution(state, symbol, state.uri)),
     ...state.analysis.symbols.procedureScopes.flatMap((scope) => scope.symbols.map((symbol) => createResolution(state, symbol, state.uri)))
@@ -679,7 +687,15 @@ function collectSemanticTokensForState(
       };
 
       if (previousCharacter === ".") {
-        const memberTokenShape = mapBuiltinMemberSemanticToken(state.uri, lineIndex, scrubbed, startCharacter, identifier, resolveDefinition);
+        const memberTokenShape = mapBuiltinMemberSemanticToken(
+          state.uri,
+          lineIndex,
+          scrubbed,
+          startCharacter,
+          identifier,
+          resolveDefinition,
+          getDocumentState
+        );
 
         if (memberTokenShape) {
           addSemanticToken(tokens, range, memberTokenShape);
@@ -689,15 +705,21 @@ function collectSemanticTokensForState(
       }
 
       const resolution = resolveDefinition(state.uri, range.start);
-      const tokenShape = resolution
-        ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
-        : mapBuiltinSemanticToken(identifier);
+      const builtinAliasTokenShape =
+        resolution && isBuiltinAliasDocumentModule(resolution, identifier, getDocumentState)
+          ? mapBuiltinSemanticToken(identifier)
+          : undefined;
+      const tokenShape = builtinAliasTokenShape
+        ? builtinAliasTokenShape
+        : resolution
+          ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
+          : mapBuiltinSemanticToken(identifier);
 
       if (!tokenShape) {
         continue;
       }
 
-      const declarationRange = resolution
+      const declarationRange = resolution && !builtinAliasTokenShape
         ? getDeclarationRange(documentStates.get(resolution.uri), resolution, resolveDefinition)
         : undefined;
       const isDeclaration =
@@ -988,7 +1010,8 @@ function resolveConfirmedBuiltinMemberOwner(
   state: DocumentState,
   line: number,
   completionContext: CompletionContext,
-  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
 ): string | undefined {
   if (
     !completionContext.isMemberAccess ||
@@ -1003,7 +1026,7 @@ function resolveConfirmedBuiltinMemberOwner(
     line
   });
 
-  if (rootResolution) {
+  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, completionContext.memberPath[0], getDocumentState)) {
     return undefined;
   }
 
@@ -1058,7 +1081,8 @@ function resolveBuiltinCallableMember(
   uri: string,
   line: number,
   callContext: CallContext,
-  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
 ): BuiltinMemberReferenceItem | undefined {
   if (callContext.callPath.length < 2) {
     return undefined;
@@ -1069,7 +1093,7 @@ function resolveBuiltinCallableMember(
     line
   });
 
-  if (rootResolution) {
+  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, callContext.callPath[0], getDocumentState)) {
     return undefined;
   }
 
@@ -1145,11 +1169,12 @@ function getBuiltinMemberHover(
   state: DocumentState,
   uri: string,
   position: LinePosition,
-  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
 ): HoverHint | undefined {
-  const builtinMember = resolveBuiltinMemberAtPosition(state.text, uri, position, resolveDefinition);
+  const builtinMember = resolveBuiltinMemberAtPosition(state.text, uri, position, resolveDefinition, getDocumentState);
 
-  if (!builtinMember?.reference.signature) {
+  if (!builtinMember) {
     return undefined;
   }
 
@@ -1163,7 +1188,8 @@ function resolveBuiltinMemberAtPosition(
   text: string,
   uri: string,
   position: LinePosition,
-  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
 ): { range: SourceRange; reference: BuiltinMemberReferenceItem } | undefined {
   const range = getIdentifierRangeAtPosition(text, position);
 
@@ -1178,10 +1204,14 @@ function resolveBuiltinMemberAtPosition(
   if (
     !memberAccess ||
     normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(line.slice(range.start.character, range.end.character)) ||
-    resolveDefinition(uri, {
-      character: memberAccess.memberPathStartCharacter,
-      line: position.line
-    })
+    !canResolveBuiltinAliasMemberAccess(
+      uri,
+      position.line,
+      memberAccess.memberPath[0],
+      memberAccess.memberPathStartCharacter,
+      resolveDefinition,
+      getDocumentState
+    )
   ) {
     return undefined;
   }
@@ -1232,7 +1262,7 @@ function buildBuiltinSignatureParameterDocumentation(
 }
 
 function buildBuiltinHoverMarkdown(memberReference: BuiltinMemberReferenceItem): string {
-  const lines = ["```vb", memberReference.signature?.label ?? `${memberReference.ownerName}.${memberReference.name}()`, "```"];
+  const lines = ["```vb", buildBuiltinMemberLabel(memberReference), "```"];
 
   if (memberReference.summary) {
     lines.push(memberReference.summary);
@@ -1243,6 +1273,67 @@ function buildBuiltinHoverMarkdown(memberReference: BuiltinMemberReferenceItem):
   }
 
   return lines.join("\n\n");
+}
+
+function buildBuiltinMemberLabel(memberReference: BuiltinMemberReferenceItem): string {
+  if (memberReference.signature?.label) {
+    return memberReference.signature.label;
+  }
+
+  return memberReference.memberKind === "method"
+    ? `${memberReference.ownerName}.${memberReference.name}()`
+    : `${memberReference.ownerName}.${memberReference.name}`;
+}
+
+function canResolveBuiltinAliasMemberAccess(
+  uri: string,
+  line: number,
+  rootSegment: string,
+  rootStartCharacter: number,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
+): boolean {
+  const rootResolution = resolveDefinition(uri, {
+    character: rootStartCharacter,
+    line
+  });
+
+  return !rootResolution || isBuiltinAliasDocumentModule(rootResolution, rootSegment, getDocumentState);
+}
+
+function isBuiltinAliasDocumentModule(
+  resolution: WorkspaceSymbolResolution,
+  rootSegment: string,
+  getDocumentState: (uri: string) => DocumentState | undefined
+): boolean {
+  if (normalizeIdentifier(rootSegment) !== "thisworkbook" || resolution.symbol.kind !== "module") {
+    return false;
+  }
+
+  return isWorkbookDocumentState(getDocumentState(resolution.uri));
+}
+
+function isWorkbookDocumentState(state: DocumentState | undefined): boolean {
+  return (
+    !!state &&
+    state.analysis.source.moduleKind === "class" &&
+    normalizeIdentifier(state.analysis.module.name) === "thisworkbook" &&
+    hasModuleAttribute(state, "VB_PredeclaredId", (value) => normalizeIdentifier(value ?? "") === "true") &&
+    hasModuleAttribute(state, "VB_Base")
+  );
+}
+
+function hasModuleAttribute(
+  state: DocumentState,
+  attributeName: string,
+  predicate?: (value: string | undefined) => boolean
+): boolean {
+  return state.analysis.module.members.some(
+    (member) =>
+      member.kind === "attributeLine" &&
+      normalizeIdentifier(member.name) === normalizeIdentifier(attributeName) &&
+      (!predicate || predicate(member.value))
+  );
 }
 
 function getCurrentArgumentTypeName(
@@ -1766,7 +1857,8 @@ function mapBuiltinMemberSemanticToken(
   lineText: string,
   startCharacter: number,
   identifier: string,
-  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
 ): SemanticTokenShape | undefined {
   const memberAccess = parseTrailingMemberAccess(lineText.slice(0, startCharacter + identifier.length));
 
@@ -1774,10 +1866,14 @@ function mapBuiltinMemberSemanticToken(
     !memberAccess ||
     memberAccess.memberPathStartCharacter === undefined ||
     normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier) ||
-    resolveDefinition(uri, {
-      character: memberAccess.memberPathStartCharacter,
-      line
-    })
+    !canResolveBuiltinAliasMemberAccess(
+      uri,
+      line,
+      memberAccess.memberPath[0],
+      memberAccess.memberPathStartCharacter,
+      resolveDefinition,
+      getDocumentState
+    )
   ) {
     return undefined;
   }

@@ -64,29 +64,57 @@ End Sub`
 test("document service exposes built-in member completion items from the reference index", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInMemberCompletion.bas";
-
-  service.analyzeText(
-    uri,
-    "vba",
-    1,
-    `Attribute VB_Name = "BuiltInMemberCompletion"
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
+  const text = `Attribute VB_Name = "BuiltInMemberCompletion"
 Option Explicit
 
 Public Sub Demo()
     Debug.Print Application.
     Debug.Print WorksheetFunction.Su
     Debug.Print Application.WorksheetFunction.Su
-End Sub`
-  );
+    Debug.Print ActiveWorkbook.
+    Debug.Print ThisWorkbook.
+    Debug.Print ActiveWorkbook.Worksheets.
+    Debug.Print Application.ActiveCell.
+End Sub`;
 
-  const applicationMembers = service.getCompletionSymbols(uri, { character: 28, line: 4 });
-  const worksheetFunctionMembers = service.getCompletionSymbols(uri, { character: 36, line: 5 });
-  const chainedWorksheetFunctionMembers = service.getCompletionSymbols(uri, { character: 48, line: 6 });
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const applicationMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Application."));
+  const worksheetFunctionMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Su"));
+  const chainedWorksheetFunctionMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Application.WorksheetFunction.Su")
+  );
+  const activeWorkbookMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "ActiveWorkbook."));
+  const thisWorkbookMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "ThisWorkbook."));
+  const workbookWorksheetsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets.")
+  );
+  const applicationActiveCellMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Application.ActiveCell.")
+  );
 
   const worksheetFunctionProperty = applicationMembers.find((resolution) => resolution.symbol.name === "WorksheetFunction");
   const activeCellProperty = applicationMembers.find((resolution) => resolution.symbol.name === "ActiveCell");
   const worksheetFunctionSum = worksheetFunctionMembers.find((resolution) => resolution.symbol.name === "Sum");
   const chainedWorksheetFunctionSum = chainedWorksheetFunctionMembers.find((resolution) => resolution.symbol.name === "Sum");
+  const activeWorkbookSaveAs = activeWorkbookMembers.find((resolution) => resolution.symbol.name === "SaveAs");
+  const activeWorkbookWorksheets = activeWorkbookMembers.find((resolution) => resolution.symbol.name === "Worksheets");
+  const thisWorkbookSaveAs = thisWorkbookMembers.find((resolution) => resolution.symbol.name === "SaveAs");
+  const workbookWorksheetsCount = workbookWorksheetsMembers.find((resolution) => resolution.symbol.name === "Count");
+  const applicationActiveCellAddress = applicationActiveCellMembers.find((resolution) => resolution.symbol.name === "Address");
 
   assert.equal(worksheetFunctionProperty?.isBuiltIn, true);
   assert.equal(worksheetFunctionProperty?.moduleName, "Excel Application property");
@@ -96,6 +124,13 @@ End Sub`
   assert.equal(worksheetFunctionSum?.moduleName, "Excel WorksheetFunction method");
   assert.equal(worksheetFunctionSum?.documentation?.includes("excel.worksheetfunction.sum"), true);
   assert.equal(chainedWorksheetFunctionSum?.moduleName, "Excel WorksheetFunction method");
+  assert.equal(activeWorkbookSaveAs?.moduleName, "Excel Workbook method");
+  assert.equal(activeWorkbookSaveAs?.documentation?.includes("excel.workbook.saveas"), true);
+  assert.equal(activeWorkbookWorksheets?.typeName, "Worksheets");
+  assert.equal(thisWorkbookSaveAs?.moduleName, "Excel Workbook method");
+  assert.equal(thisWorkbookSaveAs?.documentation?.includes("excel.workbook.saveas"), true);
+  assert.equal(workbookWorksheetsCount?.moduleName, "Excel Worksheets property");
+  assert.equal(applicationActiveCellAddress?.documentation?.includes("excel.range.address"), true);
 });
 
 test("document service keeps built-in member completion and semantic tokens conservative", () => {
@@ -139,6 +174,48 @@ End Sub`;
         entry.range.start.line === 11 &&
         entry.range.start.character === 20 &&
         entry.range.end.character === 25 &&
+        entry.type === "function"
+    ),
+    false
+  );
+});
+
+test("document service keeps ThisWorkbook built-in alias conservative for non-document class modules", () => {
+  const service = createDocumentService();
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
+  const uri = "file:///C:/temp/BuiltInThisWorkbookShadowing.bas";
+  const text = `Attribute VB_Name = "BuiltInThisWorkbookShadowing"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print ThisWorkbook.
+    Debug.Print ThisWorkbook.SaveAs
+End Sub`;
+
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Option Explicit
+
+Public Sub SaveAs()
+End Sub`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "ThisWorkbook."));
+  const hover = service.getHover(uri, findPositionAfterTokenInText(text, "ThisWorkbook.Save"));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.deepEqual(completions, []);
+  assert.equal(hover, undefined);
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === 5 &&
+        entry.range.start.character === 28 &&
+        entry.range.end.character === 34 &&
         entry.type === "function"
     ),
     false
@@ -355,6 +432,7 @@ End Sub`
 test("document service exposes built-in member signature help and hover", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInSignature.bas";
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
   const text = `Attribute VB_Name = "BuiltInSignature"
 Option Explicit
 
@@ -385,7 +463,10 @@ Public Sub Demo()
     transposedResult = WorksheetFunction.Transpose(Range("A1:B2"))
     Debug.Print UBound(transposedResult, 1), UBound(transposedResult, 2)
     Debug.Print ActiveCell.Address(False, False, xlA1, False)
+    Debug.Print Application.ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Cells.AddressLocal(False, False)
+    Debug.Print ActiveWorkbook.Worksheets.Count
+    Debug.Print ThisWorkbook.SaveAs
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Call Application.WorksheetFunction()
@@ -395,6 +476,15 @@ Public Sub Demo()
     Debug.Print Application.Calculate
 End Sub`;
 
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
   service.analyzeText(uri, "vba", 1, text);
 
   const worksheetSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "WorksheetFunction.Sum(1, 2"));
@@ -433,6 +523,10 @@ End Sub`;
     findPositionAfterTokenInText(text, "WorksheetFunction.Transpose(")
   );
   const addressSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ActiveCell.Address("));
+  const chainedAddressSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Application.ActiveCell.Address(")
+  );
   const addressLocalSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Cells.AddressLocal("));
   const extractedZeroArgSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.CalculateFull("));
   const fallbackSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.OnTime("));
@@ -444,6 +538,7 @@ End Sub`;
   const propertyFallbackSignature2 = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.ActiveCell("));
   const eventFallbackSignature2 = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.NewWorkbook("));
   const hover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print Application.Calcu"));
+  const workbookHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ThisWorkbook.Save"));
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -525,6 +620,9 @@ End Sub`;
   assert.equal(addressSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
   assert.equal(addressSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
   assert.equal(addressSignature?.parameters[4]?.documentation?.includes("省略可能"), true);
+  assert.equal(chainedAddressSignature?.label, "Address(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String");
+  assert.equal(chainedAddressSignature?.parameters.length, 5);
+  assert.equal(chainedAddressSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
   assert.equal(addressLocalSignature?.label, "AddressLocal(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String");
   assert.equal(addressLocalSignature?.parameters.length, 5);
   assert.equal(addressLocalSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
@@ -541,6 +639,8 @@ End Sub`;
   assert.equal(hover?.contents.includes("Calculate()"), true);
   assert.equal(hover?.contents.includes("Calculates all open workbooks"), true);
   assert.equal(hover?.contents.includes("Microsoft Learn"), true);
+  assert.equal(workbookHover?.contents.includes("Workbook.SaveAs()"), true);
+  assert.equal(workbookHover?.contents.includes("excel.workbook.saveas"), true);
 });
 
 test("document service prioritizes built-in member signature help over workspace callable collisions", () => {
@@ -1063,6 +1163,7 @@ End Sub`;
 test("document service exposes semantic tokens for built-in keywords, functions, constants, and members", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInSemantic.bas";
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
   const text = `Attribute VB_Name = "BuiltInSemantic"
 Option Explicit
 
@@ -1071,8 +1172,19 @@ Public Sub Demo()
     MsgBox xlAll
     Debug.Print Application.Name
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
+    Debug.Print ThisWorkbook.SaveAs
+    Debug.Print Application.ActiveCell.Address
 End Sub`;
 
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
   service.analyzeText(uri, "vba", 1, text);
 
   const tokens = service.getSemanticTokens(uri);
@@ -1104,6 +1216,18 @@ End Sub`;
   assertSemanticToken(text, tokens, 7, "Sum", {
     modifiers: [],
     type: "function"
+  });
+  assertSemanticToken(text, tokens, 8, "ThisWorkbook", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 8, "SaveAs", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 9, "Address", {
+    modifiers: [],
+    type: "variable"
   });
 });
 

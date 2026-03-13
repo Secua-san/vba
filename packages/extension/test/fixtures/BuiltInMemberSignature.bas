@@ -29,7 +29,10 @@ Public Sub Demo()
     transposedResult = WorksheetFunction.Transpose(Range("A1:B2"))
     Debug.Print UBound(transposedResult, 1), UBound(transposedResult, 2)
     Debug.Print ActiveCell.Address(False, False, xlA1, False)
+    Debug.Print Application.ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Cells.AddressLocal(False, False)
+    Debug.Print ActiveWorkbook.Worksheets.Count
+    Debug.Print ThisWorkbook.SaveAs
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInMemberSignature.Demo")
     Call Application.WorksheetFunction()
