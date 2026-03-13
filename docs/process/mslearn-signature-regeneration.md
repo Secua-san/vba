@@ -68,7 +68,7 @@
 | `packages/extension/test/fixtures/BuiltInMemberSignature.bas` | extension の署名 fixture | 追加メンバーの呼び出し例を fixture に足すとき |
 | `packages/extension/test/suite/index.ts` | extension の UI 回帰 | VS Code 側の signature/hover/completion を固定するとき |
 | `TASKS.md` | 進捗管理 | 作業開始、完了、次候補の更新 |
-| `docs/process/coderabbit-review-summaries.md` | レビュー要約ログ | PR 完了後に学びと横展開候補を残すとき |
+| `docs/process/coderabbit-review-summaries.md` | レビュー要約ログの入口 | PR 完了後に当月ログを確認・更新するとき |
 
 ## 標準手順
 
@@ -133,7 +133,7 @@
 
 ### 9. 運用ドキュメントを更新する
 - `TASKS.md` に作業内容を反映する
-- PR 後に `docs/process/coderabbit-review-summaries.md` へ要約と横展開候補を追記する
+- PR 後に `docs/process/coderabbit-review-summaries.md` の案内に従って当月ログへ要約と横展開候補を追記する
 
 ## `XLookup` / `XMATCH` で最初に触る場所
 - `scripts/lib/referenceSignatureConfig.mjs`

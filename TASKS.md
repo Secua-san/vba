@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] ドキュメント導線とレビュー履歴の整理
+  - `docs/README.md`、`docs/process/README.md`、`docs/adr/README.md` を追加し、入口から要件、ADR、運用詳細へ辿る導線を整理
+  - `docs/process/coderabbit-review-summaries.md` を軽い案内ページへ変更し、実ログを `docs/process/coderabbit-review-logs/2026-03.md` へ分割してレビュー履歴の肥大化を抑制
+  - `README.md`、`AGENTS.md`、関連運用文書の参照先を新しい入口へ寄せ、重複記載を削減
+
 - [x] DialogSheet common callable の最小プロトタイプ
   - `scripts/lib/supplementalReferenceConfig.mjs` に `DialogSheet` interop allow list と `DialogSheets` collection clone を追加し、`resources/reference/mslearn-vba-reference.json` を再生成
   - `DialogSheets(1)` / `DialogSheets("Dialog1")` / `DialogSheets.Item(1)` では `DialogSheet` member へ到達し、`DialogSheets(Array(...))` は collection のまま維持する built-in 解決を追加
