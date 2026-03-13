@@ -1,12 +1,10 @@
 # Codex Safety Guard
 
-自動コミットや自動 PR を判断するときの入口ドキュメント。
+自動コミットや自動 PR を判断するときの軽い入口チェック。詳細ルールは `docs/process/` の正本を読む。
 
 ## 先に読む参照先
-- ブランチ運用とコミット / PR の粒度: [process/git-workflow.md](process/git-workflow.md)
-- 自動化許可条件、品質ゲート、停止条件: [process/automation-policy.md](process/automation-policy.md)
-- CodeRabbit の確認フロー: [process/coderabbit-review.md](process/coderabbit-review.md)
-- コミットメッセージ形式: [commit-message.md](commit-message.md)
+- 運用ドキュメントの入口: [process/README.md](process/README.md)
+- docs 全体の入口: [README.md](README.md)
 - PR 本文テンプレート: [../.github/pull_request_template.md](../.github/pull_request_template.md)
 
 ## 即停止する条件

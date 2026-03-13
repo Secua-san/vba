@@ -11,4 +11,9 @@ Public Sub Demo()
     Call DialogSheets(1).ExportAsFixedFormat(xlTypePDF)
     Call DialogSheets(Array("Dialog1", "Dialog2")).SaveAs("Dialog1.xlsx")
     Call DialogSheets.Item(1).SaveAs("Dialog1.xlsx")
+    Debug.Print Application.DialogSheets.
+    Debug.Print Application.DialogSheets(1).Evaluate("A1")
+    Call ActiveWorkbook.DialogSheets(1).SaveAs("Dialog1.xlsx")
+    Call Application.DialogSheets(Array("Dialog1", "Dialog2")).SaveAs("Dialog1.xlsx")
+    Call ThisWorkbook.DialogSheets(1).SaveAs("Dialog1.xlsx")
 End Sub

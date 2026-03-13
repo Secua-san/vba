@@ -32,26 +32,18 @@
 - `.github/`: PR テンプレートと自動化設定
 
 ## 必要に応じて読むドキュメント
+- docs 全体の入口と読み順: [docs/README.md](docs/README.md)
 - プロダクト要件とマイルストーン: [docs/requirements/000-overview.md](docs/requirements/000-overview.md)
-- パーサ方針: [docs/adr/0001-parser-strategy.md](docs/adr/0001-parser-strategy.md)
-- vbac 安全方針: [docs/adr/0002-vbac-integration-safety.md](docs/adr/0002-vbac-integration-safety.md)
-- DialogSheet document module 方針: [docs/adr/0004-dialogsheet-document-module-policy.md](docs/adr/0004-dialogsheet-document-module-policy.md)
-- ブランチ・コミット・PR ルール: [docs/process/git-workflow.md](docs/process/git-workflow.md)
-- 自動コミット / 自動 PR と品質ゲート: [docs/process/automation-policy.md](docs/process/automation-policy.md)
-- CodeRabbit 対応: [docs/process/coderabbit-review.md](docs/process/coderabbit-review.md)
-- CodeRabbit レビュー要約ログ: [docs/process/coderabbit-review-summaries.md](docs/process/coderabbit-review-summaries.md)
-- Microsoft Learn 組み込み署名の再生成手順: [docs/process/mslearn-signature-regeneration.md](docs/process/mslearn-signature-regeneration.md)
-- DialogSheet interop 補助ソースの調査メモ: [docs/process/dialogsheet-interop-source-feasibility.md](docs/process/dialogsheet-interop-source-feasibility.md)
-- サブエージェントへのエスカレーション: [docs/process/sub-agent-escalation.md](docs/process/sub-agent-escalation.md)
-- コミットメッセージ規約: [docs/commit-message.md](docs/commit-message.md)
+- ADR の入口: [docs/adr/README.md](docs/adr/README.md)
+- 運用ドキュメントの入口: [docs/process/README.md](docs/process/README.md)
 - PR テンプレート: [.github/pull_request_template.md](.github/pull_request_template.md)
 
 ## 運用メモ
-- 実装前に、対象機能に対応する要件書または ADR を確認する
-- コミットや PR を扱う前に、`docs/process/` 配下の運用ドキュメントを確認する
+- 実装前に、[docs/README.md](docs/README.md) から対象機能に対応する要件書または ADR を確認する
+- コミットや PR を扱う前に、[docs/process/README.md](docs/process/README.md) から必要な運用ドキュメントだけを確認する
 - 外部 MCP サーバー呼び出しは共通の retry / rate-limit 層を必ず通し、`429` 検知、`Retry-After` 優先、未指定時の指数バックオフ + ジッター、呼び出し間隔制御、同一問い合わせの重複抑止、対象 MCP 名を含む retry / wait / 最終失敗理由ログを実装する
 - 同じ論点を繰り返し検討して進まない場合は、`docs/process/sub-agent-escalation.md` に従ってサブエージェントへ切り替える
 - `reviewer` が利用できない場合は、`C:\Users\tagi0\.codex\config.toml` と `C:\Users\tagi0\.codex\agents\reviewer.toml` を確認し、設定を直してから PR 作成へ進む
-- CodeRabbit レビュー確認後は、要約と横展開候補を `docs/process/coderabbit-review-summaries.md` へ追記する
+- CodeRabbit レビュー確認後は、`docs/process/coderabbit-review-summaries.md` の案内に従って当月ログへ要約と横展開候補を追記する
 - 自己レビューと CodeRabbit の重複指摘、および `required` / `optional` の判断は `docs/process/coderabbit-review.md` の正本ルールに従う
 - ルール変更時は重複記載を増やさず、正本ドキュメントを更新する

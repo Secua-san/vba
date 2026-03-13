@@ -47,6 +47,13 @@
 - `DialogSheets` collection owner は `Sheets` の member を clone して使い、`Item` だけは `typeName: "DialogSheet"` を明示して `DialogSheets.Item(1)` も単一 selector と同じ root 解決にそろえる
 - 監査テストでは `dummy` / legacy member 混入、正規化後の重複名、allow list member の署名欠落、`DialogSheets.Item` の `typeName` 欠落を検知する
 
+## 2026-03-13 の DialogSheet Workbook / Application root 展開
+- `ApplicationClass.DialogSheets` / `WorkbookClass.DialogSheets` は Microsoft Learn interop で `ReadOnly Property DialogSheets As Sheets` を示す
+- 生成器では `Application.DialogSheets` / `Workbook.DialogSheets` を補助 property として追加し、`typeName` は user-facing root を保つため `DialogSheets` へ正規化する
+- `As Sheets` をそのまま採用すると `DialogSheet` item owner へ到達できないため、collection clone と property alias を組み合わせて `Application.DialogSheets(1)` / `ActiveWorkbook.DialogSheets(1)` を単一 selector root として扱う
+- grouped selector は従来どおり collection のまま維持し、`Application.DialogSheets(Array(...)).SaveAs` のような誤補完は出さない
+- 監査テストでは `Application.DialogSheets` / `Workbook.DialogSheets` の `typeName: "DialogSheets"` を固定し、root 展開が壊れたら検知する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
@@ -59,7 +66,7 @@
 | ファイル | 役割 | 更新が必要なケース |
 | --- | --- | --- |
 | `scripts/lib/referenceSignatureConfig.mjs` | 署名抽出対象の allow list と未掲載監視の watch list | 新しいメソッドを署名抽出対象に加えるとき、または未掲載監視を追加・解除するとき |
-| `scripts/lib/supplementalReferenceConfig.mjs` | interop 補助ソースの allow list と clone 設定 | `DialogSheet` のように Office VBA object page が無い owner を限定導入するとき |
+| `scripts/lib/supplementalReferenceConfig.mjs` | interop 補助ソースの allow list、clone、補助 property 設定 | `DialogSheet` のように Office VBA object page が無い owner を限定導入するとき |
 | `scripts/generate-mslearn-vba-reference.mjs` | Learn 取得、署名抽出、override | Learn 側の表記ゆれ、要約補正、optional/required 補正が必要なとき |
 | `resources/reference/mslearn-vba-reference.json` | 生成済み参照データ | 再生成後の成果物をコミットするとき |
 | `scripts/test/mslearnReferenceAudit.test.mjs` | 監視と生成データ監査 | 監視対象の状態や audit 条件を見直すとき |
@@ -68,7 +75,7 @@
 | `packages/extension/test/fixtures/BuiltInMemberSignature.bas` | extension の署名 fixture | 追加メンバーの呼び出し例を fixture に足すとき |
 | `packages/extension/test/suite/index.ts` | extension の UI 回帰 | VS Code 側の signature/hover/completion を固定するとき |
 | `TASKS.md` | 進捗管理 | 作業開始、完了、次候補の更新 |
-| `docs/process/coderabbit-review-summaries.md` | レビュー要約ログ | PR 完了後に学びと横展開候補を残すとき |
+| `docs/process/coderabbit-review-summaries.md` | レビュー要約ログの入口 | PR 完了後に当月ログを確認・更新するとき |
 
 ## 標準手順
 
@@ -133,7 +140,7 @@
 
 ### 9. 運用ドキュメントを更新する
 - `TASKS.md` に作業内容を反映する
-- PR 後に `docs/process/coderabbit-review-summaries.md` へ要約と横展開候補を追記する
+- PR 後に `docs/process/coderabbit-review-summaries.md` の案内に従って当月ログへ要約と横展開候補を追記する
 
 ## `XLookup` / `XMATCH` で最初に触る場所
 - `scripts/lib/referenceSignatureConfig.mjs`

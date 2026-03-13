@@ -6,7 +6,8 @@
       "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
       "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
       "Member summaries and signature metadata are currently enriched for selected Excel members.",
-      "DialogSheet common callable members are added from Microsoft Learn interop pages as a constrained supplemental source."
+      "DialogSheet common callable members are added from Microsoft Learn interop pages as a constrained supplemental source.",
+      "Application.DialogSheets and Workbook.DialogSheets are normalized to the supplemental DialogSheets collection owner for built-in chain resolution."
     ],
     "urls": {
       "apiToc": "https://learn.microsoft.com/en-us/office/vba/api/toc.json",
@@ -35,7 +36,7 @@
         "collections": 1,
         "enumerations": 272,
         "others": 1,
-        "members": 5107
+        "members": 5109
       },
       "items": [
         {
@@ -2137,6 +2138,11 @@
                   "name": "Worksheets",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.application.worksheets",
                   "tocHref": "excel.application.worksheets"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.applicationclass.dialogsheets?view=excel-pia",
+                  "name": "DialogSheets",
+                  "typeName": "DialogSheets"
                 }
               ]
             }
@@ -27680,6 +27686,11 @@
                   "name": "XmlNamespaces",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.workbook.xmlnamespaces",
                   "tocHref": "excel.workbook.xmlnamespaces"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.workbookclass.dialogsheets?view=excel-pia",
+                  "name": "DialogSheets",
+                  "typeName": "DialogSheets"
                 }
               ]
             }

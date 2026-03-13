@@ -441,6 +441,125 @@ End Sub`;
   assert.equal(groupedSaveAsSignature, undefined);
 });
 
+test("document service exposes DialogSheet common callable members through Application and Workbook DialogSheets roots", () => {
+  const service = createDocumentService();
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
+  const uri = "file:///C:/temp/DialogSheetBuiltInRoots.bas";
+  const text = `Attribute VB_Name = "DialogSheetBuiltInRoots"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print Application.DialogSheets.
+    Debug.Print Application.DialogSheets(1).
+    Debug.Print ActiveWorkbook.DialogSheets.
+    Debug.Print ActiveWorkbook.DialogSheets(1).
+    Debug.Print Application.DialogSheets(Array("Dialog1", "Dialog2")).
+    Debug.Print Application.DialogSheets(1).Evaluate("A1")
+    Call ActiveWorkbook.DialogSheets(1).SaveAs("Dialog1.xlsx")
+    Call Application.DialogSheets(Array("Dialog1", "Dialog2")).SaveAs("Dialog1.xlsx")
+    Call ThisWorkbook.DialogSheets(1).SaveAs("Dialog1.xlsx")
+End Sub`;
+
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const applicationDialogSheetsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Application.DialogSheets.")
+  );
+  const indexedApplicationDialogSheetMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Application.DialogSheets(1).")
+  );
+  const workbookDialogSheetsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.DialogSheets.")
+  );
+  const indexedWorkbookDialogSheetMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.DialogSheets(1).")
+  );
+  const indexedThisWorkbookDialogSheetMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "ThisWorkbook.DialogSheets(1).")
+  );
+  const groupedApplicationDialogSheetsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'Application.DialogSheets(Array("Dialog1", "Dialog2")).')
+  );
+  const evaluateSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Application.DialogSheets(1).Evaluate(")
+  );
+  const saveAsSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.DialogSheets(1).SaveAs(")
+  );
+  const thisWorkbookSaveAsSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ThisWorkbook.DialogSheets(1).SaveAs(")
+  );
+  const groupedSaveAsSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'Application.DialogSheets(Array("Dialog1", "Dialog2")).SaveAs(')
+  );
+  const dialogSheetSaveAsHover = service.getHover(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.DialogSheets(1).SaveA")
+  );
+  const tokens = service.getSemanticTokens(uri);
+
+  const applicationDialogSheetsCount = applicationDialogSheetsMembers.find(
+    (resolution) => resolution.symbol.name === "Count"
+  );
+  const indexedApplicationDialogSheetEvaluate = indexedApplicationDialogSheetMembers.find(
+    (resolution) => resolution.symbol.name === "Evaluate"
+  );
+  const workbookDialogSheetsCount = workbookDialogSheetsMembers.find(
+    (resolution) => resolution.symbol.name === "Count"
+  );
+  const indexedWorkbookDialogSheetSaveAs = indexedWorkbookDialogSheetMembers.find(
+    (resolution) => resolution.symbol.name === "SaveAs"
+  );
+  const indexedThisWorkbookDialogSheetSaveAs = indexedThisWorkbookDialogSheetMembers.find(
+    (resolution) => resolution.symbol.name === "SaveAs"
+  );
+  const groupedApplicationDialogSheetsCount = groupedApplicationDialogSheetsMembers.find(
+    (resolution) => resolution.symbol.name === "Count"
+  );
+
+  assert.equal(applicationDialogSheetsCount?.moduleName, "Excel DialogSheets property");
+  assert.equal(indexedApplicationDialogSheetEvaluate?.documentation?.includes("dialogsheet.evaluate"), true);
+  assert.equal(workbookDialogSheetsCount?.moduleName, "Excel DialogSheets property");
+  assert.equal(indexedWorkbookDialogSheetSaveAs?.moduleName, "Excel DialogSheet method");
+  assert.equal(indexedWorkbookDialogSheetSaveAs?.documentation?.includes("dialogsheet.saveas"), true);
+  assert.equal(indexedThisWorkbookDialogSheetSaveAs?.moduleName, "Excel DialogSheet method");
+  assert.equal(groupedApplicationDialogSheetsCount?.moduleName, "Excel DialogSheets property");
+  assert.equal(groupedApplicationDialogSheetsMembers.some((resolution) => resolution.symbol.name === "SaveAs"), false);
+  assert.equal(evaluateSignature?.label, "Evaluate(Name) As Object");
+  assert.equal(saveAsSignature?.label, "SaveAs(Filename, FileFormat, Password, ..., Local)");
+  assert.equal(thisWorkbookSaveAsSignature?.label, "SaveAs(Filename, FileFormat, Password, ..., Local)");
+  assert.equal(groupedSaveAsSignature, undefined);
+  assert.equal(dialogSheetSaveAsHover?.contents.includes("microsoft.office.interop.excel.dialogsheet.saveas"), true);
+  assertSemanticToken(text, tokens, 4, "DialogSheets", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 10, "SaveAs", {
+    modifiers: [],
+    type: "function"
+  });
+  assertNoSemanticToken(text, tokens, 11, "SaveAs");
+});
+
 test("document service keeps built-in member completion and semantic tokens conservative", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInMemberShadowing.bas";

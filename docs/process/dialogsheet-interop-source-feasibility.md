@@ -4,6 +4,7 @@
 
 - `DialogSheet` interop page を、そのまま VBA 補完用の owner データへ自動取り込みするのは現時点では不採用とする。
 - ただし、補助ソースとして限定利用すること自体は可能であり、将来対応するなら「明示 allow list + skip rule + 監査テスト」の形が現実的である。
+- 2026-03-13 時点では、この限定利用を `Application.DialogSheets` / `Workbook.DialogSheets` の補助 root まで広げることを許容する。ただし `DialogSheet1.` document module root は引き続き未公開のまま維持する。
 
 ## 確認した公式ソース
 
@@ -75,3 +76,11 @@
 
 - 現段階では `DialogSheet` 全面導入は行わず、`docs/adr/0004-dialogsheet-document-module-policy.md` の保守方針を維持する
 - 次に進めるなら、interoperability 補助ソースの最小プロトタイプとして common callable だけを抽出対象にした小さな実験 PR に分ける
+
+## 2026-03-13 の Workbook / Application root 展開判断
+
+- Office VBA には `Application.Sheets` / `Workbook.Sheets` があり、workbook root から sheet collection を辿る基本パターン自体は正本で確認できる
+- 一方、`DialogSheets` 専用 property page は Office VBA 側に無く、Microsoft Learn では interop の `ApplicationClass.DialogSheets` / `WorkbookClass.DialogSheets` が `ReadOnly Property DialogSheets As Sheets` を示す
+- 実装ではこの property value をそのまま `Sheets` にすると `DialogSheet` item owner へ落とせないため、user-facing root としては `DialogSheets` collection owner へ正規化する
+- この正規化は `Application.DialogSheets(1)` / `ActiveWorkbook.DialogSheets(1)` の単一 selector にだけ効かせ、`Application.DialogSheets(Array(...))` のような grouped selector は collection のまま維持する
+- `DialogSheet1.` の document module root 昇格は引き続き別論点とし、この PR では扱わない

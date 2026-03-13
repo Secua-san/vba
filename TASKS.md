@@ -6,6 +6,16 @@
 
 ## 完了
 
+- [x] DialogSheet common callable の Workbook / Application root 展開
+  - `scripts/lib/supplementalReferenceConfig.mjs` に `Application.DialogSheets` / `Workbook.DialogSheets` の補助 property 設定を追加し、`resources/reference/mslearn-vba-reference.json` を再生成
+  - `Application.DialogSheets(1)` / `ActiveWorkbook.DialogSheets(1)` から既存 `DialogSheet` common callable へ到達できるようにし、`Array(...)` selector は collection のまま維持した
+  - `scripts/test` / server / extension に root 展開の監査と回帰テストを追加し、`DialogSheet1.` document module root は引き続き未公開のまま保守した
+
+- [x] ドキュメント導線とレビュー履歴の整理
+  - `docs/README.md`、`docs/process/README.md`、`docs/adr/README.md` を追加し、入口から要件、ADR、運用詳細へ辿る導線を整理
+  - `docs/process/coderabbit-review-summaries.md` を軽い案内ページへ変更し、実ログを `docs/process/coderabbit-review-logs/2026-03.md` へ分割してレビュー履歴の肥大化を抑制
+  - `README.md`、`AGENTS.md`、関連運用文書の参照先を新しい入口へ寄せ、重複記載を削減
+
 - [x] DialogSheet common callable の最小プロトタイプ
   - `scripts/lib/supplementalReferenceConfig.mjs` に `DialogSheet` interop allow list と `DialogSheets` collection clone を追加し、`resources/reference/mslearn-vba-reference.json` を再生成
   - `DialogSheets(1)` / `DialogSheets("Dialog1")` / `DialogSheets.Item(1)` では `DialogSheet` member へ到達し、`DialogSheets(Array(...))` は collection のまま維持する built-in 解決を追加
@@ -296,9 +306,9 @@
 
 ## 次候補
 
-- [ ] DialogSheet common callable の Workbook/Application root 展開可否整理
-  - `DialogSheets(1)` の最小 root で十分か、`ActiveWorkbook.DialogSheets(1)` / `Application.DialogSheets(1)` まで許可するかを、公式ソースと誤補完リスクで再判定する
-  - `DialogSheets` collection 自体の member completion を `Sheets` 共有で広げる場合の妥当性を確認し、必要なら別 PR に分離する
+- [ ] DialogSheet control collection の補助参照可否整理
+  - `Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` など interop 由来 member を限定導入するか、owner 設計と誤補完リスクで再判定する
+  - `DialogSheet` 専用 member は戻り先 owner と chain 解決が不足しているため、allow list / clone / alias / 監査テストの最小構成を先に整理する
 
 ## メモ
 

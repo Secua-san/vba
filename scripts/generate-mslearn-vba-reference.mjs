@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import { createMcpRequestClient } from "./lib/mcpRequest.mjs";
 import { signatureMemberAllowList } from "./lib/referenceSignatureConfig.mjs";
-import { supplementalInteropOwners, supplementalOwnerClones } from "./lib/supplementalReferenceConfig.mjs";
+import {
+  supplementalInteropOwners,
+  supplementalOwnerClones,
+  supplementalOwnerMembers,
+} from "./lib/supplementalReferenceConfig.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -421,6 +425,41 @@ function cloneApiReferenceItem(sourceItem, cloneConfig) {
   }
 
   return clonedItem;
+}
+
+function applySupplementalOwnerMembers(items) {
+  for (const ownerConfig of supplementalOwnerMembers) {
+    const targetOwner = findApiReferenceItem(items, ownerConfig.ownerName);
+
+    if (!targetOwner) {
+      throw new Error(`Supplemental owner member target '${ownerConfig.ownerName}' was not found.`);
+    }
+
+    const targetSection = targetOwner.sections.find(
+      (section) => normalizeReferenceName(section.title) === normalizeReferenceName(ownerConfig.sectionName),
+    );
+
+    if (!targetSection) {
+      throw new Error(
+        `Supplemental owner member target '${ownerConfig.ownerName}.${ownerConfig.sectionName}' was not found.`,
+      );
+    }
+
+    const existingMemberNames = new Set(targetSection.members.map((member) => normalizeReferenceName(member.name)));
+
+    for (const member of ownerConfig.members) {
+      const normalizedMemberName = normalizeReferenceName(member.name);
+
+      if (existingMemberNames.has(normalizedMemberName)) {
+        throw new Error(
+          `Supplemental owner member '${ownerConfig.ownerName}.${member.name}' already exists in the target section.`,
+        );
+      }
+
+      existingMemberNames.add(normalizedMemberName);
+      targetSection.members.push({ ...member });
+    }
+  }
 }
 
 function normalizeInteropMemberDisplayName(value) {
@@ -1279,6 +1318,7 @@ async function main() {
     0,
   );
   excelReference.items.push(...supplementalExcelItems);
+  applySupplementalOwnerMembers(excelReference.items);
 
   const output = {
     source: {
@@ -1289,6 +1329,7 @@ async function main() {
         "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
         "Member summaries and signature metadata are currently enriched for selected Excel members.",
         "DialogSheet common callable members are added from Microsoft Learn interop pages as a constrained supplemental source.",
+        "Application.DialogSheets and Workbook.DialogSheets are normalized to the supplemental DialogSheets collection owner for built-in chain resolution.",
       ],
       urls: sourceUrls,
     },
