@@ -6,6 +6,12 @@
 
 ## 完了
 
+- [x] 組み込みメンバー署名データの拡張（第8弾）
+  - 現行 Microsoft Learn の `Workbook.SaveAs` / `Workbook.Close` / `Workbook.ExportAsFixedFormat` を署名抽出対象へ追加し、参照 JSON を再生成
+  - `Sub` 相当の `Workbook` callable は生成データへ `returnType: "Void"` を保持しつつ、表示ラベルは従来どおり `As Void` を出さない形へ補正した
+  - `ActiveWorkbook` / `ThisWorkbook` 経由の signature help と hover を server / extension テストで回帰確認した
+  - `Worksheet.Evaluate` / `Worksheet.SaveAs` は現行 root 到達性を踏まえて次候補へ残し、Workbook 側を優先した
+
 - [x] Application / Workbook / Worksheet 系 inventory と workbook root 解決
   - 現行 Microsoft Learn の `Application` / `Workbook` / `Worksheet` object page とローカル参照 JSON を照合し、この 3 owner では object page 由来の未掲載 member が無いことを確認した
   - `ActiveWorkbook` / `ThisWorkbook` から `Workbook` member を引けるようにし、`Application.ActiveCell` のような alias property chain でも既存 `typeName` を継承できるようにした
@@ -258,8 +264,8 @@
 
 ## 次候補
 
-- [ ] Workbook / Worksheet callable の署名抽出候補整理
-  - 既にローカル参照 JSON へ存在する `Workbook.SaveAs` / `Worksheet.Evaluate` / `Worksheet.SaveAs` などから、signature help へ昇格させる候補を優先度付きで整理する
+- [ ] Worksheet callable の署名昇格
+  - `Worksheet.Evaluate` / `Worksheet.SaveAs` / `Worksheet.ExportAsFixedFormat` など、現行 Learn で署名取得可能な callable を候補化し、root 到達性の設計とセットで着手する
 
 ## メモ
 

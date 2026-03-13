@@ -22,6 +22,11 @@
 - 次の改善対象は、未掲載監視ではなく、`ActiveWorkbook` / `ThisWorkbook` のような root alias から既存 built-in member データへ到達できるようにすること
 - `ActiveSheet` は Excel で chart sheet を返す場合もあるため、現時点では `Worksheet` 固定の `typeName` は付けず、保守的なまま維持する
 
+## 2026-03-13 の callable 優先度見直し
+- 現行 Microsoft Learn では `Workbook.SaveAs` / `Workbook.Close` / `Workbook.ExportAsFixedFormat`、`Worksheet.Evaluate` / `Worksheet.SaveAs` の各ページで syntax と parameter table を取得できることを確認した
+- ただし現行の built-in root 到達性では `ActiveWorkbook` / `ThisWorkbook` から `Workbook` callable をすぐ活用できる一方、`Worksheet` callable は `ActiveSheet` を保守的に未型付けとしているため、同じ労力でも Workbook 側の効果が大きい
+- そのため、callable 昇格は先に `Workbook` 側を取り込み、`Worksheet.Evaluate` / `Worksheet.SaveAs` は worksheet root 解決方針と合わせて後続へ送る
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
@@ -59,6 +64,7 @@
 ### 3. 抽出ロジックの補正要否を確認する
 - Learn の parameter table が連番省略、表記ゆれ、説明欠落を含む場合は `scripts/generate-mslearn-vba-reference.mjs` の共通ロジックで吸収できるかを確認する
 - 個別補正が必要な場合だけ `signatureMetadataOverrides` を追加する
+- `Workbook.Close` のように Learn 側で戻り値節を持たない `Sub` 相当 member は、生成データでは `returnType: "Void"` を保持しつつ、表示ラベルには `As Void` を出さない
 - `required` / `optional` の判断が Learn 表記と実利用で食い違う場合は、`docs/process/coderabbit-review.md` の運用判断基準に従う
 
 ### 4. 参照データを再生成する

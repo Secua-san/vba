@@ -467,6 +467,9 @@ Public Sub Demo()
     Debug.Print Cells.AddressLocal(False, False)
     Debug.Print ActiveWorkbook.Worksheets.Count
     Debug.Print ThisWorkbook.SaveAs
+    Call ThisWorkbook.SaveAs("Book1.xlsx")
+    Call ActiveWorkbook.Close(False)
+    Call ActiveWorkbook.ExportAsFixedFormat(xlTypePDF)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInSignature.Demo")
     Call Application.WorksheetFunction()
@@ -528,6 +531,12 @@ Option Explicit`
     findPositionAfterTokenInText(text, "Application.ActiveCell.Address(")
   );
   const addressLocalSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Cells.AddressLocal("));
+  const workbookSaveAsSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ThisWorkbook.SaveAs("));
+  const workbookCloseSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ActiveWorkbook.Close("));
+  const workbookExportSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.ExportAsFixedFormat(")
+  );
   const extractedZeroArgSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.CalculateFull("));
   const fallbackSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Application.OnTime("));
   const propertyFallbackSignature = service.getSignatureHelp(
@@ -627,6 +636,18 @@ Option Explicit`
   assert.equal(addressLocalSignature?.parameters.length, 5);
   assert.equal(addressLocalSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
   assert.equal(addressLocalSignature?.parameters[4]?.documentation?.includes("省略可能"), true);
+  assert.equal(workbookSaveAsSignature?.label, "SaveAs(FileName, FileFormat, Password, ..., Local)");
+  assert.equal(workbookSaveAsSignature?.parameters.length, 12);
+  assert.equal(workbookSaveAsSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
+  assert.equal(workbookSaveAsSignature?.parameters[6]?.documentation?.includes("想定型: XlSaveAsAccessMode"), true);
+  assert.equal(workbookSaveAsSignature?.parameters[7]?.documentation?.includes("想定型: XlSaveConflictResolution"), true);
+  assert.equal(workbookCloseSignature?.label, "Close(SaveChanges, FileName, RouteWorkbook)");
+  assert.equal(workbookCloseSignature?.parameters.length, 3);
+  assert.equal(workbookCloseSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
+  assert.equal(workbookExportSignature?.label, "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)");
+  assert.equal(workbookExportSignature?.parameters.length, 9);
+  assert.equal(workbookExportSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(workbookExportSignature?.parameters[0]?.documentation?.includes("想定型: XlFixedFormatType"), true);
   assert.equal(extractedZeroArgSignature?.label, "CalculateFull()");
   assert.equal(extractedZeroArgSignature?.parameters.length, 0);
   assert.equal(fallbackSignature?.label, "Application.OnTime()");
@@ -639,7 +660,7 @@ Option Explicit`
   assert.equal(hover?.contents.includes("Calculate()"), true);
   assert.equal(hover?.contents.includes("Calculates all open workbooks"), true);
   assert.equal(hover?.contents.includes("Microsoft Learn"), true);
-  assert.equal(workbookHover?.contents.includes("Workbook.SaveAs()"), true);
+  assert.equal(workbookHover?.contents.includes("SaveAs(FileName, FileFormat, Password, ..., Local)"), true);
   assert.equal(workbookHover?.contents.includes("excel.workbook.saveas"), true);
 });
 
