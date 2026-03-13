@@ -21,6 +21,7 @@
 - [coderabbit-review-summaries.md](coderabbit-review-summaries.md): レビュー要約ログの入口と当月ログの案内
 - [mslearn-signature-regeneration.md](mslearn-signature-regeneration.md): Microsoft Learn 由来署名データの更新手順
 - [dialogsheet-interop-source-feasibility.md](dialogsheet-interop-source-feasibility.md): DialogSheet interop 補助ソースの可否調査
+- [dialogsheet-control-collection-feasibility.md](dialogsheet-control-collection-feasibility.md): DialogSheet control collection の導入段階と owner 設計の整理
 - [sub-agent-escalation.md](sub-agent-escalation.md): サブエージェント利用の切り替え基準
 
 ## 取りこぼしを減らす順番
