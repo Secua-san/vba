@@ -190,6 +190,12 @@ export function resolveBuiltinMemberOwner(pathSegments: string[]): string | unde
     currentOwnerName = resolveIndexedCollectionOwnerTypeName(currentOwnerName) ?? currentOwnerName;
   }
 
+  return resolveBuiltinMemberOwnerFromRootType(currentOwnerName, memberSegments);
+}
+
+export function resolveBuiltinMemberOwnerFromRootType(rootOwnerName: string, memberSegments: string[]): string | undefined {
+  let currentOwnerName = rootOwnerName;
+
   for (const memberSegment of memberSegments) {
     const memberReference = getBuiltinMemberReferenceItem(currentOwnerName, stripIndexedAccessMarker(memberSegment));
 

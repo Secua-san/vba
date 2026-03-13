@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Sheet document module alias の到達性改善
+  - `VB_PredeclaredId = True` かつ `VB_Base = 0{00020820-0000-0000-C000-000000000046}` の worksheet document module だけを `Worksheet` root として扱い、`Sheet1.SaveAs` / `Sheet1.Evaluate` の built-in member 到達性を追加
+  - `ThisWorkbook` 専用だった document module root 判定を一般化し、completion / signature help / hover / semantic token で共通に使うよう整理
+  - worksheet 以外の predeclared class module は保守動作のまま維持し、誤って `Worksheet` member を出さない回帰テストを追加
+
 - [x] Worksheet callable の署名昇格
   - `ActiveSheet` を型付けせず、`Worksheets(1)` / `ActiveWorkbook.Worksheets(1)` のような indexed collection access から `Worksheet` member へ到達できるようにした
   - 現行 Microsoft Learn の `Worksheet.Evaluate` / `Worksheet.SaveAs` / `Worksheet.ExportAsFixedFormat` を署名抽出対象へ追加し、参照 JSON を再生成した
@@ -270,8 +275,8 @@
 
 ## 次候補
 
-- [ ] Sheet document module alias の到達性改善
-  - `Sheet1.SaveAs` / `Sheet1.Evaluate` のような worksheet document module root を安全に `Worksheet` member へ接続できるかを調査し、chart sheet との誤分類を避ける判定条件を整理する
+- [ ] Chart / DialogSheet document module root の扱い整理
+  - worksheet document module 以外の predeclared host object root は現状保守動作で止めているため、実際に公開したい owner と必要な Microsoft Learn / 参照データを整理する
 
 ## メモ
 

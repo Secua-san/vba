@@ -18,6 +18,7 @@ import {
   normalizeIdentifier,
   removeStringAndDateLiterals,
   resolveBuiltinMemberOwner,
+  resolveBuiltinMemberOwnerFromRootType,
   stripIndexedAccessMarker,
   splitCodeAndComment,
   type AnalysisResult,
@@ -32,6 +33,9 @@ import {
   type SourceRange,
   type SymbolInfo
 } from "../../../core/src/index";
+
+const WORKBOOK_DOCUMENT_BASE_GUID = "00020819-0000-0000-c000-000000000046";
+const WORKSHEET_DOCUMENT_BASE_GUID = "00020820-0000-0000-c000-000000000046";
 
 export interface DocumentState {
   analysis: AnalysisResult;
@@ -706,9 +710,10 @@ function collectSemanticTokensForState(
       }
 
       const resolution = resolveDefinition(state.uri, range.start);
+      const documentModuleOwnerName = resolution ? getDocumentModuleBuiltinOwnerName(resolution, identifier, getDocumentState) : undefined;
       const builtinAliasTokenShape =
-        resolution && isBuiltinAliasDocumentModule(resolution, identifier, getDocumentState)
-          ? mapBuiltinSemanticToken(identifier)
+        documentModuleOwnerName === "Workbook"
+          ? mapBuiltinSemanticToken("ThisWorkbook")
           : undefined;
       const tokenShape = builtinAliasTokenShape
         ? builtinAliasTokenShape
@@ -1022,19 +1027,14 @@ function resolveConfirmedBuiltinMemberOwner(
     return undefined;
   }
 
-  const rootResolution = resolveDefinition(state.uri, {
-    character: completionContext.memberPathStartCharacter,
-    line
-  });
-
-  if (
-    rootResolution &&
-    !isBuiltinAliasDocumentModule(rootResolution, stripIndexedAccessMarker(completionContext.memberPath[0]), getDocumentState)
-  ) {
-    return undefined;
-  }
-
-  return resolveBuiltinMemberOwner(completionContext.memberPath);
+  return resolveBuiltinMemberOwnerForPath(
+    state.uri,
+    line,
+    completionContext.memberPath,
+    completionContext.memberPathStartCharacter,
+    resolveDefinition,
+    getDocumentState
+  );
 }
 
 function isValidRenameIdentifier(name: string): boolean {
@@ -1092,19 +1092,14 @@ function resolveBuiltinCallableMember(
     return undefined;
   }
 
-  const rootResolution = resolveDefinition(uri, {
-    character: callContext.callPathStartCharacter,
-    line
-  });
-
-  if (
-    rootResolution &&
-    !isBuiltinAliasDocumentModule(rootResolution, stripIndexedAccessMarker(callContext.callPath[0]), getDocumentState)
-  ) {
-    return undefined;
-  }
-
-  const ownerName = resolveBuiltinMemberOwner(callContext.callPath.slice(0, -1));
+  const ownerName = resolveBuiltinMemberOwnerForPath(
+    uri,
+    line,
+    callContext.callPath.slice(0, -1),
+    callContext.callPathStartCharacter,
+    resolveDefinition,
+    getDocumentState
+  );
   const memberName = callContext.callPath[callContext.callPath.length - 1];
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberName) : undefined;
 
@@ -1210,20 +1205,19 @@ function resolveBuiltinMemberAtPosition(
 
   if (
     !memberAccess ||
-    normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(line.slice(range.start.character, range.end.character)) ||
-    !canResolveBuiltinAliasMemberAccess(
-      uri,
-      position.line,
-      memberAccess.memberPath[0],
-      memberAccess.memberPathStartCharacter,
-      resolveDefinition,
-      getDocumentState
-    )
+    normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(line.slice(range.start.character, range.end.character))
   ) {
     return undefined;
   }
 
-  const ownerName = resolveBuiltinMemberOwner(memberAccess.memberPath);
+  const ownerName = resolveBuiltinMemberOwnerForPath(
+    uri,
+    position.line,
+    memberAccess.memberPath,
+    memberAccess.memberPathStartCharacter,
+    resolveDefinition,
+    getDocumentState
+  );
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberAccess.prefix) : undefined;
 
   return memberReference ? { range, reference: memberReference } : undefined;
@@ -1292,32 +1286,55 @@ function buildBuiltinMemberLabel(memberReference: BuiltinMemberReferenceItem): s
     : `${memberReference.ownerName}.${memberReference.name}`;
 }
 
-function canResolveBuiltinAliasMemberAccess(
+function resolveBuiltinMemberOwnerForPath(
   uri: string,
   line: number,
-  rootSegment: string,
+  pathSegments: string[],
   rootStartCharacter: number,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined
-): boolean {
+): string | undefined {
+  if (pathSegments.length === 0) {
+    return undefined;
+  }
+
+  const [rootSegment, ...memberSegments] = pathSegments;
   const rootResolution = resolveDefinition(uri, {
     character: rootStartCharacter,
     line
   });
 
-  return !rootResolution || isBuiltinAliasDocumentModule(rootResolution, rootSegment, getDocumentState);
+  if (!rootResolution) {
+    return resolveBuiltinMemberOwner(pathSegments);
+  }
+
+  const rootOwnerName = getDocumentModuleBuiltinOwnerName(rootResolution, stripIndexedAccessMarker(rootSegment), getDocumentState);
+  return rootOwnerName ? resolveBuiltinMemberOwnerFromRootType(rootOwnerName, memberSegments) : undefined;
 }
 
-function isBuiltinAliasDocumentModule(
+function getDocumentModuleBuiltinOwnerName(
   resolution: WorkspaceSymbolResolution,
   rootSegment: string,
   getDocumentState: (uri: string) => DocumentState | undefined
-): boolean {
-  if (normalizeIdentifier(rootSegment) !== "thisworkbook" || resolution.symbol.kind !== "module") {
-    return false;
+): string | undefined {
+  if (resolution.symbol.kind !== "module") {
+    return undefined;
   }
 
-  return isWorkbookDocumentState(getDocumentState(resolution.uri));
+  const state = getDocumentState(resolution.uri);
+
+  if (isWorkbookDocumentState(state) && normalizeIdentifier(rootSegment) === "thisworkbook") {
+    return "Workbook";
+  }
+
+  if (
+    isWorksheetDocumentState(state) &&
+    normalizeIdentifier(state.analysis.module.name) === normalizeIdentifier(rootSegment)
+  ) {
+    return "Worksheet";
+  }
+
+  return undefined;
 }
 
 function isWorkbookDocumentState(state: DocumentState | undefined): boolean {
@@ -1326,7 +1343,16 @@ function isWorkbookDocumentState(state: DocumentState | undefined): boolean {
     state.analysis.source.moduleKind === "class" &&
     normalizeIdentifier(state.analysis.module.name) === "thisworkbook" &&
     hasModuleAttribute(state, "VB_PredeclaredId", (value) => normalizeIdentifier(value ?? "") === "true") &&
-    hasModuleAttribute(state, "VB_Base")
+    hasModuleAttribute(state, "VB_Base", (value) => normalizeDocumentBaseGuid(value) === WORKBOOK_DOCUMENT_BASE_GUID)
+  );
+}
+
+function isWorksheetDocumentState(state: DocumentState | undefined): boolean {
+  return (
+    !!state &&
+    state.analysis.source.moduleKind === "class" &&
+    hasModuleAttribute(state, "VB_PredeclaredId", (value) => normalizeIdentifier(value ?? "") === "true") &&
+    hasModuleAttribute(state, "VB_Base", (value) => normalizeDocumentBaseGuid(value) === WORKSHEET_DOCUMENT_BASE_GUID)
   );
 }
 
@@ -1341,6 +1367,10 @@ function hasModuleAttribute(
       normalizeIdentifier(member.name) === normalizeIdentifier(attributeName) &&
       (!predicate || predicate(member.value))
   );
+}
+
+function normalizeDocumentBaseGuid(value: string | undefined): string {
+  return value?.replace(/^0\{/u, "").replace(/\}$/u, "").trim().toLowerCase() ?? "";
 }
 
 function getCurrentArgumentTypeName(
@@ -1872,20 +1902,19 @@ function mapBuiltinMemberSemanticToken(
   if (
     !memberAccess ||
     memberAccess.memberPathStartCharacter === undefined ||
-    normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier) ||
-    !canResolveBuiltinAliasMemberAccess(
-      uri,
-      line,
-      stripIndexedAccessMarker(memberAccess.memberPath[0]),
-      memberAccess.memberPathStartCharacter,
-      resolveDefinition,
-      getDocumentState
-    )
+    normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier)
   ) {
     return undefined;
   }
 
-  const ownerName = resolveBuiltinMemberOwner(memberAccess.memberPath);
+  const ownerName = resolveBuiltinMemberOwnerForPath(
+    uri,
+    line,
+    memberAccess.memberPath,
+    memberAccess.memberPathStartCharacter,
+    resolveDefinition,
+    getDocumentState
+  );
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, identifier) : undefined;
 
   return memberReference

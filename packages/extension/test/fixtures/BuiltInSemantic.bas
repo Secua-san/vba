@@ -9,5 +9,6 @@ Public Sub Demo()
     Debug.Print Worksheets("A(1)").Evaluate("A1")
     Debug.Print Worksheets(Array("Sheet1", "Sheet2")).Evaluate("A1")
     Debug.Print ThisWorkbook.SaveAs
+    Debug.Print Sheet1.Evaluate("A1")
     Debug.Print Application.ActiveCell.Address
 End Sub

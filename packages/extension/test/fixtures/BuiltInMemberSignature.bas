@@ -42,6 +42,8 @@ Public Sub Demo()
     Call ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat(xlTypePDF)
     Debug.Print ThisWorkbook.SaveAs
     Call ThisWorkbook.SaveAs("Book1.xlsx")
+    Debug.Print Sheet1.Evaluate("A1")
+    Call Sheet1.SaveAs("Sheet1.csv")
     Call ActiveWorkbook.Close(False)
     Call ActiveWorkbook.ExportAsFixedFormat(xlTypePDF)
     Call Application.CalculateFull()
