@@ -277,3 +277,25 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - script / server / extension を含む `npm test`、`npm run lint`、`npm run package` を再実行して通過を確認した。
 - 残課題:
   - `Sheet1` のような worksheet document module alias を安全に `Worksheet` へ接続する条件整理は、次候補として継続する。
+
+## 2026-03-13 PR #52 feat: worksheet document module root を解決
+- レビュー状況: `COMMENTED（対応済み・Reviews paused）`
+- 要約:
+  - `reviewer` の事前自己レビューでは、重大な指摘（`P0-P2`）は出ず、回帰リスク、境界条件、テスト不足、不要差分の観点で PR 化可能と判断された。
+  - `ThisWorkbook` 専用だった document module root 判定を一般化し、`VB_PredeclaredId=True` かつ `VB_Base=Worksheet GUID` の module だけを `Worksheet` root として昇格するようにした。
+  - `Sheet1` の completion / signature help / semantic token の正常系と、非 worksheet predeclared class module の保守系を server / extension テストで固定した。
+  - CodeRabbit からは `normalizeDocumentBaseGuid` の VBA 固有フォーマット説明コメント追加だけが指摘され、軽微修正として採用した。`@coderabbitai pause` 後に修正 push し、再レビュー待ちは行わない。
+- 指摘一覧:
+  - [非採用] `reviewer` 指摘なし。追加修正は不要と判断された。
+  - [採用] `packages/server/src/lsp/documentService.ts` の `normalizeDocumentBaseGuid` に、`VB_Base` が `0{GUID}` 形式で保存される VBA 固有事情を説明するコメントを追加した。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - document module root の特例は名前一致だけでなく `VB_Base` と `VB_PredeclaredId` を見ないと、同名 class module や他 host object を誤分類しやすい。
+  - alias 到達性の追加では completion / signature help / hover / semantic token の入口ごとに別実装が残りやすいため、owner 判定 helper を共通化したほうが回帰を防ぎやすい。
+  - worksheet 以外の host object root は、参照データと owner 判定条件が揃うまで保守動作に留めたほうが誤補完を抑えやすい。
+- 実施:
+  - `packages/core` に既知 owner から built-in member chain を辿る helper を追加した。
+  - `packages/server` で workbook / worksheet document module の owner 判定を `VB_Base` GUID ベースへ整理した。
+  - `Sheet1.cls` fixture と server / extension の回帰テストを追加し、`TASKS.md` を更新した。
+  - CodeRabbit 対応として `normalizeDocumentBaseGuid` の意図コメントを追記した。
+- 残課題:
+  - Chart / DialogSheet など worksheet 以外の host object root の扱いは次候補で整理する。

@@ -66,6 +66,8 @@ export async function run(): Promise<void> {
 
   const thisWorkbookDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ThisWorkbook.cls"));
   await vscode.window.showTextDocument(thisWorkbookDocument);
+  const sheet1Document = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "Sheet1.cls"));
+  await vscode.window.showTextDocument(sheet1Document);
 
   const builtInMemberCompletionDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "BuiltInMemberCompletion.bas")
@@ -75,6 +77,11 @@ export async function run(): Promise<void> {
     builtInMemberCompletionDocument,
     findPositionAfterToken(builtInMemberCompletionDocument, "ThisWorkbook", -1),
     (locations) => locations.some((location) => location.uri.toString() === thisWorkbookDocument.uri.toString())
+  );
+  const sheet1Definitions = await waitForDefinitions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Sheet1", -1),
+    (locations) => locations.some((location) => location.uri.toString() === sheet1Document.uri.toString())
   );
 
   const applicationMemberCompletionItems = await waitForCompletions(
@@ -101,6 +108,11 @@ export async function run(): Promise<void> {
     builtInMemberCompletionDocument,
     findPositionAfterToken(builtInMemberCompletionDocument, "ThisWorkbook."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "SaveAs")
+  );
+  const sheet1MemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Sheet1."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Evaluate")
   );
   const workbookWorksheetsMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
@@ -157,6 +169,8 @@ export async function run(): Promise<void> {
   const thisWorkbookSaveAsCompletion = thisWorkbookMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "SaveAs"
   );
+  const sheet1EvaluateCompletion = sheet1MemberCompletionItems.find((item) => getCompletionItemLabel(item) === "Evaluate");
+  const sheet1SaveAsCompletion = sheet1MemberCompletionItems.find((item) => getCompletionItemLabel(item) === "SaveAs");
   const workbookWorksheetsCountCompletion = workbookWorksheetsMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Count"
   );
@@ -205,6 +219,12 @@ export async function run(): Promise<void> {
     "ThisWorkbook root should resolve to the workbook document module before alias assertions"
   );
   assert.ok(thisWorkbookSaveAsCompletion?.detail?.includes("Excel Workbook method"));
+  assert.ok(
+    sheet1Definitions.some((location) => location.uri.toString() === sheet1Document.uri.toString()),
+    "Sheet1 root should resolve to the worksheet document module before alias assertions"
+  );
+  assert.ok(sheet1EvaluateCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(sheet1SaveAsCompletion?.detail?.includes("Excel Worksheet method"));
   assert.ok(workbookWorksheetsCountCompletion?.detail?.includes("Excel Worksheets property"));
   assert.ok(indexedWorksheetEvaluateCompletion?.detail?.includes("Excel Worksheet method"));
   assert.ok(indexedWorksheetSaveAsCompletion?.detail?.includes("Excel Worksheet method"));
@@ -451,6 +471,16 @@ export async function run(): Promise<void> {
   const builtInWorkbookSaveAsSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "ThisWorkbook.SaveAs("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInSheet1EvaluateSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Sheet1.Evaluate("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInSheet1SaveAsSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Sheet1.SaveAs("),
     (help) => help.signatures.length > 0
   );
   const builtInWorkbookCloseSignatureHelp = await waitForSignatureHelp(
@@ -940,6 +970,16 @@ export async function run(): Promise<void> {
     "built-in member signature should be available for ThisWorkbook.SaveAs"
   );
   assert.equal(
+    builtInSheet1EvaluateSignatureHelp.signatures[0]?.label,
+    "Evaluate(Name) As Variant",
+    "worksheet document root should expose Worksheet.Evaluate signature"
+  );
+  assert.equal(
+    builtInSheet1SaveAsSignatureHelp.signatures[0]?.label,
+    "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)",
+    "worksheet document root should expose Worksheet.SaveAs signature"
+  );
+  assert.equal(
     builtInWorkbookSaveAsSignatureHelp.signatures[0]?.parameters.length,
     12,
     "built-in Workbook.SaveAs signature should expose all parameter metadata"
@@ -1151,7 +1191,11 @@ export async function run(): Promise<void> {
     modifiers: [],
     type: "function"
   });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 11, "Address", {
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 11, "Evaluate", {
+    modifiers: [],
+    type: "function"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 12, "Address", {
     modifiers: [],
     type: "variable"
   });
