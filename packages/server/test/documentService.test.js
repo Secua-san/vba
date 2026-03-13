@@ -560,6 +560,148 @@ Option Explicit`
   assertNoSemanticToken(text, tokens, 11, "SaveAs");
 });
 
+test("document service exposes DialogFrame supplemental members through DialogSheet roots", () => {
+  const service = createDocumentService();
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
+  const uri = "file:///C:/temp/DialogFrameBuiltIn.bas";
+  const text = `Attribute VB_Name = "DialogFrameBuiltIn"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print DialogSheets(1).
+    Debug.Print DialogSheets(1).DialogFrame.
+    Debug.Print DialogSheets(1).DialogFrame.Caption
+    Call DialogSheets(1).DialogFrame.Select("DialogFrame1")
+    Debug.Print Application.DialogSheets(1).DialogFrame.
+    Debug.Print Application.DialogSheets(1).DialogFrame.Text
+    Call ActiveWorkbook.DialogSheets(1).DialogFrame.Select("DialogFrame1")
+    Call ThisWorkbook.DialogSheets(1).DialogFrame.Select("DialogFrame1")
+    Call DialogSheets(Array("Dialog1", "Dialog2")).DialogFrame.Select("DialogFrame1")
+    Debug.Print DialogSheets("Dialog1").DialogFrame.
+    Call DialogSheets.Item(1).DialogFrame.Select("DialogFrame1")
+    Debug.Print DialogSheets(1).DialogFrame.Caption(
+    Debug.Print Application.DialogSheets(1).DialogFrame.Text(
+End Sub`;
+
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const indexedDialogSheetMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1)."));
+  const indexedDialogFrameMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).DialogFrame.")
+  );
+  const applicationDialogFrameMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Application.DialogSheets(1).DialogFrame.")
+  );
+  const namedDialogFrameMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets("Dialog1").DialogFrame.')
+  );
+  const groupedDialogSheetsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(Array("Dialog1", "Dialog2")).')
+  );
+  const captionHover = service.getHover(uri, findPositionAfterTokenInText(text, "DialogSheets(1).DialogFrame.Capti"));
+  const applicationTextHover = service.getHover(
+    uri,
+    findPositionAfterTokenInText(text, "Application.DialogSheets(1).DialogFrame.Tex")
+  );
+  const selectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).DialogFrame.Select(")
+  );
+  const activeWorkbookSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.DialogSheets(1).DialogFrame.Select(")
+  );
+  const itemSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets.Item(1).DialogFrame.Select(")
+  );
+  const thisWorkbookSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ThisWorkbook.DialogSheets(1).DialogFrame.Select(")
+  );
+  const groupedSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(Array("Dialog1", "Dialog2")).DialogFrame.Select(')
+  );
+  const captionPropertySignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).DialogFrame.Caption(")
+  );
+  const applicationTextPropertySignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Application.DialogSheets(1).DialogFrame.Text(")
+  );
+  const tokens = service.getSemanticTokens(uri);
+
+  const dialogFrameProperty = indexedDialogSheetMembers.find((resolution) => resolution.symbol.name === "DialogFrame");
+  const dialogFrameCaption = indexedDialogFrameMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const dialogFrameSelect = indexedDialogFrameMembers.find((resolution) => resolution.symbol.name === "Select");
+  const applicationDialogFrameText = applicationDialogFrameMembers.find((resolution) => resolution.symbol.name === "Text");
+  const namedDialogFrameCaption = namedDialogFrameMembers.find((resolution) => resolution.symbol.name === "Caption");
+
+  assert.equal(dialogFrameProperty?.moduleName, "Excel DialogSheet property");
+  assert.equal(dialogFrameProperty?.typeName, "DialogFrame");
+  assert.equal(dialogFrameProperty?.documentation?.includes("dialogsheet.dialogframe"), true);
+  assert.equal(dialogFrameCaption?.moduleName, "Excel DialogFrame property");
+  assert.equal(dialogFrameCaption?.typeName, "String");
+  assert.equal(dialogFrameCaption?.documentation?.includes("dialogframe.caption"), true);
+  assert.equal(dialogFrameSelect?.moduleName, "Excel DialogFrame method");
+  assert.equal(dialogFrameSelect?.documentation?.includes("dialogframe.select"), true);
+  assert.equal(applicationDialogFrameText?.moduleName, "Excel DialogFrame property");
+  assert.equal(applicationDialogFrameText?.documentation?.includes("dialogframe.text"), true);
+  assert.equal(namedDialogFrameCaption?.moduleName, "Excel DialogFrame property");
+  assert.equal(namedDialogFrameCaption?.documentation?.includes("dialogframe.caption"), true);
+  assert.equal(groupedDialogSheetsMembers.some((resolution) => resolution.symbol.name === "DialogFrame"), false);
+  assert.equal(captionHover?.contents.includes("DialogFrame.Caption"), true);
+  assert.equal(captionHover?.contents.includes("microsoft.office.interop.excel.dialogframe.caption"), true);
+  assert.equal(applicationTextHover?.contents.includes("DialogFrame.Text"), true);
+  assert.equal(applicationTextHover?.contents.includes("microsoft.office.interop.excel.dialogframe.text"), true);
+  assert.equal(selectSignature?.label, "Select(Replace) As Object");
+  assert.equal(selectSignature?.parameters.length, 1);
+  assert.equal(selectSignature?.parameters[0]?.documentation?.includes("想定型: Object"), true);
+  assert.equal(selectSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
+  assert.equal(activeWorkbookSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(itemSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(thisWorkbookSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(groupedSelectSignature, undefined);
+  assert.equal(captionPropertySignature, undefined);
+  assert.equal(applicationTextPropertySignature, undefined);
+  assertSemanticToken(text, tokens, 5, "DialogFrame", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 6, "DialogFrame", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 6, "Caption", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 7, "Select", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 9, "Text", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertNoSemanticToken(text, tokens, 12, "Select");
+});
+
 test("document service keeps built-in member completion and semantic tokens conservative", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInMemberShadowing.bas";

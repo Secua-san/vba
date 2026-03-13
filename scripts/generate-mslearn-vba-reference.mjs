@@ -582,47 +582,148 @@ function parseInteropMethodReference(markdown, ownerName, memberName) {
   };
 }
 
+function parseInteropPropertySignatureLine(vbSignatureLine) {
+  if (!vbSignatureLine) {
+    return undefined;
+  }
+
+  const normalizedLine = vbSignatureLine.replace(/\s+/g, " ").trim();
+  const signatureMatch =
+    normalizedLine.match(
+      /^Public\s+(?:(?:ReadOnly|WriteOnly)\s+)?Property\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\((.*)\))?(?:\s+As\s+([A-Za-z_][A-Za-z0-9_.]*))?$/iu,
+    ) ??
+    normalizedLine.match(
+      /^(?:(?:ReadOnly|WriteOnly)\s+)?Property\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\((.*)\))?(?:\s+As\s+([A-Za-z_][A-Za-z0-9_.]*))?$/iu,
+    );
+
+  if (!signatureMatch?.[1]) {
+    return undefined;
+  }
+
+  const parameterList = signatureMatch[2] ?? "";
+
+  return {
+    memberName: signatureMatch[1],
+    parameters: splitSignatureParameterList(parameterList).map((rawParameter) => parseInteropSignatureParameter(rawParameter)),
+    returnType: signatureMatch[3] ?? "Variant",
+  };
+}
+
+function parseInteropPropertyReference(markdown, ownerName, memberName) {
+  const definitionSection = extractMarkdownSection(markdown, "Definition");
+  const summary = extractSummaryParagraph(markdown);
+  const parsedSignature = parseInteropPropertySignatureLine(extractInteropVbSignatureLine(definitionSection));
+
+  if (!parsedSignature || normalizeReferenceName(parsedSignature.memberName) !== normalizeReferenceName(memberName)) {
+    return {
+      signature: undefined,
+      summary: summary && summary !== interopReservedSummary ? summary : undefined,
+      typeName: undefined,
+    };
+  }
+
+  return {
+    signature:
+      parsedSignature.parameters.length > 0
+        ? {
+            label: buildSignatureLabel(
+              memberName,
+              parsedSignature.parameters.map((parameter) => parameter.name),
+              parsedSignature.returnType,
+            ),
+            ownerName,
+            parameters: parsedSignature.parameters,
+            returnType: parsedSignature.returnType,
+          }
+        : undefined,
+    summary: summary && summary !== interopReservedSummary ? summary : undefined,
+    typeName: parsedSignature.returnType,
+  };
+}
+
+function parseInteropMemberReference(markdown, ownerName, memberName, sectionName) {
+  return normalizeReferenceName(sectionName) === "properties"
+    ? parseInteropPropertyReference(markdown, ownerName, memberName)
+    : parseInteropMethodReference(markdown, ownerName, memberName);
+}
+
+function resolveSupplementalInteropOwnerSections(ownerConfig) {
+  if (Array.isArray(ownerConfig.sections) && ownerConfig.sections.length > 0) {
+    return ownerConfig.sections;
+  }
+
+  if (ownerConfig.sectionName && ownerConfig.memberAllowList) {
+    return [
+      {
+        memberAllowList: ownerConfig.memberAllowList,
+        sectionName: ownerConfig.sectionName,
+      },
+    ];
+  }
+
+  throw new Error(`Supplemental interop owner '${ownerConfig.name}' must declare at least one section.`);
+}
+
 async function buildSupplementalInteropOwner(ownerConfig) {
   const ownerMarkdown = await fetchText(withMarkdown(ownerConfig.learnUrl));
-  const allowedMemberNames = new Set([...ownerConfig.memberAllowList].map((memberName) => normalizeReferenceName(memberName)));
-  const interfaceMembers = parseSectionLinkTable(ownerMarkdown, ownerConfig.sectionName, ownerConfig.learnUrl)
-    .filter((member) => !normalizeReferenceName(member.name).startsWith("_"))
-    .filter((member) => !normalizeReferenceName(member.name).startsWith("dummy"))
-    .filter((member) => allowedMemberNames.has(normalizeReferenceName(member.name)));
   const seenMemberNames = new Set();
-  const members = [];
+  const sections = [];
 
-  for (const member of interfaceMembers) {
-    const normalizedMemberName = normalizeReferenceName(member.name);
+  for (const sectionConfig of resolveSupplementalInteropOwnerSections(ownerConfig)) {
+    const allowedMemberNames = new Set(
+      [...sectionConfig.memberAllowList].map((memberName) => normalizeReferenceName(memberName)),
+    );
+    const interfaceMembers = parseSectionLinkTable(ownerMarkdown, sectionConfig.sectionName, ownerConfig.learnUrl)
+      .filter((member) => !normalizeReferenceName(member.name).startsWith("_"))
+      .filter((member) => !normalizeReferenceName(member.name).startsWith("dummy"))
+      .filter((member) => allowedMemberNames.has(normalizeReferenceName(member.name)));
+    const members = [];
 
-    if (seenMemberNames.has(normalizedMemberName)) {
-      throw new Error(`Supplemental interop owner '${ownerConfig.name}' contains duplicate member '${member.name}'.`);
+    for (const member of interfaceMembers) {
+      const normalizedMemberName = normalizeReferenceName(member.name);
+
+      if (seenMemberNames.has(normalizedMemberName)) {
+        throw new Error(`Supplemental interop owner '${ownerConfig.name}' contains duplicate member '${member.name}'.`);
+      }
+
+      seenMemberNames.add(normalizedMemberName);
     }
 
-    seenMemberNames.add(normalizedMemberName);
-  }
-
-  for (const allowedMemberName of allowedMemberNames) {
-    if (!seenMemberNames.has(allowedMemberName)) {
-      throw new Error(`Supplemental interop owner '${ownerConfig.name}' is missing member '${allowedMemberName}'.`);
+    for (const allowedMemberName of allowedMemberNames) {
+      if (!interfaceMembers.some((member) => normalizeReferenceName(member.name) === allowedMemberName)) {
+        throw new Error(
+          `Supplemental interop owner '${ownerConfig.name}' is missing member '${allowedMemberName}' in section '${sectionConfig.sectionName}'.`,
+        );
+      }
     }
-  }
 
-  for (const member of interfaceMembers) {
-    const memberMarkdown = await fetchText(withMarkdown(member.learnUrl));
-    const signatureMetadata = parseInteropMethodReference(memberMarkdown, ownerConfig.name, member.name);
-
-    if (!signatureMetadata.signature) {
-      throw new Error(
-        `Supplemental interop owner '${ownerConfig.name}' could not extract signature metadata for member '${member.name}'.`,
+    for (const member of interfaceMembers) {
+      const memberMarkdown = await fetchText(withMarkdown(member.learnUrl));
+      const memberMetadata = parseInteropMemberReference(
+        memberMarkdown,
+        ownerConfig.name,
+        member.name,
+        sectionConfig.sectionName,
       );
+
+      if (normalizeReferenceName(sectionConfig.sectionName) === "methods" && !memberMetadata.signature) {
+        throw new Error(
+          `Supplemental interop owner '${ownerConfig.name}' could not extract signature metadata for member '${member.name}'.`,
+        );
+      }
+
+      members.push({
+        learnUrl: member.learnUrl,
+        name: member.name,
+        signature: memberMetadata.signature,
+        summary: memberMetadata.summary,
+        typeName: memberMetadata.typeName,
+      });
     }
 
-    members.push({
-      learnUrl: member.learnUrl,
-      name: member.name,
-      signature: signatureMetadata.signature,
-      summary: signatureMetadata.summary,
+    sections.push({
+      members,
+      title: sectionConfig.sectionName,
     });
   }
 
@@ -630,12 +731,7 @@ async function buildSupplementalInteropOwner(ownerConfig) {
     kind: ownerConfig.kind,
     learnUrl: ownerConfig.learnUrl,
     name: ownerConfig.name,
-    sections: [
-      {
-        members,
-        title: ownerConfig.sectionName,
-      },
-    ],
+    sections,
     title: ownerConfig.title,
     tocHref: "",
   };
@@ -1328,7 +1424,7 @@ async function main() {
         "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
         "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
         "Member summaries and signature metadata are currently enriched for selected Excel members.",
-        "DialogSheet common callable members are added from Microsoft Learn interop pages as a constrained supplemental source.",
+        "DialogSheet and DialogFrame supplemental members are added from Microsoft Learn interop pages as constrained supplemental sources.",
         "Application.DialogSheets and Workbook.DialogSheets are normalized to the supplemental DialogSheets collection owner for built-in chain resolution.",
       ],
       urls: sourceUrls,

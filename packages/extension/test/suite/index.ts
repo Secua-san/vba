@@ -282,10 +282,20 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets(1)."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "SaveAs")
   );
+  const dialogFrameCompletionItems = await waitForCompletions(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets(1).DialogFrame."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
+  );
   const namedDialogSheetCompletionItems = await waitForCompletions(
     dialogSheetBuiltInDocument,
     findPositionAfterToken(dialogSheetBuiltInDocument, 'DialogSheets("Dialog1").'),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Activate")
+  );
+  const namedDialogFrameCompletionItems = await waitForCompletions(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, 'DialogSheets("Dialog1").DialogFrame.'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
   );
   const groupedDialogSheetsCompletionItems = await waitForCompletions(
     dialogSheetBuiltInDocument,
@@ -302,6 +312,11 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetBuiltInDocument, "Application.DialogSheets."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
   );
+  const applicationDialogFrameCompletionItems = await waitForCompletions(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "Application.DialogSheets(1).DialogFrame."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Text")
+  );
   const activeWorkbookDialogSheetCompletionItems = await waitForCompletions(
     dialogSheetBuiltInDocument,
     findPositionAfterToken(dialogSheetBuiltInDocument, "ActiveWorkbook.DialogSheets(1)."),
@@ -315,6 +330,11 @@ export async function run(): Promise<void> {
   const dialogSheetEvaluateSignatureHelp = await waitForSignatureHelp(
     dialogSheetBuiltInDocument,
     findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets(1).Evaluate("),
+    (help) => help.signatures.length > 0
+  );
+  const dialogFrameSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets(1).DialogFrame.Select("),
     (help) => help.signatures.length > 0
   );
   const dialogSheetSaveAsSignatureHelp = await waitForSignatureHelp(
@@ -346,18 +366,55 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetBuiltInDocument, "ActiveWorkbook.DialogSheets(1).SaveAs("),
     (help) => help.signatures.length > 0
   );
+  const activeWorkbookDialogFrameSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "ActiveWorkbook.DialogSheets(1).DialogFrame.Select("),
+    (help) => help.signatures.length > 0
+  );
+  const itemDialogFrameSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets.Item(1).DialogFrame.Select("),
+    (help) => help.signatures.length > 0
+  );
   const thisWorkbookDialogSheetSaveAsSignatureHelp = await waitForSignatureHelp(
     dialogSheetBuiltInDocument,
     findPositionAfterToken(dialogSheetBuiltInDocument, "ThisWorkbook.DialogSheets(1).SaveAs("),
+    (help) => help.signatures.length > 0
+  );
+  const thisWorkbookDialogFrameSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "ThisWorkbook.DialogSheets(1).DialogFrame.Select("),
     (help) => help.signatures.length > 0
   );
   const groupedApplicationDialogSheetSaveAsSuppressed = await waitForNoSignatureHelp(
     dialogSheetBuiltInDocument,
     findPositionAfterToken(dialogSheetBuiltInDocument, 'Application.DialogSheets(Array("Dialog1", "Dialog2")).SaveAs(')
   );
+  const groupedDialogFrameSelectSuppressed = await waitForNoSignatureHelp(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, 'DialogSheets(Array("Dialog1", "Dialog2")).DialogFrame.Select(')
+  );
+  const dialogFrameCaptionPropertySuppressed = await waitForNoSignatureHelp(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets(1).DialogFrame.Caption(")
+  );
+  const applicationDialogFrameTextPropertySuppressed = await waitForNoSignatureHelp(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "Application.DialogSheets(1).DialogFrame.Text(")
+  );
   const dialogSheetHover = await waitForHover(
     dialogSheetBuiltInDocument,
     findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets(1).SaveA"),
+    (hovers) => hovers.length > 0
+  );
+  const dialogFrameCaptionHover = await waitForHover(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "DialogSheets(1).DialogFrame.Capti"),
+    (hovers) => hovers.length > 0
+  );
+  const applicationDialogFrameTextHover = await waitForHover(
+    dialogSheetBuiltInDocument,
+    findPositionAfterToken(dialogSheetBuiltInDocument, "Application.DialogSheets(1).DialogFrame.Tex"),
     (hovers) => hovers.length > 0
   );
   const activeWorkbookDialogSheetHover = await waitForHover(
@@ -377,14 +434,22 @@ export async function run(): Promise<void> {
   const dialogSheetsCountCompletion = dialogSheetsCollectionCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Count"
   );
+  const dialogFramePropertyCompletion = dialogSheetItemCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "DialogFrame"
+  );
   const dialogSheetSaveAsCompletion = dialogSheetItemCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "SaveAs"
   );
   const dialogSheetEvaluateCompletion = dialogSheetItemCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Evaluate"
   );
+  const dialogFrameCaptionCompletion = dialogFrameCompletionItems.find((item) => getCompletionItemLabel(item) === "Caption");
+  const dialogFrameSelectCompletion = dialogFrameCompletionItems.find((item) => getCompletionItemLabel(item) === "Select");
   const namedDialogSheetActivateCompletion = namedDialogSheetCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Activate"
+  );
+  const namedDialogFrameCaptionCompletion = namedDialogFrameCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Caption"
   );
   const groupedDialogSheetsCountCompletion = groupedDialogSheetsCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Count"
@@ -395,6 +460,9 @@ export async function run(): Promise<void> {
   const applicationDialogSheetsCountCompletion = applicationDialogSheetsCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Count"
   );
+  const applicationDialogFrameTextCompletion = applicationDialogFrameCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Text"
+  );
   const activeWorkbookDialogSheetSaveAsCompletion = activeWorkbookDialogSheetCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "SaveAs"
   );
@@ -402,15 +470,23 @@ export async function run(): Promise<void> {
     (item) => getCompletionItemLabel(item) === "SaveAs"
   );
   const dialogSheetHoverText = getHoverContentsText(dialogSheetHover[0]);
+  const dialogFrameCaptionHoverText = getHoverContentsText(dialogFrameCaptionHover[0]);
+  const applicationDialogFrameTextHoverText = getHoverContentsText(applicationDialogFrameTextHover[0]);
   const activeWorkbookDialogSheetHoverText = getHoverContentsText(activeWorkbookDialogSheetHover[0]);
 
   assert.ok(dialogSheetsCountCompletion?.detail?.includes("Excel DialogSheets property"));
+  assert.ok(dialogFramePropertyCompletion?.detail?.includes("Excel DialogSheet property"));
+  assert.ok(dialogFramePropertyCompletion?.detail?.includes("DialogFrame"));
   assert.ok(dialogSheetSaveAsCompletion?.detail?.includes("Excel DialogSheet method"));
   assert.ok(dialogSheetEvaluateCompletion?.detail?.includes("Excel DialogSheet method"));
+  assert.ok(dialogFrameCaptionCompletion?.detail?.includes("Excel DialogFrame property"));
+  assert.ok(dialogFrameSelectCompletion?.detail?.includes("Excel DialogFrame method"));
   assert.ok(namedDialogSheetActivateCompletion?.detail?.includes("Excel DialogSheet method"));
+  assert.ok(namedDialogFrameCaptionCompletion?.detail?.includes("Excel DialogFrame property"));
   assert.ok(groupedDialogSheetsCountCompletion?.detail?.includes("Excel DialogSheets property"));
   assert.ok(itemDialogSheetSaveAsCompletion?.detail?.includes("Excel DialogSheet method"));
   assert.ok(applicationDialogSheetsCountCompletion?.detail?.includes("Excel DialogSheets property"));
+  assert.ok(applicationDialogFrameTextCompletion?.detail?.includes("Excel DialogFrame property"));
   assert.ok(activeWorkbookDialogSheetSaveAsCompletion?.detail?.includes("Excel DialogSheet method"));
   assert.ok(thisWorkbookDialogSheetSaveAsCompletion?.detail?.includes("Excel DialogSheet method"));
   assert.equal(
@@ -418,7 +494,24 @@ export async function run(): Promise<void> {
     false,
     "grouped DialogSheets selector should stay on the DialogSheets collection"
   );
+  assert.equal(
+    groupedDialogSheetsCompletionItems.some((item) => getCompletionItemLabel(item) === "DialogFrame"),
+    false,
+    "grouped DialogSheets selector should not expose DialogFrame"
+  );
   assert.equal(dialogSheetEvaluateSignatureHelp.signatures[0]?.label, "Evaluate(Name) As Object");
+  assert.equal(dialogFrameSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(dialogFrameSelectSignatureHelp.signatures[0]?.parameters.length, 1);
+  assert.ok(
+    getSignatureDocumentation(dialogFrameSelectSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "想定型: Object"
+    )
+  );
+  assert.ok(
+    getSignatureDocumentation(dialogFrameSelectSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "省略可能"
+    )
+  );
   assert.equal(dialogSheetSaveAsSignatureHelp.signatures[0]?.label, "SaveAs(Filename, FileFormat, Password, ..., Local)");
   assert.equal(dialogSheetSaveAsSignatureHelp.signatures[0]?.parameters.length, 10);
   assert.ok(
@@ -437,18 +530,28 @@ export async function run(): Promise<void> {
     activeWorkbookDialogSheetSaveAsSignatureHelp.signatures[0]?.label,
     "SaveAs(Filename, FileFormat, Password, ..., Local)"
   );
+  assert.equal(activeWorkbookDialogFrameSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(itemDialogFrameSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(
     thisWorkbookDialogSheetSaveAsSignatureHelp.signatures[0]?.label,
     "SaveAs(Filename, FileFormat, Password, ..., Local)"
   );
+  assert.equal(thisWorkbookDialogFrameSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(
     dialogSheetExportSignatureHelp.signatures[0]?.label,
     "ExportAsFixedFormat(Type, Filename, Quality, ..., FixedFormatExtClassPtr)"
   );
   assert.equal(groupedDialogSheetSaveAsSuppressed, true);
   assert.equal(groupedApplicationDialogSheetSaveAsSuppressed, true);
+  assert.equal(groupedDialogFrameSelectSuppressed, true);
+  assert.equal(dialogFrameCaptionPropertySuppressed, true);
+  assert.equal(applicationDialogFrameTextPropertySuppressed, true);
   assert.ok(dialogSheetHoverText.includes("SaveAs(Filename, FileFormat, Password, ..., Local)"));
   assert.ok(dialogSheetHoverText.includes("microsoft.office.interop.excel.dialogsheet.saveas"));
+  assert.ok(dialogFrameCaptionHoverText.includes("DialogFrame.Caption"));
+  assert.ok(dialogFrameCaptionHoverText.includes("microsoft.office.interop.excel.dialogframe.caption"));
+  assert.ok(applicationDialogFrameTextHoverText.includes("DialogFrame.Text"));
+  assert.ok(applicationDialogFrameTextHoverText.includes("microsoft.office.interop.excel.dialogframe.text"));
   assert.ok(activeWorkbookDialogSheetHoverText.includes("microsoft.office.interop.excel.dialogsheet.saveas"));
   assertDecodedSemanticToken(dialogSheetBuiltInDocument.getText(), decodedDialogSheetTokens, 4, "DialogSheets", {
     modifiers: [],
@@ -471,6 +574,23 @@ export async function run(): Promise<void> {
     type: "function"
   });
   assertNoDecodedSemanticToken(dialogSheetBuiltInDocument.getText(), decodedDialogSheetTokens, 16, "SaveAs");
+  assertDecodedSemanticToken(dialogSheetBuiltInDocument.getText(), decodedDialogSheetTokens, 18, "DialogFrame", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(dialogSheetBuiltInDocument.getText(), decodedDialogSheetTokens, 19, "Caption", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(dialogSheetBuiltInDocument.getText(), decodedDialogSheetTokens, 20, "Select", {
+    modifiers: [],
+    type: "function"
+  });
+  assertDecodedSemanticToken(dialogSheetBuiltInDocument.getText(), decodedDialogSheetTokens, 22, "Text", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertNoDecodedSemanticToken(dialogSheetBuiltInDocument.getText(), decodedDialogSheetTokens, 25, "Select");
 
   const definitions = await waitForDefinitions(
     consumerDocument,
