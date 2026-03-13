@@ -5,7 +5,8 @@
       "Excel and Office library reference items are extracted from the official Office VBA API TOC JSON.",
       "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
       "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
-      "Member summaries and signature metadata are currently enriched for selected Excel members."
+      "Member summaries and signature metadata are currently enriched for selected Excel members.",
+      "DialogSheet common callable members are added from Microsoft Learn interop pages as a constrained supplemental source."
     ],
     "urls": {
       "apiToc": "https://learn.microsoft.com/en-us/office/vba/api/toc.json",
@@ -29,12 +30,12 @@
     "constantsEnumerationUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.constants",
     "objectModel": {
       "counts": {
-        "total": 578,
-        "objects": 305,
-        "collections": 0,
+        "total": 580,
+        "objects": 306,
+        "collections": 1,
         "enumerations": 272,
         "others": 1,
-        "members": 5082
+        "members": 5107
       },
       "items": [
         {
@@ -34038,6 +34039,404 @@
               ]
             }
           ]
+        },
+        {
+          "kind": "collection",
+          "learnUrl": "https://learn.microsoft.com/office/vba/excel/concepts/workbooks-and-worksheets/refer-to-sheets-by-name",
+          "name": "DialogSheets",
+          "sections": [
+            {
+              "title": "Methods",
+              "members": [
+                {
+                  "name": "Add",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.add",
+                  "tocHref": "excel.sheets.add"
+                },
+                {
+                  "name": "Add2",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.add2",
+                  "tocHref": "excel.sheets.add2"
+                },
+                {
+                  "name": "Copy",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.copy",
+                  "tocHref": "excel.sheets.copy"
+                },
+                {
+                  "name": "Delete",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.delete",
+                  "tocHref": "excel.sheets.delete"
+                },
+                {
+                  "name": "FillAcrossSheets",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.fillacrosssheets",
+                  "tocHref": "excel.sheets.fillacrosssheets"
+                },
+                {
+                  "name": "Move",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.move",
+                  "tocHref": "excel.sheets.move"
+                },
+                {
+                  "name": "PrintOut",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.printout",
+                  "tocHref": "excel.sheets.printout"
+                },
+                {
+                  "name": "PrintPreview",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.printpreview",
+                  "tocHref": "excel.sheets.printpreview"
+                },
+                {
+                  "name": "Select",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.select",
+                  "tocHref": "excel.sheets.select"
+                }
+              ]
+            },
+            {
+              "title": "Properties",
+              "members": [
+                {
+                  "name": "Application",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.application",
+                  "tocHref": "excel.sheets.application"
+                },
+                {
+                  "name": "Count",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.count",
+                  "tocHref": "excel.sheets.count"
+                },
+                {
+                  "name": "Creator",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.creator",
+                  "tocHref": "excel.sheets.creator"
+                },
+                {
+                  "name": "HPageBreaks",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.hpagebreaks",
+                  "tocHref": "excel.sheets.hpagebreaks"
+                },
+                {
+                  "name": "Item",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.item",
+                  "tocHref": "excel.sheets.item",
+                  "typeName": "DialogSheet"
+                },
+                {
+                  "name": "Parent",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.parent",
+                  "tocHref": "excel.sheets.parent"
+                },
+                {
+                  "name": "Visible",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.visible",
+                  "tocHref": "excel.sheets.visible"
+                },
+                {
+                  "name": "VPageBreaks",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.sheets.vpagebreaks",
+                  "tocHref": "excel.sheets.vpagebreaks"
+                }
+              ]
+            }
+          ],
+          "title": "DialogSheets collection",
+          "tocHref": ""
+        },
+        {
+          "kind": "object",
+          "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet?view=excel-pia",
+          "name": "DialogSheet",
+          "sections": [
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.activate#microsoft-office-interop-excel-dialogsheet-activate",
+                  "name": "Activate",
+                  "signature": {
+                    "label": "Activate()",
+                    "ownerName": "DialogSheet",
+                    "parameters": [],
+                    "returnType": "Void"
+                  }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.evaluate#microsoft-office-interop-excel-dialogsheet-evaluate%28system-object%29",
+                  "name": "Evaluate",
+                  "signature": {
+                    "label": "Evaluate(Name) As Object",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": true,
+                        "label": "Name As Object",
+                        "name": "Name"
+                      }
+                    ],
+                    "returnType": "Object"
+                  }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.exportasfixedformat#microsoft-office-interop-excel-dialogsheet-exportasfixedformat%28microsoft-office-interop-excel-xlfixedformattype-system-object-system-object-system-object-system-object-system-object-system-object-system-object-system-object%29",
+                  "name": "ExportAsFixedFormat",
+                  "signature": {
+                    "label": "ExportAsFixedFormat(Type, Filename, Quality, ..., FixedFormatExtClassPtr)",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "XlFixedFormatType",
+                        "isRequired": true,
+                        "label": "Type As XlFixedFormatType",
+                        "name": "Type"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Filename As Object",
+                        "name": "Filename"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Quality As Object",
+                        "name": "Quality"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "IncludeDocProperties As Object",
+                        "name": "IncludeDocProperties"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "IgnorePrintAreas As Object",
+                        "name": "IgnorePrintAreas"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "From As Object",
+                        "name": "From"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "To As Object",
+                        "name": "To"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "OpenAfterPublish As Object",
+                        "name": "OpenAfterPublish"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "FixedFormatExtClassPtr As Object",
+                        "name": "FixedFormatExtClassPtr"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.move#microsoft-office-interop-excel-dialogsheet-move%28system-object-system-object%29",
+                  "name": "Move",
+                  "signature": {
+                    "label": "Move(Before, After)",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Before As Object",
+                        "name": "Before"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "After As Object",
+                        "name": "After"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.printout#microsoft-office-interop-excel-dialogsheet-printout%28system-object-system-object-system-object-system-object-system-object-system-object-system-object-system-object%29",
+                  "name": "PrintOut",
+                  "signature": {
+                    "label": "PrintOut(From, To, Copies, ..., PrToFileName)",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "From As Object",
+                        "name": "From"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "To As Object",
+                        "name": "To"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Copies As Object",
+                        "name": "Copies"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Preview As Object",
+                        "name": "Preview"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "ActivePrinter As Object",
+                        "name": "ActivePrinter"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "PrintToFile As Object",
+                        "name": "PrintToFile"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Collate As Object",
+                        "name": "Collate"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "PrToFileName As Object",
+                        "name": "PrToFileName"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.saveas#microsoft-office-interop-excel-dialogsheet-saveas%28system-string-system-object-system-object-system-object-system-object-system-object-system-object-system-object-system-object-system-object%29",
+                  "name": "SaveAs",
+                  "signature": {
+                    "label": "SaveAs(Filename, FileFormat, Password, ..., Local)",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "String",
+                        "isRequired": true,
+                        "label": "Filename As String",
+                        "name": "Filename"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "FileFormat As Object",
+                        "name": "FileFormat"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Password As Object",
+                        "name": "Password"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "WriteResPassword As Object",
+                        "name": "WriteResPassword"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "ReadOnlyRecommended As Object",
+                        "name": "ReadOnlyRecommended"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "CreateBackup As Object",
+                        "name": "CreateBackup"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "AddToMru As Object",
+                        "name": "AddToMru"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "TextCodepage As Object",
+                        "name": "TextCodepage"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "TextVisualLayout As Object",
+                        "name": "TextVisualLayout"
+                      },
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Local As Object",
+                        "name": "Local"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.select#microsoft-office-interop-excel-dialogsheet-select%28system-object%29",
+                  "name": "Select",
+                  "signature": {
+                    "label": "Select(Replace)",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Replace As Object",
+                        "name": "Replace"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.unprotect#microsoft-office-interop-excel-dialogsheet-unprotect%28system-object%29",
+                  "name": "Unprotect",
+                  "signature": {
+                    "label": "Unprotect(Password)",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Password As Object",
+                        "name": "Password"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
+                }
+              ],
+              "title": "Methods"
+            }
+          ],
+          "title": "DialogSheet object",
+          "tocHref": ""
         }
       ],
       "enumerations": [

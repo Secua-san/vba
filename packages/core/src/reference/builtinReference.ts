@@ -56,7 +56,10 @@ type RawReferenceData = Record<string, unknown>;
 type RawReferenceEntry = Record<string, unknown>;
 
 const REFERENCE_FILE_NAME = "mslearn-vba-reference.json";
-const INDEXED_COLLECTION_OWNER_TYPES = new Map<string, string>([["worksheets", "Worksheet"]]);
+const INDEXED_COLLECTION_OWNER_TYPES = new Map<string, string>([
+  ["dialogsheets", "DialogSheet"],
+  ["worksheets", "Worksheet"],
+]);
 const BASE_BUILTIN_COMPLETIONS: Array<
   Omit<BuiltinReferenceItem, "detail" | "documentation" | "modifiers" | "normalizedName"> & {
     detail: string;
@@ -444,7 +447,7 @@ function createMemberReferenceItem(
         : normalizedSectionTitle === "events"
           ? "event"
           : "member";
-  const inferredTypeName = inferBuiltinMemberTypeName(safeName, knownItemsByNormalizedName);
+  const inferredTypeName = readString(memberSource, "typeName") ?? inferBuiltinMemberTypeName(safeName, knownItemsByNormalizedName);
   const learnUrl = readString(memberSource, "learnUrl");
   const summary = readString(memberSource, "summary");
   const signature = readBuiltinSignature(memberSource);

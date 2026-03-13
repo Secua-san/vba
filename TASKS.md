@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] DialogSheet common callable の最小プロトタイプ
+  - `scripts/lib/supplementalReferenceConfig.mjs` に `DialogSheet` interop allow list と `DialogSheets` collection clone を追加し、`resources/reference/mslearn-vba-reference.json` を再生成
+  - `DialogSheets(1)` / `DialogSheets("Dialog1")` / `DialogSheets.Item(1)` では `DialogSheet` member へ到達し、`DialogSheets(Array(...))` は collection のまま維持する built-in 解決を追加
+  - `dummy` / legacy member 混入防止に加え、allow list member の署名抽出失敗や `DialogSheets.Item` の `typeName` 欠落を監査するテストを追加し、`DialogSheet1.` document module の保守動作は維持した
+
 - [x] DialogSheet interop 由来 member source の導入可否整理
   - Office VBA 概念記事、Office VBA API、.NET interop `DialogSheet` page を突き合わせ、全面自動導入は不採用、補助ソースとしての限定利用は可能という結論を整理
   - interop page は `Reserved for internal use.`、`_Dummy*`、`_SaveAs` のような legacy member を含むため、導入するなら allow list と skip rule を先に固定する必要がある
@@ -291,10 +296,9 @@
 
 ## 次候補
 
-- [ ] DialogSheet common callable の最小プロトタイプ
-  - interop 補助ソースを使う場合の最小対象として、`Activate` / `Evaluate` / `ExportAsFixedFormat` / `Move` / `PrintOut` / `SaveAs` / `Select` / `Unprotect` のみを候補にする
-  - `_Dummy*`、`_SaveAs` などの legacy member を除外しつつ、既存 `Worksheet` / `Chart` と重複する signature をどう共有するかの実装案を固める
-  - 生成 JSON へ `dummy` / legacy member が混入しない監査テストと、重複正規化の回帰テストまで含めて進める
+- [ ] DialogSheet common callable の Workbook/Application root 展開可否整理
+  - `DialogSheets(1)` の最小 root で十分か、`ActiveWorkbook.DialogSheets(1)` / `Application.DialogSheets(1)` まで許可するかを、公式ソースと誤補完リスクで再判定する
+  - `DialogSheets` collection 自体の member completion を `Sheets` 共有で広げる場合の妥当性を確認し、必要なら別 PR に分離する
 
 ## メモ
 
