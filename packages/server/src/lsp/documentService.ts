@@ -1369,6 +1369,7 @@ function hasModuleAttribute(
   );
 }
 
+// VBA の VB_Base 属性は 0{GUID} 形式なので、比較前に GUID 文字列へ正規化する。
 function normalizeDocumentBaseGuid(value: string | undefined): string {
   return value?.replace(/^0\{/u, "").replace(/\}$/u, "").trim().toLowerCase() ?? "";
 }
