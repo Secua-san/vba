@@ -35,6 +35,7 @@
 - プロダクト要件とマイルストーン: [docs/requirements/000-overview.md](docs/requirements/000-overview.md)
 - パーサ方針: [docs/adr/0001-parser-strategy.md](docs/adr/0001-parser-strategy.md)
 - vbac 安全方針: [docs/adr/0002-vbac-integration-safety.md](docs/adr/0002-vbac-integration-safety.md)
+- DialogSheet document module 方針: [docs/adr/0004-dialogsheet-document-module-policy.md](docs/adr/0004-dialogsheet-document-module-policy.md)
 - ブランチ・コミット・PR ルール: [docs/process/git-workflow.md](docs/process/git-workflow.md)
 - 自動コミット / 自動 PR と品質ゲート: [docs/process/automation-policy.md](docs/process/automation-policy.md)
 - CodeRabbit 対応: [docs/process/coderabbit-review.md](docs/process/coderabbit-review.md)
