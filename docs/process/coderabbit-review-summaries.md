@@ -358,3 +358,27 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - `AGENTS.md` と `TASKS.md` に調査メモへの導線、本タスク完了、次候補の最小プロトタイプを反映した。
 - 残課題:
   - 次段階では `DialogSheet` common callable の最小プロトタイプを実装し、`dummy` / legacy member 除外と重複正規化の監査テストまで入れる必要がある。
+
+## 2026-03-13 PR #56 feat: DialogSheet common callable の補助参照を追加
+- レビュー状況: `SUCCESS`
+- 要約:
+  - `reviewer` の事前自己レビューでは重大指摘は無く、補助ソースの hard fail 方針、`DialogSheets(1)` / `DialogSheets.Item(1)` / `DialogSheets("Dialog1")` / `DialogSheets(Array(...))` の境界、既存 root への回帰テスト有無を確認した。
+  - 追加の medium 指摘として、補助ソース生成失敗の負例テストと `typeName` 優先化の全体影響テストを厚くできる余地は出たが、現行の監査テストと既存 `Worksheets` 系回帰で今回差分の安全性は十分と判断した。
+  - CodeRabbit は `No actionable comments were generated` で完了し、実装修正は不要だった。
+- 指摘一覧:
+  - [非採用] `reviewer`: `memberTypeOverrides` 未解決や補助ソース署名抽出失敗の負例テストを追加できる余地。
+    理由: 生成器側で hard fail は既に実装済みで、今回の PR では生成後監査と user-facing 回帰を優先したため。
+  - [非採用] `reviewer`: `createMemberReferenceItem` の `typeName` 優先化に対する追加の全体影響テスト。
+    理由: `Worksheets` / `ThisWorkbook` / `Sheet1` / `Chart1` を含む既存 root 回帰は `npm test` で通過しており、今回の変更範囲では追加修正より既存カバレッジで十分と判断したため。
+  - [非採用] CodeRabbit actionable comment なし。walkthrough と docstring coverage 警告のみ。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - Office VBA 正本に owner page が無い object を補助ソースで導入する場合は、allow list、legacy member 除外、生成失敗条件、監査テストをセットで持つべき。
+  - collection clone を導入する場合は、`Item` など返却型が owner 解決に効く member を `memberTypeOverrides` で明示し、grouped selector を単一 owner へ誤昇格させない境界テストを必ず置く。
+  - `No actionable comments` の PR でも、CodeRabbit の walkthrough に含まれる要約は今後の似た変更の設計メモとして再利用できる。
+- 実施:
+  - `scripts/lib/supplementalReferenceConfig.mjs` を追加し、`DialogSheet` interop allow list と `DialogSheets` clone 設定を導入した。
+  - `scripts/generate-mslearn-vba-reference.mjs` で supplemental source 取り込み、allow list 欠落・重複・署名抽出失敗・clone override 未解決の hard fail を追加した。
+  - `packages/core/src/reference/builtinReference.ts` に `dialogsheets -> DialogSheet` 解決と JSON `typeName` 優先を追加した。
+  - server / extension / script 監査テスト、および `TASKS.md` / `docs/process/mslearn-signature-regeneration.md` を更新した。
+- 残課題:
+  - `DialogSheets(1)` だけで十分か、`ActiveWorkbook.DialogSheets(1)` / `Application.DialogSheets(1)` まで広げるかは次候補で整理する。
