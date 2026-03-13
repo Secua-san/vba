@@ -56,6 +56,7 @@ type RawReferenceData = Record<string, unknown>;
 type RawReferenceEntry = Record<string, unknown>;
 
 const REFERENCE_FILE_NAME = "mslearn-vba-reference.json";
+const INDEXED_COLLECTION_OWNER_TYPES = new Map<string, string>([["worksheets", "Worksheet"]]);
 const BASE_BUILTIN_COMPLETIONS: Array<
   Omit<BuiltinReferenceItem, "detail" | "documentation" | "modifiers" | "normalizedName"> & {
     detail: string;
@@ -177,7 +178,7 @@ export function resolveBuiltinMemberOwner(pathSegments: string[]): string | unde
   }
 
   const [rootSegment, ...memberSegments] = pathSegments;
-  const rootReference = getBuiltinReferenceItem(rootSegment);
+  const rootReference = getBuiltinReferenceItem(stripIndexedAccessMarker(rootSegment));
 
   if (!rootReference) {
     return undefined;
@@ -185,14 +186,22 @@ export function resolveBuiltinMemberOwner(pathSegments: string[]): string | unde
 
   let currentOwnerName = rootReference.typeName ?? rootReference.name;
 
+  if (hasIndexedAccessMarker(rootSegment)) {
+    currentOwnerName = resolveIndexedCollectionOwnerTypeName(currentOwnerName) ?? currentOwnerName;
+  }
+
   for (const memberSegment of memberSegments) {
-    const memberReference = getBuiltinMemberReferenceItem(currentOwnerName, memberSegment);
+    const memberReference = getBuiltinMemberReferenceItem(currentOwnerName, stripIndexedAccessMarker(memberSegment));
 
     if (!memberReference?.typeName) {
       return undefined;
     }
 
     currentOwnerName = memberReference.typeName;
+
+    if (hasIndexedAccessMarker(memberSegment)) {
+      currentOwnerName = resolveIndexedCollectionOwnerTypeName(currentOwnerName) ?? currentOwnerName;
+    }
   }
 
   return currentOwnerName;
@@ -636,6 +645,18 @@ function readBuiltinSignature(source: RawReferenceEntry): BuiltinCallableSignatu
 
 function createOwnerMemberKey(ownerName: string, memberName: string): string {
   return `${normalizeIdentifier(ownerName)}:${normalizeIdentifier(memberName)}`;
+}
+
+function hasIndexedAccessMarker(pathSegment: string): boolean {
+  return pathSegment.endsWith("()");
+}
+
+function stripIndexedAccessMarker(pathSegment: string): string {
+  return hasIndexedAccessMarker(pathSegment) ? pathSegment.slice(0, -2) : pathSegment;
+}
+
+function resolveIndexedCollectionOwnerTypeName(ownerName: string): string | undefined {
+  return INDEXED_COLLECTION_OWNER_TYPES.get(normalizeIdentifier(ownerName));
 }
 
 function isRecord(value: unknown): value is RawReferenceEntry {

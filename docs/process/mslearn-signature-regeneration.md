@@ -27,6 +27,11 @@
 - ただし現行の built-in root 到達性では `ActiveWorkbook` / `ThisWorkbook` から `Workbook` callable をすぐ活用できる一方、`Worksheet` callable は `ActiveSheet` を保守的に未型付けとしているため、同じ労力でも Workbook 側の効果が大きい
 - そのため、callable 昇格は先に `Workbook` 側を取り込み、`Worksheet.Evaluate` / `Worksheet.SaveAs` は worksheet root 解決方針と合わせて後続へ送る
 
+## 2026-03-13 の Worksheet callable 昇格
+- `Worksheet.Evaluate` / `Worksheet.SaveAs` / `Worksheet.ExportAsFixedFormat` を allow list へ追加し、署名データを再生成した
+- `ActiveSheet` は引き続き未型付けのまま維持し、代わりに `Worksheets(1)` / `ActiveWorkbook.Worksheets(1)` のような indexed collection access を built-in owner 解決で `Worksheet` として扱うようにした
+- collection index 付き member access を扱う場合は、parser 側の path 解決と collection item type の対応表をセットで更新し、`ActiveSheet` のような曖昧 root には拡げない
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
@@ -76,6 +81,7 @@
   - `parameters[].description`
   - `parameters[].isRequired`
   - `returnType`
+- PR 前に、対象 owner 以外の `resources/reference/mslearn-vba-reference.json` 差分が混入していないことを確認する
 
 ### 5. built-in 解決への影響を確認する
 - `WorksheetFunction.XLookup` のような既存 owner 配下の method 追加だけなら、通常は `packages/core/src/reference/builtinReference.ts` の追加変更は不要

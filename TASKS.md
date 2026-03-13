@@ -6,6 +6,12 @@
 
 ## 完了
 
+- [x] Worksheet callable の署名昇格
+  - `ActiveSheet` を型付けせず、`Worksheets(1)` / `ActiveWorkbook.Worksheets(1)` のような indexed collection access から `Worksheet` member へ到達できるようにした
+  - 現行 Microsoft Learn の `Worksheet.Evaluate` / `Worksheet.SaveAs` / `Worksheet.ExportAsFixedFormat` を署名抽出対象へ追加し、参照 JSON を再生成した
+  - server / extension テストで indexed collection access 経由の completion / signature help / semantic token を回帰確認した
+  - `Worksheets("A(1)")`、`Worksheets(i + 1)`、`ActiveWorkbook.Worksheets(GetIndex())` のような文字列・式・関数呼び出しを含む index 境界ケースも回帰固定した
+
 - [x] 組み込みメンバー署名データの拡張（第8弾）
   - 現行 Microsoft Learn の `Workbook.SaveAs` / `Workbook.Close` / `Workbook.ExportAsFixedFormat` を署名抽出対象へ追加し、参照 JSON を再生成
   - `Sub` 相当の `Workbook` callable は生成データへ `returnType: "Void"` を保持しつつ、表示ラベルは従来どおり `As Void` を出さない形へ補正した
@@ -264,8 +270,8 @@
 
 ## 次候補
 
-- [ ] Worksheet callable の署名昇格
-  - `Worksheet.Evaluate` / `Worksheet.SaveAs` / `Worksheet.ExportAsFixedFormat` など、現行 Learn で署名取得可能な callable を候補化し、root 到達性の設計とセットで着手する
+- [ ] Sheet document module alias の到達性改善
+  - `Sheet1.SaveAs` / `Sheet1.Evaluate` のような worksheet document module root を安全に `Worksheet` member へ接続できるかを調査し、chart sheet との誤分類を避ける判定条件を整理する
 
 ## メモ
 

@@ -107,6 +107,31 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInMemberCompletionDocument, "ActiveWorkbook.Worksheets."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
   );
+  const indexedWorksheetMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Worksheets(1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Evaluate")
+  );
+  const indexedWorksheetStringMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, 'Worksheets("A(1)").'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Evaluate")
+  );
+  const indexedWorksheetExpressionMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Worksheets(i + 1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "SaveAs")
+  );
+  const chainedIndexedWorksheetMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "ActiveWorkbook.Worksheets(1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "ExportAsFixedFormat")
+  );
+  const chainedIndexedWorksheetFunctionMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "ActiveWorkbook.Worksheets(GetIndex())."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "ExportAsFixedFormat")
+  );
   const applicationActiveCellMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
     findPositionAfterToken(builtInMemberCompletionDocument, "Application.ActiveCell."),
@@ -129,6 +154,24 @@ export async function run(): Promise<void> {
   );
   const workbookWorksheetsCountCompletion = workbookWorksheetsMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Count"
+  );
+  const indexedWorksheetEvaluateCompletion = indexedWorksheetMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Evaluate"
+  );
+  const indexedWorksheetSaveAsCompletion = indexedWorksheetMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "SaveAs"
+  );
+  const indexedWorksheetStringEvaluateCompletion = indexedWorksheetStringMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Evaluate"
+  );
+  const indexedWorksheetExpressionSaveAsCompletion = indexedWorksheetExpressionMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "SaveAs"
+  );
+  const chainedIndexedWorksheetExportCompletion = chainedIndexedWorksheetMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "ExportAsFixedFormat"
+  );
+  const chainedIndexedWorksheetFunctionExportCompletion = chainedIndexedWorksheetFunctionMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "ExportAsFixedFormat"
   );
   const applicationActiveCellAddressCompletion = applicationActiveCellMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Address"
@@ -155,6 +198,12 @@ export async function run(): Promise<void> {
   );
   assert.ok(thisWorkbookSaveAsCompletion?.detail?.includes("Excel Workbook method"));
   assert.ok(workbookWorksheetsCountCompletion?.detail?.includes("Excel Worksheets property"));
+  assert.ok(indexedWorksheetEvaluateCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(indexedWorksheetSaveAsCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(indexedWorksheetStringEvaluateCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(indexedWorksheetExpressionSaveAsCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(chainedIndexedWorksheetExportCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(chainedIndexedWorksheetFunctionExportCompletion?.detail?.includes("Excel Worksheet method"));
   assert.ok(applicationActiveCellAddressCompletion?.detail?.includes("Excel Range"));
 
   const definitions = await waitForDefinitions(
@@ -343,6 +392,36 @@ export async function run(): Promise<void> {
   const builtInAddressLocalSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "Cells.AddressLocal("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorksheetEvaluateSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Worksheets(1).Evaluate("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorksheetStringEvaluateSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, 'Worksheets("A(1)").Evaluate('),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorksheetSaveAsSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Worksheets(1).SaveAs("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorksheetExpressionSaveAsSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Worksheets(i + 1).SaveAs("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorksheetExportSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.Worksheets(1).ExportAsFixedFormat("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorksheetFunctionExportSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat("),
     (help) => help.signatures.length > 0
   );
   const builtInWorkbookSaveAsSignatureHelp = await waitForSignatureHelp(
@@ -740,6 +819,99 @@ export async function run(): Promise<void> {
     "built-in AddressLocal RelativeTo argument should be optional"
   );
   assert.equal(
+    builtInWorksheetEvaluateSignatureHelp.signatures[0]?.label,
+    "Evaluate(Name) As Variant",
+    "built-in member signature should be available for Worksheets(1).Evaluate"
+  );
+  assert.equal(
+    builtInWorksheetEvaluateSignatureHelp.signatures[0]?.parameters.length,
+    1,
+    "built-in Worksheet.Evaluate signature should expose one required parameter"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorksheetEvaluateSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "必須引数"
+    ),
+    "built-in Worksheet.Evaluate argument should stay required"
+  );
+  assert.equal(
+    builtInWorksheetStringEvaluateSignatureHelp.signatures[0]?.label,
+    "Evaluate(Name) As Variant",
+    "built-in member signature should be available for Worksheets(\"A(1)\").Evaluate"
+  );
+  assert.ok(
+    getSignatureDocumentation(
+      builtInWorksheetStringEvaluateSignatureHelp.signatures[0]?.parameters[0]?.documentation
+    ).includes("必須引数"),
+    "built-in Worksheet.Evaluate should stay available for string index access"
+  );
+  assert.equal(
+    builtInWorksheetSaveAsSignatureHelp.signatures[0]?.label,
+    "SaveAs(FileName, FileFormat, Password, ..., Local)",
+    "built-in member signature should be available for Worksheets(1).SaveAs"
+  );
+  assert.equal(
+    builtInWorksheetSaveAsSignatureHelp.signatures[0]?.parameters.length,
+    10,
+    "built-in Worksheet.SaveAs signature should expose worksheet-specific parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorksheetSaveAsSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "必須引数"
+    ),
+    "built-in Worksheet.SaveAs first argument should stay required"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorksheetSaveAsSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "想定型: String"
+    ),
+    "built-in Worksheet.SaveAs first argument should include string type metadata"
+  );
+  assert.equal(
+    builtInWorksheetExpressionSaveAsSignatureHelp.signatures[0]?.label,
+    "SaveAs(FileName, FileFormat, Password, ..., Local)",
+    "built-in member signature should be available for Worksheets(i + 1).SaveAs"
+  );
+  assert.ok(
+    getSignatureDocumentation(
+      builtInWorksheetExpressionSaveAsSignatureHelp.signatures[0]?.parameters[0]?.documentation
+    ).includes("想定型: String"),
+    "built-in Worksheet.SaveAs should stay available for expression index access"
+  );
+  assert.equal(
+    builtInWorksheetExportSignatureHelp.signatures[0]?.label,
+    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+    "built-in member signature should be available for ActiveWorkbook.Worksheets(1).ExportAsFixedFormat"
+  );
+  assert.equal(
+    builtInWorksheetExportSignatureHelp.signatures[0]?.parameters.length,
+    9,
+    "built-in Worksheet.ExportAsFixedFormat signature should expose fixed parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorksheetExportSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "必須引数"
+    ),
+    "built-in Worksheet.ExportAsFixedFormat first argument should stay required"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorksheetExportSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "想定型: XlFixedFormatType"
+    ),
+    "built-in Worksheet.ExportAsFixedFormat first argument should include enum type metadata"
+  );
+  assert.equal(
+    builtInWorksheetFunctionExportSignatureHelp.signatures[0]?.label,
+    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+    "built-in member signature should be available for ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat"
+  );
+  assert.ok(
+    getSignatureDocumentation(
+      builtInWorksheetFunctionExportSignatureHelp.signatures[0]?.parameters[0]?.documentation
+    ).includes("想定型: XlFixedFormatType"),
+    "built-in Worksheet.ExportAsFixedFormat should stay available for function index access"
+  );
+  assert.equal(
     builtInWorkbookSaveAsSignatureHelp.signatures[0]?.label,
     "SaveAs(FileName, FileFormat, Password, ..., Local)",
     "built-in member signature should be available for ThisWorkbook.SaveAs"
@@ -941,15 +1113,19 @@ export async function run(): Promise<void> {
     modifiers: [],
     type: "function"
   });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 8, "ThisWorkbook", {
-    modifiers: [],
-    type: "variable"
-  });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 8, "SaveAs", {
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 8, "Evaluate", {
     modifiers: [],
     type: "function"
   });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 9, "Address", {
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 9, "ThisWorkbook", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 9, "SaveAs", {
+    modifiers: [],
+    type: "function"
+  });
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 10, "Address", {
     modifiers: [],
     type: "variable"
   });

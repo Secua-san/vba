@@ -34,6 +34,18 @@ const signatureMetadataOverrides = new Map([
     },
   ],
   [
+    "worksheet.exportasfixedformat",
+    {
+      returnType: "Void",
+    },
+  ],
+  [
+    "worksheet.saveas",
+    {
+      returnType: "Void",
+    },
+  ],
+  [
     "worksheetfunction.find",
     {
       parameterDescriptions: new Map([

@@ -6,6 +6,7 @@ Public Sub Demo()
     MsgBox xlAll
     Debug.Print Application.Name
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
+    Debug.Print Worksheets("A(1)").Evaluate("A1")
     Debug.Print ThisWorkbook.SaveAs
     Debug.Print Application.ActiveCell.Address
 End Sub

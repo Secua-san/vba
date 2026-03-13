@@ -65,18 +65,29 @@ test("document service exposes built-in member completion items from the referen
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInMemberCompletion.bas";
   const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
-  const text = `Attribute VB_Name = "BuiltInMemberCompletion"
+const text = `Attribute VB_Name = "BuiltInMemberCompletion"
 Option Explicit
 
 Public Sub Demo()
+    Dim i As Long
+
     Debug.Print Application.
     Debug.Print WorksheetFunction.Su
     Debug.Print Application.WorksheetFunction.Su
     Debug.Print ActiveWorkbook.
     Debug.Print ThisWorkbook.
     Debug.Print ActiveWorkbook.Worksheets.
+    Debug.Print Worksheets(1).
+    Debug.Print Worksheets("A(1)").
+    Debug.Print Worksheets(i + 1).
+    Debug.Print ActiveWorkbook.Worksheets(1).
+    Debug.Print ActiveWorkbook.Worksheets(GetIndex()).
     Debug.Print Application.ActiveCell.
-End Sub`;
+End Sub
+
+Private Function GetIndex() As Long
+    GetIndex = 1
+End Function`;
 
   service.analyzeText(
     thisWorkbookUri,
@@ -101,6 +112,23 @@ Option Explicit`
     uri,
     findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets.")
   );
+  const indexedWorksheetMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Worksheets(1)."));
+  const indexedWorksheetStringMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Worksheets(\"A(1)\").")
+  );
+  const indexedWorksheetExpressionMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Worksheets(i + 1).")
+  );
+  const chainedIndexedWorksheetMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets(1).")
+  );
+  const chainedIndexedWorksheetFunctionMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets(GetIndex()).")
+  );
   const applicationActiveCellMembers = service.getCompletionSymbols(
     uri,
     findPositionAfterTokenInText(text, "Application.ActiveCell.")
@@ -114,6 +142,20 @@ Option Explicit`
   const activeWorkbookWorksheets = activeWorkbookMembers.find((resolution) => resolution.symbol.name === "Worksheets");
   const thisWorkbookSaveAs = thisWorkbookMembers.find((resolution) => resolution.symbol.name === "SaveAs");
   const workbookWorksheetsCount = workbookWorksheetsMembers.find((resolution) => resolution.symbol.name === "Count");
+  const indexedWorksheetEvaluate = indexedWorksheetMembers.find((resolution) => resolution.symbol.name === "Evaluate");
+  const indexedWorksheetSaveAs = indexedWorksheetMembers.find((resolution) => resolution.symbol.name === "SaveAs");
+  const indexedWorksheetStringEvaluate = indexedWorksheetStringMembers.find(
+    (resolution) => resolution.symbol.name === "Evaluate"
+  );
+  const indexedWorksheetExpressionSaveAs = indexedWorksheetExpressionMembers.find(
+    (resolution) => resolution.symbol.name === "SaveAs"
+  );
+  const chainedIndexedWorksheetExport = chainedIndexedWorksheetMembers.find(
+    (resolution) => resolution.symbol.name === "ExportAsFixedFormat"
+  );
+  const chainedIndexedWorksheetFunctionExport = chainedIndexedWorksheetFunctionMembers.find(
+    (resolution) => resolution.symbol.name === "ExportAsFixedFormat"
+  );
   const applicationActiveCellAddress = applicationActiveCellMembers.find((resolution) => resolution.symbol.name === "Address");
 
   assert.equal(worksheetFunctionProperty?.isBuiltIn, true);
@@ -130,6 +172,12 @@ Option Explicit`
   assert.equal(thisWorkbookSaveAs?.moduleName, "Excel Workbook method");
   assert.equal(thisWorkbookSaveAs?.documentation?.includes("excel.workbook.saveas"), true);
   assert.equal(workbookWorksheetsCount?.moduleName, "Excel Worksheets property");
+  assert.equal(indexedWorksheetEvaluate?.moduleName, "Excel Worksheet method");
+  assert.equal(indexedWorksheetSaveAs?.documentation?.includes("excel.worksheet.saveas"), true);
+  assert.equal(indexedWorksheetStringEvaluate?.documentation?.includes("excel.worksheet.evaluate"), true);
+  assert.equal(indexedWorksheetExpressionSaveAs?.moduleName, "Excel Worksheet method");
+  assert.equal(chainedIndexedWorksheetExport?.documentation?.includes("excel.worksheet.exportasfixedformat"), true);
+  assert.equal(chainedIndexedWorksheetFunctionExport?.moduleName, "Excel Worksheet method");
   assert.equal(applicationActiveCellAddress?.documentation?.includes("excel.range.address"), true);
 });
 
@@ -437,6 +485,7 @@ test("document service exposes built-in member signature help and hover", () => 
 Option Explicit
 
 Public Sub Demo()
+    Dim i As Long
     Dim transposedResult As Variant
     Debug.Print WorksheetFunction.Sum(1, 2)
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
@@ -466,6 +515,12 @@ Public Sub Demo()
     Debug.Print Application.ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Cells.AddressLocal(False, False)
     Debug.Print ActiveWorkbook.Worksheets.Count
+    Debug.Print Worksheets(1).Evaluate("A1")
+    Debug.Print Worksheets("A(1)").Evaluate("A1")
+    Call Worksheets(1).SaveAs("Sheet1.csv")
+    Call Worksheets(i + 1).SaveAs("Sheet1.csv")
+    Call ActiveWorkbook.Worksheets(1).ExportAsFixedFormat(xlTypePDF)
+    Call ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat(xlTypePDF)
     Debug.Print ThisWorkbook.SaveAs
     Call ThisWorkbook.SaveAs("Book1.xlsx")
     Call ActiveWorkbook.Close(False)
@@ -477,7 +532,11 @@ Public Sub Demo()
     Call Application.ActiveCell()
     Call Application.NewWorkbook()
     Debug.Print Application.Calculate
-End Sub`;
+End Sub
+
+Private Function GetIndex() As Long
+    GetIndex = 1
+End Function`;
 
   service.analyzeText(
     thisWorkbookUri,
@@ -531,6 +590,24 @@ Option Explicit`
     findPositionAfterTokenInText(text, "Application.ActiveCell.Address(")
   );
   const addressLocalSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Cells.AddressLocal("));
+  const worksheetEvaluateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Worksheets(1).Evaluate("));
+  const worksheetStringEvaluateSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Worksheets(\"A(1)\").Evaluate(")
+  );
+  const worksheetSaveAsSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Worksheets(1).SaveAs("));
+  const worksheetExpressionSaveAsSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Worksheets(i + 1).SaveAs(")
+  );
+  const worksheetExportSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets(1).ExportAsFixedFormat(")
+  );
+  const worksheetFunctionExportSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat(")
+  );
   const workbookSaveAsSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ThisWorkbook.SaveAs("));
   const workbookCloseSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "ActiveWorkbook.Close("));
   const workbookExportSignature = service.getSignatureHelp(
@@ -636,6 +713,26 @@ Option Explicit`
   assert.equal(addressLocalSignature?.parameters.length, 5);
   assert.equal(addressLocalSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
   assert.equal(addressLocalSignature?.parameters[4]?.documentation?.includes("省略可能"), true);
+  assert.equal(worksheetEvaluateSignature?.label, "Evaluate(Name) As Variant");
+  assert.equal(worksheetEvaluateSignature?.parameters.length, 1);
+  assert.equal(worksheetEvaluateSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(worksheetStringEvaluateSignature?.label, "Evaluate(Name) As Variant");
+  assert.equal(worksheetStringEvaluateSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(worksheetSaveAsSignature?.label, "SaveAs(FileName, FileFormat, Password, ..., Local)");
+  assert.equal(worksheetSaveAsSignature?.parameters.length, 10);
+  assert.equal(worksheetSaveAsSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(worksheetSaveAsSignature?.parameters[0]?.documentation?.includes("想定型: String"), true);
+  assert.equal(worksheetExpressionSaveAsSignature?.label, "SaveAs(FileName, FileFormat, Password, ..., Local)");
+  assert.equal(worksheetExpressionSaveAsSignature?.parameters[0]?.documentation?.includes("想定型: String"), true);
+  assert.equal(worksheetExportSignature?.label, "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)");
+  assert.equal(worksheetExportSignature?.parameters.length, 9);
+  assert.equal(worksheetExportSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
+  assert.equal(worksheetExportSignature?.parameters[0]?.documentation?.includes("想定型: XlFixedFormatType"), true);
+  assert.equal(
+    worksheetFunctionExportSignature?.label,
+    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)"
+  );
+  assert.equal(worksheetFunctionExportSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
   assert.equal(workbookSaveAsSignature?.label, "SaveAs(FileName, FileFormat, Password, ..., Local)");
   assert.equal(workbookSaveAsSignature?.parameters.length, 12);
   assert.equal(workbookSaveAsSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
@@ -1193,6 +1290,7 @@ Public Sub Demo()
     MsgBox xlAll
     Debug.Print Application.Name
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
+    Debug.Print Worksheets("A(1)").Evaluate("A1")
     Debug.Print ThisWorkbook.SaveAs
     Debug.Print Application.ActiveCell.Address
 End Sub`;
@@ -1238,15 +1336,19 @@ Option Explicit`
     modifiers: [],
     type: "function"
   });
-  assertSemanticToken(text, tokens, 8, "ThisWorkbook", {
-    modifiers: [],
-    type: "variable"
-  });
-  assertSemanticToken(text, tokens, 8, "SaveAs", {
+  assertSemanticToken(text, tokens, 8, "Evaluate", {
     modifiers: [],
     type: "function"
   });
-  assertSemanticToken(text, tokens, 9, "Address", {
+  assertSemanticToken(text, tokens, 9, "ThisWorkbook", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 9, "SaveAs", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 10, "Address", {
     modifiers: [],
     type: "variable"
   });

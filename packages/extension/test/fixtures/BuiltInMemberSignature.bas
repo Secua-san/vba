@@ -2,6 +2,7 @@ Attribute VB_Name = "BuiltInMemberSignature"
 Option Explicit
 
 Public Sub Demo()
+    Dim i As Long
     Dim transposedResult As Variant
 
     Debug.Print WorksheetFunction.Sum(1, 2)
@@ -32,6 +33,12 @@ Public Sub Demo()
     Debug.Print Application.ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Cells.AddressLocal(False, False)
     Debug.Print ActiveWorkbook.Worksheets.Count
+    Debug.Print Worksheets(1).Evaluate("A1")
+    Debug.Print Worksheets("A(1)").Evaluate("A1")
+    Call Worksheets(1).SaveAs("Sheet1.csv")
+    Call Worksheets(i + 1).SaveAs("Sheet1.csv")
+    Call ActiveWorkbook.Worksheets(1).ExportAsFixedFormat(xlTypePDF)
+    Call ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat(xlTypePDF)
     Debug.Print ThisWorkbook.SaveAs
     Call ThisWorkbook.SaveAs("Book1.xlsx")
     Call ActiveWorkbook.Close(False)
@@ -44,3 +51,7 @@ Public Sub Demo()
     Call Application.NewWorkbook()
     Debug.Print Application.Calculate
 End Sub
+
+Private Function GetIndex() As Long
+    GetIndex = 1
+End Function

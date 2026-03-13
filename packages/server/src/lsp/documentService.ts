@@ -1026,7 +1026,10 @@ function resolveConfirmedBuiltinMemberOwner(
     line
   });
 
-  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, completionContext.memberPath[0], getDocumentState)) {
+  if (
+    rootResolution &&
+    !isBuiltinAliasDocumentModule(rootResolution, stripIndexedAccessMarker(completionContext.memberPath[0]), getDocumentState)
+  ) {
     return undefined;
   }
 
@@ -1093,7 +1096,10 @@ function resolveBuiltinCallableMember(
     line
   });
 
-  if (rootResolution && !isBuiltinAliasDocumentModule(rootResolution, callContext.callPath[0], getDocumentState)) {
+  if (
+    rootResolution &&
+    !isBuiltinAliasDocumentModule(rootResolution, stripIndexedAccessMarker(callContext.callPath[0]), getDocumentState)
+  ) {
     return undefined;
   }
 
@@ -1869,7 +1875,7 @@ function mapBuiltinMemberSemanticToken(
     !canResolveBuiltinAliasMemberAccess(
       uri,
       line,
-      memberAccess.memberPath[0],
+      stripIndexedAccessMarker(memberAccess.memberPath[0]),
       memberAccess.memberPathStartCharacter,
       resolveDefinition,
       getDocumentState
@@ -1959,6 +1965,9 @@ function parseTrailingMemberAccess(
       index -= 1;
     }
 
+    const indexedAccess = skipTrailingIndexedAccess(text, index);
+    index = indexedAccess.index;
+
     const identifierEnd = index + 1;
 
     while (index >= 0 && /[A-Za-z0-9_$%&!#@]/u.test(text[index] ?? "")) {
@@ -1971,7 +1980,7 @@ function parseTrailingMemberAccess(
       return undefined;
     }
 
-    memberPath.unshift(identifier);
+    memberPath.unshift(indexedAccess.isIndexed ? `${identifier}()` : identifier);
     memberPathStartCharacter = index + 1;
 
     while (index >= 0 && /\s/u.test(text[index] ?? "")) {
@@ -1991,6 +2000,90 @@ function parseTrailingMemberAccess(
 
 function getTrailingIdentifier(text: string): string {
   return /[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.exec(text)?.[0] ?? "";
+}
+
+function skipTrailingIndexedAccess(
+  text: string,
+  startIndex: number
+): {
+  index: number;
+  isIndexed: boolean;
+} {
+  let index = startIndex;
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  if (text[index] !== ")") {
+    return {
+      index,
+      isIndexed: false
+    };
+  }
+
+  let depth = 0;
+
+  while (index >= 0) {
+    const character = text[index];
+
+    if (character === "\"") {
+      index = skipStringLiteralBackward(text, index);
+      continue;
+    }
+
+    if (character === ")") {
+      depth += 1;
+      index -= 1;
+      continue;
+    }
+
+    if (character === "(") {
+      depth -= 1;
+      index -= 1;
+
+      if (depth === 0) {
+        break;
+      }
+
+      continue;
+    }
+
+    index -= 1;
+  }
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  return {
+    index,
+    isIndexed: true
+  };
+}
+
+function skipStringLiteralBackward(text: string, endQuoteIndex: number): number {
+  let index = endQuoteIndex - 1;
+
+  while (index >= 0) {
+    if (text[index] !== "\"") {
+      index -= 1;
+      continue;
+    }
+
+    if (index - 1 >= 0 && text[index - 1] === "\"") {
+      index -= 2;
+      continue;
+    }
+
+    return index - 1;
+  }
+
+  return -1;
+}
+
+function stripIndexedAccessMarker(pathSegment: string): string {
+  return pathSegment.endsWith("()") ? pathSegment.slice(0, -2) : pathSegment;
 }
 
 function rangesEqual(left: SourceRange, right: SourceRange): boolean {
