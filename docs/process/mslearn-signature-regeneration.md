@@ -54,6 +54,12 @@
 - grouped selector は従来どおり collection のまま維持し、`Application.DialogSheets(Array(...)).SaveAs` のような誤補完は出さない
 - 監査テストでは `Application.DialogSheets` / `Workbook.DialogSheets` の `typeName: "DialogSheets"` を固定し、root 展開が壊れたら検知する
 
+## 2026-03-13 の DialogSheet control collection 調査結果
+- `DialogSheet.DialogFrame` は interop で `As DialogFrame` を返すため、補助 property として最も導入しやすい
+- `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` は `Optional Index As Object -> As Object` なので、単一 selector と collection selector を product 側で分岐しないと user-facing owner を決められない
+- `Buttons` / `CheckBoxes` / `OptionButtons` collection page は `_Dummy*` を含み、`Item(Object)` も `Object` を返すため、導入するなら allow list、`memberTypeOverrides`、grouped selector 抑止をセットで入れる
+- 調査の正本は `docs/process/dialogsheet-control-collection-feasibility.md` に切り出して管理する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする

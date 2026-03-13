@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] DialogSheet control collection の補助参照可否整理
+  - Microsoft Learn の `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` と `Button` / `CheckBox` / `OptionButton` / `DialogFrame` interface を確認し、owner ごとの導入難所を整理
+  - `DialogFrame` は direct property で先行候補、他 3 系統は `Optional Index As Object -> As Object` のため single-selector / collection selector 分岐が必要という結論を文書化
+  - `docs/process/dialogsheet-control-collection-feasibility.md` を正本にし、`_Dummy*` 除外、`memberTypeOverrides`、grouped selector 抑止を次段実装の前提として固定
+
 - [x] DialogSheet common callable の Workbook / Application root 展開
   - `scripts/lib/supplementalReferenceConfig.mjs` に `Application.DialogSheets` / `Workbook.DialogSheets` の補助 property 設定を追加し、`resources/reference/mslearn-vba-reference.json` を再生成
   - `Application.DialogSheets(1)` / `ActiveWorkbook.DialogSheets(1)` から既存 `DialogSheet` common callable へ到達できるようにし、`Array(...)` selector は collection のまま維持した
@@ -306,9 +311,9 @@
 
 ## 次候補
 
-- [ ] DialogSheet control collection の補助参照可否整理
-  - `Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` など interop 由来 member を限定導入するか、owner 設計と誤補完リスクで再判定する
-  - `DialogSheet` 専用 member は戻り先 owner と chain 解決が不足しているため、allow list / clone / alias / 監査テストの最小構成を先に整理する
+- [ ] DialogFrame 補助参照の最小プロトタイプ
+  - `DialogSheet.DialogFrame` を direct property として `DialogFrame` owner へ接続し、allow list と `_Dummy*` 除外の最小構成で completion / hover / signature の安全性を確認する
+  - `Button` / `CheckBox` / `OptionButton` 系へ広げる前に、`DialogFrame` だけで supplemental owner の追加経路と監査テストを固める
 
 ## メモ
 

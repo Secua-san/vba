@@ -65,6 +65,7 @@
   - `Select`
   - `Unprotect`
 - control collection や `DialogFrame` は別 owner 設計が必要なので後回しにする
+- control collection 側の整理は `docs/process/dialogsheet-control-collection-feasibility.md` に分離して管理する
 
 ### 4. 監査テストを追加する
 
