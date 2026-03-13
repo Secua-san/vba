@@ -345,6 +345,21 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "Cells.AddressLocal("),
     (help) => help.signatures.length > 0
   );
+  const builtInWorkbookSaveAsSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "ThisWorkbook.SaveAs("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorkbookCloseSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.Close("),
+    (help) => help.signatures.length > 0
+  );
+  const builtInWorkbookExportSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.ExportAsFixedFormat("),
+    (help) => help.signatures.length > 0
+  );
   const builtInExtractedZeroArgSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "Application.CalculateFull("),
@@ -725,6 +740,72 @@ export async function run(): Promise<void> {
     "built-in AddressLocal RelativeTo argument should be optional"
   );
   assert.equal(
+    builtInWorkbookSaveAsSignatureHelp.signatures[0]?.label,
+    "SaveAs(FileName, FileFormat, Password, ..., Local)",
+    "built-in member signature should be available for ThisWorkbook.SaveAs"
+  );
+  assert.equal(
+    builtInWorkbookSaveAsSignatureHelp.signatures[0]?.parameters.length,
+    12,
+    "built-in Workbook.SaveAs signature should expose all parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorkbookSaveAsSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "省略可能"
+    ),
+    "built-in Workbook.SaveAs first argument should stay optional"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorkbookSaveAsSignatureHelp.signatures[0]?.parameters[6]?.documentation).includes(
+      "想定型: XlSaveAsAccessMode"
+    ),
+    "built-in Workbook.SaveAs AccessMode should include enum type metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorkbookSaveAsSignatureHelp.signatures[0]?.parameters[7]?.documentation).includes(
+      "想定型: XlSaveConflictResolution"
+    ),
+    "built-in Workbook.SaveAs ConflictResolution should include enum type metadata"
+  );
+  assert.equal(
+    builtInWorkbookCloseSignatureHelp.signatures[0]?.label,
+    "Close(SaveChanges, FileName, RouteWorkbook)",
+    "built-in member signature should be available for ActiveWorkbook.Close"
+  );
+  assert.equal(
+    builtInWorkbookCloseSignatureHelp.signatures[0]?.parameters.length,
+    3,
+    "built-in Workbook.Close signature should expose optional parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorkbookCloseSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "省略可能"
+    ),
+    "built-in Workbook.Close first argument should stay optional"
+  );
+  assert.equal(
+    builtInWorkbookExportSignatureHelp.signatures[0]?.label,
+    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+    "built-in member signature should be available for ActiveWorkbook.ExportAsFixedFormat"
+  );
+  assert.equal(
+    builtInWorkbookExportSignatureHelp.signatures[0]?.parameters.length,
+    9,
+    "built-in Workbook.ExportAsFixedFormat signature should expose fixed parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorkbookExportSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "必須引数"
+    ),
+    "built-in Workbook.ExportAsFixedFormat first argument should stay required"
+  );
+  assert.ok(
+    getSignatureDocumentation(builtInWorkbookExportSignatureHelp.signatures[0]?.parameters[0]?.documentation).includes(
+      "想定型: XlFixedFormatType"
+    ),
+    "built-in Workbook.ExportAsFixedFormat first argument should include enum type metadata"
+  );
+  assert.equal(
     builtInExtractedZeroArgSignatureHelp.signatures[0]?.label,
     "CalculateFull()",
     "built-in zero-arg allow-listed signature should use extracted short label"
@@ -777,7 +858,7 @@ export async function run(): Promise<void> {
     "built-in hover should include source link"
   );
   assert.ok(
-    builtInWorkbookHoverText.includes("Workbook.SaveAs()"),
+    builtInWorkbookHoverText.includes("SaveAs(FileName, FileFormat, Password, ..., Local)"),
     "ThisWorkbook hover should resolve through Workbook members"
   );
   assert.ok(

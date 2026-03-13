@@ -1,6 +1,7 @@
 export const signatureMemberAllowList = new Map([
   ["Application", new Set(["Calculate", "CalculateFull", "CalculateFullRebuild", "CalculateUntilAsyncQueriesDone"])],
   ["Range", new Set(["Address", "AddressLocal"])],
+  ["Workbook", new Set(["Close", "ExportAsFixedFormat", "SaveAs"])],
   [
     "WorksheetFunction",
     new Set([

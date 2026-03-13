@@ -33,6 +33,9 @@ Public Sub Demo()
     Debug.Print Cells.AddressLocal(False, False)
     Debug.Print ActiveWorkbook.Worksheets.Count
     Debug.Print ThisWorkbook.SaveAs
+    Call ThisWorkbook.SaveAs("Book1.xlsx")
+    Call ActiveWorkbook.Close(False)
+    Call ActiveWorkbook.ExportAsFixedFormat(xlTypePDF)
     Call Application.CalculateFull()
     Application.OnTime(Now, "BuiltInMemberSignature.Demo")
     Call Application.WorksheetFunction()

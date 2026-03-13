@@ -26626,7 +26626,36 @@
                 {
                   "name": "Close",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.workbook.close",
-                  "tocHref": "excel.workbook.close"
+                  "tocHref": "excel.workbook.close",
+                  "summary": "Closes the object.",
+                  "signature": {
+                    "label": "Close(SaveChanges, FileName, RouteWorkbook)",
+                    "ownerName": "Workbook",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "If there are no changes to the workbook, this argument is ignored. If there are changes to the workbook and the workbook appears in other open windows, this argument is ignored. If there are changes to the workbook but the workbook doesn't appear in any other open windows, this argument specifies whether changes should be saved. If set to True, changes are saved to the workbook.If there is not yet a file name associated with the workbook, *FileName* is used. If *FileName* is omitted, the user is asked to supply a file name.",
+                        "isRequired": false,
+                        "label": "SaveChanges As Variant",
+                        "name": "SaveChanges"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Saves changes under this file name.",
+                        "isRequired": false,
+                        "label": "FileName As Variant",
+                        "name": "FileName"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "If the workbook doesn't need to be routed to the next recipient (if it has no routing slip or has already been routed), this argument is ignored. Otherwise, Microsoft Excel routes the workbook according to the value of this parameter.If set to True, the workbook is sent to the next recipient. If set to False, the workbook is not sent. If omitted, the user is asked whether the workbook should be sent.",
+                        "isRequired": false,
+                        "label": "RouteWorkbook As Variant",
+                        "name": "RouteWorkbook"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
                 },
                 {
                   "name": "ConvertComments",
@@ -26661,7 +26690,78 @@
                 {
                   "name": "ExportAsFixedFormat",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.workbook.exportasfixedformat",
-                  "tocHref": "excel.workbook.exportasfixedformat"
+                  "tocHref": "excel.workbook.exportasfixedformat",
+                  "summary": "The ExportAsFixedFormat method is used to publish a workbook to either the PDF or XPS format.",
+                  "signature": {
+                    "label": "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+                    "ownerName": "Workbook",
+                    "parameters": [
+                      {
+                        "dataType": "XlFixedFormatType",
+                        "description": "Can be either xlTypePDF or xlTypeXPS.",
+                        "isRequired": true,
+                        "label": "Type As XlFixedFormatType",
+                        "name": "Type"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "A string that indicates the name of the file to be saved. You can include a full path, or Excel saves the file in the current folder.",
+                        "isRequired": false,
+                        "label": "FileName As Variant",
+                        "name": "FileName"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Can be set to either of the following XlFixedFormatQuality constants: xlQualityStandard or xlQualityMinimum.",
+                        "isRequired": false,
+                        "label": "Quality As Variant",
+                        "name": "Quality"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Set to True to indicate that document properties should be included, or set to False to indicate that they are omitted.",
+                        "isRequired": false,
+                        "label": "IncludeDocProperties As Variant",
+                        "name": "IncludeDocProperties"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "If set to True, ignores any print areas set when publishing. If set to False, uses the print areas set when publishing.",
+                        "isRequired": false,
+                        "label": "IgnorePrintAreas As Variant",
+                        "name": "IgnorePrintAreas"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "The number of the page at which to start publishing. If this argument is omitted, publishing starts at the beginning.",
+                        "isRequired": false,
+                        "label": "From As Variant",
+                        "name": "From"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "The number of the last page to publish. If this argument is omitted, publishing ends with the last page.",
+                        "isRequired": false,
+                        "label": "To As Variant",
+                        "name": "To"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "If set to True, displays the file in the viewer after it is published. If set to False, the file is published but not displayed.",
+                        "isRequired": false,
+                        "label": "OpenAfterPublish As Variant",
+                        "name": "OpenAfterPublish"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Pointer to the FixedFormatExt class.",
+                        "isRequired": false,
+                        "label": "FixedFormatExtClassPtr As Variant",
+                        "name": "FixedFormatExtClassPtr"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
                 },
                 {
                   "name": "FollowHyperlink",
@@ -26816,7 +26916,99 @@
                 {
                   "name": "SaveAs",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.workbook.saveas",
-                  "tocHref": "excel.workbook.saveas"
+                  "tocHref": "excel.workbook.saveas",
+                  "summary": "Saves changes to the workbook in a different file.",
+                  "signature": {
+                    "label": "SaveAs(FileName, FileFormat, Password, ..., Local)",
+                    "ownerName": "Workbook",
+                    "parameters": [
+                      {
+                        "dataType": "Variant",
+                        "description": "A string that indicates the name of the file to be saved. You can include a full path; if you don't, Microsoft Excel saves the file in the current folder.",
+                        "isRequired": false,
+                        "label": "FileName As Variant",
+                        "name": "FileName"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "The file format to use when you save the file. For a list of valid choices, see the XlFileFormat enumeration. For an existing file, the default format is the last file format specified; for a new file, the default is the format of the version of Excel being used.",
+                        "isRequired": false,
+                        "label": "FileFormat As Variant",
+                        "name": "FileFormat"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "A case-sensitive string (no more than 15 characters) that indicates the protection password to be given to the file.",
+                        "isRequired": false,
+                        "label": "Password As Variant",
+                        "name": "Password"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "A string that indicates the write-reservation password for this file. If a file is saved with the password and the password isn't supplied when the file is opened, the file is opened as read-only.",
+                        "isRequired": false,
+                        "label": "WriteResPassword As Variant",
+                        "name": "WriteResPassword"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to display a message when the file is opened, recommending that the file be opened as read-only.",
+                        "isRequired": false,
+                        "label": "ReadOnlyRecommended As Variant",
+                        "name": "ReadOnlyRecommended"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to create a backup file.",
+                        "isRequired": false,
+                        "label": "CreateBackup As Variant",
+                        "name": "CreateBackup"
+                      },
+                      {
+                        "dataType": "XlSaveAsAccessMode",
+                        "description": "The access mode for the workbook.",
+                        "isRequired": false,
+                        "label": "AccessMode As XlSaveAsAccessMode",
+                        "name": "AccessMode"
+                      },
+                      {
+                        "dataType": "XlSaveConflictResolution",
+                        "description": "An XlSaveConflictResolution value that determines how the method resolves a conflict while saving the workbook. If set to xlUserResolution, the conflict-resolution dialog box is displayed.If set to xlLocalSessionChanges, the local user's changes are automatically accepted.If set to xlOtherSessionChanges, the changes from other sessions are automatically accepted instead of the local user's changes.If this argument is omitted, the conflict-resolution dialog box is displayed.",
+                        "isRequired": false,
+                        "label": "ConflictResolution As XlSaveConflictResolution",
+                        "name": "ConflictResolution"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True to add this workbook to the list of recently used files. The default value is False.",
+                        "isRequired": false,
+                        "label": "AddToMru As Variant",
+                        "name": "AddToMru"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Ignored for all languages in Microsoft Excel.NOTE: When Excel saves a workbook to one of the CSV or text formats, which are specified by using the *FileFormat* parameter, it uses the code page that corresponds to the language for the system locale in use on the current computer. This system setting is available in the Control Panel &gt; Region and Language &gt; Location tab under Current location.",
+                        "isRequired": false,
+                        "label": "TextCodepage As Variant",
+                        "name": "TextCodepage"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "Ignored for all languages in Microsoft Excel.NOTE: When Excel saves a workbook to one of the CSV or text formats, which are specified by using the *FileFormat* parameter, it saves these formats in logical layout. If left-to-right (LTR) text is embedded within right-to-left (RTL) text in the file, or vice versa, logical layout saves the contents of the file in the correct reading order for all languages in the file without regard to direction. When an application opens the file, each run of LTR or RTL characters are rendered in the correct direction according to the character value ranges within the code page (unless an application that is designed to display the exact memory layout of the file, such as a debugger or editor, is used to open the file).",
+                        "isRequired": false,
+                        "label": "TextVisualLayout As Variant",
+                        "name": "TextVisualLayout"
+                      },
+                      {
+                        "dataType": "Variant",
+                        "description": "True saves files against the language of Microsoft Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks.Open is run from is an old internationalized XL5/95 VBA project).",
+                        "isRequired": false,
+                        "label": "Local As Variant",
+                        "name": "Local"
+                      }
+                    ],
+                    "returnType": "Void"
+                  }
                 },
                 {
                   "name": "SaveAsXMLData",

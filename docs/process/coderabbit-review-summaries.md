@@ -227,3 +227,21 @@ CodeRabbit のレビュー結果を継続記録するためのログ。
   - extension テストは `ThisWorkbook` root の definition 解決待ちを追加し、built-in fallback だけで通る偽陽性を防いだ。
 - 残課題:
   - 次候補は `Workbook / Worksheet callable` の signature help への昇格整理。
+
+## 2026-03-13 PR 前レビュー: Workbook callable の署名ヘルプ追加
+- レビュー状況: `PR 前 reviewer 完了`
+- 要約:
+  - `reviewer` に現在差分の事前自己レビューを依頼し、`Workbook.SaveAs` / `Workbook.Close` / `Workbook.ExportAsFixedFormat` の署名追加、`Void` returnType 保持、関連テスト、手順書更新の整合性を確認した。
+  - 修正必須の指摘はなく、回帰リスク、境界条件、テスト不足、不要差分の観点で PR 化可能と判断された。
+- 指摘一覧:
+  - [非採用] 指摘なし。`P0-P2` の修正必須事項は出なかった。
+- この作業で当てはまりそうな内容（横展開候補）:
+  - Learn 由来の callable 追加では、signature help の増分だけでなく script 監査テストで `returnType` まで固定しておくと、後続 owner 追加時の欠落を早く検知できる。
+  - `Sub` 相当の callable は、内部メタデータと UI 表示を分離して扱うと監査要件と既存 UX を両立しやすい。
+  - `Workbook` と `Worksheet` のように候補が複数ある場合は、root 到達性が高い owner から先に昇格させるとテストと実利用の両方で効果が出やすい。
+- 実施:
+  - `scripts/lib/referenceSignatureConfig.mjs` に `Workbook` の allow list を追加した。
+  - `scripts/generate-mslearn-vba-reference.mjs` で `Workbook.Close` / `SaveAs` / `ExportAsFixedFormat` の `returnType: "Void"` override とラベル抑止を追加した。
+  - server / extension / script 監査テスト、および `TASKS.md` / 再生成手順書を更新した。
+- 残課題:
+  - PR 作成後に CodeRabbit 結果と横展開候補の確定版を追記する。

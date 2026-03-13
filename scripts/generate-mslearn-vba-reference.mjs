@@ -16,6 +16,24 @@ const fetchMinIntervalMs = 250;
 const maxFetchRetries = 5;
 const signatureMetadataOverrides = new Map([
   [
+    "workbook.close",
+    {
+      returnType: "Void",
+    },
+  ],
+  [
+    "workbook.exportasfixedformat",
+    {
+      returnType: "Void",
+    },
+  ],
+  [
+    "workbook.saveas",
+    {
+      returnType: "Void",
+    },
+  ],
+  [
     "worksheetfunction.find",
     {
       parameterDescriptions: new Map([
@@ -838,7 +856,7 @@ function summarizeSignatureLabelParameters(parameterNames) {
 function buildSignatureLabel(memberName, syntaxParameterNames, returnType) {
   const parameterList = summarizeSignatureLabelParameters(syntaxParameterNames).join(", ");
   const baseLabel = `${memberName}(${parameterList})`;
-  return returnType ? `${baseLabel} As ${returnType}` : baseLabel;
+  return returnType && returnType !== "Void" ? `${baseLabel} As ${returnType}` : baseLabel;
 }
 
 function createSignatureMetadataOverrideKey(ownerName, memberName) {
@@ -866,6 +884,7 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
   );
   const returnType = extractReturnType(returnValueSection) ?? inferReturnTypeFromSummary(summary);
   const signatureMetadataOverride = signatureMetadataOverrides.get(createSignatureMetadataOverrideKey(ownerName, memberName));
+  const resolvedReturnType = signatureMetadataOverride?.returnType ?? returnType;
   const overriddenParameters = signatureMetadataOverride
     ? parameters.map((parameter) => ({
         ...parameter,
@@ -879,12 +898,12 @@ function parseApiMethodReference(markdown, ownerName, memberName) {
 
   return {
     signature:
-      syntaxLine || overriddenParameters.length > 0 || returnType
+      syntaxLine || overriddenParameters.length > 0 || resolvedReturnType
         ? {
-            label: buildSignatureLabel(memberName, signatureParameterNames, returnType),
+            label: buildSignatureLabel(memberName, signatureParameterNames, resolvedReturnType),
             ownerName,
             parameters: overriddenParameters,
-            returnType,
+            returnType: resolvedReturnType,
           }
         : undefined,
     summary: resolvedSummary,
