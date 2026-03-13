@@ -40,6 +40,13 @@
 - そのため、`VB_Base = 0{00020830-0000-0000-C000-000000000046}` の dialog sheet document module は、owner 未公開のまま保守動作を維持する
 - interop 補助ソースとしての導入可否と制約は `docs/process/dialogsheet-interop-source-feasibility.md` に切り出して管理する
 
+## 2026-03-13 の DialogSheet common callable プロトタイプ
+- `scripts/lib/supplementalReferenceConfig.mjs` に `DialogSheet` 用の interop allow list と `DialogSheets` collection clone 設定を追加した
+- 補助ソースの user-facing root は `DialogSheets(1)` とし、`DialogSheet1.` の document module root は引き続き built-in owner へ昇格させない
+- `DialogSheet` owner は interop page の `Methods` table から allow list だけを抜き出し、`_Dummy*` と `_SaveAs` などの `_` 接頭辞 member は生成時に除外する
+- `DialogSheets` collection owner は `Sheets` の member を clone して使い、`Item` だけは `typeName: "DialogSheet"` を明示して `DialogSheets.Item(1)` も単一 selector と同じ root 解決にそろえる
+- 監査テストでは `dummy` / legacy member 混入、正規化後の重複名、allow list member の署名欠落、`DialogSheets.Item` の `typeName` 欠落を検知する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
@@ -52,6 +59,7 @@
 | ファイル | 役割 | 更新が必要なケース |
 | --- | --- | --- |
 | `scripts/lib/referenceSignatureConfig.mjs` | 署名抽出対象の allow list と未掲載監視の watch list | 新しいメソッドを署名抽出対象に加えるとき、または未掲載監視を追加・解除するとき |
+| `scripts/lib/supplementalReferenceConfig.mjs` | interop 補助ソースの allow list と clone 設定 | `DialogSheet` のように Office VBA object page が無い owner を限定導入するとき |
 | `scripts/generate-mslearn-vba-reference.mjs` | Learn 取得、署名抽出、override | Learn 側の表記ゆれ、要約補正、optional/required 補正が必要なとき |
 | `resources/reference/mslearn-vba-reference.json` | 生成済み参照データ | 再生成後の成果物をコミットするとき |
 | `scripts/test/mslearnReferenceAudit.test.mjs` | 監視と生成データ監査 | 監視対象の状態や audit 条件を見直すとき |
@@ -74,12 +82,16 @@
 - `scripts/lib/referenceSignatureConfig.mjs` の watch list から対象メンバー名を外し、allow list の owner に追加する
 - `WorksheetFunction` のように既存 owner 配下へ足すだけでよいか、別 owner の追加が必要かを確認する
 - 追加後に watch list と allow list の重複が無いことを確認する
+- Office VBA object page が無く interop 補助ソースを使う場合は、`scripts/lib/supplementalReferenceConfig.mjs` に allow list を追加し、owner page 側の table から余計な member が混ざらないことを先に固定する
+- collection clone を併用する場合は、`Item` などの返却型が推論に必要な member を `memberTypeOverrides` で明示し、clone 元 page の構造変化で欠落したときは生成を失敗させる
 
 ### 3. 抽出ロジックの補正要否を確認する
 - Learn の parameter table が連番省略、表記ゆれ、説明欠落を含む場合は `scripts/generate-mslearn-vba-reference.mjs` の共通ロジックで吸収できるかを確認する
 - 個別補正が必要な場合だけ `signatureMetadataOverrides` を追加する
 - `Workbook.Close` のように Learn 側で戻り値節を持たない `Sub` 相当 member は、生成データでは `returnType: "Void"` を保持しつつ、表示ラベルには `As Void` を出さない
 - `required` / `optional` の判断が Learn 表記と実利用で食い違う場合は、`docs/process/coderabbit-review.md` の運用判断基準に従う
+- interop member page は `Syntax` ではなく `Definition` の `vb` code block を持つため、owner ごとに補助ソース parser を足す場合は `Definition` / `Parameters` の構造差も確認する
+- 補助ソース owner の allow list member で署名抽出に失敗した場合は、黙って JSON を出さず生成を失敗させる
 
 ### 4. 参照データを再生成する
 - `npm run generate:reference-data` を実行する
@@ -96,6 +108,7 @@
 - `WorksheetFunction.XLookup` のような既存 owner 配下の method 追加だけなら、通常は `packages/core/src/reference/builtinReference.ts` の追加変更は不要
 - `Application.ActiveCell.Address` のように root object や member chain の型解決が絡む場合は、`typeName` や root completions の調整が必要になる
 - property / event / method の区別で fallback signature を抑止する既存ルールに影響しないかも確認する
+- collection root を追加する場合は、単一 selector だけ item owner に落とすのか、grouped selector は collection のまま維持するのかを `INDEXED_COLLECTION_OWNER_TYPES` とテストで同時に固定する
 
 ### 6. server / extension の回帰を追加する
 - `packages/server/test/documentService.test.js`

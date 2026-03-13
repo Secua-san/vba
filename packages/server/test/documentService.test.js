@@ -225,6 +225,77 @@ Option Explicit`
   assert.equal(applicationActiveCellAddress?.documentation?.includes("excel.range.address"), true);
 });
 
+test("document service exposes DialogSheet common callable members through DialogSheets roots", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/DialogSheetBuiltIn.bas";
+  const text = `Attribute VB_Name = "DialogSheetBuiltIn"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print DialogSheets.
+    Debug.Print DialogSheets(1).
+    Debug.Print DialogSheets("Dialog1").
+    Debug.Print DialogSheets(Array("Dialog1", "Dialog2")).
+    Debug.Print DialogSheets(1).SaveAs
+    Debug.Print DialogSheets(1).Evaluate
+    Debug.Print DialogSheets.Item(1).
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const dialogSheetsCollectionMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets."));
+  const indexedDialogSheetMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1)."));
+  const namedDialogSheetMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, 'DialogSheets("Dialog1").'));
+  const groupedDialogSheetsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(Array("Dialog1", "Dialog2")).')
+  );
+  const itemDialogSheetMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets.Item(1).")
+  );
+  const dialogSheetSaveAsHover = service.getHover(uri, findPositionAfterTokenInText(text, "DialogSheets(1).SaveA"));
+  const tokens = service.getSemanticTokens(uri);
+
+  const dialogSheetsCount = dialogSheetsCollectionMembers.find((resolution) => resolution.symbol.name === "Count");
+  const dialogSheetSaveAs = indexedDialogSheetMembers.find((resolution) => resolution.symbol.name === "SaveAs");
+  const dialogSheetEvaluate = indexedDialogSheetMembers.find((resolution) => resolution.symbol.name === "Evaluate");
+  const namedDialogSheetActivate = namedDialogSheetMembers.find((resolution) => resolution.symbol.name === "Activate");
+  const groupedDialogSheetsCount = groupedDialogSheetsMembers.find((resolution) => resolution.symbol.name === "Count");
+  const itemDialogSheetSaveAs = itemDialogSheetMembers.find((resolution) => resolution.symbol.name === "SaveAs");
+
+  assert.equal(dialogSheetsCount?.moduleName, "Excel DialogSheets property");
+  assert.equal(dialogSheetSaveAs?.moduleName, "Excel DialogSheet method");
+  assert.equal(dialogSheetSaveAs?.documentation?.includes("dialogsheet.saveas"), true);
+  assert.equal(dialogSheetEvaluate?.documentation?.includes("dialogsheet.evaluate"), true);
+  assert.equal(namedDialogSheetActivate?.documentation?.includes("dialogsheet.activate"), true);
+  assert.equal(groupedDialogSheetsCount?.moduleName, "Excel DialogSheets property");
+  assert.equal(itemDialogSheetSaveAs?.documentation?.includes("dialogsheet.saveas"), true);
+  assert.equal(groupedDialogSheetsMembers.some((resolution) => resolution.symbol.name === "SaveAs"), false);
+  assert.equal(dialogSheetSaveAsHover?.contents.includes("SaveAs(Filename, FileFormat, Password, ..., Local)"), true);
+  assert.equal(dialogSheetSaveAsHover?.contents.includes("microsoft.office.interop.excel.dialogsheet.saveas"), true);
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === 8 &&
+        entry.range.start.character === 32 &&
+        entry.range.end.character === 38 &&
+        entry.type === "function"
+    ),
+    true
+  );
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === 4 &&
+        entry.range.start.character === 16 &&
+        entry.range.end.character === 28 &&
+        entry.type === "type"
+    ),
+    true
+  );
+});
+
 test("document service keeps built-in document roots conservative for unknown predeclared class modules", () => {
   const service = createDocumentService();
   const chart1Uri = "file:///C:/temp/Chart1.cls";
@@ -315,6 +386,59 @@ Option Explicit`
     ),
     false
   );
+});
+
+test("document service exposes DialogSheet interop signature help conservatively through indexed DialogSheets access", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/DialogSheetBuiltInSignature.bas";
+  const text = `Attribute VB_Name = "DialogSheetBuiltInSignature"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print DialogSheets(1).Evaluate("A1")
+    Call DialogSheets(1).SaveAs("Dialog1.xlsx")
+    Call DialogSheets(1).ExportAsFixedFormat(xlTypePDF)
+    Call DialogSheets(Array("Dialog1", "Dialog2")).SaveAs("Dialog1.xlsx")
+    Call DialogSheets.Item(1).SaveAs("Dialog1.xlsx")
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const evaluateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Evaluate("));
+  const saveAsSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "DialogSheets(1).SaveAs("));
+  const exportSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).ExportAsFixedFormat(")
+  );
+  const groupedSaveAsSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(Array("Dialog1", "Dialog2")).SaveAs(')
+  );
+  const itemSaveAsSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets.Item(1).SaveAs(")
+  );
+
+  assert.equal(evaluateSignature?.label, "Evaluate(Name) As Object");
+  assert.equal(
+    evaluateSignature?.parameters[0]?.documentation?.includes("想定型: Object"),
+    true,
+  );
+  assert.equal(saveAsSignature?.label, "SaveAs(Filename, FileFormat, Password, ..., Local)");
+  assert.equal(saveAsSignature?.parameters.length, 10);
+  assert.equal(
+    saveAsSignature?.parameters[0]?.documentation?.includes("必須引数"),
+    true,
+  );
+  assert.equal(
+    saveAsSignature?.parameters[1]?.documentation?.includes("省略可能"),
+    true,
+  );
+  assert.equal(exportSignature?.label, "ExportAsFixedFormat(Type, Filename, Quality, ..., FixedFormatExtClassPtr)");
+  assert.equal(exportSignature?.parameters.length, 9);
+  assert.equal(itemSaveAsSignature?.label, "SaveAs(Filename, FileFormat, Password, ..., Local)");
+  assert.equal(itemSaveAsSignature?.parameters.length, 10);
+  assert.equal(groupedSaveAsSignature, undefined);
 });
 
 test("document service keeps built-in member completion and semantic tokens conservative", () => {

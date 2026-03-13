@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { createMcpRequestClient } from "./lib/mcpRequest.mjs";
 import { signatureMemberAllowList } from "./lib/referenceSignatureConfig.mjs";
+import { supplementalInteropOwners, supplementalOwnerClones } from "./lib/supplementalReferenceConfig.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,6 +98,8 @@ const sourceUrls = {
     "https://learn.microsoft.com/en-us/office/vba/api/overview/library-reference/reference-object-library-reference-for-office",
 };
 
+const interopReservedSummary = "Reserved for internal use.";
+
 async function fetchText(url) {
   return microsoftLearnClient.request({
     init: {
@@ -158,6 +161,12 @@ function stripMarkdownText(value) {
     .replace(/\s+/g, " ")
     .replace(/\bWorkbooks\.\s+Open\b/giu, "Workbooks.Open")
     .trim();
+}
+
+function normalizeReferenceName(value) {
+  return String(value ?? "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 }
 
 function parseInlineLinks(value, baseUrl) {
@@ -368,6 +377,249 @@ function parseApiReferenceSection(node) {
     items,
     enumerations,
   };
+}
+
+function findApiReferenceItem(items, itemName) {
+  return items.find((item) => normalizeReferenceName(item.name) === normalizeReferenceName(itemName));
+}
+
+function cloneApiReferenceItem(sourceItem, cloneConfig) {
+  const memberTypeOverrides = cloneConfig.memberTypeOverrides ?? new Map();
+  const unresolvedMemberTypeOverrides = new Map(
+    [...memberTypeOverrides].map(([memberName, typeName]) => [normalizeReferenceName(memberName), typeName]),
+  );
+
+  const clonedItem = {
+    kind: cloneConfig.kind ?? sourceItem.kind,
+    learnUrl: cloneConfig.learnUrl ?? sourceItem.learnUrl,
+    name: cloneConfig.name,
+    sections: sourceItem.sections.map((section) => ({
+      ...section,
+      members: section.members.map((member) => {
+        const normalizedMemberName = normalizeReferenceName(member.name);
+        const overriddenTypeName = unresolvedMemberTypeOverrides.get(normalizedMemberName);
+
+        if (overriddenTypeName) {
+          unresolvedMemberTypeOverrides.delete(normalizedMemberName);
+        }
+
+        return overriddenTypeName
+          ? {
+              ...member,
+              typeName: overriddenTypeName,
+            }
+          : { ...member };
+      }),
+    })),
+    title: cloneConfig.title ?? sourceItem.title,
+    tocHref: cloneConfig.tocHref ?? "",
+  };
+
+  if (unresolvedMemberTypeOverrides.size > 0) {
+    const [memberName] = unresolvedMemberTypeOverrides.keys();
+    throw new Error(`Supplemental owner clone '${cloneConfig.name}' could not resolve member type override '${memberName}'.`);
+  }
+
+  return clonedItem;
+}
+
+function normalizeInteropMemberDisplayName(value) {
+  return stripMarkdownText(value).replace(/\(.*$/u, "").trim();
+}
+
+function parseSectionLinkTable(markdown, headingTitle, baseUrl) {
+  const sectionMarkdown = extractMarkdownSection(markdown, headingTitle);
+  const table = parseMarkdownTableBlocks(sectionMarkdown)[0];
+
+  if (!table) {
+    return [];
+  }
+
+  return table.rows.flatMap((cells) => {
+    const [linkCell = "", noteCell = ""] = cells;
+    const links = parseInlineLinks(linkCell, baseUrl);
+    const note = stripMarkdownText(noteCell) || undefined;
+
+    return links.map((link) => ({
+      ...link,
+      name: normalizeInteropMemberDisplayName(link.name),
+      note,
+    }));
+  });
+}
+
+function extractCodeFence(markdown, language) {
+  const match = markdown.match(new RegExp("```" + language + "\\r?\\n([\\s\\S]*?)\\r?\\n```", "iu"));
+  return match?.[1]?.trim();
+}
+
+function extractInteropVbSignatureLine(definitionSection) {
+  const vbBlock = extractCodeFence(definitionSection, "vb");
+
+  if (!vbBlock) {
+    return undefined;
+  }
+
+  return vbBlock
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+}
+
+function splitSignatureParameterList(parameterList) {
+  if (!parameterList || parameterList.trim().length === 0) {
+    return [];
+  }
+
+  return parameterList.split(",").map((value) => value.trim()).filter((value) => value.length > 0);
+}
+
+function parseInteropSignatureLine(vbSignatureLine) {
+  if (!vbSignatureLine) {
+    return undefined;
+  }
+
+  const normalizedLine = vbSignatureLine.replace(/\s+/g, " ").trim();
+  const signatureMatch =
+    normalizedLine.match(
+      /^Public\s+(Sub|Function)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\((.*)\))?(?:\s+As\s+([A-Za-z_][A-Za-z0-9_.]*))?$/iu,
+    ) ?? normalizedLine.match(/^(Sub|Function)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\((.*)\))?(?:\s+As\s+([A-Za-z_][A-Za-z0-9_.]*))?$/iu);
+
+  if (!signatureMatch?.[1] || !signatureMatch[2]) {
+    return undefined;
+  }
+
+  const procedureKind = signatureMatch[1];
+  const memberName = signatureMatch[2];
+  const parameterList = signatureMatch[3] ?? "";
+  const returnType = procedureKind.toLowerCase() === "function" ? signatureMatch[4] ?? "Variant" : "Void";
+  const parameters = splitSignatureParameterList(parameterList).map((rawParameter) => parseInteropSignatureParameter(rawParameter));
+
+  return {
+    memberName,
+    parameters,
+    returnType,
+  };
+}
+
+function parseInteropSignatureParameter(rawParameter) {
+  const cleanedParameter = rawParameter.replace(/\s+/g, " ").trim();
+  const isRequired = !/^Optional\b/iu.test(cleanedParameter);
+  const withoutOptional = cleanedParameter.replace(/^Optional\s+/iu, "");
+  const withoutDirection = withoutOptional.replace(/^(ByRef|ByVal|ParamArray)\s+/iu, "");
+  const parameterMatch = withoutDirection.match(/^([A-Za-z_][A-Za-z0-9_]*)\s+As\s+(.+)$/iu);
+  const name = parameterMatch?.[1] ?? withoutDirection;
+  const dataType = parameterMatch?.[2]?.trim();
+
+  return {
+    dataType,
+    description: undefined,
+    isRequired,
+    label: dataType ? `${name} As ${dataType}` : name,
+    name,
+  };
+}
+
+function parseInteropMethodReference(markdown, ownerName, memberName) {
+  const definitionSection = extractMarkdownSection(markdown, "Definition");
+  const summary = extractSummaryParagraph(markdown);
+  const parsedSignature = parseInteropSignatureLine(extractInteropVbSignatureLine(definitionSection));
+
+  if (!parsedSignature || normalizeReferenceName(parsedSignature.memberName) !== normalizeReferenceName(memberName)) {
+    return {
+      signature: undefined,
+      summary: summary && summary !== interopReservedSummary ? summary : undefined,
+    };
+  }
+
+  return {
+    signature: {
+      label: buildSignatureLabel(memberName, parsedSignature.parameters.map((parameter) => parameter.name), parsedSignature.returnType),
+      ownerName,
+      parameters: parsedSignature.parameters,
+      returnType: parsedSignature.returnType,
+    },
+    summary: summary && summary !== interopReservedSummary ? summary : undefined,
+  };
+}
+
+async function buildSupplementalInteropOwner(ownerConfig) {
+  const ownerMarkdown = await fetchText(withMarkdown(ownerConfig.learnUrl));
+  const allowedMemberNames = new Set([...ownerConfig.memberAllowList].map((memberName) => normalizeReferenceName(memberName)));
+  const interfaceMembers = parseSectionLinkTable(ownerMarkdown, ownerConfig.sectionName, ownerConfig.learnUrl)
+    .filter((member) => !normalizeReferenceName(member.name).startsWith("_"))
+    .filter((member) => !normalizeReferenceName(member.name).startsWith("dummy"))
+    .filter((member) => allowedMemberNames.has(normalizeReferenceName(member.name)));
+  const seenMemberNames = new Set();
+  const members = [];
+
+  for (const member of interfaceMembers) {
+    const normalizedMemberName = normalizeReferenceName(member.name);
+
+    if (seenMemberNames.has(normalizedMemberName)) {
+      throw new Error(`Supplemental interop owner '${ownerConfig.name}' contains duplicate member '${member.name}'.`);
+    }
+
+    seenMemberNames.add(normalizedMemberName);
+  }
+
+  for (const allowedMemberName of allowedMemberNames) {
+    if (!seenMemberNames.has(allowedMemberName)) {
+      throw new Error(`Supplemental interop owner '${ownerConfig.name}' is missing member '${allowedMemberName}'.`);
+    }
+  }
+
+  for (const member of interfaceMembers) {
+    const memberMarkdown = await fetchText(withMarkdown(member.learnUrl));
+    const signatureMetadata = parseInteropMethodReference(memberMarkdown, ownerConfig.name, member.name);
+
+    if (!signatureMetadata.signature) {
+      throw new Error(
+        `Supplemental interop owner '${ownerConfig.name}' could not extract signature metadata for member '${member.name}'.`,
+      );
+    }
+
+    members.push({
+      learnUrl: member.learnUrl,
+      name: member.name,
+      signature: signatureMetadata.signature,
+      summary: signatureMetadata.summary,
+    });
+  }
+
+  return {
+    kind: ownerConfig.kind,
+    learnUrl: ownerConfig.learnUrl,
+    name: ownerConfig.name,
+    sections: [
+      {
+        members,
+        title: ownerConfig.sectionName,
+      },
+    ],
+    title: ownerConfig.title,
+    tocHref: "",
+  };
+}
+
+async function buildSupplementalExcelItems(items) {
+  const supplementalItems = [];
+
+  for (const cloneConfig of supplementalOwnerClones) {
+    const sourceItem = findApiReferenceItem(items, cloneConfig.sourceOwnerName);
+
+    if (!sourceItem) {
+      throw new Error(`Supplemental owner clone source '${cloneConfig.sourceOwnerName}' was not found.`);
+    }
+
+    supplementalItems.push(cloneApiReferenceItem(sourceItem, cloneConfig));
+  }
+
+  for (const ownerConfig of supplementalInteropOwners) {
+    supplementalItems.push(await buildSupplementalInteropOwner(ownerConfig));
+  }
+
+  return supplementalItems;
 }
 
 async function enrichApiMethodSignatures(items) {
@@ -1021,6 +1273,12 @@ async function main() {
   const libraryReference = parseApiReferenceSection(libraryReferenceNode);
   const languageFunctions = toSectionMap(parseSectionedLinks(functionsMarkdown, sourceUrls.functions));
   const signatureStats = await enrichApiMethodSignatures(excelReference.items);
+  const supplementalExcelItems = await buildSupplementalExcelItems(excelReference.items);
+  const supplementalSignatureCount = supplementalExcelItems.reduce(
+    (count, item) => count + item.sections.flatMap((section) => section.members).filter((member) => Boolean(member.signature)).length,
+    0,
+  );
+  excelReference.items.push(...supplementalExcelItems);
 
   const output = {
     source: {
@@ -1030,6 +1288,7 @@ async function main() {
         "Language reference lists are extracted from Microsoft Learn markdown pages for the VBA language reference.",
         "The Excel constants table comes from the Excel.Constants enumeration page on Microsoft Learn.",
         "Member summaries and signature metadata are currently enriched for selected Excel members.",
+        "DialogSheet common callable members are added from Microsoft Learn interop pages as a constrained supplemental source.",
       ],
       urls: sourceUrls,
     },
@@ -1087,6 +1346,7 @@ async function main() {
         excel: output.excel.objectModel.counts,
         excelSignatureOwners: [...signatureOwnerNames],
         excelSignatures: signatureStats,
+        excelSupplementalSignatures: supplementalSignatureCount,
         excelConstants: output.excel.constantsEnumeration.length,
         language: {
           landingSections: output.languageReference.landingSections.length,
