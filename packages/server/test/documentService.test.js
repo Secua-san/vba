@@ -65,7 +65,7 @@ test("document service exposes built-in member completion items from the referen
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInMemberCompletion.bas";
   const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
-const text = `Attribute VB_Name = "BuiltInMemberCompletion"
+  const text = `Attribute VB_Name = "BuiltInMemberCompletion"
 Option Explicit
 
 Public Sub Demo()
@@ -80,6 +80,7 @@ Public Sub Demo()
     Debug.Print Worksheets(1).
     Debug.Print Worksheets("A(1)").
     Debug.Print Worksheets(i + 1).
+    Debug.Print Worksheets(Array("Sheet1", "Sheet2")).
     Debug.Print ActiveWorkbook.Worksheets(1).
     Debug.Print ActiveWorkbook.Worksheets(GetIndex()).
     Debug.Print Application.ActiveCell.
@@ -121,6 +122,10 @@ Option Explicit`
     uri,
     findPositionAfterTokenInText(text, "Worksheets(i + 1).")
   );
+  const groupedWorksheetMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'Worksheets(Array("Sheet1", "Sheet2")).')
+  );
   const chainedIndexedWorksheetMembers = service.getCompletionSymbols(
     uri,
     findPositionAfterTokenInText(text, "ActiveWorkbook.Worksheets(1).")
@@ -150,11 +155,12 @@ Option Explicit`
   const indexedWorksheetExpressionSaveAs = indexedWorksheetExpressionMembers.find(
     (resolution) => resolution.symbol.name === "SaveAs"
   );
+  const groupedWorksheetCount = groupedWorksheetMembers.find((resolution) => resolution.symbol.name === "Count");
   const chainedIndexedWorksheetExport = chainedIndexedWorksheetMembers.find(
     (resolution) => resolution.symbol.name === "ExportAsFixedFormat"
   );
-  const chainedIndexedWorksheetFunctionExport = chainedIndexedWorksheetFunctionMembers.find(
-    (resolution) => resolution.symbol.name === "ExportAsFixedFormat"
+  const chainedIndexedWorksheetFunctionCount = chainedIndexedWorksheetFunctionMembers.find(
+    (resolution) => resolution.symbol.name === "Count"
   );
   const applicationActiveCellAddress = applicationActiveCellMembers.find((resolution) => resolution.symbol.name === "Address");
 
@@ -176,8 +182,11 @@ Option Explicit`
   assert.equal(indexedWorksheetSaveAs?.documentation?.includes("excel.worksheet.saveas"), true);
   assert.equal(indexedWorksheetStringEvaluate?.documentation?.includes("excel.worksheet.evaluate"), true);
   assert.equal(indexedWorksheetExpressionSaveAs?.moduleName, "Excel Worksheet method");
+  assert.equal(groupedWorksheetCount?.moduleName, "Excel Worksheets property");
+  assert.equal(groupedWorksheetMembers.some((resolution) => resolution.symbol.name === "Evaluate"), false);
   assert.equal(chainedIndexedWorksheetExport?.documentation?.includes("excel.worksheet.exportasfixedformat"), true);
-  assert.equal(chainedIndexedWorksheetFunctionExport?.moduleName, "Excel Worksheet method");
+  assert.equal(chainedIndexedWorksheetFunctionCount?.moduleName, "Excel Worksheets property");
+  assert.equal(chainedIndexedWorksheetFunctionMembers.some((resolution) => resolution.symbol.name === "ExportAsFixedFormat"), false);
   assert.equal(applicationActiveCellAddress?.documentation?.includes("excel.range.address"), true);
 });
 
@@ -517,6 +526,7 @@ Public Sub Demo()
     Debug.Print ActiveWorkbook.Worksheets.Count
     Debug.Print Worksheets(1).Evaluate("A1")
     Debug.Print Worksheets("A(1)").Evaluate("A1")
+    Debug.Print Worksheets(Array("Sheet1", "Sheet2")).Evaluate("A1")
     Call Worksheets(1).SaveAs("Sheet1.csv")
     Call Worksheets(i + 1).SaveAs("Sheet1.csv")
     Call ActiveWorkbook.Worksheets(1).ExportAsFixedFormat(xlTypePDF)
@@ -594,6 +604,10 @@ Option Explicit`
   const worksheetStringEvaluateSignature = service.getSignatureHelp(
     uri,
     findPositionAfterTokenInText(text, "Worksheets(\"A(1)\").Evaluate(")
+  );
+  const groupedWorksheetEvaluateSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'Worksheets(Array("Sheet1", "Sheet2")).Evaluate(')
   );
   const worksheetSaveAsSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Worksheets(1).SaveAs("));
   const worksheetExpressionSaveAsSignature = service.getSignatureHelp(
@@ -718,22 +732,31 @@ Option Explicit`
   assert.equal(worksheetEvaluateSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
   assert.equal(worksheetStringEvaluateSignature?.label, "Evaluate(Name) As Variant");
   assert.equal(worksheetStringEvaluateSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
-  assert.equal(worksheetSaveAsSignature?.label, "SaveAs(FileName, FileFormat, Password, ..., Local)");
+  assert.equal(groupedWorksheetEvaluateSignature, undefined);
+  assert.equal(
+    worksheetSaveAsSignature?.label,
+    "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)"
+  );
   assert.equal(worksheetSaveAsSignature?.parameters.length, 10);
   assert.equal(worksheetSaveAsSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
   assert.equal(worksheetSaveAsSignature?.parameters[0]?.documentation?.includes("想定型: String"), true);
-  assert.equal(worksheetExpressionSaveAsSignature?.label, "SaveAs(FileName, FileFormat, Password, ..., Local)");
+  assert.equal(
+    worksheetExpressionSaveAsSignature?.label,
+    "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)"
+  );
   assert.equal(worksheetExpressionSaveAsSignature?.parameters[0]?.documentation?.includes("想定型: String"), true);
-  assert.equal(worksheetExportSignature?.label, "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)");
+  assert.equal(
+    worksheetExportSignature?.label,
+    "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)"
+  );
   assert.equal(worksheetExportSignature?.parameters.length, 9);
   assert.equal(worksheetExportSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
   assert.equal(worksheetExportSignature?.parameters[0]?.documentation?.includes("想定型: XlFixedFormatType"), true);
+  assert.equal(worksheetFunctionExportSignature, undefined);
   assert.equal(
-    worksheetFunctionExportSignature?.label,
-    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)"
+    workbookSaveAsSignature?.label,
+    "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AccessMode, ConflictResolution, AddToMru, TextCodepage, TextVisualLayout, Local)"
   );
-  assert.equal(worksheetFunctionExportSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
-  assert.equal(workbookSaveAsSignature?.label, "SaveAs(FileName, FileFormat, Password, ..., Local)");
   assert.equal(workbookSaveAsSignature?.parameters.length, 12);
   assert.equal(workbookSaveAsSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
   assert.equal(workbookSaveAsSignature?.parameters[6]?.documentation?.includes("想定型: XlSaveAsAccessMode"), true);
@@ -741,7 +764,10 @@ Option Explicit`
   assert.equal(workbookCloseSignature?.label, "Close(SaveChanges, FileName, RouteWorkbook)");
   assert.equal(workbookCloseSignature?.parameters.length, 3);
   assert.equal(workbookCloseSignature?.parameters[0]?.documentation?.includes("省略可能"), true);
-  assert.equal(workbookExportSignature?.label, "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)");
+  assert.equal(
+    workbookExportSignature?.label,
+    "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)"
+  );
   assert.equal(workbookExportSignature?.parameters.length, 9);
   assert.equal(workbookExportSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
   assert.equal(workbookExportSignature?.parameters[0]?.documentation?.includes("想定型: XlFixedFormatType"), true);
@@ -757,7 +783,12 @@ Option Explicit`
   assert.equal(hover?.contents.includes("Calculate()"), true);
   assert.equal(hover?.contents.includes("Calculates all open workbooks"), true);
   assert.equal(hover?.contents.includes("Microsoft Learn"), true);
-  assert.equal(workbookHover?.contents.includes("SaveAs(FileName, FileFormat, Password, ..., Local)"), true);
+  assert.equal(
+    workbookHover?.contents.includes(
+      "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AccessMode, ConflictResolution, AddToMru, TextCodepage, TextVisualLayout, Local)"
+    ),
+    true
+  );
   assert.equal(workbookHover?.contents.includes("excel.workbook.saveas"), true);
 });
 
@@ -1291,6 +1322,7 @@ Public Sub Demo()
     Debug.Print Application.Name
     Debug.Print Application.WorksheetFunction.Sum(1, 2)
     Debug.Print Worksheets("A(1)").Evaluate("A1")
+    Debug.Print Worksheets(Array("Sheet1", "Sheet2")).Evaluate("A1")
     Debug.Print ThisWorkbook.SaveAs
     Debug.Print Application.ActiveCell.Address
 End Sub`;
@@ -1340,15 +1372,16 @@ Option Explicit`
     modifiers: [],
     type: "function"
   });
-  assertSemanticToken(text, tokens, 9, "ThisWorkbook", {
+  assertNoSemanticToken(text, tokens, 9, "Evaluate");
+  assertSemanticToken(text, tokens, 10, "ThisWorkbook", {
     modifiers: [],
     type: "variable"
   });
-  assertSemanticToken(text, tokens, 9, "SaveAs", {
+  assertSemanticToken(text, tokens, 10, "SaveAs", {
     modifiers: [],
     type: "function"
   });
-  assertSemanticToken(text, tokens, 10, "Address", {
+  assertSemanticToken(text, tokens, 11, "Address", {
     modifiers: [],
     type: "variable"
   });
@@ -1713,6 +1746,33 @@ function assertSemanticToken(text, tokens, lineIndex, identifier, expected, occu
   assert.ok(token, `semantic token '${identifier}' must exist at ${lineIndex}:${startCharacter}`);
   assert.equal(token.type, expected.type);
   assert.deepEqual([...token.modifiers].sort(), [...expected.modifiers].sort());
+}
+
+function assertNoSemanticToken(text, tokens, lineIndex, identifier, occurrence = 0) {
+  const lines = text.split("\n");
+  const line = lines[lineIndex];
+  let startCharacter = -1;
+  let searchOffset = 0;
+
+  assert.notEqual(line, undefined, `line ${lineIndex} must exist`);
+
+  for (let index = 0; index <= occurrence; index += 1) {
+    startCharacter = line.indexOf(identifier, searchOffset);
+    searchOffset = startCharacter + identifier.length;
+  }
+
+  assert.notEqual(startCharacter, -1, `identifier '${identifier}' must exist on line ${lineIndex}`);
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === lineIndex &&
+        entry.range.start.character === startCharacter &&
+        entry.range.end.line === lineIndex &&
+        entry.range.end.character === startCharacter + identifier.length
+    ),
+    false,
+    `semantic token '${identifier}' must not exist at ${lineIndex}:${startCharacter}`
+  );
 }
 
 function applyTextEdit(text, edit) {

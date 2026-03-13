@@ -26693,7 +26693,7 @@
                   "tocHref": "excel.workbook.exportasfixedformat",
                   "summary": "The ExportAsFixedFormat method is used to publish a workbook to either the PDF or XPS format.",
                   "signature": {
-                    "label": "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+                    "label": "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
                     "ownerName": "Workbook",
                     "parameters": [
                       {
@@ -26919,7 +26919,7 @@
                   "tocHref": "excel.workbook.saveas",
                   "summary": "Saves changes to the workbook in a different file.",
                   "signature": {
-                    "label": "SaveAs(FileName, FileFormat, Password, ..., Local)",
+                    "label": "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AccessMode, ConflictResolution, AddToMru, TextCodepage, TextVisualLayout, Local)",
                     "ownerName": "Workbook",
                     "parameters": [
                       {
@@ -27001,7 +27001,7 @@
                       },
                       {
                         "dataType": "Variant",
-                        "description": "True saves files against the language of Microsoft Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks. Open is run from is an old internationalized XL5/95 VBA project).",
+                        "description": "True saves files against the language of Microsoft Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks.Open is run from is an old internationalized XL5/95 VBA project).",
                         "isRequired": false,
                         "label": "Local As Variant",
                         "name": "Local"
@@ -28107,7 +28107,7 @@
                   "tocHref": "excel.worksheet.exportasfixedformat",
                   "summary": "Exports to a file of the specified format.",
                   "signature": {
-                    "label": "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+                    "label": "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
                     "ownerName": "Worksheet",
                     "parameters": [
                       {
@@ -28233,7 +28233,7 @@
                   "tocHref": "excel.worksheet.saveas",
                   "summary": "Saves changes to the chart or worksheet in a different file.",
                   "signature": {
-                    "label": "SaveAs(FileName, FileFormat, Password, ..., Local)",
+                    "label": "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)",
                     "ownerName": "Worksheet",
                     "parameters": [
                       {
@@ -28301,7 +28301,7 @@
                       },
                       {
                         "dataType": "Variant",
-                        "description": "True saves files against the language of Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks. Open is run from is an old internationalized XL5/95 VBA project).",
+                        "description": "True saves files against the language of Excel (including control panel settings). False (default) saves files against the language of Visual Basic for Applications (VBA) (which is typically US English unless the VBA project where Workbooks.Open is run from is an old internationalized XL5/95 VBA project).",
                         "isRequired": false,
                         "label": "Local As Variant",
                         "name": "Local"

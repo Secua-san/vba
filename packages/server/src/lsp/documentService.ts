@@ -18,6 +18,7 @@ import {
   normalizeIdentifier,
   removeStringAndDateLiterals,
   resolveBuiltinMemberOwner,
+  stripIndexedAccessMarker,
   splitCodeAndComment,
   type AnalysisResult,
   type BuiltinCallableSignature,
@@ -690,7 +691,7 @@ function collectSemanticTokensForState(
         const memberTokenShape = mapBuiltinMemberSemanticToken(
           state.uri,
           lineIndex,
-          scrubbed,
+          code,
           startCharacter,
           identifier,
           resolveDefinition,
@@ -1980,7 +1981,7 @@ function parseTrailingMemberAccess(
       return undefined;
     }
 
-    memberPath.unshift(indexedAccess.isIndexed ? `${identifier}()` : identifier);
+    memberPath.unshift(indexedAccess.isSingleItemAccess ? `${identifier}()` : identifier);
     memberPathStartCharacter = index + 1;
 
     while (index >= 0 && /\s/u.test(text[index] ?? "")) {
@@ -2008,6 +2009,7 @@ function skipTrailingIndexedAccess(
 ): {
   index: number;
   isIndexed: boolean;
+  isSingleItemAccess: boolean;
 } {
   let index = startIndex;
 
@@ -2018,11 +2020,14 @@ function skipTrailingIndexedAccess(
   if (text[index] !== ")") {
     return {
       index,
-      isIndexed: false
+      isIndexed: false,
+      isSingleItemAccess: false
     };
   }
 
+  const closingParenIndex = index;
   let depth = 0;
+  let openingParenIndex = -1;
 
   while (index >= 0) {
     const character = text[index];
@@ -2040,17 +2045,29 @@ function skipTrailingIndexedAccess(
 
     if (character === "(") {
       depth -= 1;
-      index -= 1;
 
       if (depth === 0) {
+        openingParenIndex = index;
+        index -= 1;
         break;
       }
 
+      index -= 1;
       continue;
     }
 
     index -= 1;
   }
+
+  if (openingParenIndex === -1) {
+    return {
+      index: startIndex,
+      isIndexed: false,
+      isSingleItemAccess: false
+    };
+  }
+
+  const selectorText = text.slice(openingParenIndex + 1, closingParenIndex);
 
   while (index >= 0 && /\s/u.test(text[index] ?? "")) {
     index -= 1;
@@ -2058,8 +2075,43 @@ function skipTrailingIndexedAccess(
 
   return {
     index,
-    isIndexed: true
+    isIndexed: true,
+    isSingleItemAccess: isSingleItemCollectionSelector(selectorText)
   };
+}
+
+function isSingleItemCollectionSelector(selectorText: string): boolean {
+  const trimmedSelector = selectorText.trim();
+
+  if (trimmedSelector.length === 0) {
+    return false;
+  }
+
+  let insideString = false;
+
+  for (let index = 0; index < trimmedSelector.length; index += 1) {
+    const character = trimmedSelector[index];
+
+    if (character === "\"") {
+      if (insideString && trimmedSelector[index + 1] === "\"") {
+        index += 1;
+        continue;
+      }
+
+      insideString = !insideString;
+      continue;
+    }
+
+    if (insideString) {
+      continue;
+    }
+
+    if (character === "(" || character === ")" || character === ",") {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function skipStringLiteralBackward(text: string, endQuoteIndex: number): number {
@@ -2080,10 +2132,6 @@ function skipStringLiteralBackward(text: string, endQuoteIndex: number): number 
   }
 
   return -1;
-}
-
-function stripIndexedAccessMarker(pathSegment: string): string {
-  return pathSegment.endsWith("()") ? pathSegment.slice(0, -2) : pathSegment;
 }
 
 function rangesEqual(left: SourceRange, right: SourceRange): boolean {

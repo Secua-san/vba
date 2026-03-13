@@ -13,6 +13,7 @@ Public Sub Demo()
     Debug.Print Worksheets(1).
     Debug.Print Worksheets("A(1)").
     Debug.Print Worksheets(i + 1).
+    Debug.Print Worksheets(Array("Sheet1", "Sheet2")).
     Debug.Print ActiveWorkbook.Worksheets(1).
     Debug.Print ActiveWorkbook.Worksheets(GetIndex()).
     Debug.Print Application.ActiveCell.

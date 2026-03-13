@@ -17,6 +17,7 @@ export {
   getBuiltinReferenceItem,
   isReservedOrBuiltinIdentifier,
   resolveBuiltinMemberOwner,
+  stripIndexedAccessMarker,
   RESERVED_IDENTIFIERS
 } from "./reference/builtinReference";
 export type {

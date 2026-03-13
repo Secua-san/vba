@@ -122,6 +122,11 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInMemberCompletionDocument, "Worksheets(i + 1)."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "SaveAs")
   );
+  const groupedWorksheetMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, 'Worksheets(Array("Sheet1", "Sheet2")).'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
+  );
   const chainedIndexedWorksheetMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
     findPositionAfterToken(builtInMemberCompletionDocument, "ActiveWorkbook.Worksheets(1)."),
@@ -130,7 +135,7 @@ export async function run(): Promise<void> {
   const chainedIndexedWorksheetFunctionMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
     findPositionAfterToken(builtInMemberCompletionDocument, "ActiveWorkbook.Worksheets(GetIndex())."),
-    (items) => items.some((item) => getCompletionItemLabel(item) === "ExportAsFixedFormat")
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
   );
   const applicationActiveCellMemberCompletionItems = await waitForCompletions(
     builtInMemberCompletionDocument,
@@ -167,11 +172,14 @@ export async function run(): Promise<void> {
   const indexedWorksheetExpressionSaveAsCompletion = indexedWorksheetExpressionMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "SaveAs"
   );
+  const groupedWorksheetCountCompletion = groupedWorksheetMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Count"
+  );
   const chainedIndexedWorksheetExportCompletion = chainedIndexedWorksheetMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "ExportAsFixedFormat"
   );
-  const chainedIndexedWorksheetFunctionExportCompletion = chainedIndexedWorksheetFunctionMemberCompletionItems.find(
-    (item) => getCompletionItemLabel(item) === "ExportAsFixedFormat"
+  const chainedIndexedWorksheetFunctionCountCompletion = chainedIndexedWorksheetFunctionMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Count"
   );
   const applicationActiveCellAddressCompletion = applicationActiveCellMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Address"
@@ -202,8 +210,21 @@ export async function run(): Promise<void> {
   assert.ok(indexedWorksheetSaveAsCompletion?.detail?.includes("Excel Worksheet method"));
   assert.ok(indexedWorksheetStringEvaluateCompletion?.detail?.includes("Excel Worksheet method"));
   assert.ok(indexedWorksheetExpressionSaveAsCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(groupedWorksheetCountCompletion?.detail?.includes("Excel Worksheets property"));
+  assert.equal(
+    groupedWorksheetMemberCompletionItems.some((item) => getCompletionItemLabel(item) === "Evaluate"),
+    false,
+    "grouped Worksheets selector should stay on the Worksheets collection"
+  );
   assert.ok(chainedIndexedWorksheetExportCompletion?.detail?.includes("Excel Worksheet method"));
-  assert.ok(chainedIndexedWorksheetFunctionExportCompletion?.detail?.includes("Excel Worksheet method"));
+  assert.ok(chainedIndexedWorksheetFunctionCountCompletion?.detail?.includes("Excel Worksheets property"));
+  assert.equal(
+    chainedIndexedWorksheetFunctionMemberCompletionItems.some(
+      (item) => getCompletionItemLabel(item) === "ExportAsFixedFormat"
+    ),
+    false,
+    "function-based Worksheets selector should stay on the Worksheets collection"
+  );
   assert.ok(applicationActiveCellAddressCompletion?.detail?.includes("Excel Range"));
 
   const definitions = await waitForDefinitions(
@@ -404,6 +425,10 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, 'Worksheets("A(1)").Evaluate('),
     (help) => help.signatures.length > 0
   );
+  const builtInGroupedWorksheetEvaluateSignatureSuppressed = await waitForNoSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, 'Worksheets(Array("Sheet1", "Sheet2")).Evaluate(')
+  );
   const builtInWorksheetSaveAsSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "Worksheets(1).SaveAs("),
@@ -419,10 +444,9 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.Worksheets(1).ExportAsFixedFormat("),
     (help) => help.signatures.length > 0
   );
-  const builtInWorksheetFunctionExportSignatureHelp = await waitForSignatureHelp(
+  const builtInWorksheetFunctionExportSignatureSuppressed = await waitForNoSignatureHelp(
     builtInSignatureDocument,
-    findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat("),
-    (help) => help.signatures.length > 0
+    findPositionAfterToken(builtInSignatureDocument, "ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat(")
   );
   const builtInWorkbookSaveAsSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
@@ -846,8 +870,13 @@ export async function run(): Promise<void> {
     "built-in Worksheet.Evaluate should stay available for string index access"
   );
   assert.equal(
+    builtInGroupedWorksheetEvaluateSignatureSuppressed,
+    true,
+    "grouped Worksheets selector should not expose Worksheet.Evaluate signature help"
+  );
+  assert.equal(
     builtInWorksheetSaveAsSignatureHelp.signatures[0]?.label,
-    "SaveAs(FileName, FileFormat, Password, ..., Local)",
+    "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)",
     "built-in member signature should be available for Worksheets(1).SaveAs"
   );
   assert.equal(
@@ -869,7 +898,7 @@ export async function run(): Promise<void> {
   );
   assert.equal(
     builtInWorksheetExpressionSaveAsSignatureHelp.signatures[0]?.label,
-    "SaveAs(FileName, FileFormat, Password, ..., Local)",
+    "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AddToMru, TextCodepage, TextVisualLayout, Local)",
     "built-in member signature should be available for Worksheets(i + 1).SaveAs"
   );
   assert.ok(
@@ -880,7 +909,7 @@ export async function run(): Promise<void> {
   );
   assert.equal(
     builtInWorksheetExportSignatureHelp.signatures[0]?.label,
-    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+    "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
     "built-in member signature should be available for ActiveWorkbook.Worksheets(1).ExportAsFixedFormat"
   );
   assert.equal(
@@ -901,19 +930,13 @@ export async function run(): Promise<void> {
     "built-in Worksheet.ExportAsFixedFormat first argument should include enum type metadata"
   );
   assert.equal(
-    builtInWorksheetFunctionExportSignatureHelp.signatures[0]?.label,
-    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
-    "built-in member signature should be available for ActiveWorkbook.Worksheets(GetIndex()).ExportAsFixedFormat"
-  );
-  assert.ok(
-    getSignatureDocumentation(
-      builtInWorksheetFunctionExportSignatureHelp.signatures[0]?.parameters[0]?.documentation
-    ).includes("想定型: XlFixedFormatType"),
-    "built-in Worksheet.ExportAsFixedFormat should stay available for function index access"
+    builtInWorksheetFunctionExportSignatureSuppressed,
+    true,
+    "function-based Worksheets selector should not expose Worksheet.ExportAsFixedFormat signature help"
   );
   assert.equal(
     builtInWorkbookSaveAsSignatureHelp.signatures[0]?.label,
-    "SaveAs(FileName, FileFormat, Password, ..., Local)",
+    "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AccessMode, ConflictResolution, AddToMru, TextCodepage, TextVisualLayout, Local)",
     "built-in member signature should be available for ThisWorkbook.SaveAs"
   );
   assert.equal(
@@ -957,7 +980,7 @@ export async function run(): Promise<void> {
   );
   assert.equal(
     builtInWorkbookExportSignatureHelp.signatures[0]?.label,
-    "ExportAsFixedFormat(Type, FileName, Quality, ..., FixedFormatExtClassPtr)",
+    "ExportAsFixedFormat(Type, FileName, Quality, IncludeDocProperties, IgnorePrintAreas, From, To, OpenAfterPublish, FixedFormatExtClassPtr)",
     "built-in member signature should be available for ActiveWorkbook.ExportAsFixedFormat"
   );
   assert.equal(
@@ -1030,7 +1053,9 @@ export async function run(): Promise<void> {
     "built-in hover should include source link"
   );
   assert.ok(
-    builtInWorkbookHoverText.includes("SaveAs(FileName, FileFormat, Password, ..., Local)"),
+    builtInWorkbookHoverText.includes(
+      "SaveAs(FileName, FileFormat, Password, WriteResPassword, ReadOnlyRecommended, CreateBackup, AccessMode, ConflictResolution, AddToMru, TextCodepage, TextVisualLayout, Local)"
+    ),
     "ThisWorkbook hover should resolve through Workbook members"
   );
   assert.ok(
@@ -1117,15 +1142,16 @@ export async function run(): Promise<void> {
     modifiers: [],
     type: "function"
   });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 9, "ThisWorkbook", {
+  assertNoDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 9, "Evaluate");
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 10, "ThisWorkbook", {
     modifiers: [],
     type: "variable"
   });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 9, "SaveAs", {
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 10, "SaveAs", {
     modifiers: [],
     type: "function"
   });
-  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 10, "Address", {
+  assertDecodedSemanticToken(builtInSemanticDocument.getText(), decodedBuiltInSemanticTokens, 11, "Address", {
     modifiers: [],
     type: "variable"
   });
@@ -1832,6 +1858,36 @@ function assertDecodedSemanticToken(
   assert.ok(token, `semantic token '${identifier}' must exist at ${lineIndex}:${startCharacter}`);
   assert.equal(token.type, expected.type);
   assert.deepEqual([...token.modifiers].sort(), [...expected.modifiers].sort());
+}
+
+function assertNoDecodedSemanticToken(
+  text: string,
+  tokens: Array<{ endCharacter: number; line: number; modifiers: string[]; startCharacter: number; type: string }>,
+  lineIndex: number,
+  identifier: string,
+  occurrence = 0
+): void {
+  const lines = text.split("\n");
+  const line = lines[lineIndex] ?? "";
+  let startCharacter = -1;
+  let searchOffset = 0;
+
+  for (let index = 0; index <= occurrence; index += 1) {
+    startCharacter = line.indexOf(identifier, searchOffset);
+    searchOffset = startCharacter + identifier.length;
+  }
+
+  assert.notEqual(startCharacter, -1, `identifier '${identifier}' must exist on line ${lineIndex}`);
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.line === lineIndex &&
+        entry.startCharacter === startCharacter &&
+        entry.endCharacter === startCharacter + identifier.length
+    ),
+    false,
+    `semantic token '${identifier}' must not exist at ${lineIndex}:${startCharacter}`
+  );
 }
 
 function getCodeAction(actions: readonly vscode.CodeAction[], title: string): vscode.CodeAction | undefined {

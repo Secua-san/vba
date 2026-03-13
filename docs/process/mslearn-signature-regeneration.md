@@ -31,6 +31,7 @@
 - `Worksheet.Evaluate` / `Worksheet.SaveAs` / `Worksheet.ExportAsFixedFormat` を allow list へ追加し、署名データを再生成した
 - `ActiveSheet` は引き続き未型付けのまま維持し、代わりに `Worksheets(1)` / `ActiveWorkbook.Worksheets(1)` のような indexed collection access を built-in owner 解決で `Worksheet` として扱うようにした
 - collection index 付き member access を扱う場合は、parser 側の path 解決と collection item type の対応表をセットで更新し、`ActiveSheet` のような曖昧 root には拡げない
+- 文字列リテラルや単純式の selector は単一 `Worksheet` として扱える一方、`Array(...)` や関数呼び出し selector は複数シートや不明型を返し得るため、`Worksheets` collection のまま維持する
 
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する

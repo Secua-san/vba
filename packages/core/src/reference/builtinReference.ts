@@ -651,7 +651,7 @@ function hasIndexedAccessMarker(pathSegment: string): boolean {
   return pathSegment.endsWith("()");
 }
 
-function stripIndexedAccessMarker(pathSegment: string): string {
+export function stripIndexedAccessMarker(pathSegment: string): string {
   return hasIndexedAccessMarker(pathSegment) ? pathSegment.slice(0, -2) : pathSegment;
 }
 

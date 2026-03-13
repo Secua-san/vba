@@ -35,6 +35,7 @@ Public Sub Demo()
     Debug.Print ActiveWorkbook.Worksheets.Count
     Debug.Print Worksheets(1).Evaluate("A1")
     Debug.Print Worksheets("A(1)").Evaluate("A1")
+    Debug.Print Worksheets(Array("Sheet1", "Sheet2")).Evaluate("A1")
     Call Worksheets(1).SaveAs("Sheet1.csv")
     Call Worksheets(i + 1).SaveAs("Sheet1.csv")
     Call ActiveWorkbook.Worksheets(1).ExportAsFixedFormat(xlTypePDF)

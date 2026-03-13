@@ -10,7 +10,7 @@
   - `ActiveSheet` を型付けせず、`Worksheets(1)` / `ActiveWorkbook.Worksheets(1)` のような indexed collection access から `Worksheet` member へ到達できるようにした
   - 現行 Microsoft Learn の `Worksheet.Evaluate` / `Worksheet.SaveAs` / `Worksheet.ExportAsFixedFormat` を署名抽出対象へ追加し、参照 JSON を再生成した
   - server / extension テストで indexed collection access 経由の completion / signature help / semantic token を回帰確認した
-  - `Worksheets("A(1)")`、`Worksheets(i + 1)`、`ActiveWorkbook.Worksheets(GetIndex())` のような文字列・式・関数呼び出しを含む index 境界ケースも回帰固定した
+  - `Worksheets("A(1)")` と `Worksheets(i + 1)` は単一 `Worksheet` として扱い、`Worksheets(Array(...))` や `ActiveWorkbook.Worksheets(GetIndex())` は collection のまま維持する保守動作を回帰固定した
 
 - [x] 組み込みメンバー署名データの拡張（第8弾）
   - 現行 Microsoft Learn の `Workbook.SaveAs` / `Workbook.Close` / `Workbook.ExportAsFixedFormat` を署名抽出対象へ追加し、参照 JSON を再生成
