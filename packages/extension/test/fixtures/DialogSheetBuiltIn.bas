@@ -16,4 +16,16 @@ Public Sub Demo()
     Call ActiveWorkbook.DialogSheets(1).SaveAs("Dialog1.xlsx")
     Call Application.DialogSheets(Array("Dialog1", "Dialog2")).SaveAs("Dialog1.xlsx")
     Call ThisWorkbook.DialogSheets(1).SaveAs("Dialog1.xlsx")
+    Debug.Print DialogSheets(1).DialogFrame.
+    Debug.Print DialogSheets(1).DialogFrame.Caption
+    Call DialogSheets(1).DialogFrame.Select("DialogFrame1")
+    Debug.Print Application.DialogSheets(1).DialogFrame.
+    Debug.Print Application.DialogSheets(1).DialogFrame.Text
+    Call ActiveWorkbook.DialogSheets(1).DialogFrame.Select("DialogFrame1")
+    Call ThisWorkbook.DialogSheets(1).DialogFrame.Select("DialogFrame1")
+    Call DialogSheets(Array("Dialog1", "Dialog2")).DialogFrame.Select("DialogFrame1")
+    Debug.Print DialogSheets("Dialog1").DialogFrame.
+    Call DialogSheets.Item(1).DialogFrame.Select("DialogFrame1")
+    Debug.Print DialogSheets(1).DialogFrame.Caption(
+    Debug.Print Application.DialogSheets(1).DialogFrame.Text(
 End Sub

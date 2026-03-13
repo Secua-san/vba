@@ -9,14 +9,49 @@ export const dialogSheetCommonCallableMemberNames = new Set([
   "Unprotect",
 ]);
 
+export const dialogSheetPropertyMemberNames = new Set(["DialogFrame"]);
+
+export const dialogFramePropertyMemberNames = new Set([
+  "Caption",
+  "Name",
+  "OnAction",
+  "Text",
+]);
+
+export const dialogFrameMethodMemberNames = new Set(["Select"]);
+
 export const supplementalInteropOwners = [
   {
     kind: "object",
     learnUrl: "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet?view=excel-pia",
-    memberAllowList: dialogSheetCommonCallableMemberNames,
     name: "DialogSheet",
-    sectionName: "Methods",
+    sections: [
+      {
+        memberAllowList: dialogSheetPropertyMemberNames,
+        sectionName: "Properties",
+      },
+      {
+        memberAllowList: dialogSheetCommonCallableMemberNames,
+        sectionName: "Methods",
+      },
+    ],
     title: "DialogSheet object",
+  },
+  {
+    kind: "object",
+    learnUrl: "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogframe?view=excel-pia",
+    name: "DialogFrame",
+    sections: [
+      {
+        memberAllowList: dialogFramePropertyMemberNames,
+        sectionName: "Properties",
+      },
+      {
+        memberAllowList: dialogFrameMethodMemberNames,
+        sectionName: "Methods",
+      },
+    ],
+    title: "DialogFrame object",
   },
 ];
 
