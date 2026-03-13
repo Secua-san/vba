@@ -250,3 +250,14 @@ test("DialogSheets clone は Item を DialogSheet として型付けする", asy
   assert.ok(itemMember, "DialogSheets.Item member が必要です");
   assert.equal(itemMember.typeName, "DialogSheet");
 });
+
+test("DialogSheet 補助 root は Application / Workbook.DialogSheets を DialogSheets として型付けする", async () => {
+  const data = await loadReferenceData();
+
+  for (const ownerName of ["Application", "Workbook"]) {
+    const member = getMember(data, ownerName, "DialogSheets");
+
+    assert.ok(member, `${ownerName}.DialogSheets member が必要です`);
+    assert.equal(member.typeName, "DialogSheets", `${ownerName}.DialogSheets は DialogSheets owner へ接続する必要があります`);
+  }
+});
