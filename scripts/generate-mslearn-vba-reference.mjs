@@ -615,11 +615,11 @@ function parseInteropPropertyReference(markdown, ownerName, memberName) {
   const parsedSignature = parseInteropPropertySignatureLine(extractInteropVbSignatureLine(definitionSection));
 
   if (!parsedSignature || normalizeReferenceName(parsedSignature.memberName) !== normalizeReferenceName(memberName)) {
-    return {
-      signature: undefined,
-      summary: summary && summary !== interopReservedSummary ? summary : undefined,
-      typeName: undefined,
-    };
+    return undefined;
+  }
+
+  if (!parsedSignature.returnType) {
+    return undefined;
   }
 
   return {
@@ -712,12 +712,18 @@ async function buildSupplementalInteropOwner(ownerConfig) {
         );
       }
 
+      if (normalizeReferenceName(sectionConfig.sectionName) === "properties" && !memberMetadata?.typeName) {
+        throw new Error(
+          `Supplemental interop owner '${ownerConfig.name}' could not extract property type metadata for member '${member.name}'.`,
+        );
+      }
+
       members.push({
         learnUrl: member.learnUrl,
         name: member.name,
-        signature: memberMetadata.signature,
-        summary: memberMetadata.summary,
-        typeName: memberMetadata.typeName,
+        signature: memberMetadata?.signature,
+        summary: memberMetadata?.summary,
+        typeName: memberMetadata?.typeName,
       });
     }
 

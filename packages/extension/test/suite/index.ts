@@ -2022,7 +2022,7 @@ async function waitForNoSignatureHelp(
       position
     );
 
-    if (signatureHelp) {
+    if (signatureHelp?.signatures.length) {
       return false;
     }
 

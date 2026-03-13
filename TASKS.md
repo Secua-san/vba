@@ -10,6 +10,7 @@
   - `scripts/lib/supplementalReferenceConfig.mjs` に `DialogSheet.DialogFrame` の補助 property と `DialogFrame` owner の allow list を追加し、`resources/reference/mslearn-vba-reference.json` を再生成
   - `DialogSheets(1).DialogFrame` / `Application.DialogSheets(1).DialogFrame` / `ActiveWorkbook.DialogSheets(1).DialogFrame` / `ThisWorkbook.DialogSheets(1).DialogFrame` から `Caption` / `Text` / `Select` の completion / hover / signature help に到達できるようにした
   - `DialogSheets(Array(...))` は collection のまま維持し、`_Dummy*` / legacy member 混入防止と `DialogFrame` owner の型・署名監査を `scripts/test` / server / extension テストで固定した
+  - CodeRabbit 指摘を受け、extension の negative signature help helper を空配列対応に修正し、supplemental property の `typeName` 欠落時は生成を fail-fast させた
 
 - [x] DialogSheet control collection の補助参照可否整理
   - Microsoft Learn の `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` と `Button` / `CheckBox` / `OptionButton` / `DialogFrame` interface を確認し、owner ごとの導入難所を整理
