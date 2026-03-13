@@ -6,6 +6,12 @@
 
 ## 完了
 
+- [x] DialogSheet document module root の扱い整理
+  - Microsoft Learn の `Refer to Sheets by Name` で `DialogSheets("Dialog1").Activate` を確認し、dialog sheet 自体は VBA から参照可能であることを再確認
+  - ただし Office VBA 側に `DialogSheet` object page は無く、ローカル参照 JSON も owner を持たないため、現時点では built-in owner へ昇格しない方針を ADR へ記録
+  - .NET interop `DialogSheet` page は `Reserved for internal use.` かつ `dummy` member を含むため、補助ソース化は別タスクへ分離
+  - server テストでは `DialogSheet1.` が built-in completion / signature help / hover / semantic token を返さない保守動作を既に固定している
+
 - [x] Chart document module root の到達性改善
   - `VB_PredeclaredId = True` かつ `VB_Base = 0{00020821-0000-0000-C000-000000000046}` の chart document module を `Chart` root として扱い、`Chart1.` から built-in member completion / signature help / hover / semantic token へ到達できるようにした
   - Microsoft Learn の `Chart.CodeName` / `Chart object` と Windows registry の `Excel.Chart` CLSID を根拠に、chart sheet code name を document root として扱う条件を固定した
@@ -280,8 +286,9 @@
 
 ## 次候補
 
-- [ ] DialogSheet document module root の扱い整理
-  - Office VBA の object page と参照 JSON が不足しているため、必要な参照ソースと exported module metadata を確認してから owner 公開可否を判断する
+- [ ] DialogSheet interop 由来 member source の導入可否整理
+  - Microsoft Learn の .NET interop `DialogSheet` page を補助ソースとして使う場合、`Reserved for internal use` と `dummy` member をどう除外するかを決める
+  - `Worksheet` / `Chart` と重複する member をどう正規化するか、VBA 向け参照 JSON へ混ぜるか別 owner にするかを整理する
 
 ## メモ
 

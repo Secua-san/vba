@@ -33,11 +33,18 @@
 - collection index 付き member access を扱う場合は、parser 側の path 解決と collection item type の対応表をセットで更新し、`ActiveSheet` のような曖昧 root には拡げない
 - 文字列リテラルや単純式の selector は単一 `Worksheet` として扱える一方、`Array(...)` や関数呼び出し selector は複数シートや不明型を返し得るため、`Worksheets` collection のまま維持する
 
+## 2026-03-13 の DialogSheet 調査結果
+- Office VBA 側では `DialogSheetView` object は取得できるが、`DialogSheet` object page は参照 JSON へ入っていない
+- `Refer to Sheets by Name` では `DialogSheets("Dialog1").Activate` が示され、dialog sheet 自体は VBA から参照できることを確認した
+- Microsoft Learn の .NET interop `DialogSheet` page には member 一覧があるが、`Reserved for internal use.` と `dummy` member を含むため、現行の VBA 参照 JSON へそのまま取り込む正本にはしない
+- そのため、`VB_Base = 0{00020830-0000-0000-C000-000000000046}` の dialog sheet document module は、owner 未公開のまま保守動作を維持する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
 - 既に Learn スナップショットへ載っているメンバーは watch list に入れず、allow list 追加または built-in 解決の検討へ進める
 - watch list へ入れるメンバーは、Microsoft Learn に個別ページがあり、将来スナップショットへ取り込まれた時点で署名化したいものに絞る
+- Office VBA object page が無く、interop page しか無い owner は、そのまま allow list へ入れず、まず `Reserved for internal use` と `dummy` member の扱いを設計判断として切り分ける
 
 ## 更新箇所の一覧
 
