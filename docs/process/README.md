@@ -23,6 +23,7 @@
 - [dialogsheet-interop-source-feasibility.md](dialogsheet-interop-source-feasibility.md): DialogSheet interop 補助ソースの可否調査
 - [dialogsheet-control-collection-feasibility.md](dialogsheet-control-collection-feasibility.md): DialogSheet control collection の導入段階と owner 設計の整理
 - [worksheet-chart-control-collection-feasibility.md](worksheet-chart-control-collection-feasibility.md): Worksheet / Chart control collection を横展開する前提と優先順位の整理
+- [worksheet-chart-control-entrypoint-feasibility.md](worksheet-chart-control-entrypoint-feasibility.md): Worksheet / Chart 上の control をどの entry point から実装するかの整理
 - [sub-agent-escalation.md](sub-agent-escalation.md): サブエージェント利用の切り替え基準
 
 ## 取りこぼしを減らす順番

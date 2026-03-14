@@ -22,6 +22,12 @@
   - `WorksheetClass.Buttons` / `CheckBoxes` / `OptionButtons` と `ChartClass.*` は interop 側の `Optional Index As Object -> As Object` 補助ソース候補と位置付け、`DialogSheet` の literal-only selector 正規化を直ちに横展開しない方針を文書化した
   - `docs/process/worksheet-chart-control-collection-feasibility.md` を正本にし、変更系 member 抑止と `OLEObjects` / control name 導線優先を次段の前提として固定した
 
+- [x] Worksheet / Chart OLEObjects / Shapes / control name 導線整理
+  - Office VBA の `Using ActiveX Controls on Sheets`、`Worksheet.OLEObjects`、`Chart.OLEObjects`、`OLEObject.Object`、`Worksheet.Shapes`、`Chart.Shapes` を確認し、entry point ごとの向き不向きを比較した
+  - 最初の実装候補は `Worksheet.OLEObjects(Index)` / `Chart.OLEObjects(Index)` を `OLEObject` owner へ落とす最小プロトタイプとし、`.Object` の先、`Sheet1.CommandButton1`、`Shapes` root は後続へ送る方針を文書化した
+  - `docs/process/worksheet-chart-control-entrypoint-feasibility.md` を正本にし、`OLEObjects` 優先、`.Object` 未解決維持、control code name inventory 不足、`Shapes` 広域性を次段の前提として固定した
+  - 今回完了したのは調査と方針整理までであり、`OLEObjects` root 実装、`.Object` 後段型付け、`Sheet1.CommandButton1`、`Shapes` root 実装は未着手のまま維持した
+
 - [x] DialogSheet control collection の補助参照可否整理
   - Microsoft Learn の `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` と `Button` / `CheckBox` / `OptionButton` / `DialogFrame` interface を確認し、owner ごとの導入難所を整理
   - `DialogFrame` は direct property で先行候補、他 3 系統は `Optional Index As Object -> As Object` のため single-selector / collection selector 分岐が必要という結論を文書化
@@ -327,10 +333,10 @@
 
 ## 次候補
 
-- [ ] Worksheet / Chart OLEObjects / Shapes / control name 導線整理
-  - `Sheet1.CommandButton1`、`Worksheet.OLEObjects("ShapeName").Object`、`Worksheet.Shapes("ShapeName")` のどれを先に支援するか、Office VBA の正本道線に沿って優先順位を整理する
-  - shape name と code name の不一致、chart sheet 上の control、`.Object` の先の型付け可否、`Shapes` を user-facing 導線へ含める条件を切り分ける
-  - 完了条件として、対象シナリオ表、owner 判定ルール、`.Object` 後段型付け方針、`Shapes` を後回しにする場合の理由を文書化する
+- [ ] Worksheet / Chart OLEObjects root の最小プロトタイプ
+  - `Worksheet.OLEObjects` / `Chart.OLEObjects` は index 省略時に `OLEObjects` collection surface を維持し、`OLEObjects(Index)` と `OLEObjects.Item(Index)` だけを `OLEObject` へ落とす owner 正規化を追加する
+  - 初回は `OLEObject` page の member だけを user-facing に公開し、`.Object` の先、`Sheet1.CommandButton1`、`Shapes` root は未対応のまま維持する
+  - server / extension の回帰では collection surface、indexed access、`.Item(Index)`、chart sheet root、`.Object` 非解決の保守動作を固定する
 
 ## メモ
 
