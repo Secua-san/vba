@@ -17,6 +17,11 @@
   - 数値・文字列リテラル selector と `.Item(<literal>)` だけ `Button` / `CheckBox` / `OptionButton` へ落とし、式 selector や `Array(...)` selector は collection owner のまま維持する marker ルールを core / server に追加
   - collection owner は `Count` / `Item`、item owner は `Caption` / `Name` / `OnAction` / `Text` / `Select` と `Value` の最小構成に絞り、`scripts/test` / server / extension テストで `_Dummy*` 除外、type override、completion / hover / signature help / semantic token を固定した
 
+- [x] Worksheet / Chart control collection への横展開方針整理
+  - Office VBA の `Using ActiveX Controls on Sheets`、`Worksheet.OLEObjects`、`Chart.OLEObjects` を確認し、worksheet / chart sheet の正本道線は `OLEObjects` / `Shapes` / control code name であることを整理した
+  - `WorksheetClass.Buttons` / `CheckBoxes` / `OptionButtons` と `ChartClass.*` は interop 側の `Optional Index As Object -> As Object` 補助ソース候補と位置付け、`DialogSheet` の literal-only selector 正規化を直ちに横展開しない方針を文書化した
+  - `docs/process/worksheet-chart-control-collection-feasibility.md` を正本にし、変更系 member 抑止と `OLEObjects` / control name 導線優先を次段の前提として固定した
+
 - [x] DialogSheet control collection の補助参照可否整理
   - Microsoft Learn の `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` と `Button` / `CheckBox` / `OptionButton` / `DialogFrame` interface を確認し、owner ごとの導入難所を整理
   - `DialogFrame` は direct property で先行候補、他 3 系統は `Optional Index As Object -> As Object` のため single-selector / collection selector 分岐が必要という結論を文書化
@@ -322,9 +327,10 @@
 
 ## 次候補
 
-- [ ] Worksheet / Chart control collection への横展開方針整理
-  - 今回追加した literal-only selector ルールを `Worksheet.Buttons` / `Chart.OptionButtons` などへ広げる妥当性と誤補完リスクを整理する
-  - collection owner を `Count` / `Item` 以外へ広げるか、`Add` / `Group` / `Duplicate` のような変更系 member を抑止し続けるかを判断する
+- [ ] Worksheet / Chart OLEObjects / Shapes / control name 導線整理
+  - `Sheet1.CommandButton1`、`Worksheet.OLEObjects("ShapeName").Object`、`Worksheet.Shapes("ShapeName")` のどれを先に支援するか、Office VBA の正本道線に沿って優先順位を整理する
+  - shape name と code name の不一致、chart sheet 上の control、`.Object` の先の型付け可否、`Shapes` を user-facing 導線へ含める条件を切り分ける
+  - 完了条件として、対象シナリオ表、owner 判定ルール、`.Object` 後段型付け方針、`Shapes` を後回しにする場合の理由を文書化する
 
 ## メモ
 

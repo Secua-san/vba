@@ -60,6 +60,12 @@
 - `Buttons` / `CheckBoxes` / `OptionButtons` collection page は `_Dummy*` を含み、`Item(Object)` も `Object` を返すため、導入するなら allow list、`memberTypeOverrides`、grouped selector 抑止をセットで入れる
 - 調査の正本は `docs/process/dialogsheet-control-collection-feasibility.md` に切り出して管理する
 
+## 2026-03-14 の Worksheet / Chart control collection 方針
+- Office VBA の `Using ActiveX Controls on Sheets` は、worksheet / chart sheet 上の control を `OLEObjects`、`Shapes`、control code name で扱う導線を正本としている
+- 一方で `WorksheetClass.Buttons` / `CheckBoxes` / `OptionButtons`、`ChartClass.Buttons` / `CheckBoxes` / `OptionButtons` は interop 側で `Optional Index As Object -> As Object` を返し、`DialogSheet` と同じ owner 曖昧性を持つ
+- そのため、`Worksheet` / `Chart` への横展開は現段階では supplemental interop source の候補に留め、`Buttons` 系 collection の公開より `OLEObjects` / control name 導線の整理を優先する
+- 正本の判断メモは `docs/process/worksheet-chart-control-collection-feasibility.md` に切り出して管理する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
