@@ -269,6 +269,103 @@ export async function run(): Promise<void> {
   );
   assert.ok(applicationActiveCellAddressCompletion?.detail?.includes("Excel Range"));
 
+  const oleObjectBuiltInDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "OleObjectBuiltIn.bas"));
+  await vscode.window.showTextDocument(oleObjectBuiltInDocument);
+
+  const sheetOleObjectsCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
+  );
+  const indexedOleObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Activate")
+  );
+  const namedOleObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'Sheet1.OLEObjects("CheckBox1").'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Visible")
+  );
+  const expressionOleObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(i + 1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Name")
+  );
+  const functionOleObjectsCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(GetIndex())."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
+  );
+  const chartOleObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Chart1.OLEObjects(1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Name")
+  );
+  const oleObjectObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(1).Object."),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Activate")
+  );
+  const activateSignatureHelp = await waitForSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(1).Activate("),
+    (help) => help.signatures.length > 0
+  );
+  const dynamicActivateSuppressed = await waitForNoSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(GetIndex()).Activate(")
+  );
+  const oleObjectHover = await waitForHover(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(1).Nam"),
+    (hovers) => hovers.length > 0
+  );
+  const sheetOleObjectsCountCompletion = sheetOleObjectsCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Count"
+  );
+  const indexedOleObjectActivateCompletion = indexedOleObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Activate"
+  );
+  const indexedOleObjectNameCompletion = indexedOleObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Name"
+  );
+  const namedOleObjectVisibleCompletion = namedOleObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Visible"
+  );
+  const expressionOleObjectNameCompletion = expressionOleObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Name"
+  );
+  const functionOleObjectsCountCompletion = functionOleObjectsCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Count"
+  );
+  const chartOleObjectNameCompletion = chartOleObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Name"
+  );
+  const oleObjectHoverText = getHoverContentsText(oleObjectHover[0]);
+
+  assert.ok(sheetOleObjectsCountCompletion?.detail?.includes("Excel OLEObjects property"));
+  assert.ok(indexedOleObjectActivateCompletion?.detail?.includes("Excel OLEObject method"));
+  assert.ok(indexedOleObjectNameCompletion?.detail?.includes("Excel OLEObject property"));
+  assert.ok(namedOleObjectVisibleCompletion?.detail?.includes("Excel OLEObject property"));
+  assert.ok(expressionOleObjectNameCompletion?.detail?.includes("Excel OLEObject property"));
+  assert.ok(functionOleObjectsCountCompletion?.detail?.includes("Excel OLEObjects property"));
+  assert.equal(
+    functionOleObjectsCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+    false,
+    "function-based OLEObjects selector should stay on the OLEObjects collection"
+  );
+  assert.equal(
+    oleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+    false,
+    "OLEObject.Object の先では OLEObject method を出さない"
+  );
+  assert.ok(chartOleObjectNameCompletion?.detail?.includes("Excel OLEObject property"));
+  assert.equal(activateSignatureHelp.signatures[0]?.label.includes("Activate()"), true);
+  assert.equal(dynamicActivateSuppressed, true);
+  assert.equal(oleObjectHoverText.includes("OLEObject.Name"), true);
+  assert.equal(oleObjectHoverText.includes("excel.oleobject.name"), true);
+
   const dialogSheetBuiltInDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "DialogSheetBuiltIn.bas"));
   await vscode.window.showTextDocument(dialogSheetBuiltInDocument);
 
