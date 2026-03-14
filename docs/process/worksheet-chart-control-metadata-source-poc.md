@@ -106,6 +106,17 @@
 - 出力は loose files から再利用しやすい JSON にする。
 - PoC では `controls/control@shapeId`、`oleObject@shapeId`、drawing の `xdr:cNvPr@id` が同じ control を指すことを必須検証に含める。
 
+## 現在の最小実装
+
+- probe は [scripts/probe-workbook-control-metadata.mjs](../../scripts/probe-workbook-control-metadata.mjs) にあり、`npm run probe:worksheet-control-metadata -- <workbook-path>` で実行できる。
+- 抽出ロジック本体は [scripts/lib/workbookControlMetadata.mjs](../../scripts/lib/workbookControlMetadata.mjs) にあり、以下を結合して worksheet control metadata を返す。
+  - `xl/workbook.xml` / `xl/_rels/workbook.xml.rels`
+  - worksheet part とその `.rels`
+  - drawing part の `xdr:cNvPr@id|name`
+  - Embedded Control Data part の `classid`
+- unit test は [scripts/test/workbookControlMetadata.test.mjs](../../scripts/test/workbookControlMetadata.test.mjs) で、`shape name != code name`、`ProgID`、`classid`、chart sheet 除外、CLI 出力を固定している。
+- 現段階では synthetic workbook package を test 内で組み立てており、real workbook fixture や sidecar の最終 schema まではまだ固定していない。
+
 ### フェーズ 2: sidecar artifact を static input に寄せる
 
 - probe が成立したら、extract 時に sidecar artifact を吐くか、workbook package を直接読む補助コマンドを作るかを決める。
