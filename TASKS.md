@@ -6,10 +6,15 @@
 
 ## 完了
 
+- [x] Worksheet / Chart OLEObjects.Item の型解決
+  - `scripts/lib/supplementalReferenceConfig.mjs` と `scripts/generate-mslearn-vba-reference.mjs` に既存 owner member override を追加し、`OLEObjects.Item` を raw doc の `Object` ではなく `typeName: "OLEObjects"` として正規化した
+  - `resources/reference/mslearn-vba-reference.json` を再生成し、`Sheet1.OLEObjects.Item(1)` / `Item("CheckBox1")` / `Item(i + 1)` / `Chart1.OLEObjects.Item(1)` から `OLEObject` member へ到達できるようにした
+  - `Item(GetIndex())` は collection のまま維持し、script / server / extension テストで `Item(...)` の single/literal/function 境界を固定した
+
 - [x] Worksheet / Chart OLEObjects root の最小プロトタイプ
   - `packages/core/src/reference/builtinReference.ts` の indexed collection owner map に `OLEObjects -> OLEObject` を追加し、`Sheet1.OLEObjects(1)` / `Sheet1.OLEObjects("CheckBox1")` / `Sheet1.OLEObjects(i + 1)` / `Chart1.OLEObjects(1)` から `OLEObject` member へ到達できるようにした
   - server / extension に専用 fixture と回帰テストを追加し、completion / hover / signature help で `OLEObject` method・property が出ることを確認した
-  - `Sheet1.OLEObjects(GetIndex())` は collection のまま維持し、`.Object` の先と `OLEObjects.Item(1)` は参照 JSON の `typeName` 不足により今回も保守動作のまま据え置いた
+  - `Sheet1.OLEObjects(GetIndex())` は collection のまま維持し、`.Object` の先は引き続き保守動作のまま据え置いた
 
 - [x] DialogFrame 補助参照の最小プロトタイプ
   - `scripts/lib/supplementalReferenceConfig.mjs` に `DialogSheet.DialogFrame` の補助 property と `DialogFrame` owner の allow list を追加し、`resources/reference/mslearn-vba-reference.json` を再生成
@@ -31,7 +36,7 @@
   - Office VBA の `Using ActiveX Controls on Sheets`、`Worksheet.OLEObjects`、`Chart.OLEObjects`、`OLEObject.Object`、`Worksheet.Shapes`、`Chart.Shapes` を確認し、entry point ごとの向き不向きを比較した
   - 最初の実装候補は `Worksheet.OLEObjects(Index)` / `Chart.OLEObjects(Index)` を `OLEObject` owner へ落とす最小プロトタイプとし、`.Object` の先、`Sheet1.CommandButton1`、`Shapes` root は後続へ送る方針を文書化した
   - `docs/process/worksheet-chart-control-entrypoint-feasibility.md` を正本にし、`OLEObjects` 優先、`.Object` 未解決維持、control code name inventory 不足、`Shapes` 広域性を次段の前提として固定した
-  - 後続で `Worksheet / Chart OLEObjects root` 自体は実装済みだが、`.Object` 後段型付け、`OLEObjects.Item` の明示型付け、`Sheet1.CommandButton1`、`Shapes` root 実装は未着手のまま維持した
+  - 後続で `Worksheet / Chart OLEObjects root` と `OLEObjects.Item` は実装済みだが、`.Object` 後段型付け、`Sheet1.CommandButton1`、`Shapes` root 実装は未着手のまま維持した
 
 - [x] DialogSheet control collection の補助参照可否整理
   - Microsoft Learn の `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` と `Button` / `CheckBox` / `OptionButton` / `DialogFrame` interface を確認し、owner ごとの導入難所を整理

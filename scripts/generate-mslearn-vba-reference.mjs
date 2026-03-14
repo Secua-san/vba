@@ -8,6 +8,7 @@ import {
   supplementalInteropOwners,
   supplementalOwnerClones,
   supplementalOwnerMembers,
+  supplementalOwnerMemberOverrides,
 } from "./lib/supplementalReferenceConfig.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -458,6 +459,41 @@ function applySupplementalOwnerMembers(items) {
 
       existingMemberNames.add(normalizedMemberName);
       targetSection.members.push({ ...member });
+    }
+  }
+}
+
+function applySupplementalOwnerMemberOverrides(items) {
+  for (const ownerConfig of supplementalOwnerMemberOverrides) {
+    const targetOwner = findApiReferenceItem(items, ownerConfig.ownerName);
+
+    if (!targetOwner) {
+      throw new Error(`Supplemental owner member override target '${ownerConfig.ownerName}' was not found.`);
+    }
+
+    const targetSection = targetOwner.sections.find(
+      (section) => normalizeReferenceName(section.title) === normalizeReferenceName(ownerConfig.sectionName),
+    );
+
+    if (!targetSection) {
+      throw new Error(
+        `Supplemental owner member override target '${ownerConfig.ownerName}.${ownerConfig.sectionName}' was not found.`,
+      );
+    }
+
+    for (const memberOverride of ownerConfig.members) {
+      const targetMember = targetSection.members.find(
+        (member) => normalizeReferenceName(member.name) === normalizeReferenceName(memberOverride.name),
+      );
+
+      if (!targetMember) {
+        throw new Error(
+          `Supplemental owner member override '${ownerConfig.ownerName}.${memberOverride.name}' was not found in the target section.`,
+        );
+      }
+
+      const { name: _memberName, ...overrideFields } = memberOverride;
+      Object.assign(targetMember, overrideFields);
     }
   }
 }
@@ -1437,6 +1473,7 @@ async function main() {
   );
   excelReference.items.push(...supplementalExcelItems);
   applySupplementalOwnerMembers(excelReference.items);
+  applySupplementalOwnerMemberOverrides(excelReference.items);
 
   const output = {
     source: {
