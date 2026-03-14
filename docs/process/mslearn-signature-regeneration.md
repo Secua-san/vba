@@ -73,6 +73,12 @@
 - `Shapes` は drawing object 全体を含み、control 専用 root としては広すぎるため、初回対象から外す
 - 正本の判断メモは `docs/process/worksheet-chart-control-entrypoint-feasibility.md` に切り出して管理する
 
+## 2026-03-14 の Worksheet / Chart control identity source 整理
+- `OLEObject.Object` 後段型付けと `Sheet1.CommandButton1` 支援は、どちらも `shape name` / `code name` / `ProgID` を結び付けた control inventory を必要とする
+- Office VBA の `Using ActiveX Controls on Sheets` と `OLEObjects` は shape name / code name の役割分担を示し、`OLEObject.progID` は control type 判定候補になる
+- ただし現行リポジトリの静的入力 `.bas` / `.cls` / `.frm` / `.frx` だけでは worksheet / chart sheet 上の control inventory を復元できないため、次段では metadata source の PoC を先に行う
+- 正本の判断メモは `docs/process/worksheet-chart-control-identity-feasibility.md` に切り出して管理する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
