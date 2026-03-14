@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Worksheet / Chart control metadata source の PoC
+  - workbook package を第 1 PoC source とし、worksheet 側では `sheetPr@codeName`、`controls/control@name|shapeId|r:id`、drawing の `xdr:cNvPr@id|name`、`oleObject@progId` / Embedded Control Data part の `classid` を組み合わせる経路があることを整理
+  - chart sheet では `sheetPr@codeName` と `drawing` part までは確認できるが、Open XML docs 上で `controls` / `oleObjects` 相当の経路は未証明のため、worksheet と同列には扱わず保留とした
+  - 抽出ツール artifact と将来 manifest は consumer format 候補と位置付け、最小経路は「workbook package probe -> sidecar JSON」とする方針を [docs/process/worksheet-chart-control-metadata-source-poc.md](docs/process/worksheet-chart-control-metadata-source-poc.md) に記録
+
 - [x] Worksheet / Chart control identity source の整理
   - `OLEObject.Object` 後段型付けと `Sheet1.CommandButton1` 支援は、どちらも `shape name` / `code name` / `ProgID` を結び付けた control inventory を必要とすることを整理
   - Office VBA の `Using ActiveX Controls on Sheets`、`OLEObjects object`、`OLEObject.progID` を確認し、collection access は shape name、event / direct access は code name、control type 判定には `ProgID` が使えることを明文化
@@ -348,10 +353,10 @@
 
 ## 次候補
 
-- [ ] Worksheet / Chart control metadata source の PoC
-  - worksheet / chart sheet 上の ActiveX control について、`sheet module`、`shape name`、`code name`、`ProgID` を取得できる入力源を比較する
-  - 候補は workbook package、抽出ツールの補助 artifact、将来の manifest とし、静的入力だけで再現できる最小経路を決める
-  - 成立しない間は `OLEObject.Object` の先と `Sheet1.CommandButton1` は未解決のまま維持する
+- [ ] Worksheet workbook package control metadata probe の最小実装
+  - `.xlsm` / `.xlam` を対象に、workbook package から worksheet の `sheetCodeName`、`shapeName`、`codeName`、`shapeId`、`ProgID` / `classId` を抜く最小 probe を追加する
+  - 出力は loose files と併用しやすい sidecar JSON を想定し、`shape name != code name` と `controls/oleObjects/drawing` の `shapeId` 突合成立を fixture で確認する
+  - chart sheet は同じ経路で再現できる証拠が揃うまで保留し、保留解除条件を明文化するまで `OLEObject.Object` の先と `Sheet1.CommandButton1` は未解決のまま維持する
 
 ## メモ
 
