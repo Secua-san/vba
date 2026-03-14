@@ -6,8 +6,6 @@ import { fileURLToPath } from "node:url";
 
 import { signatureMemberAllowList, signatureMissingMemberWatchList } from "../lib/referenceSignatureConfig.mjs";
 import {
-  dialogSheetControlCollectionMemberNames,
-  dialogSheetControlCollectionOwnerConfigs,
   dialogFrameMethodMemberNames,
   dialogFramePropertyMemberNames,
   dialogSheetCommonCallableMemberNames,
@@ -22,6 +20,27 @@ const auditedMembers = new Map(
     .filter(([ownerName]) => ownerName !== "Application")
     .map(([ownerName, memberNames]) => [ownerName, new Set(memberNames)]),
 );
+const expectedDialogSheetControlCollectionMemberNames = ["Buttons", "CheckBoxes", "OptionButtons"];
+const expectedDialogSheetControlCollectionOwnerConfigs = [
+  {
+    collectionName: "Buttons",
+    itemMethodMemberNames: ["Select"],
+    itemName: "Button",
+    itemPropertyMemberNames: ["Caption", "Name", "OnAction", "Text"],
+  },
+  {
+    collectionName: "CheckBoxes",
+    itemMethodMemberNames: ["Select"],
+    itemName: "CheckBox",
+    itemPropertyMemberNames: ["Caption", "Name", "OnAction", "Text", "Value"],
+  },
+  {
+    collectionName: "OptionButtons",
+    itemMethodMemberNames: ["Select"],
+    itemName: "OptionButton",
+    itemPropertyMemberNames: ["Caption", "Name", "OnAction", "Text", "Value"],
+  },
+];
 
 async function loadReferenceData() {
   return JSON.parse(await readFile(referenceFile, "utf8"));
@@ -191,7 +210,7 @@ test("DialogSheet 補助ソースは allow list の property / method だけを�
   const data = await loadReferenceData();
   const { owner, memberNames } = getOwnerMemberNames(data, "DialogSheet");
   const normalizedAllowedMemberNames = new Set(
-    [...dialogSheetPropertyMemberNames, ...dialogSheetCommonCallableMemberNames, ...dialogSheetControlCollectionMemberNames].map(
+    [...dialogSheetPropertyMemberNames, ...dialogSheetCommonCallableMemberNames, ...expectedDialogSheetControlCollectionMemberNames].map(
       (memberName) => normalizeMemberName(memberName),
     ),
   );
@@ -231,7 +250,7 @@ test("DialogSheet 補助ソースは allow list 全件の署名を完全に保�
     "DialogSheet.SaveAs は 10 引数の署名である必要があります",
   );
 
-  for (const memberName of dialogSheetControlCollectionMemberNames) {
+  for (const memberName of expectedDialogSheetControlCollectionMemberNames) {
     const member = getMember(data, "DialogSheet", memberName);
     const signature = getSignature(data, "DialogSheet", memberName);
 
@@ -247,7 +266,7 @@ test("DialogSheet control collection surface は想定 3 member のみを公開�
   const data = await loadReferenceData();
   const dialogSheetOwner = data.excel.objectModel.items.find((item) => item.name === "DialogSheet");
   const controlCollectionOwnerNames = new Set(
-    dialogSheetControlCollectionOwnerConfigs.map((config) => normalizeMemberName(config.collectionName)),
+    expectedDialogSheetControlCollectionOwnerConfigs.map((config) => normalizeMemberName(config.collectionName)),
   );
   const controlCollectionMembers =
     dialogSheetOwner?.sections
@@ -257,7 +276,7 @@ test("DialogSheet control collection surface は想定 3 member のみを公開�
 
   assert.deepEqual(
     [...new Set(controlCollectionMembers)].sort(),
-    [...dialogSheetControlCollectionMemberNames].map((memberName) => normalizeMemberName(memberName)).sort(),
+    expectedDialogSheetControlCollectionMemberNames.map((memberName) => normalizeMemberName(memberName)).sort(),
     "DialogSheet は Buttons / CheckBoxes / OptionButtons だけを control collection surface として公開する必要があります",
   );
 });
@@ -368,7 +387,7 @@ test("DialogFrame 補助ソースは dummy / legacy member と正規化重複を
 test("DialogSheet control collection owner は allow list の property / method だけを保持する", async () => {
   const data = await loadReferenceData();
 
-  for (const config of dialogSheetControlCollectionOwnerConfigs) {
+  for (const config of expectedDialogSheetControlCollectionOwnerConfigs) {
     const { owner, memberNames } = getOwnerMemberNames(data, config.collectionName);
     const normalizedAllowedMemberNames = new Set(["Count", "Item"].map((memberName) => normalizeMemberName(memberName)));
 
@@ -384,7 +403,7 @@ test("DialogSheet control collection owner は allow list の property / method 
 test("DialogSheet control collection owner の Item は literal selector 用の collection type を保持する", async () => {
   const data = await loadReferenceData();
 
-  for (const config of dialogSheetControlCollectionOwnerConfigs) {
+  for (const config of expectedDialogSheetControlCollectionOwnerConfigs) {
     const itemMember = getMember(data, config.collectionName, "Item");
     const itemSignature = getSignature(data, config.collectionName, "Item");
 
@@ -402,7 +421,7 @@ test("DialogSheet control collection owner の Item は literal selector 用の 
 test("DialogSheet control item owner は allow list の property / method だけを保持する", async () => {
   const data = await loadReferenceData();
 
-  for (const config of dialogSheetControlCollectionOwnerConfigs) {
+  for (const config of expectedDialogSheetControlCollectionOwnerConfigs) {
     const { owner, memberNames } = getOwnerMemberNames(data, config.itemName);
     const normalizedAllowedMemberNames = new Set(
       [...config.itemPropertyMemberNames, ...config.itemMethodMemberNames].map((memberName) => normalizeMemberName(memberName)),
@@ -420,7 +439,7 @@ test("DialogSheet control item owner は allow list の property / method だけ
 test("DialogSheet control item owner は代表 property / method を保持する", async () => {
   const data = await loadReferenceData();
 
-  for (const config of dialogSheetControlCollectionOwnerConfigs) {
+  for (const config of expectedDialogSheetControlCollectionOwnerConfigs) {
     const captionMember = getMember(data, config.itemName, "Caption");
     const selectSignature = getSignature(data, config.itemName, "Select");
 
@@ -433,7 +452,10 @@ test("DialogSheet control item owner は代表 property / method を保持する
 test("DialogSheet control owner は dummy / legacy member と正規化重複を含まない", async () => {
   const data = await loadReferenceData();
 
-  for (const ownerName of dialogSheetControlCollectionOwnerConfigs.flatMap((config) => [config.collectionName, config.itemName])) {
+  for (const ownerName of expectedDialogSheetControlCollectionOwnerConfigs.flatMap((config) => [
+    config.collectionName,
+    config.itemName,
+  ])) {
     const { owner } = getOwnerMemberNames(data, ownerName);
     const rawMemberNames = owner?.sections.flatMap((section) => section.members).map((member) => String(member.name)) ?? [];
     const normalizedMemberNames = rawMemberNames.map((memberName) => normalizeMemberName(memberName));

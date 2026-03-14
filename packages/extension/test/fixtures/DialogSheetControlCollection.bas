@@ -31,4 +31,14 @@ Public Sub Demo()
     Call DialogSheets(1).Buttons(index).Select("Button 1")
     Call DialogSheets(1).Buttons.Item(index).Select("Button 1")
     Call DialogSheets(1).Buttons(Array(1, 2)).Select("Button 1")
+    Debug.Print DialogSheets(1).Buttons.Item("Button 1").
+    Debug.Print DialogSheets(1).CheckBoxes.Item("Check 1").
+    Debug.Print DialogSheets(1).OptionButtons.Item("Option 1").
+    Call DialogSheets(1).Buttons(&H1).Select("Button 1")
+    Call DialogSheets(1).Buttons(&O7).Select("Button 1")
+    Call DialogSheets(1).Buttons(1#).Select("Button 1")
+    Call DialogSheets(1).Buttons(1E+2).Select("Button 1")
+    Call DialogSheets(1).Buttons.Item("Button 1").Select("Button 1")
+    Call DialogSheets(1).CheckBoxes.Item("Check 1").Select("Check 1")
+    Call DialogSheets(1).OptionButtons.Item("Option 1").Select("Option 1")
 End Sub

@@ -607,6 +607,26 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(1)."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
   );
+  const hexButtonCompletionItems = await waitForCompletions(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(&H1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
+  );
+  const octalButtonCompletionItems = await waitForCompletions(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(&O7)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
+  );
+  const suffixButtonCompletionItems = await waitForCompletions(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(1#)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
+  );
+  const exponentButtonCompletionItems = await waitForCompletions(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(1E+2)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
+  );
   const namedButtonCompletionItems = await waitForCompletions(
     dialogSheetControlCollectionDocument,
     findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).Buttons("Button 1").'),
@@ -627,6 +647,11 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons.Item(1)."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
   );
+  const namedItemButtonCompletionItems = await waitForCompletions(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).Buttons.Item("Button 1").'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Caption")
+  );
   const dynamicItemButtonCompletionItems = await waitForCompletions(
     dialogSheetControlCollectionDocument,
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons.Item(index)."),
@@ -637,9 +662,19 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).CheckBoxes(1)."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
   );
+  const namedItemCheckBoxCompletionItems = await waitForCompletions(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).CheckBoxes.Item("Check 1").'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
   const namedOptionButtonCompletionItems = await waitForCompletions(
     dialogSheetControlCollectionDocument,
     findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).OptionButtons("Option 1").'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const namedItemOptionButtonCompletionItems = await waitForCompletions(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).OptionButtons.Item("Option 1").'),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
   );
   const buttonSelectSignatureHelp = await waitForSignatureHelp(
@@ -647,9 +682,34 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(1).Select("),
     (help) => help.signatures.length > 0
   );
+  const hexButtonSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(&H1).Select("),
+    (help) => help.signatures.length > 0
+  );
+  const octalButtonSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(&O7).Select("),
+    (help) => help.signatures.length > 0
+  );
+  const suffixButtonSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(1#).Select("),
+    (help) => help.signatures.length > 0
+  );
+  const exponentButtonSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons(1E+2).Select("),
+    (help) => help.signatures.length > 0
+  );
   const itemButtonSelectSignatureHelp = await waitForSignatureHelp(
     dialogSheetControlCollectionDocument,
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).Buttons.Item(1).Select("),
+    (help) => help.signatures.length > 0
+  );
+  const namedItemButtonSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).Buttons.Item("Button 1").Select('),
     (help) => help.signatures.length > 0
   );
   const checkBoxSelectSignatureHelp = await waitForSignatureHelp(
@@ -662,6 +722,11 @@ export async function run(): Promise<void> {
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).CheckBoxes.Item(1).Select("),
     (help) => help.signatures.length > 0
   );
+  const namedItemCheckBoxSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).CheckBoxes.Item("Check 1").Select('),
+    (help) => help.signatures.length > 0
+  );
   const optionButtonSelectSignatureHelp = await waitForSignatureHelp(
     dialogSheetControlCollectionDocument,
     findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).OptionButtons("Option 1").Select('),
@@ -670,6 +735,11 @@ export async function run(): Promise<void> {
   const itemOptionButtonSelectSignatureHelp = await waitForSignatureHelp(
     dialogSheetControlCollectionDocument,
     findPositionAfterToken(dialogSheetControlCollectionDocument, "DialogSheets(1).OptionButtons.Item(1).Select("),
+    (help) => help.signatures.length > 0
+  );
+  const namedItemOptionButtonSelectSignatureHelp = await waitForSignatureHelp(
+    dialogSheetControlCollectionDocument,
+    findPositionAfterToken(dialogSheetControlCollectionDocument, 'DialogSheets(1).OptionButtons.Item("Option 1").Select('),
     (help) => help.signatures.length > 0
   );
   const applicationButtonSelectSignatureHelp = await waitForSignatureHelp(
@@ -730,6 +800,18 @@ export async function run(): Promise<void> {
   const indexedButtonCaptionCompletion = indexedButtonCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Caption"
   );
+  const hexButtonCaptionCompletion = hexButtonCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Caption"
+  );
+  const octalButtonCaptionCompletion = octalButtonCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Caption"
+  );
+  const suffixButtonCaptionCompletion = suffixButtonCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Caption"
+  );
+  const exponentButtonCaptionCompletion = exponentButtonCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Caption"
+  );
   const indexedButtonSelectCompletion = indexedButtonCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Select"
   );
@@ -745,13 +827,22 @@ export async function run(): Promise<void> {
   const itemButtonCaptionCompletion = itemButtonCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Caption"
   );
+  const namedItemButtonCaptionCompletion = namedItemButtonCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Caption"
+  );
   const dynamicItemButtonsCountCompletion = dynamicItemButtonCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Count"
   );
   const checkBoxValueCompletion = indexedCheckBoxCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Value"
   );
+  const namedItemCheckBoxValueCompletion = namedItemCheckBoxCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
   const optionButtonValueCompletion = namedOptionButtonCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const namedItemOptionButtonValueCompletion = namedItemOptionButtonCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Value"
   );
   const buttonCaptionHoverText = getHoverContentsText(buttonCaptionHover[0]);
@@ -761,14 +852,21 @@ export async function run(): Promise<void> {
   assert.ok(buttonsCountCompletion?.detail?.includes("Excel Buttons property"));
   assert.ok(buttonsItemCompletion?.detail?.includes("Excel Buttons method"));
   assert.ok(indexedButtonCaptionCompletion?.detail?.includes("Excel Button property"));
+  assert.ok(hexButtonCaptionCompletion?.detail?.includes("Excel Button property"));
+  assert.ok(octalButtonCaptionCompletion?.detail?.includes("Excel Button property"));
+  assert.ok(suffixButtonCaptionCompletion?.detail?.includes("Excel Button property"));
+  assert.ok(exponentButtonCaptionCompletion?.detail?.includes("Excel Button property"));
   assert.ok(indexedButtonSelectCompletion?.detail?.includes("Excel Button method"));
   assert.ok(namedButtonCaptionCompletion?.detail?.includes("Excel Button property"));
   assert.ok(dynamicButtonsCountCompletion?.detail?.includes("Excel Buttons property"));
   assert.ok(groupedButtonsCountCompletion?.detail?.includes("Excel Buttons property"));
   assert.ok(itemButtonCaptionCompletion?.detail?.includes("Excel Button property"));
+  assert.ok(namedItemButtonCaptionCompletion?.detail?.includes("Excel Button property"));
   assert.ok(dynamicItemButtonsCountCompletion?.detail?.includes("Excel Buttons property"));
   assert.ok(checkBoxValueCompletion?.detail?.includes("Excel CheckBox property"));
+  assert.ok(namedItemCheckBoxValueCompletion?.detail?.includes("Excel CheckBox property"));
   assert.ok(optionButtonValueCompletion?.detail?.includes("Excel OptionButton property"));
+  assert.ok(namedItemOptionButtonValueCompletion?.detail?.includes("Excel OptionButton property"));
   assert.equal(
     dynamicButtonCompletionItems.some((item) => getCompletionItemLabel(item) === "Caption"),
     false,
@@ -785,11 +883,18 @@ export async function run(): Promise<void> {
     "expression selector Buttons.Item should stay on the Buttons collection"
   );
   assert.equal(buttonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(hexButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(octalButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(suffixButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(exponentButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(itemButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(namedItemButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(checkBoxSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(itemCheckBoxSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(namedItemCheckBoxSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(optionButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(itemOptionButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(namedItemOptionButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(applicationButtonSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(dynamicButtonSelectSuppressed, true);
   assert.equal(dynamicItemButtonSelectSuppressed, true);

@@ -1,6 +1,9 @@
 const assert = require("node:assert/strict");
+const path = require("node:path");
 const test = require("node:test");
+const { pathToFileURL } = require("node:url");
 const { createDocumentService } = require("../dist/index.js");
+const { markIndexedAccessPathSegment, resolveBuiltinMemberOwnerFromRootType } = require("../../core/dist/index.js");
 
 test("document service analyzes text and exposes LSP-ready data", () => {
   const service = createDocumentService();
@@ -738,6 +741,16 @@ Public Sub Demo()
     Call DialogSheets(1).Buttons(index).Select("Button 1")
     Call DialogSheets(1).Buttons.Item(index).Select("Button 1")
     Call DialogSheets(1).Buttons(Array(1, 2)).Select("Button 1")
+    Debug.Print DialogSheets(1).Buttons.Item("Button 1").
+    Debug.Print DialogSheets(1).CheckBoxes.Item("Check 1").
+    Debug.Print DialogSheets(1).OptionButtons.Item("Option 1").
+    Call DialogSheets(1).Buttons(&H1).Select("Button 1")
+    Call DialogSheets(1).Buttons(&O7).Select("Button 1")
+    Call DialogSheets(1).Buttons(1#).Select("Button 1")
+    Call DialogSheets(1).Buttons(1E+2).Select("Button 1")
+    Call DialogSheets(1).Buttons.Item("Button 1").Select("Button 1")
+    Call DialogSheets(1).CheckBoxes.Item("Check 1").Select("Check 1")
+    Call DialogSheets(1).OptionButtons.Item("Option 1").Select("Option 1")
 End Sub`;
 
   service.analyzeText(uri, "vba", 1, text);
@@ -758,14 +771,26 @@ End Sub`;
     findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(Array(1, 2)).")
   );
   const itemButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons.Item(1)."));
+  const namedItemButtonMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).Buttons.Item("Button 1").')
+  );
   const dynamicItemButtonMembers = service.getCompletionSymbols(
     uri,
     findPositionAfterTokenInText(text, "DialogSheets(1).Buttons.Item(index).")
   );
   const indexedCheckBoxMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes(1)."));
+  const namedItemCheckBoxMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).CheckBoxes.Item("Check 1").')
+  );
   const namedOptionButtonMembers = service.getCompletionSymbols(
     uri,
     findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons("Option 1").')
+  );
+  const namedItemOptionButtonMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons.Item("Option 1").')
   );
   const buttonCaptionHover = service.getHover(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1).Capti"));
   const checkBoxValueHover = service.getHover(uri, findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes(1).Valu"));
@@ -778,6 +803,26 @@ End Sub`;
     uri,
     findPositionAfterTokenInText(text, "DialogSheets(1).Buttons.Item(1).Select(")
   );
+  const hexButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(&H1).Select(")
+  );
+  const octalButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(&O7).Select(")
+  );
+  const suffixButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1#).Select(")
+  );
+  const exponentButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1E+2).Select(")
+  );
+  const namedItemButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).Buttons.Item("Button 1").Select(')
+  );
   const checkBoxSelectSignature = service.getSignatureHelp(
     uri,
     findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes(1).Select(")
@@ -786,6 +831,10 @@ End Sub`;
     uri,
     findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes.Item(1).Select(")
   );
+  const namedItemCheckBoxSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).CheckBoxes.Item("Check 1").Select(')
+  );
   const optionButtonSelectSignature = service.getSignatureHelp(
     uri,
     findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons("Option 1").Select(')
@@ -793,6 +842,10 @@ End Sub`;
   const itemOptionButtonSelectSignature = service.getSignatureHelp(
     uri,
     findPositionAfterTokenInText(text, "DialogSheets(1).OptionButtons.Item(1).Select(")
+  );
+  const namedItemOptionButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons.Item("Option 1").Select(')
   );
   const applicationButtonSelectSignature = service.getSignatureHelp(
     uri,
@@ -832,9 +885,12 @@ End Sub`;
   const dynamicButtonsCount = dynamicButtonMembers.find((resolution) => resolution.symbol.name === "Count");
   const groupedButtonsCount = groupedButtonMembers.find((resolution) => resolution.symbol.name === "Count");
   const itemButtonCaption = itemButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const namedItemButtonCaption = namedItemButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
   const dynamicItemButtonsCount = dynamicItemButtonMembers.find((resolution) => resolution.symbol.name === "Count");
   const checkBoxValue = indexedCheckBoxMembers.find((resolution) => resolution.symbol.name === "Value");
+  const namedItemCheckBoxValue = namedItemCheckBoxMembers.find((resolution) => resolution.symbol.name === "Value");
   const optionButtonValue = namedOptionButtonMembers.find((resolution) => resolution.symbol.name === "Value");
+  const namedItemOptionButtonValue = namedItemOptionButtonMembers.find((resolution) => resolution.symbol.name === "Value");
 
   assert.equal(buttonsCount?.moduleName, "Excel Buttons property");
   assert.equal(buttonsItem?.moduleName, "Excel Buttons method");
@@ -849,10 +905,13 @@ End Sub`;
   assert.equal(dynamicButtonsCount?.moduleName, "Excel Buttons property");
   assert.equal(groupedButtonsCount?.moduleName, "Excel Buttons property");
   assert.equal(itemButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(namedItemButtonCaption?.moduleName, "Excel Button property");
   assert.equal(dynamicItemButtonsCount?.moduleName, "Excel Buttons property");
   assert.equal(checkBoxValue?.moduleName, "Excel CheckBox property");
+  assert.equal(namedItemCheckBoxValue?.moduleName, "Excel CheckBox property");
   assert.equal(checkBoxValue?.documentation?.includes("excel.checkbox.value"), true);
   assert.equal(optionButtonValue?.moduleName, "Excel OptionButton property");
+  assert.equal(namedItemOptionButtonValue?.moduleName, "Excel OptionButton property");
   assert.equal(optionButtonValue?.documentation?.includes("excel.optionbutton.value"), true);
   assert.equal(dynamicButtonMembers.some((resolution) => resolution.symbol.name === "Caption"), false);
   assert.equal(groupedButtonMembers.some((resolution) => resolution.symbol.name === "Caption"), false);
@@ -865,10 +924,17 @@ End Sub`;
   assert.equal(optionButtonValueHover?.contents.includes("microsoft.office.interop.excel.optionbutton.value"), true);
   assert.equal(buttonSelectSignature?.label, "Select(Replace) As Object");
   assert.equal(itemButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(hexButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(octalButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(suffixButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(exponentButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(namedItemButtonSelectSignature?.label, "Select(Replace) As Object");
   assert.equal(checkBoxSelectSignature?.label, "Select(Replace) As Object");
   assert.equal(itemCheckBoxSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(namedItemCheckBoxSelectSignature?.label, "Select(Replace) As Object");
   assert.equal(optionButtonSelectSignature?.label, "Select(Replace) As Object");
   assert.equal(itemOptionButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(namedItemOptionButtonSelectSignature?.label, "Select(Replace) As Object");
   assert.equal(applicationButtonSelectSignature?.label, "Select(Replace) As Object");
   assert.equal(dynamicButtonSelectSignature, undefined);
   assert.equal(dynamicItemButtonSelectSignature, undefined);
@@ -898,6 +964,30 @@ End Sub`;
   assertNoSemanticToken(text, tokens, 30, "Select");
   assertNoSemanticToken(text, tokens, 31, "Select");
   assertNoSemanticToken(text, tokens, 32, "Select");
+});
+
+test("DialogSheet control collection owner mapping stays aligned with supplemental config", async () => {
+  const supplementalConfigModule = await import(
+    pathToFileURL(path.resolve(__dirname, "..", "..", "..", "scripts", "lib", "supplementalReferenceConfig.mjs")).href
+  );
+
+  for (const config of supplementalConfigModule.dialogSheetControlCollectionOwnerConfigs) {
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType("DialogSheet", [config.collectionName]),
+      config.collectionName,
+      `DialogSheet.${config.collectionName} は collection owner を返す必要があります`
+    );
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType("DialogSheet", [markIndexedAccessPathSegment(config.collectionName, "single")]),
+      config.collectionName,
+      `DialogSheet.${config.collectionName}(<expr>) は collection owner を維持する必要があります`
+    );
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType("DialogSheet", [markIndexedAccessPathSegment(config.collectionName, "literal")]),
+      config.itemName,
+      `DialogSheet.${config.collectionName}(<literal>) は ${config.itemName} owner を返す必要があります`
+    );
+  }
 });
 
 test("document service keeps built-in member completion and semantic tokens conservative", () => {

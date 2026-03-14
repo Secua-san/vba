@@ -1450,7 +1450,7 @@ function getCallContext(text: string, position: LinePosition): CallContext | und
       continue;
     }
 
-    if (character === "#") {
+    if (character === "#" && isDateLiteralStart(code, index)) {
       index = skipDateLiteral(code, index);
       continue;
     }
@@ -1649,6 +1649,11 @@ function skipDateLiteral(text: string, startIndex: number): number {
   }
 
   return index;
+}
+
+function isDateLiteralStart(text: string, index: number): boolean {
+  const previousCharacter = text[index - 1] ?? "";
+  return !/[A-Za-z0-9_$%&!#@.]/u.test(previousCharacter);
 }
 
 function skipStringLiteral(text: string, startIndex: number): number {
