@@ -51,7 +51,18 @@ interface ServerSettings {
 export function startServer(): void {
   const connection = createConnection(ProposedFeatures.all);
   const documents = new TextDocuments(TextDocument);
-  const documentService = createDocumentService();
+  const documentService = createDocumentService({
+    logger: (entry) => {
+      const message = `[worksheet-control-metadata] ${entry.message}`;
+
+      if (entry.level === "warn") {
+        connection.console.warn(message);
+        return;
+      }
+
+      connection.console.info(message);
+    }
+  });
   const pendingTimers = new Map<string, NodeJS.Timeout>();
   let settings: ServerSettings = {
     analysisDebounceMs: 300
@@ -60,6 +71,11 @@ export function startServer(): void {
 
   connection.onInitialize((params: InitializeParams): InitializeResult => {
     canReadConfiguration = Boolean(params.capabilities.workspace?.configuration);
+    documentService.setWorkspaceRoots([
+      ...(params.workspaceFolders?.map((workspaceFolder) => workspaceFolder.uri) ?? []),
+      ...(params.rootUri ? [params.rootUri] : []),
+      ...(params.rootPath ? [params.rootPath] : [])
+    ]);
 
     return {
       capabilities: {

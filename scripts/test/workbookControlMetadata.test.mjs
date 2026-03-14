@@ -12,6 +12,10 @@ import {
   extractWorksheetControlMetadataFromWorkbookBuffer,
   extractWorksheetControlMetadataFromWorkbookFile,
 } from "../lib/workbookControlMetadata.mjs";
+import {
+  buildWorksheetControlMetadataSidecarPath,
+  convertWorksheetControlMetadataProbeToSidecar,
+} from "../lib/worksheetControlMetadataSidecar.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -73,6 +77,81 @@ test("CLI は workbook 名付きの JSON を出力する", async () => {
   }
 });
 
+test("sidecar 変換 helper は schema v1 を組み立てる", () => {
+  const sidecar = convertWorksheetControlMetadataProbeToSidecar({
+    version: 1,
+    workbook: "fixture.xlsm",
+    worksheets: [
+      {
+        controls: [
+          {
+            classId: "{8BD21D40-EC42-11CE-9E0D-00AA006002F3}",
+            codeName: "chkFinished",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1",
+          },
+        ],
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet1",
+      },
+    ],
+  });
+
+  assert.deepEqual(sidecar, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            classId: "{8BD21D40-EC42-11CE-9E0D-00AA006002F3}",
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1",
+          },
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet1",
+        status: "supported",
+      },
+    ],
+    version: 1,
+    workbook: {
+      name: "fixture.xlsm",
+      sourceKind: "openxml-package",
+    },
+  });
+});
+
+test("sidecar 変換 helper は未知 controlType を fail-fast で拒否する", () => {
+  assert.throws(
+    () =>
+      convertWorksheetControlMetadataProbeToSidecar({
+        version: 1,
+        workbook: "fixture.xlsm",
+        worksheets: [
+          {
+            controls: [
+              {
+                classId: null,
+                codeName: "mysteryControl",
+                progId: "Forms.UnknownControl.1",
+                shapeId: 3,
+                shapeName: "Unknown1",
+              },
+            ],
+            sheetCodeName: "Sheet1",
+            sheetName: "Sheet1",
+          },
+        ],
+      }),
+    /controlType を解決できません/u,
+  );
+});
+
 test("CLI は --out 指定時に JSON ファイルを書き出す", async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
   const workbookPath = path.join(temporaryDirectory, "fixture.xlsm");
@@ -101,6 +180,62 @@ test("CLI は --out 指定時に JSON ファイルを書き出す", async () => 
   }
 });
 
+test("CLI は --format sidecar で schema v1 を出力する", async () => {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
+  const workbookPath = path.join(temporaryDirectory, "fixture.xlsm");
+
+  try {
+    await writeFile(workbookPath, await createWorkbookPackageBuffer());
+
+    const { stdout } = await execFileAsync(process.execPath, [
+      path.resolve("scripts", "probe-workbook-control-metadata.mjs"),
+      workbookPath,
+      "--format",
+      "sidecar",
+    ], {
+      cwd: path.resolve("."),
+    });
+
+    const metadata = JSON.parse(stdout);
+
+    assert.equal(metadata.artifact, "worksheet-control-metadata-sidecar");
+    assert.equal(metadata.workbook.name, "fixture.xlsm");
+    assert.equal(metadata.owners[0]?.ownerKind, "worksheet");
+    assert.equal(metadata.owners[0]?.controls[0]?.controlType, "CheckBox");
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("CLI は --format sidecar --bundle-root で sidecar 正本パスへ書き出す", async () => {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
+  const workbookPath = path.join(temporaryDirectory, "fixture.xlsm");
+  const bundleRoot = path.join(temporaryDirectory, "bundle");
+  const outputPath = buildWorksheetControlMetadataSidecarPath(bundleRoot);
+
+  try {
+    await writeFile(workbookPath, await createWorkbookPackageBuffer());
+
+    await execFileAsync(process.execPath, [
+      path.resolve("scripts", "probe-workbook-control-metadata.mjs"),
+      workbookPath,
+      "--format",
+      "sidecar",
+      "--bundle-root",
+      bundleRoot,
+    ], {
+      cwd: path.resolve("."),
+    });
+
+    const metadata = JSON.parse(await readFile(outputPath, "utf8"));
+
+    assert.equal(metadata.artifact, "worksheet-control-metadata-sidecar");
+    assert.equal(metadata.owners[0]?.controls[0]?.shapeName, "CheckBox1");
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("CLI は入力ファイルと同じ --out を拒否する", async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
   const workbookPath = path.join(temporaryDirectory, "fixture.xlsm");
@@ -118,6 +253,34 @@ test("CLI は入力ファイルと同じ --out を拒否する", async () => {
         cwd: path.resolve("."),
       }),
       /入力ファイルと別のパス/,
+    );
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("CLI は --bundle-root と --out の同時指定を拒否する", async () => {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
+  const workbookPath = path.join(temporaryDirectory, "fixture.xlsm");
+  const outputPath = path.join(temporaryDirectory, "metadata.json");
+
+  try {
+    await writeFile(workbookPath, await createWorkbookPackageBuffer());
+
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        path.resolve("scripts", "probe-workbook-control-metadata.mjs"),
+        workbookPath,
+        "--format",
+        "sidecar",
+        "--bundle-root",
+        temporaryDirectory,
+        "--out",
+        outputPath,
+      ], {
+        cwd: path.resolve("."),
+      }),
+      /同時に指定できません/u,
     );
   } finally {
     await rm(temporaryDirectory, { force: true, recursive: true });

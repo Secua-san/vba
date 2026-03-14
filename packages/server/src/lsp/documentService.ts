@@ -1,8 +1,12 @@
+import { readFileSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   analyzeModule,
   areTypesCompatible,
   collectByRefArgumentDiagnostics,
   extractIdentifierAtPosition,
+  findNearestWorksheetControlMetadataSidecar,
   findDefinition,
   formatModuleIndentation,
   getBuiltinMemberSignature,
@@ -12,11 +16,13 @@ import {
   getBuiltinReferenceItem,
   getCompletionSymbols,
   getDocumentOutline,
+  getSupportedWorksheetControlMetadataOwners,
   inferExpressionTypeAtLine,
   isReservedOrBuiltinIdentifier,
   markIndexedAccessPathSegment,
   getSymbolTypeName,
   normalizeIdentifier,
+  parseWorksheetControlMetadataSidecar,
   removeStringAndDateLiterals,
   resolveBuiltinMemberOwner,
   resolveBuiltinMemberOwnerFromRootType,
@@ -32,7 +38,9 @@ import {
   type Diagnostic,
   type LinePosition,
   type SourceRange,
-  type SymbolInfo
+  type SymbolInfo,
+  type WorksheetControlMetadataSupportedOwner,
+  type WorksheetControlMetadataValidationIssue
 } from "../../../core/src/index";
 
 const WORKBOOK_DOCUMENT_BASE_GUID = "00020819-0000-0000-c000-000000000046";
@@ -45,6 +53,29 @@ export interface DocumentState {
   text: string;
   uri: string;
   version: number;
+  worksheetControlMetadata?: WorksheetControlMetadataState;
+}
+
+export interface WorksheetControlMetadataState {
+  bundleRoot: string;
+  issues: WorksheetControlMetadataValidationIssue[];
+  sidecarPath: string;
+  status: "ignored" | "loaded";
+  supportedOwners: WorksheetControlMetadataSupportedOwner[];
+  workbookName?: string;
+}
+
+export interface DocumentServiceLogEntry {
+  code: string;
+  level: "info" | "warn";
+  message: string;
+  sidecarPath?: string;
+  uri?: string;
+}
+
+export interface DocumentServiceOptions {
+  logger?: (entry: DocumentServiceLogEntry) => void;
+  workspaceRoots?: readonly string[];
 }
 
 export interface WorkspaceSymbolResolution {
@@ -127,12 +158,22 @@ export interface DocumentService {
   getSignatureHelp: (uri: string, position: LinePosition) => SignatureHint | undefined;
   getState: (uri: string) => DocumentState | undefined;
   remove: (uri: string) => void;
+  setWorkspaceRoots: (workspaceRoots: readonly string[]) => void;
 }
 
-export function createDocumentService(): DocumentService {
+interface WorksheetControlMetadataCacheEntry {
+  mtimeMs: number;
+  size: number;
+  state: WorksheetControlMetadataState;
+}
+
+export function createDocumentService(options?: DocumentServiceOptions): DocumentService {
   const documentStates = new Map<string, DocumentState>();
+  const worksheetControlMetadataCache = new Map<string, WorksheetControlMetadataCacheEntry>();
   let workspaceIndex = createWorkspaceIndex([]);
+  let workspaceRoots = normalizeWorkspaceRoots(options?.workspaceRoots);
   const getDocumentState = (uri: string): DocumentState | undefined => documentStates.get(uri);
+  const log = options?.logger;
 
   function resolveLocalRenameTarget(uri: string, position: LinePosition): {
     range: SourceRange;
@@ -259,6 +300,123 @@ export function createDocumentService(): DocumentService {
     return deduplicateReferences(references);
   }
 
+  function emitWorksheetControlMetadataLogs(uri: string, state: WorksheetControlMetadataState): void {
+    for (const issue of state.issues) {
+      log?.({
+        code: `worksheet-control-metadata.${issue.code}`,
+        level: "warn",
+        message: `${state.sidecarPath}: ${issue.path} ${issue.message}`,
+        sidecarPath: state.sidecarPath,
+        uri
+      });
+    }
+
+    if (state.status !== "loaded") {
+      return;
+    }
+
+    const controlCount = state.supportedOwners.reduce((total, owner) => total + owner.controls.length, 0);
+
+    log?.({
+      code: "worksheet-control-metadata.loaded",
+      level: "info",
+      message: `${state.sidecarPath}: loaded ${state.supportedOwners.length} supported owners, ${controlCount} controls`,
+      sidecarPath: state.sidecarPath,
+      uri
+    });
+  }
+
+  function getCachedWorksheetControlMetadata(sidecarPath: string): WorksheetControlMetadataCacheEntry | undefined {
+    const cachedEntry = worksheetControlMetadataCache.get(sidecarPath);
+
+    if (!cachedEntry) {
+      return undefined;
+    }
+
+    try {
+      const sidecarStat = statSync(sidecarPath);
+
+      if (sidecarStat.mtimeMs === cachedEntry.mtimeMs && sidecarStat.size === cachedEntry.size) {
+        return cachedEntry;
+      }
+    } catch {
+      worksheetControlMetadataCache.delete(sidecarPath);
+    }
+
+    return undefined;
+  }
+
+  function loadWorksheetControlMetadataState(
+    uri: string,
+    bundleRoot: string,
+    sidecarPath: string
+  ): WorksheetControlMetadataState {
+    try {
+      const rawText = readFileSync(sidecarPath, "utf8");
+      const sidecarStat = statSync(sidecarPath);
+      const parseResult = parseWorksheetControlMetadataSidecar(rawText);
+      const supportedOwners = parseResult.sidecar ? getSupportedWorksheetControlMetadataOwners(parseResult.sidecar) : [];
+      const state: WorksheetControlMetadataState = parseResult.sidecar
+        ? {
+            bundleRoot,
+            issues: parseResult.issues,
+            sidecarPath,
+            status: "loaded",
+            supportedOwners,
+            workbookName: parseResult.sidecar.workbook.name
+          }
+        : {
+            bundleRoot,
+            issues: parseResult.issues,
+            sidecarPath,
+            status: "ignored",
+            supportedOwners: []
+          };
+
+      worksheetControlMetadataCache.set(sidecarPath, {
+        mtimeMs: sidecarStat.mtimeMs,
+        size: sidecarStat.size,
+        state
+      });
+      emitWorksheetControlMetadataLogs(uri, state);
+      return state;
+    } catch (error) {
+      const state: WorksheetControlMetadataState = {
+        bundleRoot,
+        issues: [
+          {
+            code: "invalid-json",
+            message: `sidecar を読み込めません: ${String(error)}`,
+            path: "$"
+          }
+        ],
+        sidecarPath,
+        status: "ignored",
+        supportedOwners: []
+      };
+
+      emitWorksheetControlMetadataLogs(uri, state);
+      return state;
+    }
+  }
+
+  function getWorksheetControlMetadataState(uri: string): WorksheetControlMetadataState | undefined {
+    const filePath = getFilePathFromUri(uri);
+
+    if (!filePath) {
+      return undefined;
+    }
+
+    const location = findNearestWorksheetControlMetadataSidecar(filePath, { workspaceRoots });
+
+    if (!location) {
+      return undefined;
+    }
+
+    const cached = getCachedWorksheetControlMetadata(location.sidecarPath);
+    return cached?.state ?? loadWorksheetControlMetadataState(uri, location.bundleRoot, location.sidecarPath);
+  }
+
   return {
     analyzeText(uri: string, languageId: string, version: number, text: string): DocumentState {
       const analysis = analyzeModule(text, { fileName: getFileNameFromUri(uri) });
@@ -267,7 +425,8 @@ export function createDocumentService(): DocumentService {
         languageId,
         text,
         uri,
-        version
+        version,
+        worksheetControlMetadata: getWorksheetControlMetadataState(uri)
       };
       documentStates.set(uri, state);
       workspaceIndex = createWorkspaceIndex([...documentStates.values()]);
@@ -459,6 +618,10 @@ export function createDocumentService(): DocumentService {
     remove(uri: string): void {
       documentStates.delete(uri);
       workspaceIndex = createWorkspaceIndex([...documentStates.values()]);
+    },
+    setWorkspaceRoots(nextWorkspaceRoots: readonly string[]): void {
+      workspaceRoots = normalizeWorkspaceRoots(nextWorkspaceRoots);
+      worksheetControlMetadataCache.clear();
     }
   };
 }
@@ -1748,6 +1911,34 @@ function getFileNameFromUri(uri: string): string | undefined {
   const normalizedUri = uri.startsWith("file:///") ? decodeURIComponent(uri.replace("file:///", "")) : uri;
   const segments = normalizedUri.split(/[\\/]/);
   return segments[segments.length - 1];
+}
+
+function getFilePathFromUri(uri: string): string | undefined {
+  if (!uri.startsWith("file:")) {
+    return undefined;
+  }
+
+  try {
+    return fileURLToPath(uri);
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeWorkspaceRoots(workspaceRoots: readonly string[] | undefined): string[] {
+  return (workspaceRoots ?? [])
+    .map((workspaceRoot) => {
+      if (workspaceRoot.startsWith("file:")) {
+        try {
+          return fileURLToPath(workspaceRoot);
+        } catch {
+          return undefined;
+        }
+      }
+
+      return path.resolve(workspaceRoot);
+    })
+    .filter((workspaceRoot): workspaceRoot is string => Boolean(workspaceRoot));
 }
 
 function createResolution(state: DocumentState, symbol: SymbolInfo, uri: string): WorkspaceSymbolResolution {

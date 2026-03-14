@@ -34,6 +34,28 @@ export type {
   BuiltinSemanticType,
   BuiltinSignatureParameter
 } from "./reference/builtinReference";
+export {
+  buildWorksheetControlMetadataSidecarPath,
+  findNearestWorksheetControlMetadataSidecar,
+  getSupportedWorksheetControlMetadataOwners,
+  parseWorksheetControlMetadataSidecar,
+  WORKSHEET_CONTROL_METADATA_SIDECAR_ARTIFACT,
+  WORKSHEET_CONTROL_METADATA_SIDECAR_DIRECTORY_NAME,
+  WORKSHEET_CONTROL_METADATA_SIDECAR_FILE_NAME,
+  WORKSHEET_CONTROL_METADATA_SIDECAR_VERSION
+} from "./reference/worksheetControlMetadataSidecar";
+export type {
+  WorksheetControlMetadataSidecar,
+  WorksheetControlMetadataSidecarControl,
+  WorksheetControlMetadataSidecarLocation,
+  WorksheetControlMetadataSidecarLookupOptions,
+  WorksheetControlMetadataSidecarOwner,
+  WorksheetControlMetadataSidecarParseResult,
+  WorksheetControlMetadataSidecarWorkbook,
+  WorksheetControlMetadataSupportedOwner,
+  WorksheetControlMetadataUnsupportedOwner,
+  WorksheetControlMetadataValidationIssue
+} from "./reference/worksheetControlMetadataSidecar";
 export { buildModuleSymbols, getAccessibleSymbolsAtLine } from "./symbol/buildModuleSymbols";
 export { normalizeIdentifier } from "./types/helpers";
 export type {
