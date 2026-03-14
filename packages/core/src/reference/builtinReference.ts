@@ -5,6 +5,7 @@ import { normalizeIdentifier } from "../types/helpers";
 
 export type BuiltinCompletionKind = "constant" | "function" | "keyword" | "type" | "variable";
 export type BuiltinMemberKind = "event" | "member" | "method" | "property";
+export type IndexedAccessKind = "literal" | "none" | "single";
 export type BuiltinSemanticModifier = "readonly";
 export type BuiltinSemanticType = "enumMember" | "function" | "keyword" | "type" | "variable";
 
@@ -56,9 +57,20 @@ type RawReferenceData = Record<string, unknown>;
 type RawReferenceEntry = Record<string, unknown>;
 
 const REFERENCE_FILE_NAME = "mslearn-vba-reference.json";
-const INDEXED_COLLECTION_OWNER_TYPES = new Map<string, string>([
-  ["dialogsheets", "DialogSheet"],
-  ["worksheets", "Worksheet"],
+const LITERAL_INDEXED_ACCESS_SUFFIX = "(#)";
+const SINGLE_INDEXED_ACCESS_SUFFIX = "()";
+const INDEXED_COLLECTION_OWNER_TYPES = new Map<
+  string,
+  {
+    itemOwnerName: string;
+    supportedAccessKinds: Set<Exclude<IndexedAccessKind, "none">>;
+  }
+>([
+  ["buttons", { itemOwnerName: "Button", supportedAccessKinds: new Set(["literal"]) }],
+  ["checkboxes", { itemOwnerName: "CheckBox", supportedAccessKinds: new Set(["literal"]) }],
+  ["dialogsheets", { itemOwnerName: "DialogSheet", supportedAccessKinds: new Set(["literal", "single"]) }],
+  ["optionbuttons", { itemOwnerName: "OptionButton", supportedAccessKinds: new Set(["literal"]) }],
+  ["worksheets", { itemOwnerName: "Worksheet", supportedAccessKinds: new Set(["literal", "single"]) }],
 ]);
 const BASE_BUILTIN_COMPLETIONS: Array<
   Omit<BuiltinReferenceItem, "detail" | "documentation" | "modifiers" | "normalizedName"> & {
@@ -188,9 +200,10 @@ export function resolveBuiltinMemberOwner(pathSegments: string[]): string | unde
   }
 
   let currentOwnerName = rootReference.typeName ?? rootReference.name;
+  const rootAccessKind = getIndexedAccessKind(rootSegment);
 
-  if (hasIndexedAccessMarker(rootSegment)) {
-    currentOwnerName = resolveIndexedCollectionOwnerTypeName(currentOwnerName) ?? currentOwnerName;
+  if (rootAccessKind !== "none") {
+    currentOwnerName = resolveIndexedCollectionOwnerTypeName(currentOwnerName, rootAccessKind) ?? currentOwnerName;
   }
 
   return resolveBuiltinMemberOwnerFromRootType(currentOwnerName, memberSegments);
@@ -207,9 +220,10 @@ export function resolveBuiltinMemberOwnerFromRootType(rootOwnerName: string, mem
     }
 
     currentOwnerName = memberReference.typeName;
+    const memberAccessKind = getIndexedAccessKind(memberSegment);
 
-    if (hasIndexedAccessMarker(memberSegment)) {
-      currentOwnerName = resolveIndexedCollectionOwnerTypeName(currentOwnerName) ?? currentOwnerName;
+    if (memberAccessKind !== "none") {
+      currentOwnerName = resolveIndexedCollectionOwnerTypeName(currentOwnerName, memberAccessKind) ?? currentOwnerName;
     }
   }
 
@@ -656,16 +670,47 @@ function createOwnerMemberKey(ownerName: string, memberName: string): string {
   return `${normalizeIdentifier(ownerName)}:${normalizeIdentifier(memberName)}`;
 }
 
-function hasIndexedAccessMarker(pathSegment: string): boolean {
-  return pathSegment.endsWith("()");
+export function getIndexedAccessKind(pathSegment: string): IndexedAccessKind {
+  if (pathSegment.endsWith(LITERAL_INDEXED_ACCESS_SUFFIX)) {
+    return "literal";
+  }
+
+  if (pathSegment.endsWith(SINGLE_INDEXED_ACCESS_SUFFIX)) {
+    return "single";
+  }
+
+  return "none";
+}
+
+export function markIndexedAccessPathSegment(
+  pathSegment: string,
+  accessKind: Exclude<IndexedAccessKind, "none">
+): string {
+  return `${pathSegment}${accessKind === "literal" ? LITERAL_INDEXED_ACCESS_SUFFIX : SINGLE_INDEXED_ACCESS_SUFFIX}`;
 }
 
 export function stripIndexedAccessMarker(pathSegment: string): string {
-  return hasIndexedAccessMarker(pathSegment) ? pathSegment.slice(0, -2) : pathSegment;
+  const accessKind = getIndexedAccessKind(pathSegment);
+
+  if (accessKind === "literal") {
+    return pathSegment.slice(0, -LITERAL_INDEXED_ACCESS_SUFFIX.length);
+  }
+
+  if (accessKind === "single") {
+    return pathSegment.slice(0, -SINGLE_INDEXED_ACCESS_SUFFIX.length);
+  }
+
+  return pathSegment;
 }
 
-function resolveIndexedCollectionOwnerTypeName(ownerName: string): string | undefined {
-  return INDEXED_COLLECTION_OWNER_TYPES.get(normalizeIdentifier(ownerName));
+function resolveIndexedCollectionOwnerTypeName(ownerName: string, accessKind: Exclude<IndexedAccessKind, "none">): string | undefined {
+  const collectionOwner = INDEXED_COLLECTION_OWNER_TYPES.get(normalizeIdentifier(ownerName));
+
+  if (!collectionOwner?.supportedAccessKinds.has(accessKind)) {
+    return undefined;
+  }
+
+  return collectionOwner.itemOwnerName;
 }
 
 function isRecord(value: unknown): value is RawReferenceEntry {

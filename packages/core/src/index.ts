@@ -10,12 +10,14 @@ export { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndC
 export {
   BUILTIN_IDENTIFIERS,
   BUILTIN_REFERENCE_ITEMS,
+  getIndexedAccessKind,
   getBuiltinCompletionItems,
   getBuiltinMemberCompletionItems,
   getBuiltinMemberReferenceItem,
   getBuiltinMemberSignature,
   getBuiltinReferenceItem,
   isReservedOrBuiltinIdentifier,
+  markIndexedAccessPathSegment,
   resolveBuiltinMemberOwner,
   resolveBuiltinMemberOwnerFromRootType,
   stripIndexedAccessMarker,
@@ -27,6 +29,7 @@ export type {
   BuiltinMemberKind,
   BuiltinMemberReferenceItem,
   BuiltinReferenceItem,
+  IndexedAccessKind,
   BuiltinSemanticModifier,
   BuiltinSemanticType,
   BuiltinSignatureParameter

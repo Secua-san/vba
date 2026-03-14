@@ -5,7 +5,8 @@
 - `DialogSheet` 専用 control collection は、全面導入ではなく段階導入が妥当である。
 - 最初の導入候補は `DialogFrame` に限定する。`DialogSheet.DialogFrame` は `DialogFrame` 型を直接返すため、owner 正規化と chain 解決の複雑さが最も小さい。
 - `Buttons` / `CheckBoxes` / `OptionButtons` は将来的な導入候補にはできるが、`Optional Index As Object -> As Object` のため、単一要素アクセスと collection access を分ける補助ルールが先に必要である。
-- 2026-03-13 時点では、`DialogSheet` common callable と `Application/Workbook.DialogSheets` root までで止め、control collection は docs 先行で整理したうえで次段タスクへ送る。
+- 2026-03-14 時点では、`DialogSheet` 直下の `Buttons` / `CheckBoxes` / `OptionButtons` について、数値・文字列リテラル selector と `.Item(<literal>)` だけ item owner へ落とす最小実装まで導入済みである。
+- ただし collection owner は `Count` / `Item` の最小公開に留め、式 selector / grouped selector は collection のまま維持する。`Worksheet` / `Chart` への横展開は別タスクとする。
 
 ## 確認した公式ソース
 
@@ -74,12 +75,15 @@
 - `CheckBoxes` / `OptionButtons` も同様に、単一 selector だけ item owner へ落とす。
 - `DialogSheet.Buttons()`、`Buttons(Array(...))`、複雑 selector は collection owner のまま維持する。
 - `Item(Object)` には `memberTypeOverrides` を入れ、`.Item(1)` も同じ item owner に落とす。
+- 2026-03-14 実装では、この selector 判定を `literal` と `generic single` に分離し、`Buttons` / `CheckBoxes` / `OptionButtons` は `literal` のみ item owner へ落とす。
+- `.Item(index)` のような式 selector は item owner へ進めず、collection owner の `Count` / `Item` だけを返す保守動作にしている。
 
 ### フェーズ 3: collection owner 自体の公開
 
 - `Buttons` / `CheckBoxes` / `OptionButtons` collection owner を user-facing に出すかを再判断する。
 - collection 自体にも `Caption` / `Value` / `Visible` のような一括操作系 member があるため、誤補完とのトレードオフを見て公開範囲を絞る。
 - 初回から collection member 全面公開はしない。
+- 2026-03-14 時点では、collection owner は `Count` / `Item` のみ公開し、`Add` / `Group` / `Duplicate` / `Select` など変更系・広域操作系は未公開のままとした。
 
 ## 推奨方針
 
@@ -91,6 +95,15 @@
   - `Item` の `memberTypeOverrides`
   - single-selector と grouped selector の境界テスト
   - `Worksheet` / `Chart` へ横展開できるような共通 helper
+
+## 2026-03-14 実装メモ
+
+- 補助参照として追加した owner:
+  - `Buttons` / `CheckBoxes` / `OptionButtons` collection
+  - `Button` / `CheckBox` / `OptionButton` item object
+- `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` は interop page の署名を保持しつつ、product 側の `typeName` override で collection owner へ接続する。
+- collection owner の `Item(Object)` も同じく collection owner へ接続し、literal selector marker が付いたときだけ `Button` / `CheckBox` / `OptionButton` へ正規化する。
+- `DialogSheets(1).Buttons(index)` や `Buttons.Item(index)` は collection owner のまま維持し、`Caption` / `Value` / `Select` は出さない。
 
 ## 次段タスクで見るべき点
 

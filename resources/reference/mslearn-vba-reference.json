@@ -31,12 +31,12 @@
     "constantsEnumerationUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.constants",
     "objectModel": {
       "counts": {
-        "total": 581,
-        "objects": 307,
-        "collections": 1,
+        "total": 587,
+        "objects": 310,
+        "collections": 4,
         "enumerations": 272,
         "others": 1,
-        "members": 5115
+        "members": 5141
       },
       "items": [
         {
@@ -34184,6 +34184,42 @@
                   }
                 },
                 {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.buttons#microsoft-office-interop-excel-dialogsheet-buttons%28system-object%29",
+                  "name": "Buttons",
+                  "signature": {
+                    "label": "Buttons(Index) As Object",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Index As Object",
+                        "name": "Index"
+                      }
+                    ],
+                    "returnType": "Object"
+                  },
+                  "typeName": "Buttons"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.checkboxes#microsoft-office-interop-excel-dialogsheet-checkboxes%28system-object%29",
+                  "name": "CheckBoxes",
+                  "signature": {
+                    "label": "CheckBoxes(Index) As Object",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Index As Object",
+                        "name": "Index"
+                      }
+                    ],
+                    "returnType": "Object"
+                  },
+                  "typeName": "CheckBoxes"
+                },
+                {
                   "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.evaluate#microsoft-office-interop-excel-dialogsheet-evaluate%28system-object%29",
                   "name": "Evaluate",
                   "signature": {
@@ -34287,6 +34323,24 @@
                     ],
                     "returnType": "Void"
                   }
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.optionbuttons#microsoft-office-interop-excel-dialogsheet-optionbuttons%28system-object%29",
+                  "name": "OptionButtons",
+                  "signature": {
+                    "label": "OptionButtons(Index) As Object",
+                    "ownerName": "DialogSheet",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Index As Object",
+                        "name": "Index"
+                      }
+                    ],
+                    "returnType": "Object"
+                  },
+                  "typeName": "OptionButtons"
                 },
                 {
                   "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.dialogsheet.printout#microsoft-office-interop-excel-dialogsheet-printout%28system-object-system-object-system-object-system-object-system-object-system-object-system-object-system-object%29",
@@ -34513,6 +34567,310 @@
             }
           ],
           "title": "DialogFrame object",
+          "tocHref": ""
+        },
+        {
+          "kind": "collection",
+          "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.buttons?view=excel-pia",
+          "name": "Buttons",
+          "sections": [
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.buttons.count#microsoft-office-interop-excel-buttons-count",
+                  "name": "Count",
+                  "typeName": "Integer"
+                }
+              ],
+              "title": "Properties"
+            },
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.buttons.item#microsoft-office-interop-excel-buttons-item%28system-object%29",
+                  "name": "Item",
+                  "signature": {
+                    "label": "Item(Index) As Object",
+                    "ownerName": "Buttons",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": true,
+                        "label": "Index As Object",
+                        "name": "Index"
+                      }
+                    ],
+                    "returnType": "Object"
+                  },
+                  "typeName": "Buttons"
+                }
+              ],
+              "title": "Methods"
+            }
+          ],
+          "title": "Buttons collection",
+          "tocHref": ""
+        },
+        {
+          "kind": "object",
+          "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.button?view=excel-pia",
+          "name": "Button",
+          "sections": [
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.button.caption#microsoft-office-interop-excel-button-caption",
+                  "name": "Caption",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.button.name#microsoft-office-interop-excel-button-name",
+                  "name": "Name",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.button.onaction#microsoft-office-interop-excel-button-onaction",
+                  "name": "OnAction",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.button.text#microsoft-office-interop-excel-button-text",
+                  "name": "Text",
+                  "typeName": "String"
+                }
+              ],
+              "title": "Properties"
+            },
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.button.select#microsoft-office-interop-excel-button-select%28system-object%29",
+                  "name": "Select",
+                  "signature": {
+                    "label": "Select(Replace) As Object",
+                    "ownerName": "Button",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Replace As Object",
+                        "name": "Replace"
+                      }
+                    ],
+                    "returnType": "Object"
+                  }
+                }
+              ],
+              "title": "Methods"
+            }
+          ],
+          "title": "Button object",
+          "tocHref": ""
+        },
+        {
+          "kind": "collection",
+          "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkboxes?view=excel-pia",
+          "name": "CheckBoxes",
+          "sections": [
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkboxes.count#microsoft-office-interop-excel-checkboxes-count",
+                  "name": "Count",
+                  "typeName": "Integer"
+                }
+              ],
+              "title": "Properties"
+            },
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkboxes.item#microsoft-office-interop-excel-checkboxes-item%28system-object%29",
+                  "name": "Item",
+                  "signature": {
+                    "label": "Item(Index) As Object",
+                    "ownerName": "CheckBoxes",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": true,
+                        "label": "Index As Object",
+                        "name": "Index"
+                      }
+                    ],
+                    "returnType": "Object"
+                  },
+                  "typeName": "CheckBoxes"
+                }
+              ],
+              "title": "Methods"
+            }
+          ],
+          "title": "CheckBoxes collection",
+          "tocHref": ""
+        },
+        {
+          "kind": "object",
+          "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkbox?view=excel-pia",
+          "name": "CheckBox",
+          "sections": [
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkbox.caption#microsoft-office-interop-excel-checkbox-caption",
+                  "name": "Caption",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkbox.name#microsoft-office-interop-excel-checkbox-name",
+                  "name": "Name",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkbox.onaction#microsoft-office-interop-excel-checkbox-onaction",
+                  "name": "OnAction",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkbox.text#microsoft-office-interop-excel-checkbox-text",
+                  "name": "Text",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkbox.value#microsoft-office-interop-excel-checkbox-value",
+                  "name": "Value",
+                  "typeName": "Object"
+                }
+              ],
+              "title": "Properties"
+            },
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.checkbox.select#microsoft-office-interop-excel-checkbox-select%28system-object%29",
+                  "name": "Select",
+                  "signature": {
+                    "label": "Select(Replace) As Object",
+                    "ownerName": "CheckBox",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Replace As Object",
+                        "name": "Replace"
+                      }
+                    ],
+                    "returnType": "Object"
+                  }
+                }
+              ],
+              "title": "Methods"
+            }
+          ],
+          "title": "CheckBox object",
+          "tocHref": ""
+        },
+        {
+          "kind": "collection",
+          "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbuttons?view=excel-pia",
+          "name": "OptionButtons",
+          "sections": [
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbuttons.count#microsoft-office-interop-excel-optionbuttons-count",
+                  "name": "Count",
+                  "typeName": "Integer"
+                }
+              ],
+              "title": "Properties"
+            },
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbuttons.item#microsoft-office-interop-excel-optionbuttons-item%28system-object%29",
+                  "name": "Item",
+                  "signature": {
+                    "label": "Item(Index) As Object",
+                    "ownerName": "OptionButtons",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": true,
+                        "label": "Index As Object",
+                        "name": "Index"
+                      }
+                    ],
+                    "returnType": "Object"
+                  },
+                  "typeName": "OptionButtons"
+                }
+              ],
+              "title": "Methods"
+            }
+          ],
+          "title": "OptionButtons collection",
+          "tocHref": ""
+        },
+        {
+          "kind": "object",
+          "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbutton?view=excel-pia",
+          "name": "OptionButton",
+          "sections": [
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbutton.caption#microsoft-office-interop-excel-optionbutton-caption",
+                  "name": "Caption",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbutton.name#microsoft-office-interop-excel-optionbutton-name",
+                  "name": "Name",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbutton.onaction#microsoft-office-interop-excel-optionbutton-onaction",
+                  "name": "OnAction",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbutton.text#microsoft-office-interop-excel-optionbutton-text",
+                  "name": "Text",
+                  "typeName": "String"
+                },
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbutton.value#microsoft-office-interop-excel-optionbutton-value",
+                  "name": "Value",
+                  "typeName": "Object"
+                }
+              ],
+              "title": "Properties"
+            },
+            {
+              "members": [
+                {
+                  "learnUrl": "https://learn.microsoft.com/dotnet/api/microsoft.office.interop.excel.optionbutton.select#microsoft-office-interop-excel-optionbutton-select%28system-object%29",
+                  "name": "Select",
+                  "signature": {
+                    "label": "Select(Replace) As Object",
+                    "ownerName": "OptionButton",
+                    "parameters": [
+                      {
+                        "dataType": "Object",
+                        "isRequired": false,
+                        "label": "Replace As Object",
+                        "name": "Replace"
+                      }
+                    ],
+                    "returnType": "Object"
+                  }
+                }
+              ],
+              "title": "Methods"
+            }
+          ],
+          "title": "OptionButton object",
           "tocHref": ""
         }
       ],

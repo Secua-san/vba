@@ -702,6 +702,204 @@ Option Explicit`
   assertNoSemanticToken(text, tokens, 12, "Select");
 });
 
+test("document service normalizes DialogSheet control collection selectors conservatively", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/DialogSheetControlCollection.bas";
+  const text = `Attribute VB_Name = "DialogSheetControlCollection"
+Option Explicit
+
+Public Sub Demo()
+    Dim index As Long
+    Debug.Print DialogSheets(1).Buttons.
+    Debug.Print DialogSheets(1).Buttons(1).
+    Debug.Print DialogSheets(1).Buttons(&H1).
+    Debug.Print DialogSheets(1).Buttons(&O7).
+    Debug.Print DialogSheets(1).Buttons(1#).
+    Debug.Print DialogSheets(1).Buttons(1E+2).
+    Debug.Print DialogSheets(1).Buttons("Button 1").
+    Debug.Print DialogSheets(1).Buttons(index).
+    Debug.Print DialogSheets(1).Buttons(Array(1, 2)).
+    Debug.Print DialogSheets(1).Buttons.Item(1).
+    Debug.Print DialogSheets(1).Buttons.Item(index).
+    Debug.Print DialogSheets(1).CheckBoxes(1).
+    Debug.Print DialogSheets(1).OptionButtons("Option 1").
+    Call DialogSheets(1).Buttons(1).Select("Button 1")
+    Call DialogSheets(1).Buttons.Item(1).Select("Button 1")
+    Call DialogSheets(1).CheckBoxes(1).Select("Check 1")
+    Call DialogSheets(1).CheckBoxes.Item(1).Select("Check 1")
+    Call DialogSheets(1).OptionButtons("Option 1").Select("Option 1")
+    Call DialogSheets(1).OptionButtons.Item(1).Select("Option 1")
+    Call Application.DialogSheets(1).Buttons(1).Select("Button 1")
+    Debug.Print DialogSheets(1).Buttons(1).Caption
+    Debug.Print DialogSheets(1).CheckBoxes(1).Value
+    Debug.Print DialogSheets(1).OptionButtons("Option 1").Value
+    Debug.Print DialogSheets(1).CheckBoxes(1).Value(
+    Debug.Print DialogSheets(1).OptionButtons("Option 1").Value(
+    Call DialogSheets(1).Buttons(index).Select("Button 1")
+    Call DialogSheets(1).Buttons.Item(index).Select("Button 1")
+    Call DialogSheets(1).Buttons(Array(1, 2)).Select("Button 1")
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const buttonsCollectionMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons."));
+  const indexedButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1)."));
+  const hexButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(&H1)."));
+  const octalButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(&O7)."));
+  const suffixButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1#)."));
+  const exponentButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1E+2)."));
+  const namedButtonMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).Buttons("Button 1").')
+  );
+  const dynamicButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(index)."));
+  const groupedButtonMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(Array(1, 2)).")
+  );
+  const itemButtonMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons.Item(1)."));
+  const dynamicItemButtonMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons.Item(index).")
+  );
+  const indexedCheckBoxMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes(1)."));
+  const namedOptionButtonMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons("Option 1").')
+  );
+  const buttonCaptionHover = service.getHover(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1).Capti"));
+  const checkBoxValueHover = service.getHover(uri, findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes(1).Valu"));
+  const optionButtonValueHover = service.getHover(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons("Option 1").Valu')
+  );
+  const buttonSelectSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(1).Select("));
+  const itemButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons.Item(1).Select(")
+  );
+  const checkBoxSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes(1).Select(")
+  );
+  const itemCheckBoxSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes.Item(1).Select(")
+  );
+  const optionButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons("Option 1").Select(')
+  );
+  const itemOptionButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).OptionButtons.Item(1).Select(")
+  );
+  const applicationButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Application.DialogSheets(1).Buttons(1).Select(")
+  );
+  const dynamicButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(index).Select(")
+  );
+  const dynamicItemButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons.Item(index).Select(")
+  );
+  const groupedButtonSelectSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).Buttons(Array(1, 2)).Select(")
+  );
+  const checkBoxValueSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "DialogSheets(1).CheckBoxes(1).Value(")
+  );
+  const optionButtonValueSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, 'DialogSheets(1).OptionButtons("Option 1").Value(')
+  );
+  const tokens = service.getSemanticTokens(uri);
+
+  const buttonsCount = buttonsCollectionMembers.find((resolution) => resolution.symbol.name === "Count");
+  const buttonsItem = buttonsCollectionMembers.find((resolution) => resolution.symbol.name === "Item");
+  const indexedButtonCaption = indexedButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const hexButtonCaption = hexButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const octalButtonCaption = octalButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const suffixButtonCaption = suffixButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const exponentButtonCaption = exponentButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const indexedButtonSelect = indexedButtonMembers.find((resolution) => resolution.symbol.name === "Select");
+  const namedButtonCaption = namedButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const dynamicButtonsCount = dynamicButtonMembers.find((resolution) => resolution.symbol.name === "Count");
+  const groupedButtonsCount = groupedButtonMembers.find((resolution) => resolution.symbol.name === "Count");
+  const itemButtonCaption = itemButtonMembers.find((resolution) => resolution.symbol.name === "Caption");
+  const dynamicItemButtonsCount = dynamicItemButtonMembers.find((resolution) => resolution.symbol.name === "Count");
+  const checkBoxValue = indexedCheckBoxMembers.find((resolution) => resolution.symbol.name === "Value");
+  const optionButtonValue = namedOptionButtonMembers.find((resolution) => resolution.symbol.name === "Value");
+
+  assert.equal(buttonsCount?.moduleName, "Excel Buttons property");
+  assert.equal(buttonsItem?.moduleName, "Excel Buttons method");
+  assert.equal(indexedButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(hexButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(octalButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(suffixButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(exponentButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(indexedButtonCaption?.documentation?.includes("excel.button.caption"), true);
+  assert.equal(indexedButtonSelect?.moduleName, "Excel Button method");
+  assert.equal(namedButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(dynamicButtonsCount?.moduleName, "Excel Buttons property");
+  assert.equal(groupedButtonsCount?.moduleName, "Excel Buttons property");
+  assert.equal(itemButtonCaption?.moduleName, "Excel Button property");
+  assert.equal(dynamicItemButtonsCount?.moduleName, "Excel Buttons property");
+  assert.equal(checkBoxValue?.moduleName, "Excel CheckBox property");
+  assert.equal(checkBoxValue?.documentation?.includes("excel.checkbox.value"), true);
+  assert.equal(optionButtonValue?.moduleName, "Excel OptionButton property");
+  assert.equal(optionButtonValue?.documentation?.includes("excel.optionbutton.value"), true);
+  assert.equal(dynamicButtonMembers.some((resolution) => resolution.symbol.name === "Caption"), false);
+  assert.equal(groupedButtonMembers.some((resolution) => resolution.symbol.name === "Caption"), false);
+  assert.equal(dynamicItemButtonMembers.some((resolution) => resolution.symbol.name === "Caption"), false);
+  assert.equal(buttonCaptionHover?.contents.includes("Button.Caption"), true);
+  assert.equal(buttonCaptionHover?.contents.includes("microsoft.office.interop.excel.button.caption"), true);
+  assert.equal(checkBoxValueHover?.contents.includes("CheckBox.Value"), true);
+  assert.equal(checkBoxValueHover?.contents.includes("microsoft.office.interop.excel.checkbox.value"), true);
+  assert.equal(optionButtonValueHover?.contents.includes("OptionButton.Value"), true);
+  assert.equal(optionButtonValueHover?.contents.includes("microsoft.office.interop.excel.optionbutton.value"), true);
+  assert.equal(buttonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(itemButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(checkBoxSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(itemCheckBoxSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(optionButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(itemOptionButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(applicationButtonSelectSignature?.label, "Select(Replace) As Object");
+  assert.equal(dynamicButtonSelectSignature, undefined);
+  assert.equal(dynamicItemButtonSelectSignature, undefined);
+  assert.equal(groupedButtonSelectSignature, undefined);
+  assert.equal(checkBoxValueSignature, undefined);
+  assert.equal(optionButtonValueSignature, undefined);
+  assertSemanticToken(text, tokens, 5, "Buttons", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 18, "Select", {
+    modifiers: [],
+    type: "function"
+  });
+  assertSemanticToken(text, tokens, 25, "Caption", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 26, "Value", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticToken(text, tokens, 27, "Value", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertNoSemanticToken(text, tokens, 30, "Select");
+  assertNoSemanticToken(text, tokens, 31, "Select");
+  assertNoSemanticToken(text, tokens, 32, "Select");
+});
+
 test("document service keeps built-in member completion and semantic tokens conservative", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInMemberShadowing.bas";
