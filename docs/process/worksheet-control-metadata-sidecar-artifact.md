@@ -49,6 +49,7 @@
 2. 親 directory を順にたどり、最初に見つかった `.vba/worksheet-control-metadata.json` を採用する。
 3. workspace folder root を越えて上位へは進まない。
 4. multi-root workspace では、現在 file が属する workspace folder ごとに独立して探索する。
+5. workspace root を確定できない single-file context では lookup 自体を行わない。
 
 ### 採用規則
 
@@ -233,9 +234,21 @@
 - key 順は固定し、再生成で不要差分を増やさない。
 - 1 bundle に 1 sidecar を基本とし、sheet ごとの分割 sidecar は初版では採用しない。
 
+## 2026-03-14 時点の実装状況
+
+- 生成経路:
+  - `npm run generate:worksheet-control-sidecar -- <workbook-path> --bundle-root <bundle-root>`
+  - または `npm run probe:worksheet-control-metadata -- <workbook-path> --format sidecar --bundle-root <bundle-root>`
+- generator は probe 出力を schema v1 へ変換し、`<bundle-root>/.vba/worksheet-control-metadata.json` を書き出せる。
+- `packages/core` には nearest ancestor lookup、workspace root での打ち切り、schema v1 validation、`status: "unsupported"` owner の切り分け helper を実装済み。
+- workspace root が確定していない single-file context では sidecar lookup 自体を行わず、誤結合を避ける。
+- `packages/server` には read-only cache と log を実装済みで、sidecar は `DocumentState` へ保持される。
+- sidecar generator は未知 `controlType` を黙って落とさず fail-fast とし、対応していない workbook 方言差は生成時点で止める。
+- まだ user-facing の owner 解決には接続しておらず、補完・hover・signature help の挙動は現状維持である。
+
 ## 次段の実装候補
 
-1. `.vba/worksheet-control-metadata.json` の lookup 実装を追加する。
-2. probe 出力を sidecar schema v1 へ変換し、`<bundle-root>/.vba/worksheet-control-metadata.json` へ配置する生成経路を追加する。
-3. sidecar schema validator と `controlType` 正規化の最小実装を追加する。
-4. 初回 user-facing 機能は `Sheet1.CommandButton1` ではなく、`Worksheet.OLEObjects("ShapeName").Object` か sidecar 読み込みだけに絞るかを決める。
+1. `Worksheet.OLEObjects("ShapeName").Object` と `.Item("ShapeName").Object` の literal selector にだけ sidecar を接続する。
+2. `shapeName -> controlType` で `.Object` 後段 owner を決め、dynamic selector や unsupported owner は従来どおり `Object` を維持する。
+3. `Sheet1` document module alias や `ActiveSheet` root と sidecar owner 解決の衝突有無を整理する。
+4. `Sheet1.CommandButton1` の direct access 支援を、`OLEObject.Object` 接続完了後の別段階として切り出す。

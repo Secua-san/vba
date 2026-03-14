@@ -363,11 +363,16 @@
 
 ## 次候補
 
-- [ ] Worksheet control metadata sidecar lookup の最小実装
-  - probe 出力を sidecar schema v1 へ変換し、`<bundle-root>/.vba/worksheet-control-metadata.json` を生成・配置する最小経路を追加する
-  - `.vba/worksheet-control-metadata.json` を current file から nearest ancestor 優先で探索し、workspace root を越えずに 1 本だけ採用する lookup を追加する
-  - sidecar schema v1 の top-level / owner / control validation と `status: "unsupported"` owner の無視規則を実装する
-  - 初回は user-facing 型解決へ直結させず、server / core で read-only cache と log までを追加して、誤結合なく sidecar を読めることを先に固定する
+- [x] Worksheet control metadata sidecar lookup の最小実装
+  - `scripts/lib/worksheetControlMetadataSidecar.mjs` と `--format sidecar` / `--bundle-root` を `scripts/probe-workbook-control-metadata.mjs` へ追加し、probe 出力から `<bundle-root>/.vba/worksheet-control-metadata.json` を生成・配置できるようにした
+  - `packages/core/src/reference/worksheetControlMetadataSidecar.ts` を追加し、nearest ancestor lookup、workspace root での打ち切り、schema v1 validation、`status: "unsupported"` owner の切り分け helper を実装した
+  - `packages/server/src/lsp/documentService.ts` へ sidecar の read-only cache と log を追加し、各 `DocumentState` に読み込み結果を保持するようにした
+  - scripts / core / server の回帰テストを追加し、初回は user-facing 型解決へ直結させず read-only state までで固定した
+
+- [ ] Worksheet control metadata sidecar を `OLEObject.Object` 型解決へ接続する
+  - `Worksheet` / `Chart` の `OLEObjects("ShapeName")` と `.Item("ShapeName")` の literal selector にだけ sidecar を適用し、`shapeName -> controlType` で `.Object` 後段 owner を決める
+  - dynamic selector、grouped selector、sidecar 未検出、unsupported owner は従来どおり保守的に `Object` のまま維持する
+  - `Worksheet` document module root、`ActiveSheet` / `Sheet1` alias、`OLEObject` built-in 補助導線との回帰を server / extension test で固定する
 
 ## メモ
 

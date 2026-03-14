@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 const { pathToFileURL } = require("node:url");
@@ -2770,6 +2772,342 @@ End Sub`
   assert.equal(unusedDiagnostics.length, 0);
 });
 
+test("document service loads nearest worksheet control metadata sidecar as read-only state", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "samples", "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const logs = [];
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(workspaceRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [],
+    version: 1,
+    workbook: {
+      name: "outer.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet1",
+        status: "supported"
+      },
+      {
+        ownerKind: "chartsheet",
+        reason: "chart-sheet-metadata-unproven",
+        sheetCodeName: "Chart1",
+        sheetName: "Chart1",
+        status: "unsupported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "inner.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry),
+      workspaceRoots: [workspaceRoot]
+    });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.worksheetControlMetadata?.status, "loaded");
+    assert.equal(state.worksheetControlMetadata?.bundleRoot, bundleRoot);
+    assert.equal(state.worksheetControlMetadata?.workbookName, "inner.xlsm");
+    assert.equal(state.worksheetControlMetadata?.supportedOwners.length, 1);
+    assert.equal(state.worksheetControlMetadata?.supportedOwners[0]?.sheetCodeName, "Sheet1");
+    assert.equal(state.worksheetControlMetadata?.supportedOwners[0]?.controls[0]?.shapeName, "CheckBox1");
+    assert.equal(logs.some((entry) => entry.code === "worksheet-control-metadata.loaded"), true);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service は workspaceRoots 未指定時に worksheet control metadata sidecar を読まない", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+  const logs = [];
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(workspaceRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry)
+    });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.worksheetControlMetadata, undefined);
+    assert.equal(logs.some((entry) => entry.code === "worksheet-control-metadata.loaded"), false);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service reloads worksheet control metadata sidecar when file stats change", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+  const sidecarPath = path.join(workspaceRoot, ".vba", "worksheet-control-metadata.json");
+  const logs = [];
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(workspaceRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet1",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "before.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+  utimesSync(sidecarPath, new Date("2026-03-14T00:00:01.000Z"), new Date("2026-03-14T00:00:01.000Z"));
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry),
+      workspaceRoots: [workspaceRoot]
+    });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+
+    const firstState = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    writeWorksheetControlMetadataSidecar(workspaceRoot, {
+      artifact: "worksheet-control-metadata-sidecar",
+      owners: [
+        {
+          controls: [
+            {
+              codeName: "chkFinished",
+              controlType: "CheckBox",
+              progId: "Forms.CheckBox.1",
+              shapeId: 3,
+              shapeName: "CheckBox1"
+            },
+            {
+              codeName: "cmdApply",
+              controlType: "CommandButton",
+              progId: "Forms.CommandButton.1",
+              shapeId: 4,
+              shapeName: "CommandButton1"
+            }
+          ],
+          ownerKind: "worksheet",
+          sheetCodeName: "Sheet1",
+          sheetName: "Sheet1",
+          status: "supported"
+        }
+      ],
+      version: 1,
+      workbook: {
+        name: "after-longer.xlsm",
+        sourceKind: "openxml-package"
+      }
+    });
+    utimesSync(sidecarPath, new Date("2026-03-14T00:00:05.000Z"), new Date("2026-03-14T00:00:05.000Z"));
+
+    const secondState = service.analyzeText(
+      uri,
+      "vba",
+      2,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+    const thirdState = service.analyzeText(
+      uri,
+      "vba",
+      3,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(firstState.worksheetControlMetadata?.workbookName, "before.xlsm");
+    assert.equal(firstState.worksheetControlMetadata?.supportedOwners[0]?.controls.length, 1);
+    assert.equal(secondState.worksheetControlMetadata?.workbookName, "after-longer.xlsm");
+    assert.equal(secondState.worksheetControlMetadata?.supportedOwners[0]?.controls.length, 2);
+    assert.equal(thirdState.worksheetControlMetadata?.workbookName, "after-longer.xlsm");
+    assert.equal(thirdState.worksheetControlMetadata?.supportedOwners[0]?.controls.length, 2);
+    assert.equal(logs.filter((entry) => entry.code === "worksheet-control-metadata.loaded").length, 2);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service sidecar lookup は workspace root を越えない", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const parentRoot = path.join(temporaryDirectory, "outside");
+  const workspaceRoot = path.join(parentRoot, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(parentRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [],
+    version: 1,
+    workbook: {
+      name: "outside.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.worksheetControlMetadata, undefined);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service ignores invalid worksheet control metadata sidecar and keeps analysis alive", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+  const logs = [];
+
+  mkdirSync(path.join(workspaceRoot, ".vba"), { recursive: true });
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeFileSync(
+    path.join(workspaceRoot, ".vba", "worksheet-control-metadata.json"),
+    `{
+      "version": 2,
+      "artifact": "wrong-artifact",
+      "owners": []
+    }\n`
+  );
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry),
+      workspaceRoots: [workspaceRoot]
+    });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.analysis.module.name, "Module1");
+    assert.equal(state.worksheetControlMetadata?.status, "ignored");
+    assert.equal(state.worksheetControlMetadata?.supportedOwners.length, 0);
+    assert.equal(logs.some((entry) => entry.code === "worksheet-control-metadata.invalid-version"), true);
+    assert.equal(logs.some((entry) => entry.code === "worksheet-control-metadata.invalid-artifact"), true);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service は workspace root 変更時に worksheet control metadata sidecar state を再解決する", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(workspaceRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.worksheetControlMetadata?.workbookName, "book1.xlsm");
+
+    service.setWorkspaceRoots([]);
+
+    assert.equal(service.getState(uri)?.worksheetControlMetadata, undefined);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 function assertSemanticToken(text, tokens, lineIndex, identifier, expected, occurrence = 0) {
   const lines = text.split("\n");
   const line = lines[lineIndex];
@@ -2823,6 +3161,12 @@ function assertNoSemanticToken(text, tokens, lineIndex, identifier, occurrence =
     false,
     `semantic token '${identifier}' must not exist at ${lineIndex}:${startCharacter}`
   );
+}
+
+function writeWorksheetControlMetadataSidecar(bundleRoot, metadata) {
+  const sidecarDirectory = path.join(bundleRoot, ".vba");
+  mkdirSync(sidecarDirectory, { recursive: true });
+  writeFileSync(path.join(sidecarDirectory, "worksheet-control-metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`);
 }
 
 function applyTextEdit(text, edit) {

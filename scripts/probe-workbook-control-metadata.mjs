@@ -1,22 +1,30 @@
 #!/usr/bin/env node
 
 import path from "node:path";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 
 import { extractWorksheetControlMetadataFromWorkbookFile } from "./lib/workbookControlMetadata.mjs";
+import {
+  buildWorksheetControlMetadataSidecarPath,
+  convertWorksheetControlMetadataProbeToSidecar,
+} from "./lib/worksheetControlMetadataSidecar.mjs";
 
 async function main(argv) {
-  const { inputPath, outputPath } = parseArguments(argv);
+  const { bundleRoot, format, inputPath, outputPath } = parseArguments(argv);
+  const resolvedOutputPath = outputPath ?? (bundleRoot ? buildWorksheetControlMetadataSidecarPath(bundleRoot) : undefined);
 
-  if (outputPath && path.resolve(outputPath) === path.resolve(inputPath)) {
+  if (resolvedOutputPath && path.resolve(resolvedOutputPath) === path.resolve(inputPath)) {
     throw new Error("--out には入力ファイルと別のパスを指定してください");
   }
 
-  const metadata = await extractWorksheetControlMetadataFromWorkbookFile(inputPath);
+  const probeMetadata = await extractWorksheetControlMetadataFromWorkbookFile(inputPath);
+  const metadata =
+    format === "sidecar" ? convertWorksheetControlMetadataProbeToSidecar(probeMetadata) : probeMetadata;
   const output = `${JSON.stringify(metadata, null, 2)}\n`;
 
-  if (outputPath) {
-    await writeFile(outputPath, output, "utf8");
+  if (resolvedOutputPath) {
+    await mkdir(path.dirname(resolvedOutputPath), { recursive: true });
+    await writeFile(resolvedOutputPath, output, "utf8");
     return;
   }
 
@@ -25,6 +33,8 @@ async function main(argv) {
 
 function parseArguments(argv) {
   const argumentsToParse = [...argv];
+  let bundleRoot;
+  let format = "probe";
   let inputPath;
   let outputPath;
 
@@ -46,6 +56,26 @@ function parseArguments(argv) {
       continue;
     }
 
+    if (argument === "--bundle-root") {
+      bundleRoot = argumentsToParse.shift();
+
+      if (!bundleRoot) {
+        throw new Error("--bundle-root の後に bundle root パスが必要です");
+      }
+
+      continue;
+    }
+
+    if (argument === "--format") {
+      format = argumentsToParse.shift() ?? "";
+
+      if (format !== "probe" && format !== "sidecar") {
+        throw new Error("--format には probe または sidecar を指定してください");
+      }
+
+      continue;
+    }
+
     if (!inputPath) {
       inputPath = argument;
       continue;
@@ -59,7 +89,17 @@ function parseArguments(argv) {
     throw new Error("workbook package のパスが必要です");
   }
 
+  if (bundleRoot && format !== "sidecar") {
+    throw new Error("--bundle-root は --format sidecar と一緒に指定してください");
+  }
+
+  if (bundleRoot && outputPath) {
+    throw new Error("--bundle-root と --out は同時に指定できません");
+  }
+
   return {
+    bundleRoot,
+    format,
     inputPath,
     outputPath,
   };
@@ -67,7 +107,7 @@ function parseArguments(argv) {
 
 function printUsage() {
   process.stdout.write(
-    "使い方: node scripts/probe-workbook-control-metadata.mjs <workbook-path> [--out <json-path>]\n",
+    "使い方: node scripts/probe-workbook-control-metadata.mjs <workbook-path> [--format probe|sidecar] [--out <json-path>] [--bundle-root <dir>]\n",
   );
 }
 
