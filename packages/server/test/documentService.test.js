@@ -446,6 +446,258 @@ Option Explicit`
   assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
 });
 
+test("document service resolves OLEObject.Object through worksheet control metadata sidecar only for named worksheet selectors", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const sheet1Uri = pathToFileURL(path.join(bundleRoot, "Sheet1.cls")).href;
+  const chart1Uri = pathToFileURL(path.join(bundleRoot, "Chart1.cls")).href;
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Dim i As Long
+
+    Debug.Print Sheet1.OLEObjects("CheckBox1").Object.
+    Debug.Print Sheet1.OLEObjects.Item("CheckBox1").Object.
+    Debug.Print Sheet1.OLEObjects(1).Object.
+    Debug.Print Sheet1.OLEObjects(i + 1).Object.
+    Debug.Print Chart1.OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveSheet.OLEObjects("CheckBox1").Object.
+    Debug.Print Sheet1.OLEObjects("CheckBox1").Object.Value
+    Debug.Print Sheet1.OLEObjects.Item("CheckBox1").Object.Value
+    Call Sheet1.OLEObjects("CheckBox1").Object.Select(
+    Call Sheet1.OLEObjects.Item("CheckBox1").Object.Select(
+    Call Chart1.OLEObjects("CheckBox1").Object.Select(
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet1",
+        status: "supported"
+      },
+      {
+        ownerKind: "chartsheet",
+        reason: "chart-sheet-metadata-unproven",
+        sheetCodeName: "Chart1",
+        sheetName: "Chart1",
+        status: "unsupported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(
+      sheet1Uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Sheet1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(
+      chart1Uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Chart1"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(uri, "vba", 1, text);
+
+    const namedObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.OLEObjects("CheckBox1").Object.')
+    );
+    const itemNamedObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.OLEObjects.Item("CheckBox1").Object.')
+    );
+    const indexedObjectMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1).Object."));
+    const dynamicObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, "Sheet1.OLEObjects(i + 1).Object.")
+    );
+    const chartObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Chart1.OLEObjects("CheckBox1").Object.')
+    );
+    const activeSheetObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'ActiveSheet.OLEObjects("CheckBox1").Object.')
+    );
+    const namedValueHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.OLEObjects("CheckBox1").Object.Valu')
+    );
+    const itemNamedValueHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.OLEObjects.Item("CheckBox1").Object.Valu')
+    );
+    const namedSelectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.OLEObjects("CheckBox1").Object.Select(')
+    );
+    const itemNamedSelectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.OLEObjects.Item("CheckBox1").Object.Select(')
+    );
+    const chartSelectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Chart1.OLEObjects("CheckBox1").Object.Select(')
+    );
+    const tokens = service.getSemanticTokens(uri);
+
+    const namedValue = namedObjectMembers.find((resolution) => resolution.symbol.name === "Value");
+    const namedSelect = namedObjectMembers.find((resolution) => resolution.symbol.name === "Select");
+    const itemNamedValue = itemNamedObjectMembers.find((resolution) => resolution.symbol.name === "Value");
+    const itemNamedSelect = itemNamedObjectMembers.find((resolution) => resolution.symbol.name === "Select");
+
+    assert.equal(namedValue?.moduleName.includes("CheckBox property"), true);
+    assert.equal(namedValue?.documentation?.includes("microsoft.office.interop.excel.checkbox.value"), true);
+    assert.equal(namedSelect?.moduleName.includes("CheckBox method"), true);
+    assert.equal(namedObjectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+    assert.equal(itemNamedValue?.moduleName.includes("CheckBox property"), true);
+    assert.equal(itemNamedSelect?.moduleName.includes("CheckBox method"), true);
+    assert.equal(itemNamedObjectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+    assert.equal(indexedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(dynamicObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(chartObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(activeSheetObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(namedValueHover?.contents.includes("CheckBox.Value"), true);
+    assert.equal(namedValueHover?.contents.includes("microsoft.office.interop.excel.checkbox.value"), true);
+    assert.equal(itemNamedValueHover?.contents.includes("CheckBox.Value"), true);
+    assert.equal(namedSelectSignature?.label, "Select(Replace) As Object");
+    assert.equal(itemNamedSelectSignature?.label, "Select(Replace) As Object");
+    assert.equal(chartSelectSignature, undefined);
+    assertSemanticToken(text, tokens, 12, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 14, "Select", { modifiers: [], type: "function" });
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service resolves OLEObject.Object against the root document module sidecar", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleARoot = path.join(workspaceRoot, "bundle-a");
+  const bundleBRoot = path.join(workspaceRoot, "bundle-b");
+  const bundleBModuleDirectory = path.join(bundleBRoot, "modules");
+  const sheetAUri = pathToFileURL(path.join(bundleARoot, "SheetA.cls")).href;
+  const uri = pathToFileURL(path.join(bundleBModuleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print SheetA.OLEObjects("Control1").Object.
+End Sub`;
+
+  mkdirSync(bundleBModuleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleARoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "Control1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "SheetA",
+        sheetName: "SheetA",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "bundle-a.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+  writeWorksheetControlMetadataSidecar(bundleBRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "optFinished",
+            controlType: "OptionButton",
+            progId: "Forms.OptionButton.1",
+            shapeId: 3,
+            shapeName: "Control1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "SheetA",
+        sheetName: "SheetA",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "bundle-b.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(
+      sheetAUri,
+      "vba",
+      1,
+      `Attribute VB_Name = "SheetA"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(uri, "vba", 1, text);
+
+    const objectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'SheetA.OLEObjects("Control1").Object.')
+    );
+    const valueCompletion = objectMembers.find((resolution) => resolution.symbol.name === "Value");
+
+    assert.equal(service.getState(sheetAUri)?.worksheetControlMetadata?.workbookName, "bundle-a.xlsm");
+    assert.equal(service.getState(uri)?.worksheetControlMetadata?.workbookName, "bundle-b.xlsm");
+    assert.equal(valueCompletion?.moduleName.includes("CheckBox"), true);
+    assert.equal(valueCompletion?.moduleName.includes("OptionButton"), false);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("document service keeps built-in document roots conservative for unknown predeclared class modules", () => {
   const service = createDocumentService();
   const chart1Uri = "file:///C:/temp/Chart1.cls";

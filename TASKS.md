@@ -369,10 +369,15 @@
   - `packages/server/src/lsp/documentService.ts` へ sidecar の read-only cache と log を追加し、各 `DocumentState` に読み込み結果を保持するようにした
   - scripts / core / server の回帰テストを追加し、初回は user-facing 型解決へ直結させず read-only state までで固定した
 
-- [ ] Worksheet control metadata sidecar を `OLEObject.Object` 型解決へ接続する
-  - `Worksheet` / `Chart` の `OLEObjects("ShapeName")` と `.Item("ShapeName")` の literal selector にだけ sidecar を適用し、`shapeName -> controlType` で `.Object` 後段 owner を決める
-  - dynamic selector、grouped selector、sidecar 未検出、unsupported owner は従来どおり保守的に `Object` のまま維持する
-  - `Worksheet` document module root、`ActiveSheet` / `Sheet1` alias、`OLEObject` built-in 補助導線との回帰を server / extension test で固定する
+- [x] Worksheet control metadata sidecar を `OLEObject.Object` 型解決へ接続する
+  - `Sheet1.OLEObjects("ShapeName").Object` と `Sheet1.OLEObjects.Item("ShapeName").Object` の string literal selector にだけ sidecar を適用し、`shapeName -> controlType` で `CheckBox` などの control owner へ進めるようにした
+  - 数値 selector、dynamic selector、`Chart1` の unsupported owner、`ActiveSheet` root は従来どおり保守的に未解決のまま維持し、named worksheet selector だけを user-facing に昇格した
+  - completion / hover / signature help / semantic token を server / extension test で回帰固定し、fixture sidecar も追加した
+
+- [ ] Worksheet control metadata sidecar を `Sheet1.ControlCodeName` 解決へ接続する
+  - worksheet document module root の direct access にだけ sidecar を適用し、`sheetCodeName + codeName -> controlType` で `Sheet1.chkFinished.Value` のような control code name 導線を解決する
+  - workbook / standard module からの `Worksheets(1).chkFinished` のような非 document-module access、unsupported chartsheet owner、sidecar 未検出は保守的に未解決のまま維持する
+  - `shape name != code name` のずれを含む server / extension test を追加し、`OLEObject.Object` 既存導線と衝突しないことを固定する
 
 ## メモ
 

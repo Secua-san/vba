@@ -8,6 +8,11 @@
 - 一方で、現行リポジトリの静的入力である `.bas` / `.cls` / `.frm` / `.frx` だけでは、worksheet / chart sheet 上の ActiveX control inventory を安定して復元できない。
 - そのため現段階では、`OLEObject.Object` の先と `Sheet1.CommandButton1` は未解決のまま維持し、次段では metadata source の PoC を先に行う。
 
+## 実装更新
+
+- 2026-03-14 時点で、sidecar v1 を使った `Sheet1.OLEObjects("ShapeName").Object` と `.Item("ShapeName").Object` の string literal selector だけは user-facing に接続済みである。
+- ただしこれは `shapeName -> controlType` が sidecar で確定する worksheet document module root に限った例外であり、`Chart1`、`ActiveSheet`、dynamic selector、`Sheet1.ControlCodeName` は引き続き未解決のまま維持する。
+
 ## 確認した公式ソース
 
 ### Office VBA
