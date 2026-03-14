@@ -66,6 +66,13 @@
 - そのため、`Worksheet` / `Chart` への横展開は現段階では supplemental interop source の候補に留め、`Buttons` 系 collection の公開より `OLEObjects` / control name 導線の整理を優先する
 - 正本の判断メモは `docs/process/worksheet-chart-control-collection-feasibility.md` に切り出して管理する
 
+## 2026-03-14 の Worksheet / Chart control entry point 方針
+- Office VBA の object page が揃っている `Worksheet.OLEObjects` / `Chart.OLEObjects` / `OLEObjects.Item` / `OLEObject` を、worksheet / chart sheet control の最初の user-facing root 候補とする
+- `OLEObject.Object` と `Shape.OLEFormat.Object` はどちらも `Object` を返し、embedded document も含み得るため、初回は `.Object` の先を既知 control 型へ落とさない
+- `Sheet1.CommandButton1` は自然な導線だが、現行の静的入力だけでは control code name と型の inventory を安定して取れないため、後続へ送る
+- `Shapes` は drawing object 全体を含み、control 専用 root としては広すぎるため、初回対象から外す
+- 正本の判断メモは `docs/process/worksheet-chart-control-entrypoint-feasibility.md` に切り出して管理する
+
 ## owner 候補の選び方
 - まず、`packages/core/src/reference/builtinReference.ts` の root object から到達しやすい owner を優先する
 - 次に、最新 Excel で利用頻度が高い機能領域を優先する。現時点では lookup と動的配列を最優先とする
