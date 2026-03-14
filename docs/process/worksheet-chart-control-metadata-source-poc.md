@@ -121,6 +121,7 @@
 
 - probe が成立したら、extract 時に sidecar artifact を吐くか、workbook package を直接読む補助コマンドを作るかを決める。
 - 既存の `.bas` / `.cls` / `.frm` / `.frx` 主軸を崩さないため、extension / server の日常入力は loose files + sidecar を優先候補とする。
+- sidecar の schema、保存場所、lookup ルールは [worksheet-control-metadata-sidecar-artifact.md](./worksheet-control-metadata-sidecar-artifact.md) を正本とする。
 
 ### フェーズ 3: chart sheet support を別条件で開く
 
