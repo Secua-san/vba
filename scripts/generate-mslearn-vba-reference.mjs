@@ -492,7 +492,8 @@ function applySupplementalOwnerMemberOverrides(items) {
         );
       }
 
-      Object.assign(targetMember, memberOverride);
+      const { name: _memberName, ...overrideFields } = memberOverride;
+      Object.assign(targetMember, overrideFields);
     }
   }
 }

@@ -323,11 +323,12 @@ test("OLEObjects member override は Item を OLEObjects として型付けす�
   const data = await loadReferenceData();
   const itemMember = getMember(data, "OLEObjects", "Item");
   const itemOverride = supplementalOwnerMemberOverrides
-    .flatMap((ownerConfig) => ownerConfig.members.map((member) => ({ member, ownerName: ownerConfig.ownerName })))
-    .find((entry) => entry.ownerName === "OLEObjects" && entry.member.name === "Item");
+    .find((ownerConfig) => ownerConfig.ownerName === "OLEObjects" && ownerConfig.sectionName === "Methods")
+    ?.members.find((member) => member.name === "Item");
 
   assert.ok(itemMember, "OLEObjects.Item member が必要です");
   assert.ok(itemOverride, "OLEObjects.Item override 設定が必要です");
+  assert.equal(itemOverride.typeName, "OLEObjects");
   assert.equal(itemMember.typeName, "OLEObjects");
 });
 
