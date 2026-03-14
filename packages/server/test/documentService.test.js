@@ -299,6 +299,99 @@ End Sub`;
   );
 });
 
+test("document service exposes OLEObject members through Worksheet and Chart OLEObjects roots", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/OleObjectBuiltIn.bas";
+  const sheet1Uri = "file:///C:/temp/Sheet1.cls";
+  const chart1Uri = "file:///C:/temp/Chart1.cls";
+  const text = `Attribute VB_Name = "OleObjectBuiltIn"
+Option Explicit
+
+Public Sub Demo()
+    Dim i As Long
+
+    Debug.Print Sheet1.OLEObjects.
+    Debug.Print Sheet1.OLEObjects(1).
+    Debug.Print Sheet1.OLEObjects("CheckBox1").
+    Debug.Print Sheet1.OLEObjects(i + 1).
+    Debug.Print Sheet1.OLEObjects(GetIndex()).
+    Debug.Print Chart1.OLEObjects(1).
+    Call Sheet1.OLEObjects(1).Activate(
+    Call Sheet1.OLEObjects(GetIndex()).Activate(
+    Debug.Print Sheet1.OLEObjects(1).Name
+    Debug.Print Sheet1.OLEObjects(1).Object.
+End Sub
+
+Private Function GetIndex() As Long
+    GetIndex = 1
+End Function`;
+
+  service.analyzeText(
+    sheet1Uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Sheet1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(
+    chart1Uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "Chart1"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const sheetOleObjectsMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects."));
+  const indexedOleObjectMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1)."));
+  const namedOleObjectMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'Sheet1.OLEObjects("CheckBox1").')
+  );
+  const expressionOleObjectMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects(i + 1).")
+  );
+  const functionOleObjectsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects(GetIndex()).")
+  );
+  const chartOleObjectMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1.OLEObjects(1)."));
+  const activateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1).Activate("));
+  const functionActivateSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects(GetIndex()).Activate(")
+  );
+  const nameHover = service.getHover(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1).Nam"));
+  const objectMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1).Object."));
+
+  const sheetOleObjectsCount = sheetOleObjectsMembers.find((resolution) => resolution.symbol.name === "Count");
+  const indexedOleObjectActivate = indexedOleObjectMembers.find((resolution) => resolution.symbol.name === "Activate");
+  const indexedOleObjectName = indexedOleObjectMembers.find((resolution) => resolution.symbol.name === "Name");
+  const namedOleObjectVisible = namedOleObjectMembers.find((resolution) => resolution.symbol.name === "Visible");
+  const expressionOleObjectName = expressionOleObjectMembers.find((resolution) => resolution.symbol.name === "Name");
+  const functionOleObjectsCount = functionOleObjectsMembers.find((resolution) => resolution.symbol.name === "Count");
+  const chartOleObjectName = chartOleObjectMembers.find((resolution) => resolution.symbol.name === "Name");
+
+  assert.equal(sheetOleObjectsCount?.moduleName, "Excel OLEObjects property");
+  assert.equal(indexedOleObjectActivate?.moduleName, "Excel OLEObject method");
+  assert.equal(indexedOleObjectName?.documentation?.includes("excel.oleobject.name"), true);
+  assert.equal(namedOleObjectVisible?.moduleName, "Excel OLEObject property");
+  assert.equal(expressionOleObjectName?.moduleName, "Excel OLEObject property");
+  assert.equal(functionOleObjectsCount?.moduleName, "Excel OLEObjects property");
+  assert.equal(functionOleObjectsMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+  assert.equal(chartOleObjectName?.moduleName, "Excel OLEObject property");
+  assert.equal(activateSignature?.label.includes("Activate()"), true);
+  assert.equal(functionActivateSignature, undefined);
+  assert.equal(nameHover?.contents.includes("OLEObject.Name"), true);
+  assert.equal(nameHover?.contents.includes("excel.oleobject.name"), true);
+  assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+});
+
 test("document service keeps built-in document roots conservative for unknown predeclared class modules", () => {
   const service = createDocumentService();
   const chart1Uri = "file:///C:/temp/Chart1.cls";
@@ -986,6 +1079,26 @@ test("DialogSheet control collection owner mapping stays aligned with supplement
       resolveBuiltinMemberOwnerFromRootType("DialogSheet", [markIndexedAccessPathSegment(config.collectionName, "literal")]),
       config.itemName,
       `DialogSheet.${config.collectionName}(<literal>) は ${config.itemName} owner を返す必要があります`
+    );
+  }
+});
+
+test("Worksheet and Chart OLEObjects owner mapping stays aligned with indexed access rules", () => {
+  for (const ownerName of ["Worksheet", "Chart"]) {
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType(ownerName, ["OLEObjects"]),
+      "OLEObjects",
+      `${ownerName}.OLEObjects は collection owner を返す必要があります`
+    );
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType(ownerName, [markIndexedAccessPathSegment("OLEObjects", "single")]),
+      "OLEObject",
+      `${ownerName}.OLEObjects(<expr>) は OLEObject owner を返す必要があります`
+    );
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType(ownerName, [markIndexedAccessPathSegment("OLEObjects", "literal")]),
+      "OLEObject",
+      `${ownerName}.OLEObjects(<literal>) は OLEObject owner を返す必要があります`
     );
   }
 });
