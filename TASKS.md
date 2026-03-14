@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Worksheet workbook package control metadata probe の最小実装
+  - `scripts/lib/workbookControlMetadata.mjs` を追加し、Open XML package の workbook / worksheet / drawing / control data part をたどって `sheetCodeName`、`shapeName`、`codeName`、`shapeId`、`ProgID`、`classId` を抽出できるようにした
+  - `scripts/probe-workbook-control-metadata.mjs` と `npm run probe:worksheet-control-metadata` を追加し、workbook package から JSON を標準出力または `--out` で書き出せるようにした
+  - `scripts/test/workbookControlMetadata.test.mjs` で synthetic workbook package を組み立て、`shape name != code name`、`shapeId` 結合、`ProgID` / `classId`、chart sheet 除外、CLI 出力を固定した
+
 - [x] Worksheet / Chart control metadata source の PoC
   - workbook package を第 1 PoC source とし、worksheet 側では `sheetPr@codeName`、`controls/control@name|shapeId|r:id`、drawing の `xdr:cNvPr@id|name`、`oleObject@progId` / Embedded Control Data part の `classid` を組み合わせる経路があることを整理
   - chart sheet では `sheetPr@codeName` と `drawing` part までは確認できるが、Open XML docs 上で `controls` / `oleObjects` 相当の経路は未証明のため、worksheet と同列には扱わず保留とした
@@ -353,10 +358,10 @@
 
 ## 次候補
 
-- [ ] Worksheet workbook package control metadata probe の最小実装
-  - `.xlsm` / `.xlam` を対象に、workbook package から worksheet の `sheetCodeName`、`shapeName`、`codeName`、`shapeId`、`ProgID` / `classId` を抜く最小 probe を追加する
-  - 出力は loose files と併用しやすい sidecar JSON を想定し、`shape name != code name` と `controls/oleObjects/drawing` の `shapeId` 突合成立を fixture で確認する
-  - chart sheet は同じ経路で再現できる証拠が揃うまで保留し、保留解除条件を明文化するまで `OLEObject.Object` の先と `Sheet1.CommandButton1` は未解決のまま維持する
+- [ ] Worksheet control metadata sidecar artifact の仕様整理
+  - probe 出力を loose files と一緒に扱うための schema、保存場所、ファイル名、workspace lookup ルールを整理する
+  - `OLEObject.Object` 後段型付けと `Sheet1.CommandButton1` 支援の両方で必要な最小 field を決め、現行 probe 出力との差分を洗い出す
+  - chart sheet は保留のままとし、sidecar schema に未対応 owner をどう表すかを先に決める
 
 ## メモ
 
