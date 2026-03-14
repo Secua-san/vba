@@ -26,6 +26,7 @@
 - [worksheet-chart-control-entrypoint-feasibility.md](worksheet-chart-control-entrypoint-feasibility.md): Worksheet / Chart 上の control をどの entry point から実装するかの整理
 - [worksheet-chart-control-identity-feasibility.md](worksheet-chart-control-identity-feasibility.md): `OLEObject.Object` と control code name 支援に必要な metadata source の整理
 - [worksheet-chart-control-metadata-source-poc.md](worksheet-chart-control-metadata-source-poc.md): workbook package を起点にした control metadata PoC と sidecar 方針の整理
+- [worksheet-control-metadata-sidecar-artifact.md](worksheet-control-metadata-sidecar-artifact.md): loose files と併用する sidecar schema、保存場所、lookup ルールの整理
 - [sub-agent-escalation.md](sub-agent-escalation.md): サブエージェント利用の切り替え基準
 
 ## 取りこぼしを減らす順番

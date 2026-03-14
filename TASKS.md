@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Worksheet control metadata sidecar artifact の仕様整理
+  - sidecar 正本パスを `<bundle-root>/.vba/worksheet-control-metadata.json` に固定し、nearest ancestor lookup と workspace root での打ち切り規則を [docs/process/worksheet-control-metadata-sidecar-artifact.md](docs/process/worksheet-control-metadata-sidecar-artifact.md) に整理した
+  - `owners[]` に `worksheet` / `chartsheet` を統一し、未対応 owner を `status: "unsupported"` と `reason` 付き record で表す schema v1 を定義した
+  - `OLEObject.Object` 後段型付けと `Sheet1.CommandButton1` 支援の両方に必要な最小 field を `sheetCodeName` / `shapeName` / `codeName` / `controlType` / `progId or classId` として固定し、現行 probe 出力との差分を整理した
+
 - [x] Worksheet workbook package control metadata probe の最小実装
   - `scripts/lib/workbookControlMetadata.mjs` を追加し、Open XML package の workbook / worksheet / drawing / control data part をたどって `sheetCodeName`、`shapeName`、`codeName`、`shapeId`、`ProgID`、`classId` を抽出できるようにした
   - `scripts/probe-workbook-control-metadata.mjs` と `npm run probe:worksheet-control-metadata` を追加し、workbook package から JSON を標準出力または `--out` で書き出せるようにした
@@ -358,10 +363,11 @@
 
 ## 次候補
 
-- [ ] Worksheet control metadata sidecar artifact の仕様整理
-  - probe 出力を loose files と一緒に扱うための schema、保存場所、ファイル名、workspace lookup ルールを整理する
-  - `OLEObject.Object` 後段型付けと `Sheet1.CommandButton1` 支援の両方で必要な最小 field を決め、現行 probe 出力との差分を洗い出す
-  - chart sheet は保留のままとし、sidecar schema に未対応 owner をどう表すかを先に決める
+- [ ] Worksheet control metadata sidecar lookup の最小実装
+  - probe 出力を sidecar schema v1 へ変換し、`<bundle-root>/.vba/worksheet-control-metadata.json` を生成・配置する最小経路を追加する
+  - `.vba/worksheet-control-metadata.json` を current file から nearest ancestor 優先で探索し、workspace root を越えずに 1 本だけ採用する lookup を追加する
+  - sidecar schema v1 の top-level / owner / control validation と `status: "unsupported"` owner の無視規則を実装する
+  - 初回は user-facing 型解決へ直結させず、server / core で read-only cache と log までを追加して、誤結合なく sidecar を読めることを先に固定する
 
 ## メモ
 
