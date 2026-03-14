@@ -670,6 +670,12 @@ async function buildSupplementalInteropOwner(ownerConfig) {
   const sections = [];
 
   for (const sectionConfig of resolveSupplementalInteropOwnerSections(ownerConfig)) {
+    const memberTypeOverrides = new Map(
+      [...(sectionConfig.memberTypeOverrides ?? new Map())].map(([memberName, typeName]) => [
+        normalizeReferenceName(memberName),
+        typeName,
+      ]),
+    );
     const allowedMemberNames = new Set(
       [...sectionConfig.memberAllowList].map((memberName) => normalizeReferenceName(memberName)),
     );
@@ -697,6 +703,14 @@ async function buildSupplementalInteropOwner(ownerConfig) {
       }
     }
 
+    for (const overriddenMemberName of memberTypeOverrides.keys()) {
+      if (!allowedMemberNames.has(overriddenMemberName)) {
+        throw new Error(
+          `Supplemental interop owner '${ownerConfig.name}' declares a type override for unknown member '${overriddenMemberName}'.`,
+        );
+      }
+    }
+
     for (const member of interfaceMembers) {
       const memberMarkdown = await fetchText(withMarkdown(member.learnUrl));
       const memberMetadata = parseInteropMemberReference(
@@ -705,6 +719,8 @@ async function buildSupplementalInteropOwner(ownerConfig) {
         member.name,
         sectionConfig.sectionName,
       );
+      const overriddenTypeName = memberTypeOverrides.get(normalizeReferenceName(member.name));
+      const resolvedTypeName = overriddenTypeName ?? memberMetadata?.typeName;
 
       if (normalizeReferenceName(sectionConfig.sectionName) === "methods" && !memberMetadata.signature) {
         throw new Error(
@@ -712,7 +728,7 @@ async function buildSupplementalInteropOwner(ownerConfig) {
         );
       }
 
-      if (normalizeReferenceName(sectionConfig.sectionName) === "properties" && !memberMetadata?.typeName) {
+      if (normalizeReferenceName(sectionConfig.sectionName) === "properties" && !resolvedTypeName) {
         throw new Error(
           `Supplemental interop owner '${ownerConfig.name}' could not extract property type metadata for member '${member.name}'.`,
         );
@@ -723,7 +739,7 @@ async function buildSupplementalInteropOwner(ownerConfig) {
         name: member.name,
         signature: memberMetadata?.signature,
         summary: memberMetadata?.summary,
-        typeName: memberMetadata?.typeName,
+        typeName: resolvedTypeName,
       });
     }
 

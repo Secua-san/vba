@@ -14,6 +14,7 @@ import {
   getDocumentOutline,
   inferExpressionTypeAtLine,
   isReservedOrBuiltinIdentifier,
+  markIndexedAccessPathSegment,
   getSymbolTypeName,
   normalizeIdentifier,
   removeStringAndDateLiterals,
@@ -1449,7 +1450,7 @@ function getCallContext(text: string, position: LinePosition): CallContext | und
       continue;
     }
 
-    if (character === "#") {
+    if (character === "#" && isDateLiteralStart(code, index)) {
       index = skipDateLiteral(code, index);
       continue;
     }
@@ -1648,6 +1649,11 @@ function skipDateLiteral(text: string, startIndex: number): number {
   }
 
   return index;
+}
+
+function isDateLiteralStart(text: string, index: number): boolean {
+  const previousCharacter = text[index - 1] ?? "";
+  return !/[A-Za-z0-9_$%&!#@.]/u.test(previousCharacter);
 }
 
 function skipStringLiteral(text: string, startIndex: number): number {
@@ -2028,7 +2034,11 @@ function parseTrailingMemberAccess(
       return undefined;
     }
 
-    memberPath.unshift(indexedAccess.isSingleItemAccess ? `${identifier}()` : identifier);
+    memberPath.unshift(
+      indexedAccess.accessKind === "none"
+        ? identifier
+        : markIndexedAccessPathSegment(identifier, indexedAccess.accessKind)
+    );
     memberPathStartCharacter = index + 1;
 
     while (index >= 0 && /\s/u.test(text[index] ?? "")) {
@@ -2054,9 +2064,8 @@ function skipTrailingIndexedAccess(
   text: string,
   startIndex: number
 ): {
+  accessKind: "literal" | "none" | "single";
   index: number;
-  isIndexed: boolean;
-  isSingleItemAccess: boolean;
 } {
   let index = startIndex;
 
@@ -2066,9 +2075,8 @@ function skipTrailingIndexedAccess(
 
   if (text[index] !== ")") {
     return {
+      accessKind: "none",
       index,
-      isIndexed: false,
-      isSingleItemAccess: false
     };
   }
 
@@ -2108,9 +2116,8 @@ function skipTrailingIndexedAccess(
 
   if (openingParenIndex === -1) {
     return {
+      accessKind: "none",
       index: startIndex,
-      isIndexed: false,
-      isSingleItemAccess: false
     };
   }
 
@@ -2121,17 +2128,16 @@ function skipTrailingIndexedAccess(
   }
 
   return {
+    accessKind: getCollectionSelectorAccessKind(selectorText),
     index,
-    isIndexed: true,
-    isSingleItemAccess: isSingleItemCollectionSelector(selectorText)
   };
 }
 
-function isSingleItemCollectionSelector(selectorText: string): boolean {
+function getCollectionSelectorAccessKind(selectorText: string): "literal" | "none" | "single" {
   const trimmedSelector = selectorText.trim();
 
   if (trimmedSelector.length === 0) {
-    return false;
+    return "none";
   }
 
   let insideString = false;
@@ -2154,11 +2160,26 @@ function isSingleItemCollectionSelector(selectorText: string): boolean {
     }
 
     if (character === "(" || character === ")" || character === ",") {
-      return false;
+      return "none";
     }
   }
 
-  return true;
+  return isLiteralSingleItemCollectionSelector(trimmedSelector) ? "literal" : "single";
+}
+
+function isLiteralSingleItemCollectionSelector(selectorText: string): boolean {
+  return isStringLiteralSelector(selectorText) || isNumericLiteralSelector(selectorText);
+}
+
+function isStringLiteralSelector(selectorText: string): boolean {
+  // 全体一致で判定し、 `"a"b"` のような不正な断片を item owner に正規化しない。
+  return /^"(?:[^"]|"")*"$/u.test(selectorText);
+}
+
+function isNumericLiteralSelector(selectorText: string): boolean {
+  return /^[+-]?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?|&[Hh][0-9A-Fa-f]+|&[Oo][0-7]+)(?:[%&@!#])?$/u.test(
+    selectorText
+  );
 }
 
 function skipStringLiteralBackward(text: string, endQuoteIndex: number): number {

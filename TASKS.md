@@ -12,6 +12,11 @@
   - `DialogSheets(Array(...))` は collection のまま維持し、`_Dummy*` / legacy member 混入防止と `DialogFrame` owner の型・署名監査を `scripts/test` / server / extension テストで固定した
   - CodeRabbit 指摘を受け、extension の negative signature help helper を空配列対応に修正し、supplemental property の `typeName` 欠落時は生成を fail-fast させた
 
+- [x] DialogSheet control collection の single-selector 正規化
+  - `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` と各 collection / item owner を補助参照へ追加し、`resources/reference/mslearn-vba-reference.json` を再生成
+  - 数値・文字列リテラル selector と `.Item(<literal>)` だけ `Button` / `CheckBox` / `OptionButton` へ落とし、式 selector や `Array(...)` selector は collection owner のまま維持する marker ルールを core / server に追加
+  - collection owner は `Count` / `Item`、item owner は `Caption` / `Name` / `OnAction` / `Text` / `Select` と `Value` の最小構成に絞り、`scripts/test` / server / extension テストで `_Dummy*` 除外、type override、completion / hover / signature help / semantic token を固定した
+
 - [x] DialogSheet control collection の補助参照可否整理
   - Microsoft Learn の `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` / `DialogFrame` と `Button` / `CheckBox` / `OptionButton` / `DialogFrame` interface を確認し、owner ごとの導入難所を整理
   - `DialogFrame` は direct property で先行候補、他 3 系統は `Optional Index As Object -> As Object` のため single-selector / collection selector 分岐が必要という結論を文書化
@@ -317,9 +322,9 @@
 
 ## 次候補
 
-- [ ] DialogSheet control collection の single-selector 正規化
-  - `DialogSheet.Buttons` / `CheckBoxes` / `OptionButtons` について、数値・文字列リテラルの single-selector だけ item owner (`Button` / `CheckBox` / `OptionButton`) に落とす最小ルールを検討する
-  - `.Item(1)` override、`Array(...)` / 式 selector の抑止、`_Dummy*` 除外を `DialogFrame` 実装と同じ監査テスト付きで共通 helper 化できるか確認する
+- [ ] Worksheet / Chart control collection への横展開方針整理
+  - 今回追加した literal-only selector ルールを `Worksheet.Buttons` / `Chart.OptionButtons` などへ広げる妥当性と誤補完リスクを整理する
+  - collection owner を `Count` / `Item` 以外へ広げるか、`Add` / `Group` / `Duplicate` のような変更系 member を抑止し続けるかを判断する
 
 ## メモ
 
