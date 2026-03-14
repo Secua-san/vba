@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { parseStringPromise } from "xml2js";
 
 const workbookRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
+const controlPropertyRelationshipType = "http://schemas.microsoft.com/office/2006/relationships/ctrlProp";
 const xmlParseOptions = {
   attrkey: "$",
   explicitArray: false,
@@ -57,10 +58,13 @@ export async function extractWorksheetControlMetadataFromWorkbookBuffer(buffer, 
     for (const controlNode of getChildNodes(getChildNode(worksheetRoot, "controls"), "control")) {
       const controlRelationshipId = getAttributeValue(controlNode, "id");
       const shapeId = toUnsignedInteger(getAttributeValue(controlNode, "shapeId"));
-      const controlPartPath = controlRelationshipId
-        ? resolveTargetPath(worksheetPartPath, worksheetRelationships.get(controlRelationshipId)?.target)
+      const controlRelationship = controlRelationshipId
+        ? worksheetRelationships.get(controlRelationshipId)
         : undefined;
-      const classId = controlPartPath ? await loadActiveXClassId(zip, controlPartPath) : null;
+      const controlPartPath = controlRelationship?.type === controlPropertyRelationshipType
+        ? resolveTargetPath(worksheetPartPath, controlRelationship.target)
+        : undefined;
+      const classId = controlPartPath ? await tryLoadActiveXClassId(zip, controlPartPath) : null;
       const oleObject = shapeId !== null ? oleObjectsByShapeId.get(String(shapeId)) : undefined;
 
       controls.push({
@@ -181,8 +185,13 @@ async function loadActiveXClassId(zip, partPath) {
     return null;
   }
 
-  const root = getRootNode(document, "ocx");
-  return getAttributeValue(root, "classid") ?? null;
+  const rootEntry = Object.entries(document).find(([key]) => getLocalName(key) === "ocx");
+
+  if (!rootEntry) {
+    return null;
+  }
+
+  return getAttributeValue(rootEntry[1], "classid") ?? null;
 }
 
 async function loadDrawingShapeNames(zip, drawingPartPath) {
@@ -269,6 +278,14 @@ async function readXmlPart(zip, partPath) {
   return parseStringPromise(xml, xmlParseOptions);
 }
 
+async function tryLoadActiveXClassId(zip, partPath) {
+  try {
+    return await loadActiveXClassId(zip, partPath);
+  } catch {
+    return null;
+  }
+}
+
 function getRelationshipsPartPath(sourcePartPath) {
   const normalizedSourcePartPath = normalizePartPath(sourcePartPath);
   const directory = path.posix.dirname(normalizedSourcePartPath);
@@ -298,6 +315,12 @@ function toUnsignedInteger(value) {
     return null;
   }
 
-  const parsedValue = Number.parseInt(String(value), 10);
-  return Number.isNaN(parsedValue) ? null : parsedValue;
+  const normalizedValue = String(value).trim();
+
+  if (!/^(?:0|[1-9]\d*)$/u.test(normalizedValue)) {
+    return null;
+  }
+
+  const parsedValue = Number(normalizedValue);
+  return Number.isSafeInteger(parsedValue) ? parsedValue : null;
 }

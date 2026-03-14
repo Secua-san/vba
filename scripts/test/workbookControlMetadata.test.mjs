@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
@@ -73,6 +73,57 @@ test("CLI は workbook 名付きの JSON を出力する", async () => {
   }
 });
 
+test("CLI は --out 指定時に JSON ファイルを書き出す", async () => {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
+  const workbookPath = path.join(temporaryDirectory, "fixture.xlsm");
+  const outputPath = path.join(temporaryDirectory, "metadata.json");
+
+  try {
+    await writeFile(workbookPath, await createWorkbookPackageBuffer());
+
+    await execFileAsync(process.execPath, [
+      path.resolve("scripts", "probe-workbook-control-metadata.mjs"),
+      workbookPath,
+      "--out",
+      outputPath,
+    ], {
+      cwd: path.resolve("."),
+    });
+
+    const metadata = JSON.parse(await readFile(outputPath, "utf8"));
+
+    assert.equal(metadata.workbook, "fixture.xlsm");
+    assert.equal(metadata.worksheets[0]?.sheetCodeName, "Sheet1");
+    assert.equal(metadata.worksheets[0]?.controls[0]?.shapeName, "CheckBox1");
+    assert.equal(metadata.worksheets[0]?.controls[0]?.codeName, "chkFinished");
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("CLI は入力ファイルと同じ --out を拒否する", async () => {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
+  const workbookPath = path.join(temporaryDirectory, "fixture.xlsm");
+
+  try {
+    await writeFile(workbookPath, await createWorkbookPackageBuffer());
+
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        path.resolve("scripts", "probe-workbook-control-metadata.mjs"),
+        workbookPath,
+        "--out",
+        workbookPath,
+      ], {
+        cwd: path.resolve("."),
+      }),
+      /入力ファイルと別のパス/,
+    );
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("file helper は workbook 名を保持する", async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-workbook-control-metadata-"));
   const workbookPath = path.join(temporaryDirectory, "fixture.xlam");
@@ -87,6 +138,32 @@ test("file helper は workbook 名を保持する", async () => {
   } finally {
     await rm(temporaryDirectory, { force: true, recursive: true });
   }
+});
+
+test("非 ctrlProp の control relationship は classId を null にフォールバックする", async () => {
+  const workbookBuffer = await createWorkbookPackageBuffer({
+    controlRelationshipTarget: "../media/image1.png",
+    controlRelationshipType: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+  });
+  const metadata = await extractWorksheetControlMetadataFromWorkbookBuffer(workbookBuffer);
+
+  assert.equal(metadata.worksheets[0]?.controls[0]?.classId, null);
+});
+
+test("不正な shapeId は無効として扱う", async () => {
+  const workbookBuffer = await createWorkbookPackageBuffer({
+    controlShapeId: "3foo",
+    oleObjectShapeId: "-1",
+  });
+  const metadata = await extractWorksheetControlMetadataFromWorkbookBuffer(workbookBuffer);
+
+  assert.deepEqual(metadata.worksheets[0]?.controls[0], {
+    classId: "{8BD21D40-EC42-11CE-9E0D-00AA006002F3}",
+    codeName: "chkFinished",
+    progId: null,
+    shapeId: null,
+    shapeName: null,
+  });
 });
 
 async function createWorkbookPackageBuffer(options = {}) {
@@ -128,10 +205,10 @@ async function createWorkbookPackageBuffer(options = {}) {
   <sheetPr codeName="Sheet1" />
   <drawing r:id="rId1" />
   <controls>
-    <control r:id="rId2" shapeId="3" name="chkFinished" />
+    <control r:id="rId2" shapeId="${options.controlShapeId ?? "3"}" name="chkFinished" />
   </controls>
   <oleObjects>
-    <oleObject progId="Forms.CheckBox.1" shapeId="3" />
+    <oleObject progId="Forms.CheckBox.1" shapeId="${options.oleObjectShapeId ?? "3"}" />
   </oleObjects>
 </worksheet>`,
   );
@@ -140,7 +217,7 @@ async function createWorkbookPackageBuffer(options = {}) {
     `<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.microsoft.com/office/2006/relationships/ctrlProp" Target="../ctrlProps/ctrlProp1.xml"/>
+  <Relationship Id="rId2" Type="${options.controlRelationshipType ?? "http://schemas.microsoft.com/office/2006/relationships/ctrlProp"}" Target="${options.controlRelationshipTarget ?? "../ctrlProps/ctrlProp1.xml"}"/>
 </Relationships>`,
   );
   zip.file(
@@ -159,11 +236,13 @@ async function createWorkbookPackageBuffer(options = {}) {
   </xdr:twoCellAnchor>
 </xdr:wsDr>`,
   );
-  zip.file(
-    "xl/ctrlProps/ctrlProp1.xml",
-    `<?xml version="1.0" encoding="UTF-8"?>
+  if ((options.controlRelationshipTarget ?? "../ctrlProps/ctrlProp1.xml") === "../ctrlProps/ctrlProp1.xml") {
+    zip.file(
+      "xl/ctrlProps/ctrlProp1.xml",
+      `<?xml version="1.0" encoding="UTF-8"?>
 <ax:ocx xmlns:ax="http://schemas.microsoft.com/office/2006/activeX" ax:classid="{8BD21D40-EC42-11CE-9E0D-00AA006002F3}" />`,
-  );
+    );
+  }
 
   if (options.includeChartsheet) {
     zip.file(

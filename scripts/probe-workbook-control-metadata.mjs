@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 
+import path from "node:path";
 import { writeFile } from "node:fs/promises";
 
 import { extractWorksheetControlMetadataFromWorkbookFile } from "./lib/workbookControlMetadata.mjs";
 
 async function main(argv) {
   const { inputPath, outputPath } = parseArguments(argv);
+
+  if (outputPath && path.resolve(outputPath) === path.resolve(inputPath)) {
+    throw new Error("--out には入力ファイルと別のパスを指定してください");
+  }
+
   const metadata = await extractWorksheetControlMetadataFromWorkbookFile(inputPath);
   const output = `${JSON.stringify(metadata, null, 2)}\n`;
 
