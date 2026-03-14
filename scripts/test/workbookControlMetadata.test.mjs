@@ -19,6 +19,24 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+test("sidecar helper は未対応の probe version を fail-fast で拒否する", () => {
+  assert.throws(
+    () =>
+      convertWorksheetControlMetadataProbeToSidecar({
+        version: 2,
+        workbook: "fixture.xlsm",
+        worksheets: [
+          {
+            controls: [],
+            sheetCodeName: "Sheet1",
+            sheetName: "Sheet1",
+          },
+        ],
+      }),
+    /probe\.version/u,
+  );
+});
+
 test("worksheet workbook package から shape name / code name / ProgID / classId を抽出する", async () => {
   const workbookBuffer = await createWorkbookPackageBuffer();
   const metadata = await extractWorksheetControlMetadataFromWorkbookBuffer(workbookBuffer);

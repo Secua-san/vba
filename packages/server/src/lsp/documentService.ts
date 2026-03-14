@@ -39,6 +39,7 @@ import {
   type LinePosition,
   type SourceRange,
   type SymbolInfo,
+  type WorksheetControlMetadataSidecarControl,
   type WorksheetControlMetadataSupportedOwner,
   type WorksheetControlMetadataValidationIssue
 } from "../../../core/src/index";
@@ -56,13 +57,21 @@ export interface DocumentState {
   worksheetControlMetadata?: WorksheetControlMetadataState;
 }
 
+type WorksheetControlMetadataControlState = Readonly<WorksheetControlMetadataSidecarControl>;
+type WorksheetControlMetadataIssueState = Readonly<WorksheetControlMetadataValidationIssue>;
+type WorksheetControlMetadataSupportedOwnerState = Readonly<
+  Omit<WorksheetControlMetadataSupportedOwner, "controls">
+> & {
+  readonly controls: readonly WorksheetControlMetadataControlState[];
+};
+
 export interface WorksheetControlMetadataState {
-  bundleRoot: string;
-  issues: WorksheetControlMetadataValidationIssue[];
-  sidecarPath: string;
-  status: "ignored" | "loaded";
-  supportedOwners: WorksheetControlMetadataSupportedOwner[];
-  workbookName?: string;
+  readonly bundleRoot: string;
+  readonly issues: readonly WorksheetControlMetadataIssueState[];
+  readonly sidecarPath: string;
+  readonly status: "ignored" | "loaded";
+  readonly supportedOwners: readonly WorksheetControlMetadataSupportedOwnerState[];
+  readonly workbookName?: string;
 }
 
 export interface DocumentServiceLogEntry {
@@ -346,6 +355,64 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     return undefined;
   }
 
+  function createWorksheetControlMetadataState(input: {
+    bundleRoot: string;
+    issues: readonly WorksheetControlMetadataValidationIssue[];
+    sidecarPath: string;
+    status: "ignored" | "loaded";
+    supportedOwners: readonly WorksheetControlMetadataSupportedOwner[];
+    workbookName?: string;
+  }): WorksheetControlMetadataState {
+    const issues = Object.freeze(
+      input.issues.map((issue) => Object.freeze({ ...issue }) satisfies WorksheetControlMetadataIssueState)
+    );
+    const supportedOwners = Object.freeze(
+      input.supportedOwners.map((owner) =>
+        Object.freeze({
+          controls: Object.freeze(
+            owner.controls.map((control) => Object.freeze({ ...control }) satisfies WorksheetControlMetadataControlState)
+          ),
+          ownerKind: owner.ownerKind,
+          sheetCodeName: owner.sheetCodeName,
+          sheetName: owner.sheetName,
+          status: owner.status
+        } satisfies WorksheetControlMetadataSupportedOwnerState)
+      )
+    );
+
+    return Object.freeze({
+      bundleRoot: input.bundleRoot,
+      issues,
+      sidecarPath: input.sidecarPath,
+      status: input.status,
+      supportedOwners,
+      workbookName: input.workbookName
+    });
+  }
+
+  function cloneWorksheetControlMetadataState(
+    state: WorksheetControlMetadataState | undefined
+  ): WorksheetControlMetadataState | undefined {
+    if (!state) {
+      return undefined;
+    }
+
+    return createWorksheetControlMetadataState({
+      bundleRoot: state.bundleRoot,
+      issues: state.issues.map((issue) => ({ ...issue })),
+      sidecarPath: state.sidecarPath,
+      status: state.status,
+      supportedOwners: state.supportedOwners.map((owner) => ({
+        controls: owner.controls.map((control) => ({ ...control })),
+        ownerKind: owner.ownerKind,
+        sheetCodeName: owner.sheetCodeName,
+        sheetName: owner.sheetName,
+        status: owner.status
+      })),
+      workbookName: state.workbookName
+    });
+  }
+
   function loadWorksheetControlMetadataState(
     uri: string,
     bundleRoot: string,
@@ -356,22 +423,24 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
       const sidecarStat = statSync(sidecarPath);
       const parseResult = parseWorksheetControlMetadataSidecar(rawText);
       const supportedOwners = parseResult.sidecar ? getSupportedWorksheetControlMetadataOwners(parseResult.sidecar) : [];
-      const state: WorksheetControlMetadataState = parseResult.sidecar
-        ? {
-            bundleRoot,
-            issues: parseResult.issues,
-            sidecarPath,
-            status: "loaded",
-            supportedOwners,
-            workbookName: parseResult.sidecar.workbook.name
-          }
-        : {
-            bundleRoot,
-            issues: parseResult.issues,
-            sidecarPath,
-            status: "ignored",
-            supportedOwners: []
-          };
+      const state = createWorksheetControlMetadataState(
+        parseResult.sidecar
+          ? {
+              bundleRoot,
+              issues: parseResult.issues,
+              sidecarPath,
+              status: "loaded",
+              supportedOwners,
+              workbookName: parseResult.sidecar.workbook.name
+            }
+          : {
+              bundleRoot,
+              issues: parseResult.issues,
+              sidecarPath,
+              status: "ignored",
+              supportedOwners: []
+            }
+      );
 
       worksheetControlMetadataCache.set(sidecarPath, {
         mtimeMs: sidecarStat.mtimeMs,
@@ -381,7 +450,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
       emitWorksheetControlMetadataLogs(uri, state);
       return state;
     } catch (error) {
-      const state: WorksheetControlMetadataState = {
+      const state = createWorksheetControlMetadataState({
         bundleRoot,
         issues: [
           {
@@ -393,7 +462,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         sidecarPath,
         status: "ignored",
         supportedOwners: []
-      };
+      });
 
       emitWorksheetControlMetadataLogs(uri, state);
       return state;
@@ -414,7 +483,9 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     }
 
     const cached = getCachedWorksheetControlMetadata(location.sidecarPath);
-    return cached?.state ?? loadWorksheetControlMetadataState(uri, location.bundleRoot, location.sidecarPath);
+    return cloneWorksheetControlMetadataState(
+      cached?.state ?? loadWorksheetControlMetadataState(uri, location.bundleRoot, location.sidecarPath)
+    );
   }
 
   return {
@@ -622,6 +693,13 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     setWorkspaceRoots(nextWorkspaceRoots: readonly string[]): void {
       workspaceRoots = normalizeWorkspaceRoots(nextWorkspaceRoots);
       worksheetControlMetadataCache.clear();
+
+      for (const [uri, state] of documentStates) {
+        documentStates.set(uri, {
+          ...state,
+          worksheetControlMetadata: getWorksheetControlMetadataState(uri)
+        });
+      }
     }
   };
 }

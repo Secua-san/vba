@@ -170,8 +170,20 @@ test("parseWorksheetControlMetadataSidecar は invalid owner/control を issue �
 
   assert.equal(result.sidecar?.owners.length, 1);
   assert.equal(getSupportedWorksheetControlMetadataOwners(result.sidecar ?? assert.fail("sidecar must be parsed"))[0]?.controls.length, 1);
-  assert.equal(result.issues.some((issue: { path: string }) => issue.path === "$.owners[0].controls[0].codeName"), true);
-  assert.equal(result.issues.some((issue: { path: string }) => issue.path === "$.owners[1].sheetCodeName"), true);
+  assert.equal(
+    result.issues.some(
+      (issue: { code: string; path: string }) =>
+        issue.path === "$.owners[0].controls[0].codeName" && issue.code === "missing-required-field"
+    ),
+    true
+  );
+  assert.equal(
+    result.issues.some(
+      (issue: { code: string; path: string }) =>
+        issue.path === "$.owners[1].sheetCodeName" && issue.code === "missing-required-field"
+    ),
+    true
+  );
 });
 
 test("parseWorksheetControlMetadataSidecar は top-level 不正を reject する", () => {

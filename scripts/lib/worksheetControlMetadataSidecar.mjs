@@ -3,6 +3,7 @@ import path from "node:path";
 export const worksheetControlMetadataSidecarArtifact = "worksheet-control-metadata-sidecar";
 export const worksheetControlMetadataSidecarFileName = "worksheet-control-metadata.json";
 export const worksheetControlMetadataSidecarDirectoryName = ".vba";
+export const worksheetControlMetadataProbeVersion = 1;
 export const worksheetControlMetadataSidecarVersion = 1;
 
 const controlTypeByProgId = new Map([
@@ -32,6 +33,10 @@ export function buildWorksheetControlMetadataSidecarPath(bundleRoot) {
 }
 
 export function convertWorksheetControlMetadataProbeToSidecar(probeMetadata) {
+  if (probeMetadata?.version !== worksheetControlMetadataProbeVersion) {
+    throw new Error(`probe.version は ${worksheetControlMetadataProbeVersion} である必要があります`);
+  }
+
   const workbookName = requireNonEmptyString(probeMetadata?.workbook, "probe.workbook");
   const worksheets = requireArray(probeMetadata?.worksheets, "probe.worksheets");
 

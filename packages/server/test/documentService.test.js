@@ -2848,6 +2848,43 @@ Option Explicit`
   }
 });
 
+test("document service は workspaceRoots 未指定時に worksheet control metadata sidecar を読まない", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+  const logs = [];
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(workspaceRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry)
+    });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.worksheetControlMetadata, undefined);
+    assert.equal(logs.some((entry) => entry.code === "worksheet-control-metadata.loaded"), false);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("document service reloads worksheet control metadata sidecar when file stats change", () => {
   const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
   const workspaceRoot = path.join(temporaryDirectory, "workspace");
@@ -2939,11 +2976,20 @@ Option Explicit`
       `Attribute VB_Name = "Module1"
 Option Explicit`
     );
+    const thirdState = service.analyzeText(
+      uri,
+      "vba",
+      3,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
 
     assert.equal(firstState.worksheetControlMetadata?.workbookName, "before.xlsm");
     assert.equal(firstState.worksheetControlMetadata?.supportedOwners[0]?.controls.length, 1);
     assert.equal(secondState.worksheetControlMetadata?.workbookName, "after-longer.xlsm");
     assert.equal(secondState.worksheetControlMetadata?.supportedOwners[0]?.controls.length, 2);
+    assert.equal(thirdState.worksheetControlMetadata?.workbookName, "after-longer.xlsm");
+    assert.equal(thirdState.worksheetControlMetadata?.supportedOwners[0]?.controls.length, 2);
     assert.equal(logs.filter((entry) => entry.code === "worksheet-control-metadata.loaded").length, 2);
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
@@ -3020,6 +3066,43 @@ Option Explicit`
     assert.equal(state.worksheetControlMetadata?.supportedOwners.length, 0);
     assert.equal(logs.some((entry) => entry.code === "worksheet-control-metadata.invalid-version"), true);
     assert.equal(logs.some((entry) => entry.code === "worksheet-control-metadata.invalid-artifact"), true);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service は workspace root 変更時に worksheet control metadata sidecar state を再解決する", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(workspaceRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.worksheetControlMetadata?.workbookName, "book1.xlsm");
+
+    service.setWorkspaceRoots([]);
+
+    assert.equal(service.getState(uri)?.worksheetControlMetadata, undefined);
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }
