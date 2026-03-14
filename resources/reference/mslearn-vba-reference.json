@@ -13826,7 +13826,8 @@
                 {
                   "name": "Item",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.oleobjects.item",
-                  "tocHref": "excel.oleobjects.item"
+                  "tocHref": "excel.oleobjects.item",
+                  "typeName": "OLEObjects"
                 },
                 {
                   "name": "Select",

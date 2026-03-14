@@ -315,10 +315,18 @@ Public Sub Demo()
     Debug.Print Sheet1.OLEObjects("CheckBox1").
     Debug.Print Sheet1.OLEObjects(i + 1).
     Debug.Print Sheet1.OLEObjects(GetIndex()).
+    Debug.Print Sheet1.OLEObjects.Item(1).
+    Debug.Print Sheet1.OLEObjects.Item("CheckBox1").
+    Debug.Print Sheet1.OLEObjects.Item(i + 1).
+    Debug.Print Sheet1.OLEObjects.Item(GetIndex()).
     Debug.Print Chart1.OLEObjects(1).
+    Debug.Print Chart1.OLEObjects.Item(1).
     Call Sheet1.OLEObjects(1).Activate(
     Call Sheet1.OLEObjects(GetIndex()).Activate(
+    Call Sheet1.OLEObjects.Item(1).Activate(
+    Call Sheet1.OLEObjects.Item(GetIndex()).Activate(
     Debug.Print Sheet1.OLEObjects(1).Name
+    Debug.Print Sheet1.OLEObjects.Item(1).Name
     Debug.Print Sheet1.OLEObjects(1).Object.
 End Sub
 
@@ -360,13 +368,42 @@ Option Explicit`
     uri,
     findPositionAfterTokenInText(text, "Sheet1.OLEObjects(GetIndex()).")
   );
+  const itemIndexedOleObjectMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects.Item(1).")
+  );
+  const itemNamedOleObjectMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, 'Sheet1.OLEObjects.Item("CheckBox1").')
+  );
+  const itemExpressionOleObjectMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects.Item(i + 1).")
+  );
+  const itemFunctionOleObjectsMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects.Item(GetIndex()).")
+  );
   const chartOleObjectMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1.OLEObjects(1)."));
+  const chartItemOleObjectMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Chart1.OLEObjects.Item(1).")
+  );
   const activateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1).Activate("));
   const functionActivateSignature = service.getSignatureHelp(
     uri,
     findPositionAfterTokenInText(text, "Sheet1.OLEObjects(GetIndex()).Activate(")
   );
+  const itemActivateSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects.Item(1).Activate(")
+  );
+  const itemFunctionActivateSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "Sheet1.OLEObjects.Item(GetIndex()).Activate(")
+  );
   const nameHover = service.getHover(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1).Nam"));
+  const itemNameHover = service.getHover(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects.Item(1).Nam"));
   const objectMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.OLEObjects(1).Object."));
 
   const sheetOleObjectsCount = sheetOleObjectsMembers.find((resolution) => resolution.symbol.name === "Count");
@@ -375,7 +412,12 @@ Option Explicit`
   const namedOleObjectVisible = namedOleObjectMembers.find((resolution) => resolution.symbol.name === "Visible");
   const expressionOleObjectName = expressionOleObjectMembers.find((resolution) => resolution.symbol.name === "Name");
   const functionOleObjectsCount = functionOleObjectsMembers.find((resolution) => resolution.symbol.name === "Count");
+  const itemIndexedOleObjectActivate = itemIndexedOleObjectMembers.find((resolution) => resolution.symbol.name === "Activate");
+  const itemNamedOleObjectVisible = itemNamedOleObjectMembers.find((resolution) => resolution.symbol.name === "Visible");
+  const itemExpressionOleObjectName = itemExpressionOleObjectMembers.find((resolution) => resolution.symbol.name === "Name");
+  const itemFunctionOleObjectsCount = itemFunctionOleObjectsMembers.find((resolution) => resolution.symbol.name === "Count");
   const chartOleObjectName = chartOleObjectMembers.find((resolution) => resolution.symbol.name === "Name");
+  const chartItemOleObjectName = chartItemOleObjectMembers.find((resolution) => resolution.symbol.name === "Name");
 
   assert.equal(sheetOleObjectsCount?.moduleName, "Excel OLEObjects property");
   assert.equal(indexedOleObjectActivate?.moduleName, "Excel OLEObject method");
@@ -384,11 +426,21 @@ Option Explicit`
   assert.equal(expressionOleObjectName?.moduleName, "Excel OLEObject property");
   assert.equal(functionOleObjectsCount?.moduleName, "Excel OLEObjects property");
   assert.equal(functionOleObjectsMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+  assert.equal(itemIndexedOleObjectActivate?.moduleName, "Excel OLEObject method");
+  assert.equal(itemNamedOleObjectVisible?.moduleName, "Excel OLEObject property");
+  assert.equal(itemExpressionOleObjectName?.moduleName, "Excel OLEObject property");
+  assert.equal(itemFunctionOleObjectsCount?.moduleName, "Excel OLEObjects property");
+  assert.equal(itemFunctionOleObjectsMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
   assert.equal(chartOleObjectName?.moduleName, "Excel OLEObject property");
+  assert.equal(chartItemOleObjectName?.moduleName, "Excel OLEObject property");
   assert.equal(activateSignature?.label.includes("Activate()"), true);
   assert.equal(functionActivateSignature, undefined);
+  assert.equal(itemActivateSignature?.label.includes("Activate()"), true);
+  assert.equal(itemFunctionActivateSignature, undefined);
   assert.equal(nameHover?.contents.includes("OLEObject.Name"), true);
   assert.equal(nameHover?.contents.includes("excel.oleobject.name"), true);
+  assert.equal(itemNameHover?.contents.includes("OLEObject.Name"), true);
+  assert.equal(itemNameHover?.contents.includes("excel.oleobject.name"), true);
   assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
 });
 
@@ -1099,6 +1151,21 @@ test("Worksheet and Chart OLEObjects owner mapping stays aligned with indexed ac
       resolveBuiltinMemberOwnerFromRootType(ownerName, [markIndexedAccessPathSegment("OLEObjects", "literal")]),
       "OLEObject",
       `${ownerName}.OLEObjects(<literal>) は OLEObject owner を返す必要があります`
+    );
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType(ownerName, ["OLEObjects", "Item"]),
+      "OLEObjects",
+      `${ownerName}.OLEObjects.Item は collection owner を返す必要があります`
+    );
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType(ownerName, ["OLEObjects", markIndexedAccessPathSegment("Item", "single")]),
+      "OLEObject",
+      `${ownerName}.OLEObjects.Item(<expr>) は OLEObject owner を返す必要があります`
+    );
+    assert.equal(
+      resolveBuiltinMemberOwnerFromRootType(ownerName, ["OLEObjects", markIndexedAccessPathSegment("Item", "literal")]),
+      "OLEObject",
+      `${ownerName}.OLEObjects.Item(<literal>) は OLEObject owner を返す必要があります`
     );
   }
 });

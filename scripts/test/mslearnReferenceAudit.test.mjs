@@ -10,6 +10,7 @@ import {
   dialogFramePropertyMemberNames,
   dialogSheetCommonCallableMemberNames,
   dialogSheetPropertyMemberNames,
+  supplementalOwnerMemberOverrides,
 } from "../lib/supplementalReferenceConfig.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -316,6 +317,18 @@ test("DialogSheets clone は Item を DialogSheet として型付けする", asy
 
   assert.ok(itemMember, "DialogSheets.Item member が必要です");
   assert.equal(itemMember.typeName, "DialogSheet");
+});
+
+test("OLEObjects member override は Item を OLEObjects として型付けする", async () => {
+  const data = await loadReferenceData();
+  const itemMember = getMember(data, "OLEObjects", "Item");
+  const itemOverride = supplementalOwnerMemberOverrides
+    .flatMap((ownerConfig) => ownerConfig.members.map((member) => ({ member, ownerName: ownerConfig.ownerName })))
+    .find((entry) => entry.ownerName === "OLEObjects" && entry.member.name === "Item");
+
+  assert.ok(itemMember, "OLEObjects.Item member が必要です");
+  assert.ok(itemOverride, "OLEObjects.Item override 設定が必要です");
+  assert.equal(itemMember.typeName, "OLEObjects");
 });
 
 test("DialogSheet 補助 root は Application / Workbook.DialogSheets を DialogSheets として型付けする", async () => {

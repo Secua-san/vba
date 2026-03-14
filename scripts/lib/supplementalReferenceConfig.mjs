@@ -168,3 +168,18 @@ export const supplementalOwnerMembers = [
     sectionName: "Properties",
   },
 ];
+
+export const supplementalOwnerMemberOverrides = [
+  {
+    members: [
+      {
+        name: "Item",
+        // OLEObjects.Item(1) / Item(i + 1) を collection marker 解決へ流すため、
+        // raw doc の `Object` ではなく collection owner 名を正本にする。
+        typeName: "OLEObjects",
+      },
+    ],
+    ownerName: "OLEObjects",
+    sectionName: "Methods",
+  },
+];
