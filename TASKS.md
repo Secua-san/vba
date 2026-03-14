@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] Worksheet / Chart control identity source の整理
+  - `OLEObject.Object` 後段型付けと `Sheet1.CommandButton1` 支援は、どちらも `shape name` / `code name` / `ProgID` を結び付けた control inventory を必要とすることを整理
+  - Office VBA の `Using ActiveX Controls on Sheets`、`OLEObjects object`、`OLEObject.progID` を確認し、collection access は shape name、event / direct access は code name、control type 判定には `ProgID` が使えることを明文化
+  - 現行リポジトリの静的入力 `.bas` / `.cls` / `.frm` / `.frx` だけでは worksheet / chart sheet 上の control inventory を復元できないため、`.Object` と control code name は当面未解決のまま維持する方針を [docs/process/worksheet-chart-control-identity-feasibility.md](docs/process/worksheet-chart-control-identity-feasibility.md) に記録
+
 - [x] Worksheet / Chart OLEObjects.Item の型解決
   - `scripts/lib/supplementalReferenceConfig.mjs` と `scripts/generate-mslearn-vba-reference.mjs` に既存 owner member override を追加し、`OLEObjects.Item` を raw doc の `Object` ではなく `typeName: "OLEObjects"` として正規化した
   - `resources/reference/mslearn-vba-reference.json` を再生成し、`Sheet1.OLEObjects.Item(1)` / `Item("CheckBox1")` / `Item(i + 1)` / `Chart1.OLEObjects.Item(1)` から `OLEObject` member へ到達できるようにした
@@ -343,10 +348,10 @@
 
 ## 次候補
 
-- [ ] Worksheet / Chart OLEObjects root の最小プロトタイプ
-  - `Worksheet.OLEObjects` / `Chart.OLEObjects` は index 省略時に `OLEObjects` collection surface を維持し、`OLEObjects(Index)` と `OLEObjects.Item(Index)` だけを `OLEObject` へ落とす owner 正規化を追加する
-  - 初回は `OLEObject` page の member だけを user-facing に公開し、`.Object` の先、`Sheet1.CommandButton1`、`Shapes` root は未対応のまま維持する
-  - server / extension の回帰では collection surface、indexed access、`.Item(Index)`、chart sheet root、`.Object` 非解決の保守動作を固定する
+- [ ] Worksheet / Chart control metadata source の PoC
+  - worksheet / chart sheet 上の ActiveX control について、`sheet module`、`shape name`、`code name`、`ProgID` を取得できる入力源を比較する
+  - 候補は workbook package、抽出ツールの補助 artifact、将来の manifest とし、静的入力だけで再現できる最小経路を決める
+  - 成立しない間は `OLEObject.Object` の先と `Sheet1.CommandButton1` は未解決のまま維持する
 
 ## メモ
 
