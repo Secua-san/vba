@@ -245,10 +245,11 @@
 - `packages/server` には read-only cache と log を実装済みで、sidecar は `DocumentState` へ保持される。
 - sidecar generator は未知 `controlType` を黙って落とさず fail-fast とし、対応していない workbook 方言差は生成時点で止める。
 - `Sheet1.OLEObjects("ShapeName").Object` と `Sheet1.OLEObjects.Item("ShapeName").Object` の string literal selector にだけ接続済みで、`shapeName -> controlType` を使って `CheckBox` などの control owner へ進める。
-- 数値 selector、dynamic selector、`ActiveSheet` root、`status: "unsupported"` な chartsheet owner は従来どおり未解決のまま維持する。
+- `Sheet1.chkFinished.Value` のような worksheet document module root の direct access も接続済みで、`sheetCodeName + codeName -> controlType` を使って `CheckBox` などの control owner へ進める。
+- 数値 selector、dynamic selector、`ActiveSheet` root、supported/unsupported を問わない chartsheet owner は従来どおり未解決のまま維持する。
 
 ## 次段の実装候補
 
-1. `Sheet1.ControlCodeName` の direct access にだけ sidecar を接続し、`sheetCodeName + codeName -> controlType` で control owner を決める。
-2. workbook / standard module からの非 document-module access、unsupported owner、sidecar 未検出時の保守動作を固定する。
-3. `shape name != code name` のずれを含む fixture と回帰テストを追加し、`OLEObject.Object` 既存導線と衝突しないことを確認する。
+1. `Worksheet.Shapes("ShapeName")` / `Chart.Shapes("ShapeName")` と `Shape.OLEFormat.Object` のどこまでを sidecar と組み合わせて公開するかを整理する。
+2. drawing object 全体を含む `Shapes` root を control 専用 owner へ誤昇格させない境界条件を、`msoOLEControlObject` 判定や `OLEFormat` 成功条件と合わせて固定する。
+3. workbook / standard module からの非 document-module access を広げる必要がある場合は、`sheetCodeName` 以外の root identity をどこまで許可するかを別タスクとして切り出す。

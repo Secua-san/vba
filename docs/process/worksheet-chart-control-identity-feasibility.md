@@ -6,12 +6,13 @@
 - その前提は「sheet module」「shape name」「code name」「control type / ProgID」を結び付けた control inventory である。
 - Microsoft Learn は、collection access では shape name を使い、event procedure では code name を使うこと、さらに `OLEObject.progID` で control type を取得できることを示している。
 - 一方で、現行リポジトリの静的入力である `.bas` / `.cls` / `.frm` / `.frx` だけでは、worksheet / chart sheet 上の ActiveX control inventory を安定して復元できない。
-- そのため現段階では、`OLEObject.Object` の先と `Sheet1.CommandButton1` は未解決のまま維持し、次段では metadata source の PoC を先に行う。
+- そのため現段階でも、静的入力だけで `OLEObject.Object` や `Sheet1.CommandButton1` を解決することはできないが、sidecar v1 がある worksheet document module root に限っては `shapeName -> controlType` と `codeName -> controlType` の例外接続が成立する。
 
 ## 実装更新
 
 - 2026-03-14 時点で、sidecar v1 を使った `Sheet1.OLEObjects("ShapeName").Object` と `.Item("ShapeName").Object` の string literal selector だけは user-facing に接続済みである。
-- ただしこれは `shapeName -> controlType` が sidecar で確定する worksheet document module root に限った例外であり、`Chart1`、`ActiveSheet`、dynamic selector、`Sheet1.ControlCodeName` は引き続き未解決のまま維持する。
+- 2026-03-15 時点で、same sidecar v1 を使った `Sheet1.chkFinished.Value` のような worksheet document module root の direct access も user-facing に接続済みである。
+- ただしこれらはいずれも worksheet document module root に限った例外であり、`Chart1`、`ActiveSheet`、dynamic selector、`Worksheets(1).chkFinished`、sidecar 未検出時の direct access は引き続き未解決のまま維持する。
 
 ## 確認した公式ソース
 
@@ -60,11 +61,11 @@
 
 ## 推奨方針
 
-### フェーズ 1: 現状維持
+### フェーズ 1: sidecar あり worksheet root の限定公開
 
-- `OLEObjects(Index)` / `OLEObjects.Item(Index)` は `OLEObject` までで止める。
-- `OLEObject.Object` の先は未解決のまま維持する。
-- `Sheet1.CommandButton1` や `Chart1.CheckBox1` のような control code name 導線は公開しない。
+- `OLEObjects(Index)` / `OLEObjects.Item(Index)` は、既定では `OLEObject` までで止める。
+- `Sheet1.OLEObjects("ShapeName").Object` / `.Item("ShapeName").Object` の string literal selector と、`Sheet1.ControlCodeName` の direct access は、sidecar v1 がある worksheet document module root に限って公開する。
+- 数値 selector、dynamic selector、`ActiveSheet`、chart sheet root、sidecar 未検出の direct access は未解決のまま維持する。
 
 ### フェーズ 2: metadata source の PoC
 
@@ -74,8 +75,8 @@
   - code name
   - ProgID または control type
 - 候補は workbook package、抽出ツールの補助 artifact、将来の manifest 生成などとする。
-- この PoC が成立しない限り、`.Object` と control code name は未解決のまま据え置く。
-- PoC が成立した場合は、このメモの「静的入力だけでは復元不可」という前提と `TASKS.md` の未解決維持条件を更新する。
+- この PoC が成立しない限り、worksheet document module root 以外の `.Object` と control code name は未解決のまま据え置く。
+- PoC が成立した場合は、このメモの「静的入力だけでは復元不可」という前提を、`sidecar を含む静的入力ならどこまで公開できるか` へ更新する。
 
 ### フェーズ 3: user-facing 解決の追加
 
