@@ -182,4 +182,16 @@ export const supplementalOwnerMemberOverrides = [
     ownerName: "OLEObjects",
     sectionName: "Methods",
   },
+  {
+    members: [
+      {
+        name: "Item",
+        // Shapes.Item(1) / Item(i + 1) も indexed access の種類に応じて
+        // Shape owner へ降ろしたいため、raw doc の型欠落は collection owner 名で補う。
+        typeName: "Shapes",
+      },
+    ],
+    ownerName: "Shapes",
+    sectionName: "Methods",
+  },
 ];

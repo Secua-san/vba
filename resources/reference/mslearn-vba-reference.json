@@ -21539,7 +21539,8 @@
                 {
                   "name": "Item",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.shapes.item",
-                  "tocHref": "excel.shapes.item"
+                  "tocHref": "excel.shapes.item",
+                  "typeName": "Shapes"
                 },
                 {
                   "name": "SelectAll",

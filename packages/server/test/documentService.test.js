@@ -446,6 +446,153 @@ Option Explicit`
   assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
 });
 
+test("document service exposes Shape members through Worksheet and Chart Shapes roots while keeping OLEFormat.Object conservative", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-shapes-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const sheet1Uri = pathToFileURL(path.join(bundleRoot, "Sheet1.cls")).href;
+  const chart1Uri = pathToFileURL(path.join(bundleRoot, "Chart1.cls")).href;
+  const uri = pathToFileURL(path.join(moduleDirectory, "ShapesBuiltIn.bas")).href;
+  const text = `Attribute VB_Name = "ShapesBuiltIn"
+Option Explicit
+
+Public Sub Demo()
+    Dim i As Long
+
+    Debug.Print Sheet1.Shapes.
+    Debug.Print Sheet1.Shapes(1).
+    Debug.Print Sheet1.Shapes("CheckBox1").
+    Debug.Print Sheet1.Shapes(i + 1).
+    Debug.Print Sheet1.Shapes.Item(1).
+    Debug.Print Sheet1.Shapes.Item("CheckBox1").
+    Debug.Print Sheet1.Shapes.Item(i + 1).
+    Debug.Print Chart1.Shapes(1).
+    Debug.Print Chart1.Shapes.Item(1).
+    Debug.Print Sheet1.Shapes("CheckBox1").Name
+    Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.
+    Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.
+    Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet1",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(
+      sheet1Uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Sheet1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(
+      chart1Uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Chart1"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(uri, "vba", 1, text);
+
+    const shapesCollectionMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.Shapes."));
+    const indexedShapeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.Shapes(1)."));
+    const namedShapeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").'));
+    const dynamicShapeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.Shapes(i + 1)."));
+    const itemIndexedShapeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.Shapes.Item(1)."));
+    const itemNamedShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("CheckBox1").')
+    );
+    const itemDynamicShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, "Sheet1.Shapes.Item(i + 1).")
+    );
+    const chartShapeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1.Shapes(1)."));
+    const chartItemShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, "Chart1.Shapes.Item(1).")
+    );
+    const oleFormatMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").OLEFormat.')
+    );
+    const itemOleFormatMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("CheckBox1").OLEFormat.')
+    );
+    const objectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const itemObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.')
+    );
+    const nameHover = service.getHover(uri, findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").Nam'));
+    const tokens = service.getSemanticTokens(uri);
+
+    const indexedShapeName = indexedShapeMembers.find((resolution) => resolution.symbol.name === "Name");
+    const itemIndexedShapeName = itemIndexedShapeMembers.find((resolution) => resolution.symbol.name === "Name");
+    const chartShapeName = chartShapeMembers.find((resolution) => resolution.symbol.name === "Name");
+    const chartItemShapeName = chartItemShapeMembers.find((resolution) => resolution.symbol.name === "Name");
+    const oleFormatProgId = oleFormatMembers.find((resolution) => resolution.symbol.name === "progID");
+    const itemOleFormatProgId = itemOleFormatMembers.find((resolution) => resolution.symbol.name === "progID");
+
+    assert.equal(shapesCollectionMembers.some((resolution) => resolution.symbol.name === "Count"), true);
+    assert.equal(shapesCollectionMembers.some((resolution) => resolution.symbol.name === "Name"), false);
+    assert.equal(indexedShapeName?.moduleName, "Excel Shape property");
+    assert.equal(namedShapeMembers.some((resolution) => resolution.symbol.name === "Name"), true);
+    assert.equal(dynamicShapeMembers.some((resolution) => resolution.symbol.name === "Name"), true);
+    assert.equal(itemIndexedShapeName?.moduleName, "Excel Shape property");
+    assert.equal(itemNamedShapeMembers.some((resolution) => resolution.symbol.name === "Name"), true);
+    assert.equal(itemDynamicShapeMembers.some((resolution) => resolution.symbol.name === "Name"), true);
+    assert.equal(chartShapeName?.moduleName, "Excel Shape property");
+    assert.equal(chartItemShapeName?.moduleName, "Excel Shape property");
+    assert.equal(oleFormatProgId?.moduleName, "Excel OLEFormat property");
+    assert.equal(itemOleFormatProgId?.moduleName, "Excel OLEFormat property");
+    assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(itemObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(nameHover?.contents.includes("Shape.Name"), true);
+    assert.equal(nameHover?.contents.includes("excel.shape.name"), true);
+    assertSemanticToken(text, tokens, 15, "Name", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 16, "OLEFormat", { modifiers: [], type: "variable" });
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("document service resolves OLEObject.Object through worksheet control metadata sidecar only for named worksheet selectors", () => {
   const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
   const workspaceRoot = path.join(temporaryDirectory, "workspace");
