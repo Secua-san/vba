@@ -1765,7 +1765,7 @@ function resolveWorksheetControlOwnerFromCodeName(
   }
 
   const control = supportedOwner.controls.find(
-    (candidate) => normalizeIdentifier(candidate.codeName) === normalizeIdentifier(controlSegment.text)
+    (candidate) => normalizeIdentifier(candidate.codeName) === normalizeIdentifier(controlSegmentName)
   );
 
   if (!control) {
