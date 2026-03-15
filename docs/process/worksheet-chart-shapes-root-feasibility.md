@@ -3,9 +3,9 @@
 ## 結論
 
 - `Worksheet.Shapes(Index)` / `Chart.Shapes(Index)` と `Shapes.Item(Index)` は、collection 全体ではなく単一 `Shape` owner へ正規化して user-facing に出す。
-- ただし `Shapes` root は control 専用 root にはしない。`Shape.OLEFormat` までは generic な `Shape` / `OLEFormat` surface として扱い、`Shape.OLEFormat.Object` の先を `CheckBox` や `CommandButton` へ昇格させない。
+- ただし `Shapes` root は control 専用 root にはしない。`Shape.OLEFormat` までは generic な `Shape` / `OLEFormat` surface として扱い、`Shape.OLEFormat.Object` の先は `Sheet1.Shapes("shapeName")` / `Sheet1.Shapes.Item("shapeName")` の string literal selector にだけ限定して昇格する。
 - `Shapes("CheckBox1")` の selector は shape name 前提で扱い、control code name とは結び付けない。`Sheet1.chkFinished` は別導線として維持する。
-- `Shape.Type = msoOLEControlObject` のような実行時判定と sidecar の `shapeName -> controlType` を組み合わせる設計余地はあるが、現段階では解析時に安全に確定できないため後続へ送る。
+- `Shape.Type = msoOLEControlObject` のような実行時判定と sidecar の `shapeName -> controlType` を組み合わせる設計余地はあるが、現段階では worksheet document module alias + shape name literal の最小条件だけを実装し、それ以外は後続へ送る。
 
 ## 確認した公式ソース
 
@@ -42,11 +42,11 @@
 - 同じ shape name selector でも、control である保証は `Shape.Type` の実行時値や workbook metadata が無いと確定できない。
 - したがって `Shapes("CheckBox1")` だからといって、直ちに `CheckBox` や `CommandButton` owner へ落とすのは誤補完リスクが高い。
 
-### 3. `Shape.OLEFormat` は generic OLE surface に留めるのが安全
+### 3. `Shape.OLEFormat` は限定例外つきの generic OLE surface として扱う
 
 - Office VBA は `Shape.OLEFormat` を提供しているが、shape が OLE object でなければ失敗する。
 - `OLEFormat.Object` の返り値は generic `Object` であり、control だけでなく embedded / linked document の top-level interface もあり得る。
-- そのため現段階では、`Shapes("CheckBox1").OLEFormat.ProgID` のような generic `OLEFormat` member は出してよいが、`.Object` の先を sidecar だけで control owner へ進めない方が安全である。
+- そのため現段階では、`Shapes("CheckBox1").OLEFormat.ProgID` のような generic `OLEFormat` member は出してよく、`.Object` の先は `Sheet1.Shapes("shapeName")` / `.Item("shapeName")` の string literal selector にだけ sidecar で control owner へ進める。
 
 ### 4. shape name と code name は別導線として扱う
 
@@ -59,18 +59,19 @@
 - `Sheet1.Shapes.` / `Chart1.Shapes.` は `Shapes` collection のまま扱う。
 - `Sheet1.Shapes(1)` / `Sheet1.Shapes("CheckBox1")` / `Sheet1.Shapes(i + 1)` は `Shape` owner へ正規化する。
 - `Sheet1.Shapes.Item(1)` / `.Item("CheckBox1")` / `.Item(i + 1)` も同様に `Shape` owner へ正規化する。
-- `Shape.OLEFormat` は `OLEFormat` owner として補完対象に含めるが、`Shape.OLEFormat.Object` の先は generic `Object` のまま止める。
-- worksheet control metadata sidecar は `OLEObject.Object` と `Sheet1.ControlCodeName` の導線だけに使い、`Shapes` path には接続しない。
+- `Shape.OLEFormat` は `OLEFormat` owner として補完対象に含める。
+- `Shape.OLEFormat.Object` は worksheet document module alias (`Sheet1`) + shape name literal selector にだけ sidecar を適用し、`CheckBox` などの control owner へ進める。
+- worksheet control metadata sidecar は `OLEObject.Object`、`Sheet1.ControlCodeName`、限定した `Shape.OLEFormat.Object` の導線にだけ使い、numeric / dynamic / chart / `ShapeRange` path には接続しない。
 
 ## 今回の完了条件
 
 - `Shapes(Index)` / `Shapes.Item(Index)` が `Shape` owner へ進むことを server / extension test で固定する。
 - `Sheet1.Shapes("CheckBox1").OLEFormat.` までは generic `OLEFormat` member が出ることを確認する。
-- `Sheet1.Shapes("CheckBox1").OLEFormat.Object.` では `CheckBox.Value` のような control-specific member が出ないことを確認する。
-- `shape name != code name` と `msoOLEControlObject` の論点は docs に残し、後続タスクへ切り出す。
+- `Sheet1.Shapes("CheckBox1").OLEFormat.Object.` と `.Item("CheckBox1").OLEFormat.Object.` では `CheckBox.Value` / `Select` のような control-specific member が出ることを確認し、numeric / dynamic / chart / `ShapeRange` では引き続き出ないことを確認する。
+- `shape name != code name` と `msoOLEControlObject` の broader root 展開は docs に残し、後続タスクへ切り出す。
 
 ## 次段の候補
 
-- `Shape.OLEFormat.Object` の昇格条件整理は正本 [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md) へ移した。
+- `Shape.OLEFormat.Object` の broader root 展開条件は正本 [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md) へ移した。
 - `msoEmbeddedOLEObject` / `msoLinkedOLEObject` は generic OLE object のまま維持し、control-only path と分離する。
 - `Shapes.Range(Array(...))` / `ShapeRange` の surface をどこまで出すかを別タスクで整理する。

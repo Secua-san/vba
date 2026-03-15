@@ -2,9 +2,9 @@
 
 ## 結論
 
-- `Shape.OLEFormat.Object` の先を control owner へ昇格する候補は、`worksheet document module root + shape name string literal + sidecar 一致` に限定する。
+- 現行実装では、`Shape.OLEFormat.Object` の先を control owner へ昇格する条件を `worksheet document module root + shape name string literal + sidecar 一致` に限定している。
 - `Shape.Type = msoOLEControlObject` は runtime では有効な判定だが、解析時にその値は直接取れない。代わりに、worksheet control metadata sidecar の provenance を静的な根拠として使う。
-- `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object` は、将来の最小実装候補になり得る。
+- `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object` は、現行 product で user-facing に解決する。
 - ただし `Shapes(1)` / `Shapes.Item(1)`、dynamic selector、`Chart1` root、`ShapeRange` / grouped selector、code name ベース access は昇格条件から外す。
 
 ## 確認した公式ソース
@@ -33,7 +33,7 @@
 
 ## 現行実装と sidecar の前提
 
-- 現行 product は `Shapes(Index)` / `Shapes.Item(Index)` を generic `Shape` owner へ進めるが、`Shape.OLEFormat.Object` の先は generic `Object` のまま止めている。
+- 現行 product は `Shapes(Index)` / `Shapes.Item(Index)` を generic `Shape` owner へ進め、`Shape.OLEFormat.Object` は `Sheet1.Shapes("shapeName")` / `Sheet1.Shapes.Item("shapeName")` の string literal selector にだけ限定して control owner へ進める。
 - sidecar v1 には supported worksheet owner ごとに `sheetCodeName`、`shapeName`、`codeName`、`controlType`、`progId` / `classId` が入る。
 - sidecar generator は未知 `controlType` を fail-fast にしており、`controlType` が書かれた record は既知 control owner へ正規化済みである。
 - `shapeId` は Open XML drawing 側の identifier であり、`Shapes(1)` の collection index とは別物である。したがって numeric selector を sidecar に結び付ける根拠にはできない。
@@ -70,7 +70,7 @@
 - `Sheet1.chkFinished` は code name 導線であり、shape name literal を使う `Shapes("CheckBox1")` とは join key が異なる。
 - したがって `Shape.OLEFormat.Object` の昇格条件には code name を混ぜず、shape name path と control code name path を分けて扱う。
 
-## 将来の最小昇格条件
+## 実装した最小昇格条件
 
 - root が explicit な worksheet document module alias (`Sheet1`) に解決できること
 - root owner が sidecar 上で `ownerKind: "worksheet"` かつ `status: "supported"` であること
@@ -87,13 +87,13 @@
 - `ActiveSheet` / `Worksheets(1)` のように explicit document module identity が取れない root
 - `Sheet1.chkFinished` のような code name 導線との混用
 
-## 今回の完了条件
+## 2026-03-15 時点の完了状態
 
-- 昇格候補を `worksheet document module + shape name string literal + sidecar 一致` に限定する設計メモを追加する。
-- numeric / dynamic / chart root の `Shape.OLEFormat.Object` 非昇格を server / extension test で回帰固定する。
-- `ShapeRange` / grouped selector は docs 上で別 task 扱いに切り分ける。
+- `worksheet document module + shape name string literal + sidecar 一致` の path を実装し、`CheckBox.Value` / `Select` の completion / hover / signature help / semantic token を user-facing にした。
+- numeric / dynamic / chart root / `ShapeRange` の `Shape.OLEFormat.Object` 非昇格を server / extension test で回帰固定した。
+- `ShapeRange` / grouped selector は引き続き docs 上で別 task 扱いに切り分けている。
 
 ## 次段の候補
 
-- `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object` だけを sidecar 連携で control owner へ進める最小プロトタイプを実装する。
-- 実装時は numeric / dynamic / chart / `ShapeRange` の負例をそのまま維持し、`OLEObject.Object` 導線との join key 競合が無いことを server / extension test で固定する。
+- `Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` や `ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` のような explicit sheet-name root を sidecar へ結べるかを整理する。
+- 検討時は numeric / dynamic / chart / `ShapeRange` の負例をそのまま維持し、`OLEObject.Object` / `Sheet1.ControlCodeName` 導線との join key 競合が無いことを確認する。

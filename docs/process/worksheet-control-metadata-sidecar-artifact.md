@@ -246,10 +246,11 @@
 - sidecar generator は未知 `controlType` を黙って落とさず fail-fast とし、対応していない workbook 方言差は生成時点で止める。
 - `Sheet1.OLEObjects("ShapeName").Object` と `Sheet1.OLEObjects.Item("ShapeName").Object` の string literal selector にだけ接続済みで、`shapeName -> controlType` を使って `CheckBox` などの control owner へ進める。
 - `Sheet1.chkFinished.Value` のような worksheet document module root の direct access も接続済みで、`sheetCodeName + codeName -> controlType` を使って `CheckBox` などの control owner へ進める。
-- 数値 selector、dynamic selector、`ActiveSheet` root、supported/unsupported を問わない chartsheet owner は従来どおり未解決のまま維持する。
+- `Sheet1.Shapes("ShapeName").OLEFormat.Object` と `Sheet1.Shapes.Item("ShapeName").OLEFormat.Object` の string literal selector にも接続済みで、`shapeName -> controlType` を使って `CheckBox` などの control owner へ進める。
+- 数値 selector、dynamic selector、`ActiveSheet` root、supported/unsupported を問わない chartsheet owner、`ShapeRange` は従来どおり未解決のまま維持する。
 
 ## 次段の実装候補
 
-1. `Shape.OLEFormat.Object` の昇格条件整理は [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md) を正本とし、その条件に沿って最小プロトタイプを実装する。
+1. `Shape.OLEFormat.Object` の broader root 展開条件は [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md) を正本とし、`Worksheets("Sheet1")` など explicit sheet-name root を sidecar へ結べるかを整理する。
 2. drawing object 全体を含む `Shapes` root を control 専用 owner へ誤昇格させない境界条件を、`msoOLEControlObject` 判定や `OLEFormat` 成功条件と合わせて固定する。
 3. workbook / standard module からの非 document-module access を広げる必要がある場合は、`sheetCodeName` 以外の root identity をどこまで許可するかを別タスクとして切り出す。
