@@ -468,6 +468,7 @@ Public Sub Demo()
     Debug.Print Sheet1.Shapes.Item("CheckBox1").
     Debug.Print Sheet1.Shapes.Item(i + 1).
     Debug.Print Chart1.Shapes(1).
+    Debug.Print Chart1.Shapes.Item(1).
     Debug.Print Sheet1.Shapes("CheckBox1").Name
     Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.
     Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.
@@ -539,6 +540,10 @@ Option Explicit`
       findPositionAfterTokenInText(text, "Sheet1.Shapes.Item(i + 1).")
     );
     const chartShapeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1.Shapes(1)."));
+    const chartItemShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, "Chart1.Shapes.Item(1).")
+    );
     const oleFormatMembers = service.getCompletionSymbols(
       uri,
       findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").OLEFormat.')
@@ -561,6 +566,7 @@ Option Explicit`
     const indexedShapeName = indexedShapeMembers.find((resolution) => resolution.symbol.name === "Name");
     const itemIndexedShapeName = itemIndexedShapeMembers.find((resolution) => resolution.symbol.name === "Name");
     const chartShapeName = chartShapeMembers.find((resolution) => resolution.symbol.name === "Name");
+    const chartItemShapeName = chartItemShapeMembers.find((resolution) => resolution.symbol.name === "Name");
     const oleFormatProgId = oleFormatMembers.find((resolution) => resolution.symbol.name === "progID");
     const itemOleFormatProgId = itemOleFormatMembers.find((resolution) => resolution.symbol.name === "progID");
 
@@ -573,14 +579,15 @@ Option Explicit`
     assert.equal(itemNamedShapeMembers.some((resolution) => resolution.symbol.name === "Name"), true);
     assert.equal(itemDynamicShapeMembers.some((resolution) => resolution.symbol.name === "Name"), true);
     assert.equal(chartShapeName?.moduleName, "Excel Shape property");
+    assert.equal(chartItemShapeName?.moduleName, "Excel Shape property");
     assert.equal(oleFormatProgId?.moduleName, "Excel OLEFormat property");
     assert.equal(itemOleFormatProgId?.moduleName, "Excel OLEFormat property");
     assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(itemObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(nameHover?.contents.includes("Shape.Name"), true);
     assert.equal(nameHover?.contents.includes("excel.shape.name"), true);
-    assertSemanticToken(text, tokens, 14, "Name", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 15, "OLEFormat", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 15, "Name", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 16, "OLEFormat", { modifiers: [], type: "variable" });
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }
