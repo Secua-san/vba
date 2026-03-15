@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "artifact": "worksheet-control-metadata-sidecar",
+  "workbook": {
+    "name": "fixtures.xlsm",
+    "sourceKind": "openxml-package"
+  },
+  "owners": [
+    {
+      "ownerKind": "worksheet",
+      "sheetName": "Sheet1",
+      "sheetCodeName": "Sheet1",
+      "status": "supported",
+      "controls": [
+        {
+          "shapeName": "CheckBox1",
+          "codeName": "chkFinished",
+          "shapeId": 3,
+          "controlType": "CheckBox",
+          "progId": "Forms.CheckBox.1"
+        }
+      ]
+    },
+    {
+      "ownerKind": "chartsheet",
+      "sheetName": "Chart1",
+      "sheetCodeName": "Chart1",
+      "status": "unsupported",
+      "reason": "chart-sheet-metadata-unproven"
+    }
+  ]
+}

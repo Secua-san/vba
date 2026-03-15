@@ -19,9 +19,18 @@ Public Sub Demo()
     Call Sheet1.OLEObjects(GetIndex()).Activate(
     Call Sheet1.OLEObjects.Item(1).Activate(
     Call Sheet1.OLEObjects.Item(GetIndex()).Activate(
+    Call Sheet1.OLEObjects("CheckBox1").Object.Select(
+    Call Sheet1.OLEObjects.Item("CheckBox1").Object.Select(
+    Call Chart1.OLEObjects("CheckBox1").Object.Select(
     Debug.Print Sheet1.OLEObjects(1).Name
     Debug.Print Sheet1.OLEObjects.Item(1).Name
     Debug.Print Sheet1.OLEObjects(1).Object.
+    Debug.Print Sheet1.OLEObjects("CheckBox1").Object.
+    Debug.Print Sheet1.OLEObjects.Item("CheckBox1").Object.
+    Debug.Print Chart1.OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveSheet.OLEObjects("CheckBox1").Object.
+    Debug.Print Sheet1.OLEObjects("CheckBox1").Object.Value
+    Debug.Print Sheet1.OLEObjects.Item("CheckBox1").Object.Value
 End Sub
 
 Private Function GetIndex() As Long

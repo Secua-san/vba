@@ -244,11 +244,11 @@
 - workspace root が確定していない single-file context では sidecar lookup 自体を行わず、誤結合を避ける。
 - `packages/server` には read-only cache と log を実装済みで、sidecar は `DocumentState` へ保持される。
 - sidecar generator は未知 `controlType` を黙って落とさず fail-fast とし、対応していない workbook 方言差は生成時点で止める。
-- まだ user-facing の owner 解決には接続しておらず、補完・hover・signature help の挙動は現状維持である。
+- `Sheet1.OLEObjects("ShapeName").Object` と `Sheet1.OLEObjects.Item("ShapeName").Object` の string literal selector にだけ接続済みで、`shapeName -> controlType` を使って `CheckBox` などの control owner へ進める。
+- 数値 selector、dynamic selector、`ActiveSheet` root、`status: "unsupported"` な chartsheet owner は従来どおり未解決のまま維持する。
 
 ## 次段の実装候補
 
-1. `Worksheet.OLEObjects("ShapeName").Object` と `.Item("ShapeName").Object` の literal selector にだけ sidecar を接続する。
-2. `shapeName -> controlType` で `.Object` 後段 owner を決め、dynamic selector や unsupported owner は従来どおり `Object` を維持する。
-3. `Sheet1` document module alias や `ActiveSheet` root と sidecar owner 解決の衝突有無を整理する。
-4. `Sheet1.CommandButton1` の direct access 支援を、`OLEObject.Object` 接続完了後の別段階として切り出す。
+1. `Sheet1.ControlCodeName` の direct access にだけ sidecar を接続し、`sheetCodeName + codeName -> controlType` で control owner を決める。
+2. workbook / standard module からの非 document-module access、unsupported owner、sidecar 未検出時の保守動作を固定する。
+3. `shape name != code name` のずれを含む fixture と回帰テストを追加し、`OLEObject.Object` 既存導線と衝突しないことを確認する。
