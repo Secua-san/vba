@@ -564,7 +564,8 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
           position.line,
           completionContext,
           resolveDefinition,
-          getDocumentState
+          getDocumentState,
+          getWorksheetControlMetadataState
         );
 
         return memberOwnerName
@@ -604,7 +605,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         return undefined;
       }
 
-      return getBuiltinMemberHover(state, uri, position, resolveDefinition, getDocumentState);
+      return getBuiltinMemberHover(state, uri, position, resolveDefinition, getDocumentState, getWorksheetControlMetadataState);
     },
     getRenameEdits(uri: string, position: LinePosition, newName: string): RenameTextEdit[] | undefined {
       const renameTarget = resolveLocalRenameTarget(uri, position);
@@ -630,7 +631,9 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     },
     getSemanticTokens(uri: string): SemanticTokenEntry[] {
       const state = documentStates.get(uri);
-      return state ? collectSemanticTokensForState(state, resolveDefinition, documentStates) : [];
+      return state
+        ? collectSemanticTokensForState(state, resolveDefinition, documentStates, getWorksheetControlMetadataState)
+        : [];
     },
     prepareRename(uri: string, position: LinePosition): RenameTarget | undefined {
       const renameTarget = resolveLocalRenameTarget(uri, position);
@@ -655,7 +658,14 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         return undefined;
       }
 
-      const builtinMember = resolveBuiltinCallableMember(uri, position.line, callContext, resolveDefinition, getDocumentState);
+      const builtinMember = resolveBuiltinCallableMember(
+        uri,
+        position.line,
+        callContext,
+        resolveDefinition,
+        getDocumentState,
+        getWorksheetControlMetadataState
+      );
 
       if (builtinMember) {
         return createBuiltinSignatureHint(state.analysis, uri, position.line, callContext, builtinMember, resolveDefinition);
@@ -741,8 +751,9 @@ interface CompletionContext {
 
 interface DocumentModuleBuiltinContext {
   ownerName: "Chart" | "Workbook" | "Worksheet";
-  rootState: DocumentState;
-  worksheetControlOwnerKind?: "chartsheet" | "worksheet";
+  rootModuleName: string;
+  rootUri: string;
+  worksheetControlOwnerKind?: "worksheet";
 }
 
 const OPTION_EXPLICIT_TITLE = "Option Explicit を追加";
@@ -900,7 +911,8 @@ function isFullLineComment(trimmedLine: string): boolean {
 function collectSemanticTokensForState(
   state: DocumentState,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
-  documentStates: ReadonlyMap<string, DocumentState>
+  documentStates: ReadonlyMap<string, DocumentState>,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): SemanticTokenEntry[] {
   const tokens = new Map<string, SemanticTokenEntry>();
   const getDocumentState = (uri: string): DocumentState | undefined => documentStates.get(uri);
@@ -958,7 +970,8 @@ function collectSemanticTokensForState(
           startCharacter,
           identifier,
           resolveDefinition,
-          getDocumentState
+          getDocumentState,
+          getWorksheetControlMetadataState
         );
 
         if (memberTokenShape) {
@@ -1277,7 +1290,8 @@ function resolveConfirmedBuiltinMemberOwner(
   line: number,
   completionContext: CompletionContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
-  getDocumentState: (uri: string) => DocumentState | undefined
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): string | undefined {
   if (
     !completionContext.isMemberAccess ||
@@ -1294,7 +1308,8 @@ function resolveConfirmedBuiltinMemberOwner(
     completionContext.memberPathSegments,
     completionContext.memberPathStartCharacter,
     resolveDefinition,
-    getDocumentState
+    getDocumentState,
+    getWorksheetControlMetadataState
   );
 }
 
@@ -1347,7 +1362,8 @@ function resolveBuiltinCallableMember(
   line: number,
   callContext: CallContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
-  getDocumentState: (uri: string) => DocumentState | undefined
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): BuiltinMemberReferenceItem | undefined {
   if (callContext.callPath.length < 2) {
     return undefined;
@@ -1360,7 +1376,8 @@ function resolveBuiltinCallableMember(
     callContext.callPathSegments?.slice(0, -1),
     callContext.callPathStartCharacter,
     resolveDefinition,
-    getDocumentState
+    getDocumentState,
+    getWorksheetControlMetadataState
   );
   const memberName = callContext.callPath[callContext.callPath.length - 1];
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberName) : undefined;
@@ -1434,9 +1451,17 @@ function getBuiltinMemberHover(
   uri: string,
   position: LinePosition,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
-  getDocumentState: (uri: string) => DocumentState | undefined
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): HoverHint | undefined {
-  const builtinMember = resolveBuiltinMemberAtPosition(state.text, uri, position, resolveDefinition, getDocumentState);
+  const builtinMember = resolveBuiltinMemberAtPosition(
+    state.text,
+    uri,
+    position,
+    resolveDefinition,
+    getDocumentState,
+    getWorksheetControlMetadataState
+  );
 
   if (!builtinMember) {
     return undefined;
@@ -1453,7 +1478,8 @@ function resolveBuiltinMemberAtPosition(
   uri: string,
   position: LinePosition,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
-  getDocumentState: (uri: string) => DocumentState | undefined
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): { range: SourceRange; reference: BuiltinMemberReferenceItem } | undefined {
   const range = getIdentifierRangeAtPosition(text, position);
 
@@ -1479,7 +1505,8 @@ function resolveBuiltinMemberAtPosition(
     memberAccess.memberPathSegments,
     memberAccess.memberPathStartCharacter,
     resolveDefinition,
-    getDocumentState
+    getDocumentState,
+    getWorksheetControlMetadataState
   );
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberAccess.prefix) : undefined;
 
@@ -1556,7 +1583,8 @@ function resolveBuiltinMemberOwnerForPath(
   pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
   rootStartCharacter: number,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
-  getDocumentState: (uri: string) => DocumentState | undefined
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): string | undefined {
   if (pathSegments.length === 0) {
     return undefined;
@@ -1581,7 +1609,8 @@ function resolveBuiltinMemberOwnerForPath(
   const sidecarOwnerName = resolveWorksheetControlOwnerFromSidecar(
     builtinContext,
     memberSegments,
-    pathSegmentDetails?.slice(1)
+    pathSegmentDetails?.slice(1),
+    getWorksheetControlMetadataState
   );
 
   return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, memberSegments);
@@ -1613,7 +1642,8 @@ function getDocumentModuleBuiltinContext(
   if (isWorkbookDocumentState(state) && normalizeIdentifier(rootSegment) === "thisworkbook") {
     return {
       ownerName: "Workbook",
-      rootState: state
+      rootModuleName: state.analysis.module.name,
+      rootUri: resolution.uri
     };
   }
 
@@ -1623,7 +1653,8 @@ function getDocumentModuleBuiltinContext(
   ) {
     return {
       ownerName: "Worksheet",
-      rootState: state,
+      rootModuleName: state.analysis.module.name,
+      rootUri: resolution.uri,
       worksheetControlOwnerKind: "worksheet"
     };
   }
@@ -1634,8 +1665,8 @@ function getDocumentModuleBuiltinContext(
   ) {
     return {
       ownerName: "Chart",
-      rootState: state,
-      worksheetControlOwnerKind: "chartsheet"
+      rootModuleName: state.analysis.module.name,
+      rootUri: resolution.uri
     };
   }
 
@@ -1645,10 +1676,13 @@ function getDocumentModuleBuiltinContext(
 function resolveWorksheetControlOwnerFromSidecar(
   builtinContext: DocumentModuleBuiltinContext,
   memberSegments: readonly string[],
-  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined
+  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): string | undefined {
+  const rootWorksheetControlMetadata = getWorksheetControlMetadataState(builtinContext.rootUri);
+
   if (
-    !builtinContext.rootState.worksheetControlMetadata ||
+    !rootWorksheetControlMetadata ||
     builtinContext.worksheetControlOwnerKind === undefined ||
     !pathSegmentDetails ||
     pathSegmentDetails.length !== memberSegments.length
@@ -1656,10 +1690,10 @@ function resolveWorksheetControlOwnerFromSidecar(
     return undefined;
   }
 
-  const supportedOwner = builtinContext.rootState.worksheetControlMetadata.supportedOwners.find(
+  const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
     (owner) =>
       owner.ownerKind === builtinContext.worksheetControlOwnerKind &&
-      normalizeIdentifier(owner.sheetCodeName) === normalizeIdentifier(builtinContext.rootState.analysis.module.name)
+      normalizeIdentifier(owner.sheetCodeName) === normalizeIdentifier(builtinContext.rootModuleName)
   );
 
   if (!supportedOwner) {
@@ -2364,7 +2398,8 @@ function mapBuiltinMemberSemanticToken(
   startCharacter: number,
   identifier: string,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
-  getDocumentState: (uri: string) => DocumentState | undefined
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): SemanticTokenShape | undefined {
   const memberAccess = parseTrailingMemberAccess(lineText.slice(0, startCharacter + identifier.length));
 
@@ -2383,7 +2418,8 @@ function mapBuiltinMemberSemanticToken(
     memberAccess.memberPathSegments,
     memberAccess.memberPathStartCharacter,
     resolveDefinition,
-    getDocumentState
+    getDocumentState,
+    getWorksheetControlMetadataState
   );
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, identifier) : undefined;
 

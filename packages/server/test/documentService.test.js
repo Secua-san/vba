@@ -493,11 +493,19 @@ End Sub`;
         status: "supported"
       },
       {
+        controls: [
+          {
+            codeName: "chkChart",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 8,
+            shapeName: "CheckBox1"
+          }
+        ],
         ownerKind: "chartsheet",
-        reason: "chart-sheet-metadata-unproven",
         sheetCodeName: "Chart1",
         sheetName: "Chart1",
-        status: "unsupported"
+        status: "supported"
       }
     ],
     version: 1,
@@ -693,6 +701,103 @@ Option Explicit`
     assert.equal(service.getState(uri)?.worksheetControlMetadata?.workbookName, "bundle-b.xlsm");
     assert.equal(valueCompletion?.moduleName.includes("CheckBox"), true);
     assert.equal(valueCompletion?.moduleName.includes("OptionButton"), false);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service reloads the root document module sidecar after sidecar-only regeneration", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "bundle-a");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const sheetAUri = pathToFileURL(path.join(bundleRoot, "SheetA.cls")).href;
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print SheetA.OLEObjects("Control1").Object.
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "Control1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "SheetA",
+        sheetName: "SheetA",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "bundle-a.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(
+      sheetAUri,
+      "vba",
+      1,
+      `Attribute VB_Name = "SheetA"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(uri, "vba", 1, text);
+
+    const objectPosition = findPositionAfterTokenInText(text, 'SheetA.OLEObjects("Control1").Object.');
+    const initialMembers = service.getCompletionSymbols(uri, objectPosition);
+    const initialValueCompletion = initialMembers.find((resolution) => resolution.symbol.name === "Value");
+
+    assert.equal(initialValueCompletion?.moduleName.includes("CheckBox"), true);
+
+    writeWorksheetControlMetadataSidecar(bundleRoot, {
+      artifact: "worksheet-control-metadata-sidecar",
+      owners: [
+        {
+          controls: [
+            {
+              codeName: "optFinished",
+              controlType: "OptionButton",
+              progId: "Forms.OptionButton.1",
+              shapeId: 3,
+              shapeName: "Control1"
+            }
+          ],
+          ownerKind: "worksheet",
+          sheetCodeName: "SheetA",
+          sheetName: "SheetA",
+          status: "supported"
+        }
+      ],
+      version: 1,
+      workbook: {
+        name: "bundle-a.xlsm",
+        sourceKind: "openxml-package"
+      }
+    });
+
+    const refreshedMembers = service.getCompletionSymbols(uri, objectPosition);
+    const refreshedValueCompletion = refreshedMembers.find((resolution) => resolution.symbol.name === "Value");
+
+    assert.equal(refreshedValueCompletion?.moduleName.includes("OptionButton"), true);
+    assert.equal(refreshedValueCompletion?.moduleName.includes("CheckBox"), false);
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }
