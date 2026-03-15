@@ -803,6 +803,165 @@ Option Explicit`
   }
 });
 
+test("document service resolves worksheet control code names through the worksheet root sidecar only", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const sheet1Uri = pathToFileURL(path.join(bundleRoot, "Sheet1.cls")).href;
+  const chart1Uri = pathToFileURL(path.join(bundleRoot, "Chart1.cls")).href;
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print Sheet1.chkFinished.
+    Debug.Print Sheet1.CheckBox1.
+    Debug.Print Chart1.chkFinished.
+    Debug.Print ActiveSheet.chkFinished.
+    Debug.Print Sheet1.chkFinished.Value
+    Call Sheet1.chkFinished.Select(
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet1",
+        status: "supported"
+      },
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 8,
+            shapeName: "ChartCheckBox1"
+          }
+        ],
+        ownerKind: "chartsheet",
+        sheetCodeName: "Chart1",
+        sheetName: "Chart1",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(
+      sheet1Uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Sheet1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(
+      chart1Uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Chart1"
+Attribute VB_Base = "0{00020821-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(uri, "vba", 1, text);
+
+    const controlCodeNameMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.chkFinished."));
+    const shapeNameMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.CheckBox1."));
+    const chartMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Chart1.chkFinished."));
+    const activeSheetMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "ActiveSheet.chkFinished."));
+    const valueHover = service.getHover(uri, findPositionAfterTokenInText(text, "Sheet1.chkFinished.Valu"));
+    const selectSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Sheet1.chkFinished.Select("));
+    const tokens = service.getSemanticTokens(uri);
+
+    const valueCompletion = controlCodeNameMembers.find((resolution) => resolution.symbol.name === "Value");
+    const selectCompletion = controlCodeNameMembers.find((resolution) => resolution.symbol.name === "Select");
+
+    assert.equal(valueCompletion?.moduleName.includes("CheckBox property"), true);
+    assert.equal(selectCompletion?.moduleName.includes("CheckBox method"), true);
+    assert.equal(controlCodeNameMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+    assert.equal(shapeNameMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(chartMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(activeSheetMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(valueHover?.contents.includes("CheckBox.Value"), true);
+    assert.equal(valueHover?.contents.includes("microsoft.office.interop.excel.checkbox.value"), true);
+    assert.equal(selectSignature?.label, "Select(Replace) As Object");
+    assertSemanticToken(text, tokens, 8, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 9, "Select", { modifiers: [], type: "function" });
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service keeps worksheet control code names unresolved without a sidecar", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const sheet1Uri = pathToFileURL(path.join(bundleRoot, "Sheet1.cls")).href;
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print Sheet1.chkFinished.
+    Debug.Print Sheet1.chkFinished.Value
+    Call Sheet1.chkFinished.Select(
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(
+      sheet1Uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Sheet1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
+    service.analyzeText(uri, "vba", 1, text);
+
+    const controlCodeNameMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Sheet1.chkFinished."));
+    const valueHover = service.getHover(uri, findPositionAfterTokenInText(text, "Sheet1.chkFinished.Valu"));
+    const selectSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Sheet1.chkFinished.Select("));
+    const tokens = service.getSemanticTokens(uri);
+
+    assert.equal(controlCodeNameMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(valueHover, undefined);
+    assert.equal(selectSignature, undefined);
+    assertNoSemanticToken(text, tokens, 5, "Value");
+    assertNoSemanticToken(text, tokens, 6, "Select");
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("document service keeps built-in document roots conservative for unknown predeclared class modules", () => {
   const service = createDocumentService();
   const chart1Uri = "file:///C:/temp/Chart1.cls";

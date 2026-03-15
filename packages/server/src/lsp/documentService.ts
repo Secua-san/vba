@@ -1700,6 +1700,17 @@ function resolveWorksheetControlOwnerFromSidecar(
     return undefined;
   }
 
+  const directCodeNameOwner = resolveWorksheetControlOwnerFromCodeName(
+    builtinContext,
+    supportedOwner,
+    memberSegments,
+    pathSegmentDetails
+  );
+
+  if (directCodeNameOwner) {
+    return directCodeNameOwner;
+  }
+
   for (let segmentIndex = 0; segmentIndex < memberSegments.length; segmentIndex += 1) {
     if (normalizeIdentifier(stripIndexedAccessMarker(memberSegments[segmentIndex] ?? "")) !== "object") {
       continue;
@@ -1734,6 +1745,36 @@ function resolveWorksheetControlOwnerFromSidecar(
   }
 
   return undefined;
+}
+
+function resolveWorksheetControlOwnerFromCodeName(
+  builtinContext: DocumentModuleBuiltinContext,
+  supportedOwner: WorksheetControlMetadataSupportedOwnerState,
+  memberSegments: readonly string[],
+  pathSegmentDetails: readonly MemberAccessPathSegment[]
+): string | undefined {
+  const [controlSegment] = pathSegmentDetails;
+  const controlSegmentName = stripIndexedAccessMarker(memberSegments[0] ?? "");
+
+  if (
+    controlSegment?.accessKind !== "none" ||
+    controlSegmentName.length === 0 ||
+    getBuiltinMemberReferenceItem(builtinContext.ownerName, controlSegmentName)
+  ) {
+    return undefined;
+  }
+
+  const control = supportedOwner.controls.find(
+    (candidate) => normalizeIdentifier(candidate.codeName) === normalizeIdentifier(controlSegment.text)
+  );
+
+  if (!control) {
+    return undefined;
+  }
+
+  return memberSegments.length === 1
+    ? control.controlType
+    : resolveBuiltinMemberOwnerFromRootType(control.controlType, memberSegments.slice(1));
 }
 
 function getWorksheetControlShapeNameFromPath(pathSegmentDetails: readonly MemberAccessPathSegment[]): string | undefined {

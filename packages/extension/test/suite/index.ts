@@ -537,6 +537,92 @@ export async function run(): Promise<void> {
   });
   assertNoDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 23, "Select");
 
+  const worksheetControlCodeNameDocument = await vscode.workspace.openTextDocument(
+    path.resolve(fixturesPath, "WorksheetControlCodeName.bas")
+  );
+  await vscode.window.showTextDocument(worksheetControlCodeNameDocument);
+
+  const controlCodeNameCompletionItems = await waitForCompletions(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "Sheet1.chkFinished."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const controlCodeNameValueHover = await waitForHover(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "Sheet1.chkFinished.Valu"),
+    (hovers) => hovers.length > 0
+  );
+  const controlCodeNameSelectSignatureHelp = await waitForSignatureHelp(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "Sheet1.chkFinished.Select("),
+    (help) => help.signatures.length > 0
+  );
+  const shapeNameControlHoverSuppressed = await waitForNoHover(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "Sheet1.CheckBox1.Valu")
+  );
+  const chartControlHoverSuppressed = await waitForNoHover(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "Chart1.chkFinished.Valu")
+  );
+  const activeSheetControlHoverSuppressed = await waitForNoHover(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "ActiveSheet.chkFinished.Valu")
+  );
+  const shapeNameControlSignatureSuppressed = await waitForNoSignatureHelp(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "Sheet1.CheckBox1.Select(")
+  );
+  const chartControlSignatureSuppressed = await waitForNoSignatureHelp(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "Chart1.chkFinished.Select(")
+  );
+  const activeSheetControlSignatureSuppressed = await waitForNoSignatureHelp(
+    worksheetControlCodeNameDocument,
+    findPositionAfterToken(worksheetControlCodeNameDocument, "ActiveSheet.chkFinished.Select(")
+  );
+  const controlCodeNameLegend = await waitForSemanticTokensLegend(
+    worksheetControlCodeNameDocument,
+    (legend) => legend.tokenTypes.includes("variable") && legend.tokenTypes.includes("function")
+  );
+  const controlCodeNameTokens = await waitForSemanticTokens(
+    worksheetControlCodeNameDocument,
+    (tokens) => tokens.data.length > 0
+  );
+  const controlCodeNameValueCompletion = controlCodeNameCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const controlCodeNameSelectCompletion = controlCodeNameCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Select"
+  );
+  const controlCodeNameHoverText = getHoverContentsText(controlCodeNameValueHover[0]);
+  const decodedControlCodeNameTokens = decodeSemanticTokens(controlCodeNameTokens, controlCodeNameLegend);
+
+  assert.ok(controlCodeNameValueCompletion?.detail?.includes("Excel CheckBox property"));
+  assert.ok(controlCodeNameSelectCompletion?.detail?.includes("Excel CheckBox method"));
+  assert.equal(
+    controlCodeNameCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+    false,
+    "worksheet control code name は control owner へ解決し、OLEObject method を出さない"
+  );
+  assert.equal(shapeNameControlHoverSuppressed, true, "shape name は direct access の code name 解決へ昇格しない");
+  assert.equal(chartControlHoverSuppressed, true, "chartsheet root は control code name 解決へ昇格しない");
+  assert.equal(activeSheetControlHoverSuppressed, true, "ActiveSheet root は control code name 解決へ昇格しない");
+  assert.equal(controlCodeNameSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(shapeNameControlSignatureSuppressed, true);
+  assert.equal(chartControlSignatureSuppressed, true);
+  assert.equal(activeSheetControlSignatureSuppressed, true);
+  assert.equal(controlCodeNameHoverText.includes("CheckBox.Value"), true);
+  assert.equal(controlCodeNameHoverText.includes("microsoft.office.interop.excel.checkbox.value"), true);
+  assertDecodedSemanticToken(worksheetControlCodeNameDocument.getText(), decodedControlCodeNameTokens, 8, "Value", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(worksheetControlCodeNameDocument.getText(), decodedControlCodeNameTokens, 12, "Select", {
+    modifiers: [],
+    type: "function"
+  });
+
   const dialogSheetBuiltInDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "DialogSheetBuiltIn.bas"));
   await vscode.window.showTextDocument(dialogSheetBuiltInDocument);
 
@@ -2659,6 +2745,24 @@ async function waitForHover(
   }
 
   return [];
+}
+
+async function waitForNoHover(document: vscode.TextDocument, position: vscode.Position): Promise<boolean> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const hovers = await vscode.commands.executeCommand<readonly vscode.Hover[]>(
+      "vscode.executeHoverProvider",
+      document.uri,
+      position
+    );
+
+    if (hovers?.length) {
+      return false;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return true;
 }
 
 async function waitForRename(

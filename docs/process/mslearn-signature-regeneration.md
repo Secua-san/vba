@@ -69,7 +69,7 @@
 ## 2026-03-14 の Worksheet / Chart control entry point 方針
 - Office VBA の object page が揃っている `Worksheet.OLEObjects` / `Chart.OLEObjects` / `OLEObjects.Item` / `OLEObject` を、worksheet / chart sheet control の最初の user-facing root 候補とする
 - `OLEObject.Object` と `Shape.OLEFormat.Object` はどちらも `Object` を返し、embedded document も含み得るため、初回は `.Object` の先を既知 control 型へ落とさない
-- `Sheet1.CommandButton1` は自然な導線だが、現行の静的入力だけでは control code name と型の inventory を安定して取れないため、後続へ送る
+- `Sheet1.CommandButton1` は自然な導線であり、現行実装では sidecar v1 がある worksheet document module root に限って `Sheet1.chkFinished` のような control code name 導線を公開している
 - `Shapes` は drawing object 全体を含み、control 専用 root としては広すぎるため、初回対象から外す
 - 正本の判断メモは `docs/process/worksheet-chart-control-entrypoint-feasibility.md` に切り出して管理する
 
