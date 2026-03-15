@@ -589,6 +589,26 @@ export async function run(): Promise<void> {
     shapesBuiltInDocument,
     findPositionAfterToken(shapesBuiltInDocument, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object.Valu')
   );
+  const indexedShapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, "Sheet1.Shapes(1).OLEFormat.Object.Valu")
+  );
+  const itemIndexedShapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, "Sheet1.Shapes.Item(1).OLEFormat.Object.Valu")
+  );
+  const chartShapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'Chart1.Shapes("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const chartItemShapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'Chart1.Shapes.Item("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const groupedShapeRangeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'Sheet1.Shapes.Range(Array("CheckBox1")).OLEFormat.Object.Valu')
+  );
   const functionShapeNameHoverSuppressed = await waitForNoHover(
     shapesBuiltInDocument,
     findPositionAfterToken(shapesBuiltInDocument, "Sheet1.Shapes(GetIndex()).Nam")
@@ -634,6 +654,11 @@ export async function run(): Promise<void> {
   assert.equal(shapeHoverText.includes("Shape.Name"), true);
   assert.equal(shapeHoverText.includes("excel.shape.name"), true);
   assert.equal(shapeObjectValueHoverSuppressed, true);
+  assert.equal(indexedShapeObjectValueHoverSuppressed, true);
+  assert.equal(itemIndexedShapeObjectValueHoverSuppressed, true);
+  assert.equal(chartShapeObjectValueHoverSuppressed, true);
+  assert.equal(chartItemShapeObjectValueHoverSuppressed, true);
+  assert.equal(groupedShapeRangeObjectValueHoverSuppressed, true);
   assert.equal(functionShapeNameHoverSuppressed, true);
   assert.equal(itemFunctionShapeNameHoverSuppressed, true);
   assertDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 15, "Name", {
@@ -645,8 +670,13 @@ export async function run(): Promise<void> {
     type: "variable"
   });
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 19, "Value");
-  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 20, "Name");
-  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 21, "Name");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 20, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 21, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 22, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 23, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 24, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 25, "Name");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 26, "Name");
 
   const worksheetControlCodeNameDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "WorksheetControlCodeName.bas")

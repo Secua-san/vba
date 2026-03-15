@@ -384,9 +384,13 @@
   - `Shape.OLEFormat.Object` の先は generic `Object` のまま維持し、worksheet control metadata sidecar があっても `CheckBox.Value` のような control-specific owner へは昇格させないことを server / extension test で固定した
   - `msoOLEControlObject`、`shape name != code name`、embedded / linked OLE object 混在時の扱いは正本 [docs/process/worksheet-chart-shapes-root-feasibility.md](docs/process/worksheet-chart-shapes-root-feasibility.md) に整理した
 
-- [ ] Shape.OLEFormat.Object の control owner 昇格条件を整理する
-  - `Shape.Type = msoOLEControlObject` と sidecar の `shapeName -> controlType` をどう組み合わせれば `Shape.OLEFormat.Object` の先を安全に control owner へ進められるかを整理する
-  - `msoEmbeddedOLEObject` / `msoLinkedOLEObject`、shape name と code name のずれ、`ShapeRange` / grouped selector をどう除外するかを docs と回帰テストで整理する
+- [x] Shape.OLEFormat.Object の control owner 昇格条件を整理する
+  - 将来の昇格候補を `worksheet document module root + shape name string literal + sidecar 一致` に限定し、`Shape.Type = msoOLEControlObject` は runtime 条件、sidecar provenance を静的 resolver 条件として使う方針を正本 [docs/process/shape-oleformat-object-promotion-feasibility.md](docs/process/shape-oleformat-object-promotion-feasibility.md) に整理した
+  - `Shapes(1)` / `Shapes.Item(1)`、dynamic selector、`Chart1` root、`ShapeRange` / grouped selector、code name 導線を昇格対象から外す判断を文書化し、server / extension test で `Shape.OLEFormat.Object` 非昇格の境界を補強した
+
+- [ ] Shape.OLEFormat.Object を worksheet literal shapeName selector に限定接続する
+  - `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object` だけを sidecar 連携で control owner へ進める最小プロトタイプを実装する
+  - numeric / dynamic / chart / `ShapeRange` の負例と、`OLEObject.Object` / `Sheet1.ControlCodeName` 既存導線との非衝突を server / extension test で固定する
 
 ## メモ
 
