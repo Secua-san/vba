@@ -5,7 +5,7 @@
 - `Worksheet` / `Chart` 上の control 導線について、最初の実装候補は `Worksheet.OLEObjects(Index)` / `Chart.OLEObjects(Index)` を `OLEObject` owner へ落とす最小プロトタイプとする。
 - `Sheet1.CommandButton1` は Office VBA の自然な導線だが、現行リポジトリの静的入力だけでは worksheet / chart sheet 上の control code name と型の inventory を安定して得られないため、初回対象から外す。
 - `Shapes` は Office VBA の正本道線には含まれるが、control 以外の drawing object を広く含むため、control 専用の最初の user-facing root にはしない。
-- `OLEObject.Object` と `Shape.OLEFormat.Object` の先はどちらも `Object` で、control 種別や埋め込みアプリ型が固定できないため、初回は型付き chain 解決へ進めない。
+- `OLEObject.Object` と `Shape.OLEFormat.Object` の先はどちらも `Object` だが、現行 product では worksheet document module alias + string literal selector + sidecar 一致のときだけ `CheckBox` など既知 control 型へ限定接続している。
 - 次段は `Worksheet` / `Chart` の `OLEObjects` root だけを追加し、`OLEObject` surface の completion / hover / signature help へ到達できる状態を目標にする。
 
 ## 確認した公式ソース
@@ -56,7 +56,7 @@
 
 - `OLEObject.Object` と `OLEFormat.Object` はどちらも `Object` を返す。
 - 公式例には embedded Word document もあり、常に `Caption` / `Value` / `Select` のような control member へ落とせるわけではない。
-- `progID` や workbook 内 metadata から型を絞る戦略を持たない段階で `.Object` を既知 control 型へ進めると、誤補完のリスクが高い。
+- `progID` や workbook 内 metadata から型を絞る戦略を持たない段階で `.Object` を既知 control 型へ進めると、誤補完のリスクが高い。そのため current product でも worksheet document module alias + string literal selector + sidecar 一致に限定している。
 
 ## 推奨方針
 
@@ -66,10 +66,10 @@
 - `Worksheet.OLEObjects(Index)` / `Chart.OLEObjects(Index)` と `OLEObjects.Item(Index)` は、name / number selector の単一 object として `OLEObject` owner へ正規化する。
 - 初回は `OLEObject` page にある member だけを user-facing に出し、`.Object` の先には進めない。
 
-### フェーズ 2: `.Object` の型付け条件整理
+### フェーズ 2: `.Object` の型付け条件整理と限定接続
 
 - `OLEObject.progID`、control type metadata、または workbook 由来の design-time 情報から、`.Object` の具体型をどこまで絞れるかを別途整理する。
-- control 型が絞れない場合は、`.Object` は未解決のまま維持する。
+- current product は worksheet document module alias + string literal selector に限って `.Object` を既知 control 型へ進め、control 型が絞れない path は未解決のまま維持する。
 
 ### フェーズ 3: control code name / `Shapes` の導線整理
 

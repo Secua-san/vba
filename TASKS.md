@@ -385,12 +385,16 @@
   - `msoOLEControlObject`、`shape name != code name`、embedded / linked OLE object 混在時の扱いは正本 [docs/process/worksheet-chart-shapes-root-feasibility.md](docs/process/worksheet-chart-shapes-root-feasibility.md) に整理した
 
 - [x] Shape.OLEFormat.Object の control owner 昇格条件を整理する
-  - 将来の昇格候補を `worksheet document module root + shape name string literal + sidecar 一致` に限定し、`Shape.Type = msoOLEControlObject` は runtime 条件、sidecar provenance を静的 resolver 条件として使う方針を正本 [docs/process/shape-oleformat-object-promotion-feasibility.md](docs/process/shape-oleformat-object-promotion-feasibility.md) に整理した
+  - 昇格候補を `worksheet document module root + shape name string literal + sidecar 一致` に限定し、`Shape.Type = msoOLEControlObject` は runtime 条件、sidecar provenance を静的 resolver 条件として使う方針を正本 [docs/process/shape-oleformat-object-promotion-feasibility.md](docs/process/shape-oleformat-object-promotion-feasibility.md) に整理した
   - `Shapes(1)` / `Shapes.Item(1)`、dynamic selector、`Chart1` root、`ShapeRange` / grouped selector、code name 導線を昇格対象から外す判断を文書化し、server / extension test で `Shape.OLEFormat.Object` 非昇格の境界を補強した
 
-- [ ] Shape.OLEFormat.Object を worksheet literal shapeName selector に限定接続する
-  - `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object` だけを sidecar 連携で control owner へ進める最小プロトタイプを実装する
-  - numeric / dynamic / chart / `ShapeRange` の負例と、`OLEObject.Object` / `Sheet1.ControlCodeName` 既存導線との非衝突を server / extension test で固定する
+- [x] Shape.OLEFormat.Object を worksheet literal shapeName selector に限定接続する
+  - `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object` だけを sidecar 連携で control owner へ進め、`Value` / `Select` の completion / hover / signature help / semantic token が出るようにした
+  - numeric / dynamic / chart / `ShapeRange` の負例と、`OLEObject.Object` / `Sheet1.ControlCodeName` 既存導線との非衝突を server / extension test で固定した
+
+- [ ] Shape.OLEFormat.Object の explicit sheet-name root 拡張可否を整理する
+  - `Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` や `ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` のような sheet-name root を sidecar へ結べるか、`sheetName` と `sheetCodeName` のどちらを join key に使うべきかを docs で整理する
+  - worksheet document module alias (`Sheet1`) 限定実装との整合、`ActiveSheet` / chartsheet / `ShapeRange` を引き続き除外する境界、`OLEObject.Object` と `Shape.OLEFormat.Object` の join key 共通化余地を整理する
 
 ## メモ
 

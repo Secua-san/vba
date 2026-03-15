@@ -1712,7 +1712,12 @@ function resolveWorksheetControlOwnerFromSidecar(
   }
 
   for (let segmentIndex = 0; segmentIndex < memberSegments.length; segmentIndex += 1) {
-    if (normalizeIdentifier(stripIndexedAccessMarker(memberSegments[segmentIndex] ?? "")) !== "object") {
+    const objectSegment = pathSegmentDetails[segmentIndex];
+
+    if (
+      normalizeIdentifier(stripIndexedAccessMarker(memberSegments[segmentIndex] ?? "")) !== "object" ||
+      objectSegment?.accessKind !== "none"
+    ) {
       continue;
     }
 
@@ -1720,12 +1725,16 @@ function resolveWorksheetControlOwnerFromSidecar(
       segmentIndex === 0
         ? builtinContext.ownerName
         : resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, memberSegments.slice(0, segmentIndex));
+    const normalizedOwnerBeforeObject = normalizeIdentifier(ownerBeforeObject ?? "");
 
-    if (normalizeIdentifier(ownerBeforeObject ?? "") !== "oleobject") {
+    if (normalizedOwnerBeforeObject !== "oleobject" && normalizedOwnerBeforeObject !== "oleformat") {
       continue;
     }
 
-    const shapeName = getWorksheetControlShapeNameFromPath(pathSegmentDetails.slice(0, segmentIndex));
+    const shapeName = getWorksheetControlShapeNameFromPath(
+      pathSegmentDetails.slice(0, segmentIndex),
+      normalizedOwnerBeforeObject
+    );
 
     if (!shapeName) {
       continue;
@@ -1777,23 +1786,60 @@ function resolveWorksheetControlOwnerFromCodeName(
     : resolveBuiltinMemberOwnerFromRootType(control.controlType, memberSegments.slice(1));
 }
 
-function getWorksheetControlShapeNameFromPath(pathSegmentDetails: readonly MemberAccessPathSegment[]): string | undefined {
-  if (pathSegmentDetails.length === 1) {
-    const [oleObjectsSegment] = pathSegmentDetails;
+function getWorksheetControlShapeNameFromPath(
+  pathSegmentDetails: readonly MemberAccessPathSegment[],
+  objectOwnerName: string
+): string | undefined {
+  if (normalizeIdentifier(objectOwnerName) === "oleobject") {
+    if (pathSegmentDetails.length === 1) {
+      const [oleObjectsSegment] = pathSegmentDetails;
 
-    return normalizeIdentifier(oleObjectsSegment?.text ?? "") === "oleobjects" && oleObjectsSegment?.accessKind === "literal"
-      ? parseWorksheetControlShapeNameLiteral(oleObjectsSegment.selectorText)
-      : undefined;
+      return normalizeIdentifier(oleObjectsSegment?.text ?? "") === "oleobjects" && oleObjectsSegment?.accessKind === "literal"
+        ? parseWorksheetControlShapeNameLiteral(oleObjectsSegment.selectorText)
+        : undefined;
+    }
+
+    if (pathSegmentDetails.length === 2) {
+      const [oleObjectsSegment, itemSegment] = pathSegmentDetails;
+
+      if (normalizeIdentifier(oleObjectsSegment?.text ?? "") !== "oleobjects" || oleObjectsSegment?.accessKind !== "none") {
+        return undefined;
+      }
+
+      return normalizeIdentifier(itemSegment?.text ?? "") === "item" && itemSegment?.accessKind === "literal"
+        ? parseWorksheetControlShapeNameLiteral(itemSegment.selectorText)
+        : undefined;
+    }
+
+    return undefined;
+  }
+
+  if (normalizeIdentifier(objectOwnerName) !== "oleformat") {
+    return undefined;
   }
 
   if (pathSegmentDetails.length === 2) {
-    const [oleObjectsSegment, itemSegment] = pathSegmentDetails;
+    const [shapesSegment, oleFormatSegment] = pathSegmentDetails;
 
-    if (normalizeIdentifier(oleObjectsSegment?.text ?? "") !== "oleobjects" || oleObjectsSegment?.accessKind !== "none") {
+    return normalizeIdentifier(shapesSegment?.text ?? "") === "shapes" &&
+      shapesSegment?.accessKind === "literal" &&
+      normalizeIdentifier(oleFormatSegment?.text ?? "") === "oleformat" &&
+      oleFormatSegment?.accessKind === "none"
+      ? parseWorksheetControlShapeNameLiteral(shapesSegment.selectorText)
+      : undefined;
+  }
+
+  if (pathSegmentDetails.length === 3) {
+    const [shapesSegment, itemSegment, oleFormatSegment] = pathSegmentDetails;
+
+    if (normalizeIdentifier(shapesSegment?.text ?? "") !== "shapes" || shapesSegment?.accessKind !== "none") {
       return undefined;
     }
 
-    return normalizeIdentifier(itemSegment?.text ?? "") === "item" && itemSegment?.accessKind === "literal"
+    return normalizeIdentifier(itemSegment?.text ?? "") === "item" &&
+      itemSegment?.accessKind === "literal" &&
+      normalizeIdentifier(oleFormatSegment?.text ?? "") === "oleformat" &&
+      oleFormatSegment?.accessKind === "none"
       ? parseWorksheetControlShapeNameLiteral(itemSegment.selectorText)
       : undefined;
   }

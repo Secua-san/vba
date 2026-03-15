@@ -446,7 +446,7 @@ Option Explicit`
   assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
 });
 
-test("document service exposes Shape members through Worksheet and Chart Shapes roots while keeping OLEFormat.Object conservative", () => {
+test("document service exposes Shape members through Worksheet and Chart Shapes roots while limiting OLEFormat.Object promotion", () => {
   const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-shapes-"));
   const workspaceRoot = path.join(temporaryDirectory, "workspace");
   const bundleRoot = path.join(workspaceRoot, "book1");
@@ -474,11 +474,20 @@ Public Sub Demo()
     Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.
     Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object.
     Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Call Sheet1.Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.Select(
     Debug.Print Sheet1.Shapes(1).OLEFormat.Object.
     Debug.Print Sheet1.Shapes.Item(1).OLEFormat.Object.
     Debug.Print Chart1.Shapes("CheckBox1").OLEFormat.Object.
     Debug.Print Chart1.Shapes.Item("CheckBox1").OLEFormat.Object.
     Debug.Print Sheet1.Shapes.Range(Array("CheckBox1")).OLEFormat.Object.
+    Debug.Print Sheet1.Shapes("PlainShape").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes.Item("PlainShape").OLEFormat.Object.
+    Debug.Print Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).
 End Sub`;
 
   mkdirSync(moduleDirectory, { recursive: true });
@@ -585,7 +594,43 @@ Option Explicit`
       uri,
       findPositionAfterTokenInText(text, 'Sheet1.Shapes.Range(Array("CheckBox1")).OLEFormat.Object.')
     );
+    const unmatchedShapeObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes("PlainShape").OLEFormat.Object.')
+    );
+    const itemUnmatchedShapeObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("PlainShape").OLEFormat.Object.')
+    );
+    const worksheetNameRootObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const worksheetNameRootItemObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.')
+    );
+    const indexedObjectCallMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).')
+    );
     const nameHover = service.getHover(uri, findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").Nam'));
+    const namedValueHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object.Valu')
+    );
+    const itemNamedValueHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.Valu')
+    );
+    const namedSelectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object.Select(')
+    );
+    const itemNamedSelectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.Select(')
+    );
     const tokens = service.getSemanticTokens(uri);
 
     const indexedShapeName = indexedShapeMembers.find((resolution) => resolution.symbol.name === "Name");
@@ -594,6 +639,10 @@ Option Explicit`
     const chartItemShapeName = chartItemShapeMembers.find((resolution) => resolution.symbol.name === "Name");
     const oleFormatProgId = oleFormatMembers.find((resolution) => resolution.symbol.name === "progID");
     const itemOleFormatProgId = itemOleFormatMembers.find((resolution) => resolution.symbol.name === "progID");
+    const namedObjectValue = objectMembers.find((resolution) => resolution.symbol.name === "Value");
+    const namedObjectSelect = objectMembers.find((resolution) => resolution.symbol.name === "Select");
+    const itemNamedObjectValue = itemObjectMembers.find((resolution) => resolution.symbol.name === "Value");
+    const itemNamedObjectSelect = itemObjectMembers.find((resolution) => resolution.symbol.name === "Select");
 
     assert.equal(shapesCollectionMembers.some((resolution) => resolution.symbol.name === "Count"), true);
     assert.equal(shapesCollectionMembers.some((resolution) => resolution.symbol.name === "Name"), false);
@@ -607,17 +656,34 @@ Option Explicit`
     assert.equal(chartItemShapeName?.moduleName, "Excel Shape property");
     assert.equal(oleFormatProgId?.moduleName, "Excel OLEFormat property");
     assert.equal(itemOleFormatProgId?.moduleName, "Excel OLEFormat property");
-    assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
-    assert.equal(itemObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(namedObjectValue?.moduleName.includes("CheckBox property"), true);
+    assert.equal(namedObjectValue?.documentation?.includes("microsoft.office.interop.excel.checkbox.value"), true);
+    assert.equal(namedObjectSelect?.moduleName.includes("CheckBox method"), true);
+    assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+    assert.equal(itemNamedObjectValue?.moduleName.includes("CheckBox property"), true);
+    assert.equal(itemNamedObjectSelect?.moduleName.includes("CheckBox method"), true);
+    assert.equal(itemObjectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
     assert.equal(indexedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(itemIndexedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(chartNamedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(chartItemNamedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(groupedShapeRangeObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(unmatchedShapeObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(itemUnmatchedShapeObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(worksheetNameRootObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(worksheetNameRootItemObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(indexedObjectCallMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(nameHover?.contents.includes("Shape.Name"), true);
     assert.equal(nameHover?.contents.includes("excel.shape.name"), true);
+    assert.equal(namedValueHover?.contents.includes("CheckBox.Value"), true);
+    assert.equal(namedValueHover?.contents.includes("microsoft.office.interop.excel.checkbox.value"), true);
+    assert.equal(itemNamedValueHover?.contents.includes("CheckBox.Value"), true);
+    assert.equal(namedSelectSignature?.label, "Select(Replace) As Object");
+    assert.equal(itemNamedSelectSignature?.label, "Select(Replace) As Object");
     assertSemanticToken(text, tokens, 15, "Name", { modifiers: [], type: "variable" });
     assertSemanticToken(text, tokens, 16, "OLEFormat", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 20, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 22, "Select", { modifiers: [], type: "function" });
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }
