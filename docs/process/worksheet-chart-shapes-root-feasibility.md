@@ -71,6 +71,6 @@
 
 ## 次段の候補
 
-- `Shape.Type = msoOLEControlObject` と sidecar の `shapeName -> controlType` を両方満たすときだけ `Shape.OLEFormat.Object` の先を control owner へ進める条件を整理する。
+- `Shape.OLEFormat.Object` の昇格条件整理は正本 [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md) へ移した。
 - `msoEmbeddedOLEObject` / `msoLinkedOLEObject` は generic OLE object のまま維持し、control-only path と分離する。
 - `Shapes.Range(Array(...))` / `ShapeRange` の surface をどこまで出すかを別タスクで整理する。

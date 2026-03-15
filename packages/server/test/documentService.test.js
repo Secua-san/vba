@@ -474,6 +474,11 @@ Public Sub Demo()
     Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.
     Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object.
     Debug.Print Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes(1).OLEFormat.Object.
+    Debug.Print Sheet1.Shapes.Item(1).OLEFormat.Object.
+    Debug.Print Chart1.Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Chart1.Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes.Range(Array("CheckBox1")).OLEFormat.Object.
 End Sub`;
 
   mkdirSync(moduleDirectory, { recursive: true });
@@ -560,6 +565,26 @@ Option Explicit`
       uri,
       findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object.')
     );
+    const indexedObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, "Sheet1.Shapes(1).OLEFormat.Object.")
+    );
+    const itemIndexedObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, "Sheet1.Shapes.Item(1).OLEFormat.Object.")
+    );
+    const chartNamedObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Chart1.Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const chartItemNamedObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Chart1.Shapes.Item("CheckBox1").OLEFormat.Object.')
+    );
+    const groupedShapeRangeObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Range(Array("CheckBox1")).OLEFormat.Object.')
+    );
     const nameHover = service.getHover(uri, findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").Nam'));
     const tokens = service.getSemanticTokens(uri);
 
@@ -584,6 +609,11 @@ Option Explicit`
     assert.equal(itemOleFormatProgId?.moduleName, "Excel OLEFormat property");
     assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(itemObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(indexedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(itemIndexedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(chartNamedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(chartItemNamedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(groupedShapeRangeObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(nameHover?.contents.includes("Shape.Name"), true);
     assert.equal(nameHover?.contents.includes("excel.shape.name"), true);
     assertSemanticToken(text, tokens, 15, "Name", { modifiers: [], type: "variable" });
