@@ -392,9 +392,15 @@
   - `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.Shapes.Item("CheckBox1").OLEFormat.Object` だけを sidecar 連携で control owner へ進め、`Value` / `Select` の completion / hover / signature help / semantic token が出るようにした
   - numeric / dynamic / chart / `ShapeRange` の負例と、`OLEObject.Object` / `Sheet1.ControlCodeName` 既存導線との非衝突を server / extension test で固定した
 
-- [ ] Shape.OLEFormat.Object の explicit sheet-name root 拡張可否を整理する
-  - `Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` や `ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` のような sheet-name root を sidecar へ結べるか、`sheetName` と `sheetCodeName` のどちらを join key に使うべきかを docs で整理する
-  - worksheet document module alias (`Sheet1`) 限定実装との整合、`ActiveSheet` / chartsheet / `ShapeRange` を引き続き除外する境界、`OLEObject.Object` と `Shape.OLEFormat.Object` の join key 共通化余地を整理する
+- [x] Shape.OLEFormat.Object の explicit sheet-name root 拡張可否を整理する
+  - `Worksheets("Sheet1")` 系 root の join key は `sheetCodeName` ではなく `sheetName` を使うべきこと、`Sheet1` alias / control code name 導線とは別 key として扱うべきことを正本 [docs/process/shape-oleformat-object-explicit-sheet-root-feasibility.md](docs/process/shape-oleformat-object-explicit-sheet-root-feasibility.md) に整理した
+  - unqualified `Worksheets("Sheet1")` と `ActiveWorkbook.Worksheets("Sheet1")` は active workbook 依存のため現段階では不採用、最初の候補は `ThisWorkbook.Worksheets("Sheet1")` に限定する方針を固定した
+  - `OLEObject.Object` と `Shape.OLEFormat.Object` は `workbook root identity + sheetName + shapeName` lookup helper を将来共有できるが、`ActiveSheet` / chartsheet / `ShapeRange` は引き続き除外境界として維持する
+
+- [ ] Shape.OLEFormat.Object を ThisWorkbook.Worksheets("SheetName") root に限定接続する
+  - `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` だけを sidecar 連携で control owner へ進める最小実装を行う
+  - `ThisWorkbook` 起点の workbook root identity を `Worksheets("Sheet1")` 連鎖でも保持して resolver へ伝播させ、generic `Worksheet` owner へ降りても current bundle の sidecar を選べるようにする
+  - `sheetName + shapeName` lookup helper を `OLEObject.Object` 側とも共有できる形で整理し、`ActiveWorkbook` / unqualified `Worksheets` / `ActiveSheet` / chartsheet / `ShapeRange` を引き続き負例で固定する
 
 ## メモ
 
