@@ -29,7 +29,10 @@ Public Sub Demo()
     Debug.Print Sheet1.Shapes(GetIndex()).Name
     Debug.Print Sheet1.Shapes.Item(GetIndex()).Name
     Debug.Print Sheet1.Shapes("PlainShape").OLEFormat.Object.Value
+    Debug.Print Sheet1.Shapes.Item("PlainShape").OLEFormat.Object.Value
     Debug.Print Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).Value
 End Sub
 
 Private Function GetIndex() As Long

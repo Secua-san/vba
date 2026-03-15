@@ -1712,7 +1712,12 @@ function resolveWorksheetControlOwnerFromSidecar(
   }
 
   for (let segmentIndex = 0; segmentIndex < memberSegments.length; segmentIndex += 1) {
-    if (normalizeIdentifier(stripIndexedAccessMarker(memberSegments[segmentIndex] ?? "")) !== "object") {
+    const objectSegment = pathSegmentDetails[segmentIndex];
+
+    if (
+      normalizeIdentifier(stripIndexedAccessMarker(memberSegments[segmentIndex] ?? "")) !== "object" ||
+      objectSegment?.accessKind !== "none"
+    ) {
       continue;
     }
 

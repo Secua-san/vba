@@ -484,7 +484,10 @@ Public Sub Demo()
     Debug.Print Chart1.Shapes.Item("CheckBox1").OLEFormat.Object.
     Debug.Print Sheet1.Shapes.Range(Array("CheckBox1")).OLEFormat.Object.
     Debug.Print Sheet1.Shapes("PlainShape").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes.Item("PlainShape").OLEFormat.Object.
     Debug.Print Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).
 End Sub`;
 
   mkdirSync(moduleDirectory, { recursive: true });
@@ -595,9 +598,21 @@ Option Explicit`
       uri,
       findPositionAfterTokenInText(text, 'Sheet1.Shapes("PlainShape").OLEFormat.Object.')
     );
+    const itemUnmatchedShapeObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes.Item("PlainShape").OLEFormat.Object.')
+    );
     const worksheetNameRootObjectMembers = service.getCompletionSymbols(
       uri,
       findPositionAfterTokenInText(text, 'Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const worksheetNameRootItemObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.')
+    );
+    const indexedObjectCallMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).')
     );
     const nameHover = service.getHover(uri, findPositionAfterTokenInText(text, 'Sheet1.Shapes("CheckBox1").Nam'));
     const namedValueHover = service.getHover(
@@ -654,7 +669,10 @@ Option Explicit`
     assert.equal(chartItemNamedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(groupedShapeRangeObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(unmatchedShapeObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(itemUnmatchedShapeObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(worksheetNameRootObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(worksheetNameRootItemObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(indexedObjectCallMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(nameHover?.contents.includes("Shape.Name"), true);
     assert.equal(nameHover?.contents.includes("excel.shape.name"), true);
     assert.equal(namedValueHover?.contents.includes("CheckBox.Value"), true);
