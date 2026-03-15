@@ -10,6 +10,7 @@
 | [0002 vbac Integration Safety](0002-vbac-integration-safety.md) | `vbac` / XLAM 連携の安全方針 | extract / combine / XLAM 連携を触るとき |
 | [0003 MCP Call Retry Policy](0003-mcp-call-retry-policy.md) | 外部 MCP 呼び出しの retry / rate-limit | MCP クライアントや取得スクリプトを触るとき |
 | [0004 DialogSheet Document Module Policy](0004-dialogsheet-document-module-policy.md) | DialogSheet document module の扱い | DialogSheet root、owner、公的ソース不足の論点を触るとき |
+| [0005 Explicit Sheet-Name Root Policy](0005-explicit-sheet-name-root-policy.md) | `Worksheets("Sheet1")` 系 root と sidecar join key | explicit sheet-name root、`sheetName` / `sheetCodeName` の使い分けを触るとき |
 
 ## 追加ルール
 

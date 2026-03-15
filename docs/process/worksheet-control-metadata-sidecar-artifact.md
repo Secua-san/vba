@@ -251,6 +251,6 @@
 
 ## 次段の実装候補
 
-1. `Shape.OLEFormat.Object` の broader root 展開条件は [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md) を正本とし、`Worksheets("Sheet1")` など explicit sheet-name root を sidecar へ結べるかを整理する。
+1. `Shape.OLEFormat.Object` の broader root 展開条件は [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md) と [shape-oleformat-object-explicit-sheet-root-feasibility.md](./shape-oleformat-object-explicit-sheet-root-feasibility.md) を正本とし、explicit sheet-name root では `sheetName`、document module alias では `sheetCodeName` を使い分ける。
 2. drawing object 全体を含む `Shapes` root を control 専用 owner へ誤昇格させない境界条件を、`msoOLEControlObject` 判定や `OLEFormat` 成功条件と合わせて固定する。
 3. workbook / standard module からの非 document-module access を広げる必要がある場合は、`sheetCodeName` 以外の root identity をどこまで許可するかを別タスクとして切り出す。

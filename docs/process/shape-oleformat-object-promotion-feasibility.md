@@ -95,5 +95,5 @@
 
 ## 次段の候補
 
-- `Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` や `ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` のような explicit sheet-name root を sidecar へ結べるかを整理する。
-- 検討時は numeric / dynamic / chart / `ShapeRange` の負例をそのまま維持し、`OLEObject.Object` / `Sheet1.ControlCodeName` 導線との join key 競合が無いことを確認する。
+- explicit sheet-name root の整理は正本 [shape-oleformat-object-explicit-sheet-root-feasibility.md](./shape-oleformat-object-explicit-sheet-root-feasibility.md) へ切り出した。
+- 次の最小候補は `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` の workbook-qualified root に限定し、`ActiveWorkbook` / unqualified `Worksheets` は引き続き除外する。
