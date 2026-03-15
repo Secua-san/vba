@@ -537,6 +537,78 @@ export async function run(): Promise<void> {
   });
   assertNoDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 23, "Select");
 
+  const shapesBuiltInDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ShapesBuiltIn.bas"));
+  await vscode.window.showTextDocument(shapesBuiltInDocument);
+
+  const shapesCollectionCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, "Sheet1.Shapes."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Count")
+  );
+  const indexedShapeCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, "Sheet1.Shapes(1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Name")
+  );
+  const itemShapeCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, "Sheet1.Shapes.Item(1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Name")
+  );
+  const chartShapeCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, "Chart1.Shapes(1)."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Name")
+  );
+  const oleFormatCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'Sheet1.Shapes("CheckBox1").OLEFormat.'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "progID")
+  );
+  const shapeNameHover = await waitForHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'Sheet1.Shapes("CheckBox1").Nam'),
+    (hovers) => hovers.length > 0
+  );
+  const shapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const shapesLegend = await waitForSemanticTokensLegend(
+    shapesBuiltInDocument,
+    (legend) => legend.tokenTypes.includes("variable")
+  );
+  const shapesTokens = await waitForSemanticTokens(shapesBuiltInDocument, (tokens) => tokens.data.length > 0);
+  const indexedShapeNameCompletion = indexedShapeCompletionItems.find((item) => getCompletionItemLabel(item) === "Name");
+  const itemShapeNameCompletion = itemShapeCompletionItems.find((item) => getCompletionItemLabel(item) === "Name");
+  const chartShapeNameCompletion = chartShapeCompletionItems.find((item) => getCompletionItemLabel(item) === "Name");
+  const oleFormatProgIdCompletion = oleFormatCompletionItems.find((item) => getCompletionItemLabel(item) === "progID");
+  const shapeHoverText = getHoverContentsText(shapeNameHover[0]);
+  const decodedShapesTokens = decodeSemanticTokens(shapesTokens, shapesLegend);
+
+  assert.ok(shapesCollectionCompletionItems.some((item) => getCompletionItemLabel(item) === "Count"));
+  assert.equal(
+    shapesCollectionCompletionItems.some((item) => getCompletionItemLabel(item) === "Name"),
+    false,
+    "Shapes collection は indexed access なしでは Shape owner に降りない"
+  );
+  assert.ok(indexedShapeNameCompletion?.detail?.includes("Excel Shape property"));
+  assert.ok(itemShapeNameCompletion?.detail?.includes("Excel Shape property"));
+  assert.ok(chartShapeNameCompletion?.detail?.includes("Excel Shape property"));
+  assert.ok(oleFormatProgIdCompletion?.detail?.includes("Excel OLEFormat property"));
+  assert.equal(shapeHoverText.includes("Shape.Name"), true);
+  assert.equal(shapeHoverText.includes("excel.shape.name"), true);
+  assert.equal(shapeObjectValueHoverSuppressed, true);
+  assertDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 12, "Name", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 14, "ProgID", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 16, "Value");
+
   const worksheetControlCodeNameDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "WorksheetControlCodeName.bas")
   );

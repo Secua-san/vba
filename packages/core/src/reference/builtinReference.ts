@@ -71,6 +71,7 @@ const INDEXED_COLLECTION_OWNER_TYPES = new Map<
   ["dialogsheets", { itemOwnerName: "DialogSheet", supportedAccessKinds: new Set(["literal", "single"]) }],
   ["oleobjects", { itemOwnerName: "OLEObject", supportedAccessKinds: new Set(["literal", "single"]) }],
   ["optionbuttons", { itemOwnerName: "OptionButton", supportedAccessKinds: new Set(["literal"]) }],
+  ["shapes", { itemOwnerName: "Shape", supportedAccessKinds: new Set(["literal", "single"]) }],
   ["worksheets", { itemOwnerName: "Worksheet", supportedAccessKinds: new Set(["literal", "single"]) }],
 ]);
 const BASE_BUILTIN_COMPLETIONS: Array<

@@ -379,9 +379,14 @@
   - workbook / standard module からの非 document-module access、`ActiveSheet` root、supported/unsupported を問わない chartsheet owner、sidecar 未検出、`shape name != code name` の direct access は従来どおり保守的に未解決のまま維持した
   - server / extension に専用 fixture と回帰テストを追加し、`OLEObject.Object` 既存導線と衝突しないこと、semantic token / hover / signature help まで control owner へ進むことを固定した
 
-- [ ] Worksheet / Chart Shapes root の control 導線を整理する
-  - `Worksheet.Shapes("ShapeName")` / `Chart.Shapes("ShapeName")` と `Shape.OLEFormat.Object` のどこまでを user-facing に出すかを整理し、drawing object 全体を含む `Shapes` root をそのまま control owner へ昇格させない境界を先に固定する
-  - `msoOLEControlObject` 相当の見分け方、`shape name != code name`、embedded document 混在時の保守動作を docs と回帰テストで整理する
+- [x] Worksheet / Chart Shapes root の control 導線を整理する
+  - `Worksheet.Shapes(Index)` / `Chart.Shapes(Index)` と `Shapes.Item(Index)` を generic `Shape` owner へ正規化し、`Name` や `OLEFormat` などの `Shape` surface までは user-facing に出すようにした
+  - `Shape.OLEFormat.Object` の先は generic `Object` のまま維持し、worksheet control metadata sidecar があっても `CheckBox.Value` のような control-specific owner へは昇格させないことを server / extension test で固定した
+  - `msoOLEControlObject`、`shape name != code name`、embedded / linked OLE object 混在時の扱いは正本 [docs/process/worksheet-chart-shapes-root-feasibility.md](docs/process/worksheet-chart-shapes-root-feasibility.md) に整理した
+
+- [ ] Shape.OLEFormat.Object の control owner 昇格条件を整理する
+  - `Shape.Type = msoOLEControlObject` と sidecar の `shapeName -> controlType` をどう組み合わせれば `Shape.OLEFormat.Object` の先を安全に control owner へ進められるかを整理する
+  - `msoEmbeddedOLEObject` / `msoLinkedOLEObject`、shape name と code name のずれ、`ShapeRange` / grouped selector をどう除外するかを docs と回帰テストで整理する
 
 ## メモ
 

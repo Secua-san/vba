@@ -4,7 +4,7 @@
 
 - `Worksheet` / `Chart` 上の control 導線について、最初の実装候補は `Worksheet.OLEObjects(Index)` / `Chart.OLEObjects(Index)` を `OLEObject` owner へ落とす最小プロトタイプとする。
 - `Sheet1.CommandButton1` は Office VBA の自然な導線だが、現行リポジトリの静的入力だけでは worksheet / chart sheet 上の control code name と型の inventory を安定して得られないため、初回対象から外す。
-- `Shapes` は Office VBA の正本道線には含まれるが、control 以外の drawing object を広く含むため、最初の user-facing root にはしない。
+- `Shapes` は Office VBA の正本道線には含まれるが、control 以外の drawing object を広く含むため、control 専用の最初の user-facing root にはしない。
 - `OLEObject.Object` と `Shape.OLEFormat.Object` の先はどちらも `Object` で、control 種別や埋め込みアプリ型が固定できないため、初回は型付き chain 解決へ進めない。
 - 次段は `Worksheet` / `Chart` の `OLEObjects` root だけを追加し、`OLEObject` surface の completion / hover / signature help へ到達できる状態を目標にする。
 
@@ -46,10 +46,10 @@
 - ただし現行リポジトリの解析入力は `.bas` / `.cls` / `.frm` / `.frx` が主で、worksheet / chart sheet 上の ActiveX control 一覧や control type を静的に列挙する仕組みはまだ持っていない。
 - event procedure 名から code name の断片は見えても、module 外から使う一般的な inventory としては不足するため、最初の実装入口に据えるには前提が足りない。
 
-### 3. `Shapes` は広すぎて、control 専用の user-facing root には向かない
+### 3. `Shapes` は generic `Shape` surface までは出せるが、control 専用 root には向かない
 
 - `Shapes` は AutoShape、picture、embedded OLE object など drawing layer 全体を含む。
-- `Shapes("CheckBox1")` のような書き方自体は可能だが、戻るのは `Shape` であり、control 専用 member へ進むには `OLEFormat` と `Object` の追加判定が必要になる。
+- `Shapes("CheckBox1")` のような書き方自体は可能で、generic `Shape` member までは user-facing に出せるが、control 専用 member へ進むには `OLEFormat` と `Object` の追加判定が必要になる。
 - Office VBA でも `Shape.OLEFormat` は OLE object でない場合に失敗するとされており、control 専用の安全な root としては `OLEObjects` より一段不利である。
 
 ### 4. `.Object` の先は control 型とも埋め込みアプリとも限らない

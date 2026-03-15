@@ -332,6 +332,19 @@ test("OLEObjects member override は Item を OLEObjects として型付けす�
   assert.equal(itemMember.typeName, "OLEObjects");
 });
 
+test("Shapes member override は Item を Shapes として型付けする", async () => {
+  const data = await loadReferenceData();
+  const itemMember = getMember(data, "Shapes", "Item");
+  const itemOverride = supplementalOwnerMemberOverrides
+    .find((ownerConfig) => ownerConfig.ownerName === "Shapes" && ownerConfig.sectionName === "Methods")
+    ?.members.find((member) => member.name === "Item");
+
+  assert.ok(itemMember, "Shapes.Item member が必要です");
+  assert.ok(itemOverride, "Shapes.Item override 設定が必要です");
+  assert.equal(itemOverride.typeName, "Shapes");
+  assert.equal(itemMember.typeName, "Shapes");
+});
+
 test("DialogSheet 補助 root は Application / Workbook.DialogSheets を DialogSheets として型付けする", async () => {
   const data = await loadReferenceData();
 
