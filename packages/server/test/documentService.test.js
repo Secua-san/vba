@@ -1333,6 +1333,8 @@ Public Sub Demo()
     Debug.Print ActiveSheet.OLEObjects("CheckBox1").Object.Value
     Debug.Print Worksheets(1).OLEObjects("CheckBox1").Object.Value
     Debug.Print Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Application.Worksheets(1).OLEObjects("CheckBox1").Object.Value
+    Debug.Print Application.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value
 End Sub
 
 Private Function GetIndex() As Long
@@ -1486,6 +1488,14 @@ End Function`;
       uri,
       findPositionAfterTokenInText(text, 'Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.')
     );
+    const indexedApplicationWorksheetMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets(1).OLEObjects("CheckBox1").Object.')
+    );
+    const dynamicApplicationWorksheetShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.')
+    );
 
     assert.equal(worksheetBoundObjectMembers.some((resolution) => resolution.symbol.name === "Value"), true);
     assert.equal(applicationBoundObjectMembers.some((resolution) => resolution.symbol.name === "Value"), true);
@@ -1503,6 +1513,43 @@ End Function`;
     assert.equal(activeSheetMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(indexedWorksheetMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(dynamicWorksheetShapeMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(indexedApplicationWorksheetMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(dynamicApplicationWorksheetShapeMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "C:\\Fixtures\\OtherBook.xlsm",
+        isAddin: false,
+        name: "OtherBook.xlsm",
+        path: "C:\\Fixtures"
+      },
+      observedAt: "2026-03-21T00:00:30.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const mismatchedWorksheetObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const mismatchedApplicationObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const mismatchedWorksheetShapeHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
+    );
+    const mismatchedApplicationObjectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
+    );
+
+    assert.equal(mismatchedWorksheetObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(mismatchedApplicationObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(mismatchedWorksheetShapeHover, undefined);
+    assert.equal(mismatchedApplicationObjectSignature, undefined);
 
     service.setActiveWorkbookIdentitySnapshot({
       observedAt: "2026-03-21T00:01:00.000Z",

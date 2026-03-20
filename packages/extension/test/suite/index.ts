@@ -1292,6 +1292,55 @@ export async function run(): Promise<void> {
     assert.equal(activeSheetBroadRootHoverSuppressed, true);
     assert.equal(indexedBroadRootHoverSuppressed, true);
     assert.equal(dynamicBroadRootHoverSuppressed, true);
+
+    await setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "C:\\Fixtures\\OtherBook.xlsm",
+        isAddin: false,
+        name: "OtherBook.xlsm",
+        path: "C:\\Fixtures"
+      },
+      observedAt: "2026-03-21T00:01:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const mismatchedWorksheetBroadRootHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const mismatchedApplicationBroadRootSignatureSuppressed = await waitForNoSignatureHelp(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+      )
+    );
+    const mismatchedWorksheetBroadRootCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
+      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const mismatchedApplicationBroadRootCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'
+      ),
+      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+
+    assert.equal(mismatchedWorksheetBroadRootHoverSuppressed, true);
+    assert.equal(mismatchedApplicationBroadRootSignatureSuppressed, true);
+    assert.equal(
+      mismatchedWorksheetBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      false
+    );
+    assert.equal(
+      mismatchedApplicationBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      false
+    );
   } finally {
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
   }
