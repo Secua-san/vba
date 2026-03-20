@@ -1214,11 +1214,13 @@ export async function run(): Promise<void> {
   );
   assert.equal(
     worksheetBroadRootItemObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-    false
+    false,
+    'unqualified Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
   );
   assert.equal(
     applicationBroadRootItemObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-    false
+    false,
+    'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
   );
   assert.equal(worksheetBroadRootShapeHoverSuppressed, true);
   assert.equal(worksheetBroadRootItemShapeHoverSuppressed, true);
@@ -1449,11 +1451,13 @@ export async function run(): Promise<void> {
     assert.equal(worksheetRootItemHoverSuppressed, true);
     assert.equal(
       worksheetRootItemCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-      false
+      false,
+      'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は root .Item 形式のため broad root を開かない'
     );
     assert.equal(
       applicationRootItemCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-      false
+      false,
+      'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は root .Item 形式のため broad root を開かない'
     );
     assert.equal(applicationRootItemSignatureSuppressed, true);
 
@@ -1515,15 +1519,18 @@ export async function run(): Promise<void> {
     assert.equal(mismatchedApplicationBroadRootSignatureSuppressed, true);
     assert.equal(
       mismatchedWorksheetBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
-      false
+      false,
+      'mismatch snapshot では Worksheets("Sheet One").Shapes("CheckBox1") broad root を開かない'
     );
     assert.equal(
       mismatchedApplicationBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
-      false
+      false,
+      'mismatch snapshot では Application.Worksheets("Sheet One").OLEObjects("CheckBox1") broad root を開かない'
     );
     assert.equal(
       mismatchedApplicationBroadRootItemCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
-      false
+      false,
+      'mismatch snapshot では Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") broad root を開かない'
     );
   } finally {
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
