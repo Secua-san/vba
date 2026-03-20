@@ -8,6 +8,7 @@
 - v1 では saved かつ non-addin workbook にだけ manifest を生成し、manifest 不在は binding disabled として扱う。
 - workbook package mode は manifest を生成する source of truth としては使えるが、loose file workflow の runtime binding transport には使わない。
 - broad root を user-facing に開くのは、manifest に加えて host から active workbook identity を受け取る契約が定義された後とする。
+- runtime 側の契約と state schema は、正本 [active-workbook-identity-provider-contract.md](./active-workbook-identity-provider-contract.md) に分離する。
 
 ## 確認した公式ソース
 
@@ -171,5 +172,5 @@
 
 ## 次段の候補
 
-- extension / server / host 間で active workbook identity をどう受け渡すかの契約を整理する。
-- host が返す `ActiveWorkbook.FullName` を v1 matching rule にどう合わせるか、取得不能時や Protected View 時の挙動を決める。
+- extension / server 間の `vba/activeWorkbookIdentity` notification と snapshot cache の最小実装を追加する。
+- manifest matching helper と snapshot gating log を read-only で先に観測可能にする。

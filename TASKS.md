@@ -414,9 +414,15 @@
   - `docs/process/workbook-binding-manifest-feasibility.md` を追加し、manifest / config / workbook package mode の比較、`Workbook.FullName` を primary key にする理由、unsaved workbook と add-in workbook を broad root 対象外にする理由を整理した
   - `worksheet-control-metadata.json` には binding 情報を混ぜず、sidecar は control inventory、binding manifest は runtime workbook identity と責務分離する方針を文書化した
 
-- [ ] active workbook identity provider の契約を整理する
-  - broad root を将来再評価できるように、extension / server / host 間で `ActiveWorkbook.FullName` をどう受け渡すか、取得不能時や Protected View 時の扱いを docs で整理する
-  - host が返す `ActiveWorkbook.FullName` を v1 matching rule にどう合わせるか、resolver 有効化条件と log 方針を決める
+- [x] active workbook identity provider の契約を整理する
+  - ADR [0007](docs/adr/0007-active-workbook-identity-provider-contract.md) を追加し、host / extension / server で共有する `ActiveWorkbookIdentitySnapshot`、custom LSP notification `vba/activeWorkbookIdentity`、resolver gating 条件を固定した
+  - [docs/process/active-workbook-identity-provider-contract.md](docs/process/active-workbook-identity-provider-contract.md) を追加し、`Application.ActiveWorkbook` / `ActiveProtectedViewWindow` / `ProtectedViewWindow.Workbook` / `Workbook.Saved` / `Workbook.IsAddin` を根拠に、`available` / `unavailable` / `protected-view` / `unsupported` state と log 方針を整理した
+  - [docs/process/workbook-binding-manifest-feasibility.md](docs/process/workbook-binding-manifest-feasibility.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) を更新し、manifest policy と runtime provider contract の責務分離を明確化した
+
+- [ ] active workbook identity snapshot transport の最小実装を整理する
+  - extension / server 間の custom LSP notification `vba/activeWorkbookIdentity` と server cache を read-only で追加し、resolver へはまだ接続しない段階を設計する
+  - snapshot 受信 log と `binding-missing` / `binding-disabled` / `match` / `mismatch` の gating log をどう分けて観測するか、最小の実装単位を決める
+  - `ActiveWorkbookIdentitySnapshot` の validation 境界と `invalid-payload` log code を transport 実装と同じ PR で固定する
 
 ## メモ
 

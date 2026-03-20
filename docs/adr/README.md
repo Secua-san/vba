@@ -12,6 +12,7 @@
 | [0004 DialogSheet Document Module Policy](0004-dialogsheet-document-module-policy.md) | DialogSheet document module の扱い | DialogSheet root、owner、公的ソース不足の論点を触るとき |
 | [0005 Explicit Sheet-Name Root Policy](0005-explicit-sheet-name-root-policy.md) | `Worksheets("Sheet1")` 系 root と sidecar join key | explicit sheet-name root、`sheetName` / `sheetCodeName` の使い分けを触るとき |
 | [0006 Workbook Binding Policy](0006-workbook-binding-policy.md) | broad root 再評価の前提となる workbook identity binding | `ActiveWorkbook` / unqualified `Worksheets`、binding manifest、host identity 受け渡しを触るとき |
+| [0007 Active Workbook Identity Provider Contract](0007-active-workbook-identity-provider-contract.md) | host / extension / server 間の active workbook runtime identity 契約 | `ActiveWorkbook` snapshot、Protected View、notification transport、resolver gating を触るとき |
 
 ## 追加ルール
 
