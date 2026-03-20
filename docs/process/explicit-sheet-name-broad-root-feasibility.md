@@ -5,7 +5,7 @@
 - `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` は、current bundle の sidecar へ静的に結ばない。
 - この非公開境界は `OLEObject.Object` と `Shape.OLEFormat.Object` の両方でそろえて維持する。
 - user-facing に開く explicit sheet-name root は、引き続き `ThisWorkbook.Worksheets("Sheet1")` のように workbook identity を静的に固定できる経路に限る。
-- broad root を再評価する条件は、正本 [workbook-binding-manifest-feasibility.md](./workbook-binding-manifest-feasibility.md) で定義する workbook binding と host identity 契約が揃ったときだけとする。
+- broad root を再評価する条件は、正本 [workbook-binding-manifest-feasibility.md](./workbook-binding-manifest-feasibility.md) と [active-workbook-identity-provider-contract.md](./active-workbook-identity-provider-contract.md) で定義する workbook binding / host identity 契約が揃ったときだけとする。
 
 ## 確認した公式ソース
 
@@ -94,5 +94,5 @@
 
 ## 次段の候補
 
-- active workbook identity を extension / server / host 間でどう受け渡すかの契約を整理する。
-- workbook binding manifest と sidecar lookup helper の責務分離を具体化する。
+- extension / server 間の `vba/activeWorkbookIdentity` notification と snapshot cache の最小実装を追加する。
+- workbook binding manifest と runtime snapshot をつなぐ read-only gating log を追加する。
