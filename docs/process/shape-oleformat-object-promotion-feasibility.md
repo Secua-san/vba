@@ -96,4 +96,4 @@
 ## 次段の候補
 
 - explicit sheet-name root の整理と `ThisWorkbook.Worksheets("Sheet1")` 限定実装は正本 [shape-oleformat-object-explicit-sheet-root-feasibility.md](./shape-oleformat-object-explicit-sheet-root-feasibility.md) を参照する。
-- 次の候補は `ActiveWorkbook.Worksheets("Sheet1")` / unqualified `Worksheets("Sheet1")` の broad root 展開可否を整理し、`current bundle` と runtime active workbook の同一視前提を user-facing に許容するかを決める。
+- broad root の採否は正本 [explicit-sheet-name-broad-root-feasibility.md](./explicit-sheet-name-broad-root-feasibility.md) に切り出した。2026-03-20 時点では `ThisWorkbook` 限定を維持し、`ActiveWorkbook` / unqualified `Worksheets` は user-facing にしない。

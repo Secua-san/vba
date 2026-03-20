@@ -93,8 +93,9 @@
 
 ### フェーズ 3: broad root 展開の再評価
 
-- `ActiveWorkbook` や unqualified `Worksheets` へ広げるには、「current bundle と runtime active workbook を同一視してよいか」を別途判断する。
-- その前提を置かないなら、broad root 展開は見送り続けるほうが安全である。
+- broad root の扱いは正本 [explicit-sheet-name-broad-root-feasibility.md](./explicit-sheet-name-broad-root-feasibility.md) に分離した。
+- 2026-03-20 時点では、`ActiveWorkbook` や unqualified `Worksheets` は current bundle を静的に指さないため user-facing にしない。
+- 再評価は、current bundle と target workbook の同一性を明示できる workbook binding が導入されたときだけ行う。
 
 ## 今回の完了条件
 
@@ -105,6 +106,5 @@
 
 ## 次段の候補
 
-- `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` を broad root 候補として開くかどうかを再評価する。
-- 再評価時は `current bundle == runtime active workbook` の前提を置くか、置かないなら `ThisWorkbook` 限定のまま維持するかを明文化する。
-- `Shape.OLEFormat.Object` と `OLEObject.Object` の両方で broad root を同時に開くか、片側だけ保守動作に残すかの user-facing 境界を整理する。
+- broad root を再評価する前提となる workbook binding / manifest 方針を整理する。
+- その binding が入ったときに `sheetName + shapeName` lookup helper の入力をどう拡張するかを設計する。
