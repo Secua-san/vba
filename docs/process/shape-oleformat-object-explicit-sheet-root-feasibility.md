@@ -83,6 +83,14 @@
 - 必要なら同時に `ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object` 系も同じ helper へ寄せる。
 - negative は `ActiveWorkbook`、unqualified `Worksheets`、`ActiveSheet`、chartsheet、numeric / dynamic selector、`ShapeRange` を維持する。
 
+## 2026-03-15 時点の完了状態
+
+- `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` は user-facing に解決する。
+- shared helper により `ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object` と `.Item("CheckBox1").Object` も同じ workbook-qualified root から user-facing に解決する。
+- resolver は `ThisWorkbook` 起点の workbook root identity を `Worksheets("Sheet1")` 連鎖でも保持し、current bundle の sidecar から `sheetName + shapeName` を引ける。
+- `ThisWorkbook.Worksheets(1)`、`ActiveWorkbook.Worksheets("Sheet1")`、unqualified `Worksheets("Sheet1")`、`ActiveSheet`、chartsheet、`ShapeRange` は引き続き除外境界として維持する。
+- `sheetName + shapeName` lookup helper は `OLEObject.Object` と `Shape.OLEFormat.Object` の両方で共有できる形へ寄せた。
+
 ### フェーズ 3: broad root 展開の再評価
 
 - `ActiveWorkbook` や unqualified `Worksheets` へ広げるには、「current bundle と runtime active workbook を同一視してよいか」を別途判断する。
@@ -97,6 +105,6 @@
 
 ## 次段の候補
 
-- `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` を sidecar へ結ぶ最小実装を整理する。
-- 実装時は `ThisWorkbook` 起点の workbook root identity を `Worksheets("...")` 連鎖へ保持したまま sidecar resolver へ伝播させる。
-- `sheetName + shapeName` lookup helper を `OLEObject.Object` 側とも共有できるようにし、`Sheet1` alias 既存経路との非衝突を server / extension test で固定する。
+- `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` を broad root 候補として開くかどうかを再評価する。
+- 再評価時は `current bundle == runtime active workbook` の前提を置くか、置かないなら `ThisWorkbook` 限定のまま維持するかを明文化する。
+- `Shape.OLEFormat.Object` と `OLEObject.Object` の両方で broad root を同時に開くか、片側だけ保守動作に残すかの user-facing 境界を整理する。

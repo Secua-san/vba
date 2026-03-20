@@ -32,6 +32,14 @@ Public Sub Demo()
     Debug.Print Sheet1.Shapes.Item("PlainShape").OLEFormat.Object.Value
     Debug.Print Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
     Debug.Print Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Call ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
     Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).Value
 End Sub
 

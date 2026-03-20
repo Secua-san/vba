@@ -95,5 +95,5 @@
 
 ## 次段の候補
 
-- explicit sheet-name root の整理は正本 [shape-oleformat-object-explicit-sheet-root-feasibility.md](./shape-oleformat-object-explicit-sheet-root-feasibility.md) へ切り出した。
-- 次の最小候補は `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` の workbook-qualified root に限定し、`ActiveWorkbook` / unqualified `Worksheets` は引き続き除外する。
+- explicit sheet-name root の整理と `ThisWorkbook.Worksheets("Sheet1")` 限定実装は正本 [shape-oleformat-object-explicit-sheet-root-feasibility.md](./shape-oleformat-object-explicit-sheet-root-feasibility.md) を参照する。
+- 次の候補は `ActiveWorkbook.Worksheets("Sheet1")` / unqualified `Worksheets("Sheet1")` の broad root 展開可否を整理し、`current bundle` と runtime active workbook の同一視前提を user-facing に許容するかを決める。
