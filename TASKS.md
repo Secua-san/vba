@@ -429,9 +429,14 @@
   - 最初の接続対象は既存の `OLEObject.Object` / `Shape.OLEFormat.Object` と同じ worksheet control owner 導線に限定し、resolver 条件と負例を server / extension test で固定する
   - `packages/extension` に test mode 限定の `vba.test.setActiveWorkbookIdentitySnapshot` コマンドを追加し、fixture manifest と組み合わせて broad root gating の E2E を固定した
 
-- [ ] unqualified worksheet broad root gating の可否を整理する
-  - `ActiveWorkbook.Worksheets("SheetName")` と共通 helper を使いながら、unqualified `Worksheets("SheetName")` を current workbook とみなしてよい条件を docs/ADR ベースで再確認する
-  - workbook binding manifest と active workbook snapshot が一致していても、`ActiveSheet` / `Sheets` / grouped selector へ拡張しない境界を先に固定する
+- [x] unqualified worksheet broad root gating の可否を整理する
+  - ADR [0005](docs/adr/0005-explicit-sheet-name-root-policy.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) を更新し、unqualified `Worksheets("SheetName")` / `Application.Worksheets("SheetName")` は Office VBA 上で active workbook family とみなし、`ActiveWorkbook.Worksheets("SheetName")` と同じ runtime gating 条件でだけ将来 user-facing にできる方針を固定した
+  - broad root family の v1 対象構文を `Worksheets("literal")` / `Application.Worksheets("literal")` に限定し、`Sheets` / `ActiveSheet` / numeric / dynamic / grouped selector と shadow case は sidecar lookup の対象外に残す境界を固定した
+  - `OLEObject.Object` / `Shape.OLEFormat.Object` は同じ PR・同じ条件で開閉すること、manifest mismatch / unavailable / shadow case を受け入れ条件に含めることを docs に反映した
+
+- [ ] unqualified worksheet broad root の最小接続を追加する
+  - `available` snapshot と `workbook-binding.json` の match がそろったときだけ、`Worksheets("SheetName")` と `Application.Worksheets("SheetName")` を `ActiveWorkbook.Worksheets("SheetName")` と同じ helper で current bundle sidecar lookup へ限定接続する
+  - 最初の user-facing 対象は `OLEObject.Object` / `Shape.OLEFormat.Object` に絞り、`Sheets` / `ActiveSheet` / numeric / dynamic / grouped selector と `Worksheets` shadow case は負例のまま維持する
 
 ## メモ
 

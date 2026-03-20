@@ -30,7 +30,7 @@
 
 ## 現行前提
 
-- broad root は現時点で閉じており、user-facing に解決する explicit sheet-name root は `ThisWorkbook.Worksheets("Sheet1")` に限定している。
+- broad root は既定では閉じているが、現行実装では `ActiveWorkbook.Worksheets("Sheet1")` が `available` snapshot と manifest match のときだけ user-facing に開く。unqualified `Worksheets("Sheet1")` / `Application.Worksheets("Sheet1")` はまだ未実装である。
 - sidecar v1 は `shapeName` / `codeName` / `controlType` の inventory を持つが、runtime workbook identity は持たない。
 - `loose files + sidecar` が日常入力であり、extension / server が workbook package を都度直接読む運用はまだ採らない。
 - `.vba/` 配下には sidecar 以外の補助 artifact を追加できる余地がある。
@@ -148,10 +148,13 @@
 
 ## user-facing 境界
 
-### まだ開かないもの
+### 既に開いているもの
 
 - `ActiveWorkbook.Worksheets("Sheet1").OLEObjects("ShapeName").Object`
 - `ActiveWorkbook.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
+
+### まだ開かないもの
+
 - unqualified `Worksheets("Sheet1")...`
 
 ### 将来開ける条件
@@ -172,5 +175,5 @@
 
 ## 次段の候補
 
-- `available` snapshot と manifest match がそろったときだけ、`ActiveWorkbook.Worksheets("SheetName")` 系 broad root を current bundle sidecar lookup へ限定接続する。
-- broad root gating は `OLEObject.Object` / `Shape.OLEFormat.Object` の両導線でそろえ、manifest mismatch と unavailable snapshot の負例を test で固定する。
+- `available` snapshot と manifest match がそろったときだけ、unqualified `Worksheets("SheetName")` / `Application.Worksheets("SheetName")` broad root を `ActiveWorkbook.Worksheets("SheetName")` と同じ helper で current bundle sidecar lookup へ限定接続するかを整理する。
+- broad root gating は `OLEObject.Object` / `Shape.OLEFormat.Object` の両導線でそろえ、manifest mismatch、unavailable snapshot、非対象 selector の負例を test で固定する。
