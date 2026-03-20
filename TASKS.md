@@ -434,9 +434,14 @@
   - broad root family の v1 対象構文を `Worksheets("literal")` / `Application.Worksheets("literal")` に限定し、`Sheets` / `ActiveSheet` / numeric / dynamic / grouped selector と shadow case は sidecar lookup の対象外に残す境界を固定した
   - `OLEObject.Object` / `Shape.OLEFormat.Object` は同じ PR・同じ条件で開閉すること、manifest mismatch / unavailable / shadow case を受け入れ条件に含めることを docs に反映した
 
-- [ ] unqualified worksheet broad root の最小接続を追加する
-  - `available` snapshot と `workbook-binding.json` の match がそろったときだけ、`Worksheets("SheetName")` と `Application.Worksheets("SheetName")` を `ActiveWorkbook.Worksheets("SheetName")` と同じ helper で current bundle sidecar lookup へ限定接続する
-  - 最初の user-facing 対象は `OLEObject.Object` / `Shape.OLEFormat.Object` に絞り、`Sheets` / `ActiveSheet` / numeric / dynamic / grouped selector と `Worksheets` shadow case は負例のまま維持する
+- [x] unqualified worksheet broad root の最小接続を追加する
+  - `packages/server` の broad root resolver を拡張し、`available` snapshot と `workbook-binding.json` の match がそろったときだけ、unqualified `Worksheets("SheetName")` と `Application.Worksheets("SheetName")` を synthetic `Worksheet` root として sidecar lookup へ流すようにした
+  - 最初の user-facing 対象は `OLEObject.Object` / `Shape.OLEFormat.Object` に限定し、`Sheets` / `ActiveSheet` / numeric / dynamic selector と `Worksheets` shadow case は server / extension test で負例のまま固定した
+  - broad-root 専用 fixture を extension test に追加し、snapshot 未一致では閉じたまま、match 時にだけ completion / hover / signature help が開くことを `npm run lint` / `npm test` / `npm run package` で確認した
+
+- [ ] unqualified worksheet broad root の Item selector 回帰を拡張する
+  - `Worksheets("SheetName").OLEObjects.Item("ShapeName").Object` と `Application.Worksheets("SheetName").Shapes.Item("ShapeName").OLEFormat.Object` も broad root family として明示的に回帰固定する
+  - `available` / `unavailable` だけでなく manifest mismatch の E2E も extension 側で分けて観測できるようにし、broad root 条件の退行を切り分けやすくする
 
 ## メモ
 

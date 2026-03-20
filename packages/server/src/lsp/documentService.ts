@@ -1164,9 +1164,11 @@ interface CompletionContext {
 
 interface DocumentModuleBuiltinContext {
   ownerName: "Chart" | "Workbook" | "Worksheet";
+  memberPathOffset?: number;
   rootModuleName: string;
   rootUri: string;
   worksheetControlOwnerKind?: "worksheet";
+  worksheetControlSheetName?: string;
 }
 
 interface WorksheetControlSidecarLookupContext {
@@ -2019,20 +2021,23 @@ function resolveBuiltinMemberOwnerForPath(
   const normalizedRootSegment = stripIndexedAccessMarker(rootSegment);
 
   if (!rootResolution) {
-    const builtinContext = getBroadRootBuiltinContext(uri, normalizedRootSegment, getDocumentState);
+    const builtinContext = getBroadRootBuiltinContext(uri, normalizedRootSegment, pathSegmentDetails, getDocumentState);
 
     if (!builtinContext) {
       return resolveBuiltinMemberOwner(pathSegments);
     }
 
+    const memberPathOffset = builtinContext.memberPathOffset ?? 0;
+    const adjustedMemberSegments = memberSegments.slice(memberPathOffset);
+    const adjustedPathSegmentDetails = pathSegmentDetails?.slice(1 + memberPathOffset);
     const sidecarOwnerName = resolveWorksheetControlOwnerFromSidecar(
       builtinContext,
-      memberSegments,
-      pathSegmentDetails?.slice(1),
+      adjustedMemberSegments,
+      adjustedPathSegmentDetails,
       getWorksheetControlMetadataState
     );
 
-    return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, memberSegments);
+    return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, adjustedMemberSegments);
   }
 
   const builtinContext = getDocumentModuleBuiltinContext(rootResolution, normalizedRootSegment, getDocumentState);
@@ -2062,19 +2067,62 @@ function getDocumentModuleBuiltinOwnerName(
 function getBroadRootBuiltinContext(
   uri: string,
   rootSegment: string,
+  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined
 ): DocumentModuleBuiltinContext | undefined {
   const state = getDocumentState(uri);
 
-  if (!state || normalizeIdentifier(rootSegment) !== "activeworkbook" || !hasMatchedActiveWorkbookBinding(state)) {
+  if (!state || !hasMatchedActiveWorkbookBinding(state)) {
     return undefined;
   }
 
-  return {
-    ownerName: "Workbook",
-    rootModuleName: state.analysis.module.name,
-    rootUri: uri
-  };
+  if (normalizeIdentifier(rootSegment) === "activeworkbook") {
+    return {
+      ownerName: "Workbook",
+      rootModuleName: state.analysis.module.name,
+      rootUri: uri
+    };
+  }
+
+  if (normalizeIdentifier(rootSegment) === "worksheets") {
+    const sheetName =
+      pathSegmentDetails?.[0]?.accessKind === "literal"
+        ? parseStringLiteralSelectorValue(pathSegmentDetails[0].selectorText)
+        : undefined;
+
+    return sheetName
+      ? {
+          ownerName: "Worksheet",
+          rootModuleName: state.analysis.module.name,
+          rootUri: uri,
+          worksheetControlSheetName: sheetName
+        }
+      : undefined;
+  }
+
+  if (normalizeIdentifier(rootSegment) !== "application") {
+    return undefined;
+  }
+
+  const applicationSegment = pathSegmentDetails?.[0];
+  const worksheetsSegment = pathSegmentDetails?.[1];
+  const sheetName =
+    normalizeIdentifier(applicationSegment?.text ?? "") === "application" &&
+    applicationSegment?.accessKind === "none" &&
+    normalizeIdentifier(worksheetsSegment?.text ?? "") === "worksheets" &&
+    worksheetsSegment?.accessKind === "literal"
+      ? parseStringLiteralSelectorValue(worksheetsSegment.selectorText)
+      : undefined;
+
+  return sheetName
+    ? {
+        ownerName: "Worksheet",
+        memberPathOffset: 1,
+        rootModuleName: state.analysis.module.name,
+        rootUri: uri,
+        worksheetControlSheetName: sheetName
+      }
+    : undefined;
 }
 
 function getDocumentModuleBuiltinContext(
@@ -2237,6 +2285,24 @@ function getWorksheetControlSidecarLookupContext(
     return supportedOwner
       ? {
           allowDirectCodeName: true,
+          memberSegments,
+          pathSegmentDetails,
+          rootOwnerName: "Worksheet",
+          supportedOwner
+        }
+      : undefined;
+  }
+
+  if (builtinContext.worksheetControlSheetName) {
+    const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
+      (owner) =>
+        owner.ownerKind === "worksheet" &&
+        normalizeIdentifier(owner.sheetName) === normalizeIdentifier(builtinContext.worksheetControlSheetName)
+    );
+
+    return supportedOwner
+      ? {
+          allowDirectCodeName: false,
           memberSegments,
           pathSegmentDetails,
           rootOwnerName: "Worksheet",

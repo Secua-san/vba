@@ -1311,6 +1311,421 @@ End Sub`;
   }
 });
 
+test("document service resolves unqualified worksheet broad roots only while active workbook binding matches", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Debug.Print Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print Sheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ActiveSheet.OLEObjects("CheckBox1").Object.Value
+    Debug.Print Worksheets(1).OLEObjects("CheckBox1").Object.Value
+    Debug.Print Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value
+End Sub
+
+Private Function GetIndex() As Long
+    GetIndex = 1
+End Function`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet One",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+  writeWorkbookBindingManifest(bundleRoot, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "C:\\Fixtures\\book1.xlsm",
+      isAddIn: false,
+      name: "book1.xlsm",
+      path: "C:\\Fixtures",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(uri, "vba", 1, text);
+
+    const worksheetObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const applicationObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const worksheetShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const applicationShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const worksheetObjectHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const applicationObjectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
+    );
+    const worksheetShapeHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
+    );
+    const applicationShapeSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(')
+    );
+
+    assert.equal(worksheetObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(applicationObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(worksheetShapeMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(applicationShapeMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(worksheetObjectHover, undefined);
+    assert.equal(applicationObjectSignature, undefined);
+    assert.equal(worksheetShapeHover, undefined);
+    assert.equal(applicationShapeSignature, undefined);
+
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "c:/fixtures/BOOK1.xlsm",
+        isAddin: false,
+        name: "book1.xlsm",
+        path: "c:/fixtures"
+      },
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const worksheetBoundObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const applicationBoundObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const worksheetBoundShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const applicationBoundShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const worksheetBoundObjectHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const applicationBoundObjectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
+    );
+    const worksheetBoundShapeHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
+    );
+    const applicationBoundShapeSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(')
+    );
+    const sheetsMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Sheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const activeSheetMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'ActiveSheet.OLEObjects("CheckBox1").Object.')
+    );
+    const indexedWorksheetMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets(1).OLEObjects("CheckBox1").Object.')
+    );
+    const dynamicWorksheetShapeMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.')
+    );
+
+    assert.equal(worksheetBoundObjectMembers.some((resolution) => resolution.symbol.name === "Value"), true);
+    assert.equal(applicationBoundObjectMembers.some((resolution) => resolution.symbol.name === "Value"), true);
+    assert.equal(worksheetBoundShapeMembers.some((resolution) => resolution.symbol.name === "Value"), true);
+    assert.equal(applicationBoundShapeMembers.some((resolution) => resolution.symbol.name === "Value"), true);
+    assert.equal(worksheetBoundObjectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+    assert.equal(applicationBoundObjectMembers.some((resolution) => resolution.symbol.name === "Activate"), false);
+    assert.equal(worksheetBoundShapeMembers.some((resolution) => resolution.symbol.name === "Delete"), false);
+    assert.equal(applicationBoundShapeMembers.some((resolution) => resolution.symbol.name === "Delete"), false);
+    assert.equal(worksheetBoundObjectHover?.contents.includes("CheckBox.Value"), true);
+    assert.equal(applicationBoundObjectSignature?.label, "Select(Replace) As Object");
+    assert.equal(worksheetBoundShapeHover?.contents.includes("CheckBox.Value"), true);
+    assert.equal(applicationBoundShapeSignature?.label, "Select(Replace) As Object");
+    assert.equal(sheetsMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(activeSheetMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(indexedWorksheetMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(dynamicWorksheetShapeMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+
+    service.setActiveWorkbookIdentitySnapshot({
+      observedAt: "2026-03-21T00:01:00.000Z",
+      providerKind: "excel-active-workbook",
+      reason: "no-active-workbook",
+      state: "unavailable",
+      version: 1
+    });
+
+    const unavailableWorksheetObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const unavailableWorksheetShapeHover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
+    );
+    const unavailableWorksheetObjectSignature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
+    );
+
+    assert.equal(unavailableWorksheetObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(unavailableWorksheetShapeHover, undefined);
+    assert.equal(unavailableWorksheetObjectSignature, undefined);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service keeps unqualified worksheet broad root closed when Worksheets is shadowed", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Private Function Worksheets(ByVal sheetName As String) As String
+    Worksheets = sheetName
+End Function
+
+Public Sub Demo()
+    Debug.Print Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet One",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+  writeWorkbookBindingManifest(bundleRoot, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "C:\\Fixtures\\book1.xlsm",
+      isAddIn: false,
+      name: "book1.xlsm",
+      path: "C:\\Fixtures",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(uri, "vba", 1, text);
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "c:/fixtures/BOOK1.xlsm",
+        isAddin: false,
+        name: "book1.xlsm",
+        path: "c:/fixtures"
+      },
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const members = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const hover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const signature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
+    );
+
+    assert.equal(members.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(hover, undefined);
+    assert.equal(signature, undefined);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service keeps Application worksheet broad root closed when Application is shadowed", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Private Type Application
+    Name As String
+End Type
+
+Public Sub Demo()
+    Dim Application As Application
+    Debug.Print Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorksheetControlMetadataSidecar(bundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet One",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "book1.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+  writeWorkbookBindingManifest(bundleRoot, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "C:\\Fixtures\\book1.xlsm",
+      isAddIn: false,
+      name: "book1.xlsm",
+      path: "C:\\Fixtures",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.analyzeText(uri, "vba", 1, text);
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "c:/fixtures/BOOK1.xlsm",
+        isAddin: false,
+        name: "book1.xlsm",
+        path: "c:/fixtures"
+      },
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const members = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const hover = service.getHover(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const signature = service.getSignatureHelp(
+      uri,
+      findPositionAfterTokenInText(text, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
+    );
+
+    assert.equal(members.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(hover, undefined);
+    assert.equal(signature, undefined);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("document service reloads the root document module sidecar after sidecar-only regeneration", () => {
   const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
   const workspaceRoot = path.join(temporaryDirectory, "workspace");
