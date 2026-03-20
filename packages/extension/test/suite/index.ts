@@ -1148,6 +1148,203 @@ export async function run(): Promise<void> {
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
   }
 
+  const worksheetBroadRootDocument = await vscode.workspace.openTextDocument(
+    path.resolve(fixturesPath, "WorksheetBroadRootBuiltIn.bas")
+  );
+  await vscode.window.showTextDocument(worksheetBroadRootDocument);
+
+  const worksheetBroadRootObjectCompletionSuppressed = await waitForCompletions(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const applicationBroadRootObjectCompletionSuppressed = await waitForCompletions(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(worksheetBroadRootDocument, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const worksheetBroadRootShapeHoverSuppressed = await waitForNoHover(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const applicationBroadRootShapeSignatureSuppressed = await waitForNoSignatureHelp(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(
+      worksheetBroadRootDocument,
+      'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+    )
+  );
+
+  assert.equal(
+    worksheetBroadRootObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    'unqualified Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'
+  );
+  assert.equal(
+    applicationBroadRootObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    'Application.Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'
+  );
+  assert.equal(worksheetBroadRootShapeHoverSuppressed, true);
+  assert.equal(applicationBroadRootShapeSignatureSuppressed, true);
+
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
+  try {
+    const worksheetBroadRootObjectCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const applicationBroadRootObjectCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const worksheetBroadRootShapeCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const applicationBroadRootShapeCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'
+      ),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const worksheetBroadRootObjectHover = await waitForHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
+      (hovers) => hovers.length > 0
+    );
+    const applicationBroadRootObjectSignature = await waitForSignatureHelp(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('
+      ),
+      (help) => help.signatures.length > 0
+    );
+    const worksheetBroadRootShapeHover = await waitForHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'),
+      (hovers) => hovers.length > 0
+    );
+    const applicationBroadRootShapeSignature = await waitForSignatureHelp(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+      ),
+      (help) => help.signatures.length > 0
+    );
+    const sheetsBroadRootHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Sheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const activeSheetBroadRootHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'ActiveSheet.OLEObjects("CheckBox1").Object.Valu')
+    );
+    const indexedBroadRootHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets(1).OLEObjects("CheckBox1").Object.Valu')
+    );
+    const dynamicBroadRootHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu')
+    );
+    const worksheetBroadRootValueCompletion = worksheetBroadRootObjectCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
+    const applicationBroadRootValueCompletion = applicationBroadRootObjectCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
+    const worksheetBroadRootShapeCompletion = worksheetBroadRootShapeCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
+    const applicationBroadRootShapeCompletion = applicationBroadRootShapeCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
+    const worksheetBroadRootObjectHoverText = getHoverContentsText(worksheetBroadRootObjectHover[0]);
+    const worksheetBroadRootShapeHoverText = getHoverContentsText(worksheetBroadRootShapeHover[0]);
+
+    assert.ok(worksheetBroadRootValueCompletion?.detail?.includes("CheckBox property"));
+    assert.ok(applicationBroadRootValueCompletion?.detail?.includes("CheckBox property"));
+    assert.ok(worksheetBroadRootShapeCompletion?.detail?.includes("CheckBox property"));
+    assert.ok(applicationBroadRootShapeCompletion?.detail?.includes("CheckBox property"));
+    assert.equal(
+      worksheetBroadRootObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+      false,
+      'Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'
+    );
+    assert.equal(
+      applicationBroadRootShapeCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
+      false,
+      'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'
+    );
+    assert.equal(worksheetBroadRootObjectHoverText.includes("CheckBox.Value"), true);
+    assert.equal(worksheetBroadRootShapeHoverText.includes("CheckBox.Value"), true);
+    assert.equal(applicationBroadRootObjectSignature.signatures[0]?.label, "Select(Replace) As Object");
+    assert.equal(applicationBroadRootShapeSignature.signatures[0]?.label, "Select(Replace) As Object");
+    assert.equal(sheetsBroadRootHoverSuppressed, true);
+    assert.equal(activeSheetBroadRootHoverSuppressed, true);
+    assert.equal(indexedBroadRootHoverSuppressed, true);
+    assert.equal(dynamicBroadRootHoverSuppressed, true);
+
+    await setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "C:\\Fixtures\\OtherBook.xlsm",
+        isAddin: false,
+        name: "OtherBook.xlsm",
+        path: "C:\\Fixtures"
+      },
+      observedAt: "2026-03-21T00:01:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const mismatchedWorksheetBroadRootHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const mismatchedApplicationBroadRootSignatureSuppressed = await waitForNoSignatureHelp(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+      )
+    );
+    const mismatchedWorksheetBroadRootCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
+      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const mismatchedApplicationBroadRootCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'
+      ),
+      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+
+    assert.equal(mismatchedWorksheetBroadRootHoverSuppressed, true);
+    assert.equal(mismatchedApplicationBroadRootSignatureSuppressed, true);
+    assert.equal(
+      mismatchedWorksheetBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      false
+    );
+    assert.equal(
+      mismatchedApplicationBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      false
+    );
+  } finally {
+    await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
+  }
+
   const worksheetControlCodeNameDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "WorksheetControlCodeName.bas")
   );
