@@ -5,7 +5,7 @@
 - `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` は、current bundle の sidecar へ静的に結ばない。
 - この非公開境界は `OLEObject.Object` と `Shape.OLEFormat.Object` の両方でそろえて維持する。
 - user-facing に開く explicit sheet-name root は、引き続き `ThisWorkbook.Worksheets("Sheet1")` のように workbook identity を静的に固定できる経路に限る。
-- broad root を再評価する条件は、「runtime で対象 workbook が current bundle と同一だと明示的に分かる仕組み」が追加されたときだけとする。
+- broad root を再評価する条件は、正本 [workbook-binding-manifest-feasibility.md](./workbook-binding-manifest-feasibility.md) で定義する workbook binding と host identity 契約が揃ったときだけとする。
 
 ## 確認した公式ソース
 
@@ -62,9 +62,8 @@
 ### 5. broad root を開けるのは workbook binding が明示化された後だけである
 
 - 例えば次のいずれかが追加されれば再評価余地がある。
-  - current bundle と runtime workbook の対応を明示する manifest / config
-  - workbook package を直接開くモードで、resolver が対象 workbook identity を 1 つに固定できる仕組み
-  - language server と host 側で active workbook identity を共有する統合
+  - bundle-local `workbook-binding.json`
+  - host から active workbook `FullName` を受け取る契約
 - これらが無い限り、broad root を user-facing にすると誤補完リスクが残る。
 
 ## 推奨方針
@@ -95,5 +94,5 @@
 
 ## 次段の候補
 
-- current bundle と target workbook を明示的に結ぶ workbook binding / manifest 方針を整理する。
-- その binding が導入されたときに、sidecar lookup が bundle-local から workbook-identity aware へ拡張できるかを再評価する。
+- active workbook identity を extension / server / host 間でどう受け渡すかの契約を整理する。
+- workbook binding manifest と sidecar lookup helper の責務分離を具体化する。

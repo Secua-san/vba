@@ -28,6 +28,7 @@
 - [shape-oleformat-object-promotion-feasibility.md](shape-oleformat-object-promotion-feasibility.md): `Shape.OLEFormat.Object` を control owner へ昇格できる条件と除外条件の整理
 - [shape-oleformat-object-explicit-sheet-root-feasibility.md](shape-oleformat-object-explicit-sheet-root-feasibility.md): `Worksheets("Sheet1")` / `ThisWorkbook.Worksheets("Sheet1")` 系 root を sidecar へ結べる範囲と join key の整理
 - [explicit-sheet-name-broad-root-feasibility.md](explicit-sheet-name-broad-root-feasibility.md): `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` を broad root として開かない理由と再評価条件の整理
+- [workbook-binding-manifest-feasibility.md](workbook-binding-manifest-feasibility.md): broad root 再評価の前提となる workbook binding manifest の置き場所、key、保守条件の整理
 - [worksheet-chart-shapes-root-feasibility.md](worksheet-chart-shapes-root-feasibility.md): `Shapes(Index)` / `Shapes.Item(Index)` を generic `Shape` surface として扱う境界の整理
 - [worksheet-chart-control-metadata-source-poc.md](worksheet-chart-control-metadata-source-poc.md): workbook package を起点にした control metadata PoC と sidecar 方針の整理
 - [worksheet-control-metadata-sidecar-artifact.md](worksheet-control-metadata-sidecar-artifact.md): loose files と併用する sidecar schema、保存場所、lookup ルールの整理

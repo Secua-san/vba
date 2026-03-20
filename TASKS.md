@@ -409,9 +409,14 @@
   - `ThisWorkbook.Worksheets("Sheet1")` だけを user-facing に維持し、broad root の境界は `OLEObject.Object` と `Shape.OLEFormat.Object` の両方でそろえる方針を固定した
   - ADR [0005](docs/adr/0005-explicit-sheet-name-root-policy.md) の status を `Accepted` に上げ、broad root 再評価は workbook binding / manifest のような明示的 workbook 同一性が入った場合だけと整理した
 
-- [ ] current bundle と target workbook を結ぶ明示バインディング条件を整理する
-  - broad root を将来再評価できるように、manifest / config / workbook package mode のどれで workbook identity を resolver に渡すべきかを docs で整理する
-  - bundle-local sidecar lookup を workbook-identity aware lookup へ拡張する場合の最小 field と user-facing 境界を決める
+- [x] current bundle と target workbook を結ぶ明示バインディング条件を整理する
+  - ADR [0006](docs/adr/0006-workbook-binding-policy.md) を追加し、broad root 再評価の前提となる workbook identity binding は専用 artifact `<bundle-root>/.vba/workbook-binding.json` で扱う方針を固定した
+  - `docs/process/workbook-binding-manifest-feasibility.md` を追加し、manifest / config / workbook package mode の比較、`Workbook.FullName` を primary key にする理由、unsaved workbook と add-in workbook を broad root 対象外にする理由を整理した
+  - `worksheet-control-metadata.json` には binding 情報を混ぜず、sidecar は control inventory、binding manifest は runtime workbook identity と責務分離する方針を文書化した
+
+- [ ] active workbook identity provider の契約を整理する
+  - broad root を将来再評価できるように、extension / server / host 間で `ActiveWorkbook.FullName` をどう受け渡すか、取得不能時や Protected View 時の扱いを docs で整理する
+  - host が返す `ActiveWorkbook.FullName` を v1 matching rule にどう合わせるか、resolver 有効化条件と log 方針を決める
 
 ## メモ
 
