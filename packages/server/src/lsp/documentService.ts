@@ -193,6 +193,7 @@ export interface SemanticTokenEntry {
 export interface DocumentService {
   analyzeText: (uri: string, languageId: string, version: number, text: string) => DocumentState;
   formatDocument: (uri: string, options?: { insertSpaces?: boolean; tabSize?: number }) => string | undefined;
+  getActiveWorkbookIdentityState: () => ActiveWorkbookIdentityState | undefined;
   getCodeActions: (uri: string) => DocumentCodeAction[];
   getCompletionSymbols: (uri: string, position: LinePosition) => WorkspaceSymbolResolution[];
   getDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined;
@@ -1075,6 +1076,9 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     },
     getState(uri: string): DocumentState | undefined {
       return documentStates.get(uri);
+    },
+    getActiveWorkbookIdentityState(): ActiveWorkbookIdentityState | undefined {
+      return cloneActiveWorkbookIdentityState(activeWorkbookIdentityState);
     },
     remove(uri: string): void {
       activeWorkbookBindingLogKeys.delete(uri);
@@ -2012,12 +2016,26 @@ function resolveBuiltinMemberOwnerForPath(
     character: rootStartCharacter,
     line
   });
+  const normalizedRootSegment = stripIndexedAccessMarker(rootSegment);
 
   if (!rootResolution) {
-    return resolveBuiltinMemberOwner(pathSegments);
+    const builtinContext = getBroadRootBuiltinContext(uri, normalizedRootSegment, getDocumentState);
+
+    if (!builtinContext) {
+      return resolveBuiltinMemberOwner(pathSegments);
+    }
+
+    const sidecarOwnerName = resolveWorksheetControlOwnerFromSidecar(
+      builtinContext,
+      memberSegments,
+      pathSegmentDetails?.slice(1),
+      getWorksheetControlMetadataState
+    );
+
+    return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, memberSegments);
   }
 
-  const builtinContext = getDocumentModuleBuiltinContext(rootResolution, stripIndexedAccessMarker(rootSegment), getDocumentState);
+  const builtinContext = getDocumentModuleBuiltinContext(rootResolution, normalizedRootSegment, getDocumentState);
 
   if (!builtinContext) {
     return undefined;
@@ -2039,6 +2057,24 @@ function getDocumentModuleBuiltinOwnerName(
   getDocumentState: (uri: string) => DocumentState | undefined
 ): string | undefined {
   return getDocumentModuleBuiltinContext(resolution, rootSegment, getDocumentState)?.ownerName;
+}
+
+function getBroadRootBuiltinContext(
+  uri: string,
+  rootSegment: string,
+  getDocumentState: (uri: string) => DocumentState | undefined
+): DocumentModuleBuiltinContext | undefined {
+  const state = getDocumentState(uri);
+
+  if (!state || normalizeIdentifier(rootSegment) !== "activeworkbook" || !hasMatchedActiveWorkbookBinding(state)) {
+    return undefined;
+  }
+
+  return {
+    ownerName: "Workbook",
+    rootModuleName: state.analysis.module.name,
+    rootUri: uri
+  };
 }
 
 function getDocumentModuleBuiltinContext(
@@ -2088,6 +2124,20 @@ function getDocumentModuleBuiltinContext(
   }
 
   return undefined;
+}
+
+function hasMatchedActiveWorkbookBinding(state: DocumentState | undefined): boolean {
+  const worksheetControlBundleRoot =
+    state?.worksheetControlMetadata?.status === "loaded" ? state.worksheetControlMetadata.bundleRoot : undefined;
+
+  return (
+    state?.activeWorkbookIdentity?.state === "available" &&
+    state.workbookBindingManifest?.status === "loaded" &&
+    typeof state.activeWorkbookIdentity.normalizedFullName === "string" &&
+    typeof state.workbookBindingManifest.normalizedFullName === "string" &&
+    (worksheetControlBundleRoot === undefined || worksheetControlBundleRoot === state.workbookBindingManifest.bundleRoot) &&
+    state.activeWorkbookIdentity.normalizedFullName === state.workbookBindingManifest.normalizedFullName
+  );
 }
 
 function resolveWorksheetControlOwnerFromSidecar(

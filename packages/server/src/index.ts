@@ -41,7 +41,10 @@ import type {
   WorkspaceSymbolResolution
 } from "./lsp/documentService";
 import type { Diagnostic, OutlineSymbol, SymbolInfo } from "../../core/src/index";
-import { ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD } from "../../core/src/index";
+import {
+  ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD,
+  ACTIVE_WORKBOOK_IDENTITY_TEST_STATE_REQUEST_METHOD
+} from "../../core/src/index";
 
 export { createDocumentService } from "./lsp/documentService";
 
@@ -167,6 +170,9 @@ export function startServer(): void {
 
   connection.onNotification(ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD, (snapshot) => {
     documentService.setActiveWorkbookIdentitySnapshot(snapshot);
+  });
+  connection.onRequest(ACTIVE_WORKBOOK_IDENTITY_TEST_STATE_REQUEST_METHOD, () => {
+    return documentService.getActiveWorkbookIdentityState() ?? null;
   });
 
   connection.onDidChangeWatchedFiles(async (params) => {

@@ -14,7 +14,7 @@
     "probe:worksheet-control-metadata": "node scripts/probe-workbook-control-metadata.mjs",
     "test": "npm run build && npm run test:scripts && npm run test --workspace @vba/core && npm run test --workspace @vba/server && npm run test --workspace vba-extension",
     "test:scripts": "node --test scripts/test/**/*.test.mjs",
-    "test:host": "npm run build:extension-tests && code --disable-extensions --extensionDevelopmentPath=packages/extension --extensionTestsPath=packages/extension/dist-test/suite/index.js packages/extension/test/fixtures",
+    "test:host": "npm run build:extension-tests && code --disable-extensions --extensionDevelopmentPath=packages/extension --extensionTestsPath=packages/extension/dist-test/test/suite/index.js packages/extension/test/fixtures",
     "lint": "npm run lint --workspace @vba/core && npm run lint --workspace @vba/server && npm run lint --workspace vba-extension",
     "clean": "npm run clean --workspace @vba/core && npm run clean --workspace @vba/server && npm run clean --workspace vba-extension && if exist dist rmdir /s /q dist",
     "package": "npm run build && npm run package --workspace vba-extension"

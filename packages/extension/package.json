@@ -72,7 +72,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "test": "tsc -p tsconfig.test.json && node dist-test/runTest.js",
+    "test": "if exist dist-test rmdir /s /q dist-test && tsc -p tsconfig.test.json && node dist-test/test/runTest.js",
     "lint": "echo \"No lint config yet (extension)\"",
     "clean": "if exist dist rmdir /s /q dist && if exist dist-test rmdir /s /q dist-test",
     "package": "vsce package --no-dependencies --allow-missing-repository --skip-license -o ../../dist/vba-extension.vsix"
