@@ -216,11 +216,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isSamePath(left: string, right: string): boolean {
-  if (process.platform === "win32") {
-    return path.resolve(left).toLowerCase() === path.resolve(right).toLowerCase();
+  if (looksLikeWindowsPath(left) || looksLikeWindowsPath(right)) {
+    return path.win32.resolve(left).toLowerCase() === path.win32.resolve(right).toLowerCase();
   }
 
   return path.resolve(left) === path.resolve(right);
+}
+
+function looksLikeWindowsPath(value: string): boolean {
+  return /^[A-Za-z]:[\\/]/.test(value) || /^\\\\[^\\]+\\[^\\]+/.test(value);
 }
 
 function parseControl(

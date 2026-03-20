@@ -89,7 +89,8 @@ export function normalizeWorkbookFullNameForComparison(fullName: string): string
   const slashNormalized = fullName.trim().replace(/\//g, "\\");
   const withoutTrailingSeparators = trimTrailingSeparators(slashNormalized);
 
-  return process.platform === "win32" ? withoutTrailingSeparators.toLowerCase() : withoutTrailingSeparators;
+  // Workbook.FullName は Excel/VBA 起源の Windows path として比較する。
+  return withoutTrailingSeparators.toLowerCase();
 }
 
 export function parseActiveWorkbookIdentitySnapshot(value: unknown): ActiveWorkbookIdentityParseResult {

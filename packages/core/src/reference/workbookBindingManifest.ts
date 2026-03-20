@@ -191,11 +191,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isSamePath(left: string, right: string): boolean {
-  if (process.platform === "win32") {
-    return path.resolve(left).toLowerCase() === path.resolve(right).toLowerCase();
+  if (looksLikeWindowsPath(left) || looksLikeWindowsPath(right)) {
+    return path.win32.resolve(left).toLowerCase() === path.win32.resolve(right).toLowerCase();
   }
 
   return path.resolve(left) === path.resolve(right);
+}
+
+function looksLikeWindowsPath(value: string): boolean {
+  return /^[A-Za-z]:[\\/]/.test(value) || /^\\\\[^\\]+\\[^\\]+/.test(value);
 }
 
 function parseWorkbook(
@@ -241,10 +245,10 @@ function parseWorkbook(
     });
   }
 
-  if (typeof isAddIn !== "boolean") {
+  if (typeof isAddIn !== "boolean" || isAddIn) {
     issues.push({
-      code: "missing-required-field",
-      message: "workbook.isAddIn は boolean である必要があります",
+      code: typeof isAddIn === "boolean" ? "invalid-workbook" : "missing-required-field",
+      message: "workbook.isAddIn は false の boolean である必要があります",
       path: "$.workbook.isAddIn"
     });
   }
@@ -254,14 +258,6 @@ function parseWorkbook(
       code: "missing-required-field",
       message: "workbook.sourceKind は openxml-package である必要があります",
       path: "$.workbook.sourceKind"
-    });
-  }
-
-  if (typeof isAddIn === "boolean" && isAddIn) {
-    issues.push({
-      code: "invalid-workbook",
-      message: "workbook.isAddIn は false である必要があります",
-      path: "$.workbook.isAddIn"
     });
   }
 
