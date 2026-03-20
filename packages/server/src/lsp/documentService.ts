@@ -756,6 +756,14 @@ interface DocumentModuleBuiltinContext {
   worksheetControlOwnerKind?: "worksheet";
 }
 
+interface WorksheetControlSidecarLookupContext {
+  allowDirectCodeName: boolean;
+  memberSegments: readonly string[];
+  pathSegmentDetails: readonly MemberAccessPathSegment[];
+  rootOwnerName: "Worksheet";
+  supportedOwner: WorksheetControlMetadataSupportedOwnerState;
+}
+
 const OPTION_EXPLICIT_TITLE = "Option Explicit を追加";
 
 function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
@@ -1679,43 +1687,35 @@ function resolveWorksheetControlOwnerFromSidecar(
   pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
   getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): string | undefined {
-  const rootWorksheetControlMetadata = getWorksheetControlMetadataState(builtinContext.rootUri);
-
-  if (
-    !rootWorksheetControlMetadata ||
-    builtinContext.worksheetControlOwnerKind === undefined ||
-    !pathSegmentDetails ||
-    pathSegmentDetails.length !== memberSegments.length
-  ) {
-    return undefined;
-  }
-
-  const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
-    (owner) =>
-      owner.ownerKind === builtinContext.worksheetControlOwnerKind &&
-      normalizeIdentifier(owner.sheetCodeName) === normalizeIdentifier(builtinContext.rootModuleName)
-  );
-
-  if (!supportedOwner) {
-    return undefined;
-  }
-
-  const directCodeNameOwner = resolveWorksheetControlOwnerFromCodeName(
+  const lookupContext = getWorksheetControlSidecarLookupContext(
     builtinContext,
-    supportedOwner,
     memberSegments,
-    pathSegmentDetails
+    pathSegmentDetails,
+    getWorksheetControlMetadataState
   );
 
-  if (directCodeNameOwner) {
-    return directCodeNameOwner;
+  if (!lookupContext) {
+    return undefined;
   }
 
-  for (let segmentIndex = 0; segmentIndex < memberSegments.length; segmentIndex += 1) {
-    const objectSegment = pathSegmentDetails[segmentIndex];
+  if (lookupContext.allowDirectCodeName) {
+    const directCodeNameOwner = resolveWorksheetControlOwnerFromCodeName(
+      builtinContext,
+      lookupContext.supportedOwner,
+      lookupContext.memberSegments,
+      lookupContext.pathSegmentDetails
+    );
+
+    if (directCodeNameOwner) {
+      return directCodeNameOwner;
+    }
+  }
+
+  for (let segmentIndex = 0; segmentIndex < lookupContext.memberSegments.length; segmentIndex += 1) {
+    const objectSegment = lookupContext.pathSegmentDetails[segmentIndex];
 
     if (
-      normalizeIdentifier(stripIndexedAccessMarker(memberSegments[segmentIndex] ?? "")) !== "object" ||
+      normalizeIdentifier(stripIndexedAccessMarker(lookupContext.memberSegments[segmentIndex] ?? "")) !== "object" ||
       objectSegment?.accessKind !== "none"
     ) {
       continue;
@@ -1723,8 +1723,8 @@ function resolveWorksheetControlOwnerFromSidecar(
 
     const ownerBeforeObject =
       segmentIndex === 0
-        ? builtinContext.ownerName
-        : resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, memberSegments.slice(0, segmentIndex));
+        ? lookupContext.rootOwnerName
+        : resolveBuiltinMemberOwnerFromRootType(lookupContext.rootOwnerName, [...lookupContext.memberSegments.slice(0, segmentIndex)]);
     const normalizedOwnerBeforeObject = normalizeIdentifier(ownerBeforeObject ?? "");
 
     if (normalizedOwnerBeforeObject !== "oleobject" && normalizedOwnerBeforeObject !== "oleformat") {
@@ -1732,7 +1732,7 @@ function resolveWorksheetControlOwnerFromSidecar(
     }
 
     const shapeName = getWorksheetControlShapeNameFromPath(
-      pathSegmentDetails.slice(0, segmentIndex),
+      lookupContext.pathSegmentDetails.slice(0, segmentIndex),
       normalizedOwnerBeforeObject
     );
 
@@ -1740,7 +1740,7 @@ function resolveWorksheetControlOwnerFromSidecar(
       continue;
     }
 
-    const control = supportedOwner.controls.find(
+    const control = lookupContext.supportedOwner.controls.find(
       (candidate) => normalizeIdentifier(candidate.shapeName) === normalizeIdentifier(shapeName)
     );
 
@@ -1748,12 +1748,71 @@ function resolveWorksheetControlOwnerFromSidecar(
       continue;
     }
 
-    return segmentIndex === memberSegments.length - 1
+    return segmentIndex === lookupContext.memberSegments.length - 1
       ? control.controlType
-      : resolveBuiltinMemberOwnerFromRootType(control.controlType, memberSegments.slice(segmentIndex + 1));
+      : resolveBuiltinMemberOwnerFromRootType(control.controlType, [...lookupContext.memberSegments.slice(segmentIndex + 1)]);
   }
 
   return undefined;
+}
+
+function getWorksheetControlSidecarLookupContext(
+  builtinContext: DocumentModuleBuiltinContext,
+  memberSegments: readonly string[],
+  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+): WorksheetControlSidecarLookupContext | undefined {
+  const rootWorksheetControlMetadata = getWorksheetControlMetadataState(builtinContext.rootUri);
+
+  if (!rootWorksheetControlMetadata || !pathSegmentDetails || pathSegmentDetails.length !== memberSegments.length) {
+    return undefined;
+  }
+
+  if (builtinContext.worksheetControlOwnerKind === "worksheet") {
+    const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
+      (owner) =>
+        owner.ownerKind === builtinContext.worksheetControlOwnerKind &&
+        normalizeIdentifier(owner.sheetCodeName) === normalizeIdentifier(builtinContext.rootModuleName)
+    );
+
+    return supportedOwner
+      ? {
+          allowDirectCodeName: true,
+          memberSegments,
+          pathSegmentDetails,
+          rootOwnerName: "Worksheet",
+          supportedOwner
+        }
+      : undefined;
+  }
+
+  if (normalizeIdentifier(builtinContext.ownerName) !== "workbook") {
+    return undefined;
+  }
+
+  const [worksheetSegment, ...worksheetPathSegments] = pathSegmentDetails;
+  const sheetName =
+    normalizeIdentifier(worksheetSegment?.text ?? "") === "worksheets" && worksheetSegment?.accessKind === "literal"
+      ? parseStringLiteralSelectorValue(worksheetSegment.selectorText)
+      : undefined;
+
+  if (!sheetName) {
+    return undefined;
+  }
+
+  const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
+    (owner) => owner.ownerKind === "worksheet" && normalizeIdentifier(owner.sheetName) === normalizeIdentifier(sheetName)
+  );
+
+  return supportedOwner
+    ? {
+        allowDirectCodeName: false,
+        memberSegments: memberSegments.slice(1),
+        pathSegmentDetails: worksheetPathSegments,
+        rootOwnerName: "Worksheet",
+        supportedOwner
+      }
+    : undefined;
 }
 
 function resolveWorksheetControlOwnerFromCodeName(
@@ -1795,7 +1854,7 @@ function getWorksheetControlShapeNameFromPath(
       const [oleObjectsSegment] = pathSegmentDetails;
 
       return normalizeIdentifier(oleObjectsSegment?.text ?? "") === "oleobjects" && oleObjectsSegment?.accessKind === "literal"
-        ? parseWorksheetControlShapeNameLiteral(oleObjectsSegment.selectorText)
+        ? parseStringLiteralSelectorValue(oleObjectsSegment.selectorText)
         : undefined;
     }
 
@@ -1807,7 +1866,7 @@ function getWorksheetControlShapeNameFromPath(
       }
 
       return normalizeIdentifier(itemSegment?.text ?? "") === "item" && itemSegment?.accessKind === "literal"
-        ? parseWorksheetControlShapeNameLiteral(itemSegment.selectorText)
+        ? parseStringLiteralSelectorValue(itemSegment.selectorText)
         : undefined;
     }
 
@@ -1825,7 +1884,7 @@ function getWorksheetControlShapeNameFromPath(
       shapesSegment?.accessKind === "literal" &&
       normalizeIdentifier(oleFormatSegment?.text ?? "") === "oleformat" &&
       oleFormatSegment?.accessKind === "none"
-      ? parseWorksheetControlShapeNameLiteral(shapesSegment.selectorText)
+      ? parseStringLiteralSelectorValue(shapesSegment.selectorText)
       : undefined;
   }
 
@@ -1840,14 +1899,14 @@ function getWorksheetControlShapeNameFromPath(
       itemSegment?.accessKind === "literal" &&
       normalizeIdentifier(oleFormatSegment?.text ?? "") === "oleformat" &&
       oleFormatSegment?.accessKind === "none"
-      ? parseWorksheetControlShapeNameLiteral(itemSegment.selectorText)
+      ? parseStringLiteralSelectorValue(itemSegment.selectorText)
       : undefined;
   }
 
   return undefined;
 }
 
-function parseWorksheetControlShapeNameLiteral(selectorText: string | undefined): string | undefined {
+function parseStringLiteralSelectorValue(selectorText: string | undefined): string | undefined {
   const normalizedSelectorText = selectorText?.trim();
 
   if (!normalizedSelectorText || !isStringLiteralSelector(normalizedSelectorText)) {

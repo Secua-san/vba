@@ -397,10 +397,16 @@
   - unqualified `Worksheets("Sheet1")` と `ActiveWorkbook.Worksheets("Sheet1")` は active workbook 依存のため現段階では不採用、最初の候補は `ThisWorkbook.Worksheets("Sheet1")` に限定する方針を固定した
   - `OLEObject.Object` と `Shape.OLEFormat.Object` は `workbook root identity + sheetName + shapeName` lookup helper を将来共有できるが、`ActiveSheet` / chartsheet / `ShapeRange` は引き続き除外境界として維持する
 
-- [ ] Shape.OLEFormat.Object を ThisWorkbook.Worksheets("SheetName") root に限定接続する
-  - `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` だけを sidecar 連携で control owner へ進める最小実装を行う
-  - `ThisWorkbook` 起点の workbook root identity を `Worksheets("Sheet1")` 連鎖でも保持して resolver へ伝播させ、generic `Worksheet` owner へ降りても current bundle の sidecar を選べるようにする
-  - `sheetName + shapeName` lookup helper を `OLEObject.Object` 側とも共有できる形で整理し、`ActiveWorkbook` / unqualified `Worksheets` / `ActiveSheet` / chartsheet / `ShapeRange` を引き続き負例で固定する
+- [x] Shape.OLEFormat.Object を ThisWorkbook.Worksheets("SheetName") root に限定接続する
+  - `ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` を sidecar 連携で control owner へ進め、completion / hover / signature help / semantic token を server / extension test で回帰固定した
+  - shared helper により `ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object` と `.Item("CheckBox1").Object` も同じ workbook-qualified root から control owner へ進み、server / extension test で固定した
+  - `sheetCodeName` と `sheetName` が一致しない fixture（`sheetCodeName = "Sheet1"`, `sheetName = "Sheet One"`）を導入し、`Worksheets("Sheet One")` のみが解決される境界を server / extension test で固定した
+  - `ThisWorkbook` 起点の workbook root identity を `Worksheets("SheetName")` 連鎖でも保持して resolver へ伝播させ、generic `Worksheet` owner に降りた後も current bundle の sidecar を選べるようにした
+  - `sheetName + shapeName` lookup は `OLEObject.Object` / `Shape.OLEFormat.Object` の共通 helper で扱える形に整理しつつ、`ActiveWorkbook` / unqualified `Worksheets` / `ThisWorkbook.Worksheets(1)` / `ActiveSheet` / chartsheet / `ShapeRange` は引き続き負例で固定した
+
+- [ ] workbook-qualified 以外の explicit sheet-name root 展開条件を整理する
+  - `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` を current bundle の sidecar へ静的に結んでよいか、runtime active workbook との同一視前提を docs で整理する
+  - `Shape.OLEFormat.Object` と `OLEObject.Object` の両方で broad root を開くか、`ThisWorkbook` 限定のまま維持するかの user-facing 境界を決める
 
 ## メモ
 

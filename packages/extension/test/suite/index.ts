@@ -352,6 +352,34 @@ export async function run(): Promise<void> {
     findPositionAfterToken(oleObjectBuiltInDocument, 'ActiveSheet.OLEObjects("CheckBox1").Object.'),
     (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
   );
+  const thisWorkbookNamedOleObjectObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const thisWorkbookItemNamedOleObjectObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(
+      oleObjectBuiltInDocument,
+      'ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'
+    ),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Select")
+  );
+  const thisWorkbookCodeNameOleObjectObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const thisWorkbookIndexedOleObjectObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const activeWorkbookNamedOleObjectObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
   const activateSignatureHelp = await waitForSignatureHelp(
     oleObjectBuiltInDocument,
     findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects(1).Activate("),
@@ -376,6 +404,19 @@ export async function run(): Promise<void> {
     findPositionAfterToken(oleObjectBuiltInDocument, 'Sheet1.OLEObjects.Item("CheckBox1").Object.Select('),
     (help) => help.signatures.length > 0
   );
+  const thisWorkbookNamedObjectSelectSignatureHelp = await waitForSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('),
+    (help) => help.signatures.length > 0
+  );
+  const thisWorkbookItemNamedObjectSelectSignatureHelp = await waitForSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(
+      oleObjectBuiltInDocument,
+      'ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
+    ),
+    (help) => help.signatures.length > 0
+  );
   const itemDynamicActivateSuppressed = await waitForNoSignatureHelp(
     oleObjectBuiltInDocument,
     findPositionAfterToken(oleObjectBuiltInDocument, "Sheet1.OLEObjects.Item(GetIndex()).Activate(")
@@ -383,6 +424,18 @@ export async function run(): Promise<void> {
   const chartObjectSelectSuppressed = await waitForNoSignatureHelp(
     oleObjectBuiltInDocument,
     findPositionAfterToken(oleObjectBuiltInDocument, 'Chart1.OLEObjects("CheckBox1").Object.Select(')
+  );
+  const thisWorkbookIndexedObjectSelectSuppressed = await waitForNoSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.Select(')
+  );
+  const activeWorkbookNamedObjectSelectSuppressed = await waitForNoSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
+  );
+  const thisWorkbookCodeNameObjectSelectSuppressed = await waitForNoSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Select(')
   );
   const oleObjectHover = await waitForHover(
     oleObjectBuiltInDocument,
@@ -403,6 +456,34 @@ export async function run(): Promise<void> {
     oleObjectBuiltInDocument,
     findPositionAfterToken(oleObjectBuiltInDocument, 'Sheet1.OLEObjects.Item("CheckBox1").Object.Valu'),
     (hovers) => hovers.length > 0
+  );
+  const thisWorkbookNamedObjectHover = await waitForHover(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
+    (hovers) => hovers.length > 0
+  );
+  const thisWorkbookItemNamedObjectHover = await waitForHover(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(
+      oleObjectBuiltInDocument,
+      'ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
+    ),
+    (hovers) => hovers.length > 0
+  );
+  const thisWorkbookIndexedObjectHoverSuppressed = await waitForNoHover(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.Valu')
+  );
+  const activeWorkbookNamedObjectHoverSuppressed = await waitForNoHover(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(
+      oleObjectBuiltInDocument,
+      'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
+    )
+  );
+  const thisWorkbookCodeNameObjectHoverSuppressed = await waitForNoHover(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Valu')
   );
   const oleObjectLegend = await waitForSemanticTokensLegend(
     oleObjectBuiltInDocument,
@@ -457,10 +538,24 @@ export async function run(): Promise<void> {
   const itemNamedOleObjectObjectValueCompletion = itemNamedOleObjectObjectCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Value"
   );
+  const thisWorkbookNamedOleObjectObjectValueCompletion = thisWorkbookNamedOleObjectObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const thisWorkbookNamedOleObjectObjectSelectCompletion = thisWorkbookNamedOleObjectObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Select"
+  );
+  const thisWorkbookItemNamedOleObjectObjectValueCompletion = thisWorkbookItemNamedOleObjectObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const thisWorkbookItemNamedOleObjectObjectSelectCompletion = thisWorkbookItemNamedOleObjectObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Select"
+  );
   const oleObjectHoverText = getHoverContentsText(oleObjectHover[0]);
   const itemOleObjectHoverText = getHoverContentsText(itemOleObjectHover[0]);
   const namedObjectHoverText = getHoverContentsText(namedObjectHover[0]);
   const itemNamedObjectHoverText = getHoverContentsText(itemNamedObjectHover[0]);
+  const thisWorkbookNamedObjectHoverText = getHoverContentsText(thisWorkbookNamedObjectHover[0]);
+  const thisWorkbookItemNamedObjectHoverText = getHoverContentsText(thisWorkbookItemNamedObjectHover[0]);
   const decodedOleObjectTokens = decodeSemanticTokens(oleObjectTokens, oleObjectLegend);
 
   assert.ok(sheetOleObjectsCountCompletion?.detail?.includes("Excel OLEObjects property"));
@@ -501,6 +596,35 @@ export async function run(): Promise<void> {
     false,
     "named worksheet Item selector の OLEObject.Object は control owner へ解決し、OLEObject method を出さない"
   );
+  assert.ok(thisWorkbookNamedOleObjectObjectValueCompletion?.detail?.includes("CheckBox property"));
+  assert.ok(thisWorkbookNamedOleObjectObjectSelectCompletion?.detail?.includes("CheckBox method"));
+  assert.equal(
+    thisWorkbookNamedOleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+    false,
+    "ThisWorkbook.Worksheets(\"Sheet One\") の OLEObject.Object も control owner へ解決する"
+  );
+  assert.ok(thisWorkbookItemNamedOleObjectObjectValueCompletion?.detail?.includes("CheckBox property"));
+  assert.ok(thisWorkbookItemNamedOleObjectObjectSelectCompletion?.detail?.includes("CheckBox method"));
+  assert.equal(
+    thisWorkbookItemNamedOleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+    false,
+    "ThisWorkbook.Worksheets(\"Sheet One\").OLEObjects.Item(\"CheckBox1\") も control owner へ解決する"
+  );
+  assert.equal(
+    thisWorkbookCodeNameOleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    "ThisWorkbook.Worksheets(\"Sheet1\") は codeName 指定なので control owner に昇格しない"
+  );
+  assert.equal(
+    thisWorkbookIndexedOleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    "ThisWorkbook.Worksheets(1) は index 指定なので control owner に昇格しない"
+  );
+  assert.equal(
+    activeWorkbookNamedOleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    "ActiveWorkbook.Worksheets(\"Sheet One\") は broad root として未解決を維持する"
+  );
   assert.equal(
     chartOleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
     false,
@@ -527,15 +651,29 @@ export async function run(): Promise<void> {
   assert.equal(namedObjectHoverText.includes("CheckBox.Value"), true);
   assert.equal(namedObjectHoverText.includes("microsoft.office.interop.excel.checkbox.value"), true);
   assert.equal(itemNamedObjectHoverText.includes("CheckBox.Value"), true);
+  assert.equal(thisWorkbookNamedObjectHoverText.includes("CheckBox.Value"), true);
+  assert.equal(thisWorkbookItemNamedObjectHoverText.includes("CheckBox.Value"), true);
   assertDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 21, "Select", {
     modifiers: [],
     type: "function"
   });
-  assertDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 31, "Value", {
+  assertDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 42, "Value", {
     modifiers: [],
     type: "variable"
   });
+  assertDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 44, "Select", {
+    modifiers: [],
+    type: "function"
+  });
   assertNoDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 23, "Select");
+  assert.equal(thisWorkbookNamedObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(thisWorkbookItemNamedObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(thisWorkbookIndexedObjectHoverSuppressed, true);
+  assert.equal(activeWorkbookNamedObjectHoverSuppressed, true);
+  assert.equal(thisWorkbookCodeNameObjectHoverSuppressed, true);
+  assert.equal(thisWorkbookIndexedObjectSelectSuppressed, true);
+  assert.equal(activeWorkbookNamedObjectSelectSuppressed, true);
+  assert.equal(thisWorkbookCodeNameObjectSelectSuppressed, true);
 
   const shapesBuiltInDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ShapesBuiltIn.bas"));
   await vscode.window.showTextDocument(shapesBuiltInDocument);
@@ -651,6 +789,75 @@ export async function run(): Promise<void> {
     shapesBuiltInDocument,
     findPositionAfterToken(shapesBuiltInDocument, 'Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Valu')
   );
+  const thisWorkbookWorksheetShapeObjectCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const thisWorkbookWorksheetItemShapeObjectCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Select")
+  );
+  const thisWorkbookWorksheetCodeNameShapeObjectCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const thisWorkbookWorksheetIndexedShapeObjectCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const activeWorkbookWorksheetShapeObjectCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const thisWorkbookWorksheetShapeObjectValueHover = await waitForHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'),
+    (hovers) => hovers.length > 0
+  );
+  const thisWorkbookWorksheetItemShapeObjectValueHover = await waitForHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'),
+    (hovers) => hovers.length > 0
+  );
+  const thisWorkbookWorksheetShapeObjectSelectSignatureHelp = await waitForSignatureHelp(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('),
+    (help) => help.signatures.length > 0
+  );
+  const thisWorkbookWorksheetItemShapeObjectSelectSignatureHelp = await waitForSignatureHelp(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('),
+    (help) => help.signatures.length > 0
+  );
+  const thisWorkbookWorksheetIndexedShapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const activeWorkbookWorksheetShapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const thisWorkbookWorksheetCodeNameShapeObjectValueHoverSuppressed = await waitForNoHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const thisWorkbookWorksheetIndexedShapeObjectSelectSuppressed = await waitForNoSignatureHelp(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.Select(')
+  );
+  const activeWorkbookWorksheetShapeObjectSelectSuppressed = await waitForNoSignatureHelp(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(')
+  );
+  const thisWorkbookWorksheetCodeNameShapeObjectSelectSuppressed = await waitForNoSignatureHelp(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(')
+  );
   const indexedObjectCallValueHoverSuppressed = await waitForNoHover(
     shapesBuiltInDocument,
     findPositionAfterToken(shapesBuiltInDocument, 'Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).Valu')
@@ -679,9 +886,25 @@ export async function run(): Promise<void> {
   const itemShapeObjectSelectCompletion = itemShapeObjectCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Select"
   );
+  const thisWorkbookWorksheetShapeObjectValueCompletion = thisWorkbookWorksheetShapeObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const thisWorkbookWorksheetShapeObjectSelectCompletion = thisWorkbookWorksheetShapeObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Select"
+  );
+  const thisWorkbookWorksheetItemShapeObjectValueCompletion = thisWorkbookWorksheetItemShapeObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const thisWorkbookWorksheetItemShapeObjectSelectCompletion = thisWorkbookWorksheetItemShapeObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Select"
+  );
   const shapeHoverText = getHoverContentsText(shapeNameHover[0]);
   const shapeObjectHoverText = getHoverContentsText(shapeObjectValueHover[0]);
   const itemShapeObjectHoverText = getHoverContentsText(itemShapeObjectValueHover[0]);
+  const thisWorkbookWorksheetShapeObjectHoverText = getHoverContentsText(thisWorkbookWorksheetShapeObjectValueHover[0]);
+  const thisWorkbookWorksheetItemShapeObjectHoverText = getHoverContentsText(
+    thisWorkbookWorksheetItemShapeObjectValueHover[0]
+  );
   const decodedShapesTokens = decodeSemanticTokens(shapesTokens, shapesLegend);
 
   assert.ok(shapesCollectionCompletionItems.some((item) => getCompletionItemLabel(item) === "Count"));
@@ -721,11 +944,44 @@ export async function run(): Promise<void> {
     false,
     "named worksheet Item selector の Shape.OLEFormat.Object は control owner へ解決し、Shape 専用 method を出さない"
   );
+  assert.ok(thisWorkbookWorksheetShapeObjectValueCompletion?.detail?.includes("CheckBox property"));
+  assert.ok(thisWorkbookWorksheetShapeObjectSelectCompletion?.detail?.includes("CheckBox method"));
+  assert.equal(
+    thisWorkbookWorksheetShapeObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
+    false,
+    "ThisWorkbook.Worksheets(\"Sheet One\") の Shape.OLEFormat.Object は control owner へ解決し、Shape 専用 method を出さない"
+  );
+  assert.ok(thisWorkbookWorksheetItemShapeObjectValueCompletion?.detail?.includes("CheckBox property"));
+  assert.ok(thisWorkbookWorksheetItemShapeObjectSelectCompletion?.detail?.includes("CheckBox method"));
+  assert.equal(
+    thisWorkbookWorksheetItemShapeObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
+    false,
+    "ThisWorkbook.Worksheets(\"Sheet One\").Shapes.Item(\"CheckBox1\") も control owner へ解決する"
+  );
+  assert.equal(
+    thisWorkbookWorksheetCodeNameShapeObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    "ThisWorkbook.Worksheets(\"Sheet1\") は codeName 指定なので control owner に昇格しない"
+  );
+  assert.equal(
+    thisWorkbookWorksheetIndexedShapeObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    "ThisWorkbook.Worksheets(1) は index 指定なので control owner に昇格しない"
+  );
+  assert.equal(
+    activeWorkbookWorksheetShapeObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+    false,
+    "ActiveWorkbook.Worksheets(\"Sheet One\") は broad root として未解決を維持する"
+  );
   assert.equal(shapeObjectHoverText.includes("CheckBox.Value"), true);
   assert.equal(shapeObjectHoverText.includes("microsoft.office.interop.excel.checkbox.value"), true);
   assert.equal(itemShapeObjectHoverText.includes("CheckBox.Value"), true);
+  assert.equal(thisWorkbookWorksheetShapeObjectHoverText.includes("CheckBox.Value"), true);
+  assert.equal(thisWorkbookWorksheetItemShapeObjectHoverText.includes("CheckBox.Value"), true);
   assert.equal(shapeObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(itemShapeObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(thisWorkbookWorksheetShapeObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+  assert.equal(thisWorkbookWorksheetItemShapeObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
   assert.equal(indexedShapeObjectValueHoverSuppressed, true);
   assert.equal(itemIndexedShapeObjectValueHoverSuppressed, true);
   assert.equal(chartShapeObjectValueHoverSuppressed, true);
@@ -735,6 +991,12 @@ export async function run(): Promise<void> {
   assert.equal(itemUnmatchedShapeObjectValueHoverSuppressed, true);
   assert.equal(worksheetNameRootShapeObjectValueHoverSuppressed, true);
   assert.equal(worksheetNameRootItemShapeObjectValueHoverSuppressed, true);
+  assert.equal(thisWorkbookWorksheetIndexedShapeObjectValueHoverSuppressed, true);
+  assert.equal(activeWorkbookWorksheetShapeObjectValueHoverSuppressed, true);
+  assert.equal(thisWorkbookWorksheetCodeNameShapeObjectValueHoverSuppressed, true);
+  assert.equal(thisWorkbookWorksheetIndexedShapeObjectSelectSuppressed, true);
+  assert.equal(activeWorkbookWorksheetShapeObjectSelectSuppressed, true);
+  assert.equal(thisWorkbookWorksheetCodeNameShapeObjectSelectSuppressed, true);
   assert.equal(indexedObjectCallValueHoverSuppressed, true);
   assert.equal(functionShapeNameHoverSuppressed, true);
   assert.equal(itemFunctionShapeNameHoverSuppressed, true);
@@ -762,6 +1024,14 @@ export async function run(): Promise<void> {
     modifiers: [],
     type: "function"
   });
+  assertDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 43, "Value", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 45, "Select", {
+    modifiers: [],
+    type: "function"
+  });
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 23, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 24, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 25, "Value");
@@ -773,7 +1043,9 @@ export async function run(): Promise<void> {
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 31, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 32, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 33, "Value");
-  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 34, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 39, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 40, "Value");
+  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 41, "Value");
 
   const worksheetControlCodeNameDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "WorksheetControlCodeName.bas")
