@@ -439,9 +439,14 @@
   - 最初の user-facing 対象は `OLEObject.Object` / `Shape.OLEFormat.Object` に限定し、`Sheets` / `ActiveSheet` / numeric / dynamic selector、`Worksheets` shadow、`Application` shadow は server / extension test で負例のまま固定した
   - broad-root 専用 fixture を extension test に追加し、snapshot 未一致と manifest mismatch では閉じたまま、match 時にだけ completion / hover / signature help が開くことを `npm run lint` / `npm test` / `npm run package` で確認した
 
-- [ ] unqualified worksheet broad root の Item selector 回帰を拡張する
-  - `Worksheets("SheetName").OLEObjects.Item("ShapeName").Object` と `Application.Worksheets("SheetName").Shapes.Item("ShapeName").OLEFormat.Object` も broad root family として明示的に回帰固定する
-  - `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` のような root `.Item` 形式は v1 対象外のまま据え置くのか、同じ broad root family として開くのかを docs とテストで明示する
+- [x] unqualified worksheet broad root の Item selector 回帰を拡張する
+  - `Worksheets("SheetName").OLEObjects.Item("ShapeName").Object`、`Application.Worksheets("SheetName").OLEObjects.Item("ShapeName").Object`、`Worksheets("SheetName").Shapes.Item("ShapeName").OLEFormat.Object`、`Application.Worksheets("SheetName").Shapes.Item("ShapeName").OLEFormat.Object` を broad root family の正例として server / extension test へ追加した
+  - `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` のような root `.Item` 形式は v1 非対象として [docs/adr/0005-explicit-sheet-name-root-policy.md](docs/adr/0005-explicit-sheet-name-root-policy.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) に明記し、snapshot match 中でも開かない負例を固定した
+  - broad root family の `.Item` 回帰を追加したうえで、`npm run lint` / `npm test` / `npm run package` を通して direct call form の既存境界と root `.Item` 非対象境界が崩れていないことを確認した
+
+- [ ] broad root family の重複テスト補助を整理する
+  - `ActiveWorkbook` / unqualified `Worksheets` / `Application.Worksheets` で同じ gating matrix を毎回手書きしているため、server / extension test の broad-root helper を整理して追加ケースの差分を読みやすくする
+  - review 指摘で出やすい `matched available` / `mismatched available` / `unavailable` / shadow / root `.Item` 非対象の組み合わせを helper へ寄せ、次段の broad root 追加時に negative coverage を落としにくくする
 
 ## メモ
 

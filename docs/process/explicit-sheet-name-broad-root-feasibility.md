@@ -4,7 +4,7 @@
 
 - `ActiveWorkbook.Worksheets("SheetName")` は、`available` snapshot、manifest 存在、manifest match、対応 owner の 4 条件がそろったときだけ current bundle sidecar lookup を開いてよい。この条件は現行実装で user-facing に有効化済みである。
 - unqualified `Worksheets("SheetName")` と `Application.Worksheets("SheetName")` は Office VBA 上で active workbook を対象にするため、静的 current bundle root ではないが、broad root gating 条件は `ActiveWorkbook.Worksheets("SheetName")` と同一 family として扱ってよい。
-- broad root family の v1 対象構文は `Worksheets("literal sheetName")` と `Application.Worksheets("literal sheetName")` に限る。`Sheets`、`ActiveSheet`、numeric selector、dynamic selector、grouped selector は sidecar lookup の対象にしない。
+- broad root family の v1 対象構文は `Worksheets("literal sheetName")` と `Application.Worksheets("literal sheetName")` に限る。`Worksheets.Item("literal sheetName")`、`Application.Worksheets.Item("literal sheetName")`、`Sheets`、`ActiveSheet`、numeric selector、dynamic selector、grouped selector は sidecar lookup の対象にしない。
 - built-in broad root gating は `Worksheets` root が built-in collection として解決できた場合にだけ適用し、同名の変数、関数、メンバーへ shadow されているときは user-defined symbol を優先する。
 - `OLEObject.Object` と `Shape.OLEFormat.Object` の broad root 境界は同じ PR、同じ条件で動かす。
 
@@ -91,6 +91,8 @@
   - `Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
   - `Application.Worksheets("Sheet1").OLEObjects("ShapeName").Object`
   - `Application.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
+  - `Worksheets.Item("Sheet1").OLEObjects("ShapeName").Object`
+  - `Application.Worksheets.Item("Sheet1").Shapes("ShapeName").OLEFormat.Object`
   - `Sheets("Sheet1").OLEObjects("ShapeName").Object`
   - `ActiveSheet.OLEObjects("ShapeName").Object`
   - `Worksheets(1).OLEObjects("ShapeName").Object`
@@ -110,6 +112,7 @@
 
 - `Sheets`
 - `ActiveSheet`
+- root `.Item("literal sheetName")`
 - numeric selector
 - dynamic selector
 - grouped selector
