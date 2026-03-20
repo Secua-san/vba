@@ -404,9 +404,14 @@
   - `ThisWorkbook` 起点の workbook root identity を `Worksheets("SheetName")` 連鎖でも保持して resolver へ伝播させ、generic `Worksheet` owner に降りた後も current bundle の sidecar を選べるようにした
   - `sheetName + shapeName` lookup は `OLEObject.Object` / `Shape.OLEFormat.Object` の共通 helper で扱える形に整理しつつ、`ActiveWorkbook` / unqualified `Worksheets` / `ThisWorkbook.Worksheets(1)` / `ActiveSheet` / chartsheet / `ShapeRange` は引き続き負例で固定した
 
-- [ ] workbook-qualified 以外の explicit sheet-name root 展開条件を整理する
-  - `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` を current bundle の sidecar へ静的に結んでよいか、runtime active workbook との同一視前提を docs で整理する
-  - `Shape.OLEFormat.Object` と `OLEObject.Object` の両方で broad root を開くか、`ThisWorkbook` 限定のまま維持するかの user-facing 境界を決める
+- [x] workbook-qualified 以外の explicit sheet-name root 展開条件を整理する
+  - `docs/process/explicit-sheet-name-broad-root-feasibility.md` を追加し、`ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` は active workbook 依存のため current bundle の sidecar に静的接続しない方針を一次情報ベースで整理した
+  - `ThisWorkbook.Worksheets("Sheet1")` だけを user-facing に維持し、broad root の境界は `OLEObject.Object` と `Shape.OLEFormat.Object` の両方でそろえる方針を固定した
+  - ADR [0005](docs/adr/0005-explicit-sheet-name-root-policy.md) の status を `Accepted` に上げ、broad root 再評価は workbook binding / manifest のような明示的 workbook 同一性が入った場合だけと整理した
+
+- [ ] current bundle と target workbook を結ぶ明示バインディング条件を整理する
+  - broad root を将来再評価できるように、manifest / config / workbook package mode のどれで workbook identity を resolver に渡すべきかを docs で整理する
+  - bundle-local sidecar lookup を workbook-identity aware lookup へ拡張する場合の最小 field と user-facing 境界を決める
 
 ## メモ
 

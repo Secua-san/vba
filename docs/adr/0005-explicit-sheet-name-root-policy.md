@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -19,10 +19,12 @@ Proposed
 - explicit sheet-name root を user-facing に広げる最初の候補は、workbook identity を静的に固定できる `ThisWorkbook.Worksheets("Sheet1")` 限定とする。
 - `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` は、この段階では user-facing にしない。
 - `OLEObject.Object` と `Shape.OLEFormat.Object` の explicit sheet-name root 対応は、将来 `workbook root identity + sheetName + shapeName` lookup helper を共有する前提で進める。
+- broad root の再評価は、current bundle と target workbook の同一性を静的または明示設定で保証できる仕組みが追加された場合に限る。
 
 ## Consequences
 
 - `Sheet1` alias 導線と `Worksheets("Sheet1")` 導線で join key を混同しないため、sheet name と code name がずれた workbook でも誤解決を避けやすい。
 - broad root 展開は遅くなるが、active workbook 依存の誤補完を抑えられる。
-- 次段の実装では、`ThisWorkbook.Worksheets("Sheet1")` 連鎖でも workbook root identity を保持して sidecar resolver へ伝播する必要がある。
-- 調査詳細や除外境界の補足は `docs/process/shape-oleformat-object-explicit-sheet-root-feasibility.md` を正本とする。
+- `ThisWorkbook.Worksheets("Sheet1")` 連鎖でも workbook root identity を保持して sidecar resolver へ伝播する経路が必要であり、この最小経路は実装済みである。
+- `ActiveWorkbook` と unqualified `Worksheets` は、今後も runtime state 依存のままなら user-facing に開かない。
+- 調査詳細や除外境界の補足は `docs/process/shape-oleformat-object-explicit-sheet-root-feasibility.md` と `docs/process/explicit-sheet-name-broad-root-feasibility.md` を参照する。
