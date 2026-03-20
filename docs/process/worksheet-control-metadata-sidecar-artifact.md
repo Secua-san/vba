@@ -38,8 +38,13 @@
 ### この形にする理由
 
 - sidecar を module file と同じ階層に散らさず、追加 metadata を `.vba/` に閉じ込められる。
-- 将来 `workspace-symbol-index.json` や `control-manifest.json` のような補助 artifact を増やす余地を残せる。
+- 将来 `workspace-symbol-index.json` や `workbook-binding.json` のような補助 artifact を増やす余地を残せる。
 - workbook 名ベースの lookup よりも、現在開いている file から bundle を引く方が誤結合しにくい。
+
+### binding 情報を別 artifact にする理由
+
+- broad root 再評価に必要な workbook identity は、正本 [workbook-binding-manifest-feasibility.md](./workbook-binding-manifest-feasibility.md) で別 artifact `workbook-binding.json` として扱う。
+- control inventory sidecar は `shapeName` / `codeName` / `controlType` の安定 schema に寄せ、path や add-in 状態のような volatile 情報を混ぜない。
 
 ## Lookup ルール
 
