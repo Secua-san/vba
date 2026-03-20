@@ -5,7 +5,7 @@
 - 長く効く判断の正本は ADR [0005 Explicit Sheet-Name Root Policy](../adr/0005-explicit-sheet-name-root-policy.md) とし、この文書は調査結果と実装境界の補足を扱う。
 - `Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` のような explicit sheet-name root は、sidecar schema 上は `sheetName + shapeName` で結合できる。
 - ただし current product で直ちに user-facing へ広げる対象は、`ThisWorkbook.Worksheets("Sheet1")` のように workbook identity が静的に固定できる root に絞るべきである。
-- unqualified `Worksheets("Sheet1")` と `ActiveWorkbook.Worksheets("Sheet1")` は active workbook 依存であり、現在開いている bundle の sidecar へ結ぶと誤解決リスクが高いため、この段階では不採用とする。
+- unqualified `Worksheets("Sheet1")` と `Application.Worksheets("Sheet1")` は active workbook 依存であり、この文書の段階では不採用とする。`ActiveWorkbook.Worksheets("Sheet1")` は後続の workbook-bound broad root gating で別途扱う。
 - join key は `sheetCodeName` ではなく `sheetName` を使う。`sheetCodeName` は worksheet document module alias (`Sheet1`) と control code name 導線のために別 key として維持する。
 - `OLEObject.Object` と `Shape.OLEFormat.Object` は、将来 explicit sheet-name root を開くなら同じ `workbook root identity + sheetName + shapeName` lookup helper を共有できる。
 
@@ -73,7 +73,7 @@
 ### フェーズ 1: docs 上の整理完了
 
 - explicit sheet-name root の join key は `sheetName`、document module alias / control code name 導線の join key は `sheetCodeName` と整理する。
-- `Worksheets("Sheet1")` と `ActiveWorkbook.Worksheets("Sheet1")` は active workbook 依存のため、この段階では user-facing にしない。
+- `Worksheets("Sheet1")` と `Application.Worksheets("Sheet1")` は active workbook 依存のため、この段階では user-facing にしない。`ActiveWorkbook.Worksheets("Sheet1")` は後続の workbook-bound broad root gating で扱う。
 - 最初の実装候補は `ThisWorkbook.Worksheets("Sheet1")` に限定する。
 
 ### フェーズ 2: workbook-qualified worksheet root の最小実装
@@ -81,23 +81,23 @@
 - `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object`
 - `ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object`
 - 必要なら同時に `ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object` 系も同じ helper へ寄せる。
-- negative は `ActiveWorkbook`、unqualified `Worksheets`、`ActiveSheet`、chartsheet、numeric / dynamic selector、`ShapeRange` を維持する。
+- negative は `ActiveWorkbook`、unqualified `Worksheets`、`Application.Worksheets`、`ActiveSheet`、chartsheet、numeric / dynamic selector、`ShapeRange` を維持する。
 
 ## 2026-03-15 時点の完了状態
 
 - `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` は user-facing に解決する。
 - shared helper により `ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object` と `.Item("CheckBox1").Object` も同じ workbook-qualified root から user-facing に解決する。
 - resolver は `ThisWorkbook` 起点の workbook root identity を `Worksheets("Sheet1")` 連鎖でも保持し、current bundle の sidecar から `sheetName + shapeName` を引ける。
-- `ThisWorkbook.Worksheets(1)`、`ActiveWorkbook.Worksheets("Sheet1")`、unqualified `Worksheets("Sheet1")`、`ActiveSheet`、chartsheet、`ShapeRange` は引き続き除外境界として維持する。
+- `ThisWorkbook.Worksheets(1)`、unqualified `Worksheets("Sheet1")`、`Application.Worksheets("Sheet1")`、`ActiveSheet`、chartsheet、`ShapeRange` は引き続き除外境界として維持する。`ActiveWorkbook.Worksheets("Sheet1")` は後続の broad root gating で user-facing 化済みだが、この文書の対象外とする。
 - `sheetName + shapeName` lookup helper は `OLEObject.Object` と `Shape.OLEFormat.Object` の両方で共有できる形へ寄せた。
 
 ### フェーズ 3: broad root 展開の再評価
 
 - broad root の扱いは正本 [explicit-sheet-name-broad-root-feasibility.md](./explicit-sheet-name-broad-root-feasibility.md) に分離した。
-- 2026-03-20 時点では、`ActiveWorkbook` や unqualified `Worksheets` は current bundle を静的に指さないため user-facing にしない。
+- 2026-03-21 時点で `ActiveWorkbook.Worksheets("SheetName")` は workbook-bound gating により user-facing 化済みである。unqualified `Worksheets("SheetName")` / `Application.Worksheets("SheetName")` は [explicit-sheet-name-broad-root-feasibility.md](./explicit-sheet-name-broad-root-feasibility.md) で別途扱う。
 - 再評価は、current bundle と target workbook の同一性を明示できる workbook binding が導入されたときだけ行う。
 
-## 今回の完了条件
+## この文書作成時の完了条件
 
 - explicit sheet-name root の join key を `sheetName` と確定する。
 - `Sheet1` alias 限定実装と競合しない理由を整理する。

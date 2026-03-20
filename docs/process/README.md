@@ -27,7 +27,7 @@
 - [worksheet-chart-control-identity-feasibility.md](worksheet-chart-control-identity-feasibility.md): `OLEObject.Object` と control code name 支援に必要な metadata source の整理
 - [shape-oleformat-object-promotion-feasibility.md](shape-oleformat-object-promotion-feasibility.md): `Shape.OLEFormat.Object` を control owner へ昇格できる条件と除外条件の整理
 - [shape-oleformat-object-explicit-sheet-root-feasibility.md](shape-oleformat-object-explicit-sheet-root-feasibility.md): `Worksheets("Sheet1")` / `ThisWorkbook.Worksheets("Sheet1")` 系 root を sidecar へ結べる範囲と join key の整理
-- [explicit-sheet-name-broad-root-feasibility.md](explicit-sheet-name-broad-root-feasibility.md): `ActiveWorkbook.Worksheets("Sheet1")` と unqualified `Worksheets("Sheet1")` を broad root として開かない理由と再評価条件の整理
+- [explicit-sheet-name-broad-root-feasibility.md](explicit-sheet-name-broad-root-feasibility.md): `ActiveWorkbook.Worksheets("Sheet1")` の runtime gating 済み境界と、unqualified `Worksheets("Sheet1")` / `Application.Worksheets("Sheet1")` を同じ broad root family として扱う条件整理
 - [workbook-binding-manifest-feasibility.md](workbook-binding-manifest-feasibility.md): broad root 再評価の前提となる workbook binding manifest の置き場所、key、保守条件の整理
 - [active-workbook-identity-provider-contract.md](active-workbook-identity-provider-contract.md): host / extension / server で共有する active workbook identity snapshot と gating 条件の整理
 - [worksheet-chart-shapes-root-feasibility.md](worksheet-chart-shapes-root-feasibility.md): `Shapes(Index)` / `Shapes.Item(Index)` を generic `Shape` surface として扱う境界の整理

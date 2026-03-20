@@ -5,8 +5,8 @@
 - runtime の active workbook identity は、host / extension / server で共通の snapshot schema `ActiveWorkbookIdentitySnapshot` として扱う。
 - extension が host bridge を担当し、server には custom LSP notification `vba/activeWorkbookIdentity` で snapshot を通知する。
 - host が返す値は raw の `ActiveWorkbook.FullName` / `Name` / `Path` / `IsAddin` とし、manifest の v1 matching rule への正規化は server 側で行う。
-- `Application.ActiveWorkbook` が `Nothing` の場合、Protected View の場合、unsaved workbook、add-in workbook は、すべて別 state として transport し、broad root resolver は無効のまま維持する。
-- broad root を将来 user-facing に開くのは、`available` snapshot と `workbook-binding.json` の match がそろったときだけとする。
+- `Application.ActiveWorkbook` が `Nothing` の場合、Protected View の場合、unsaved workbook、add-in workbook は、すべて別 state として transport し、その間 broad root resolver は無効のまま維持する。
+- broad root を user-facing にする条件は、`available` snapshot と `workbook-binding.json` の match がそろったときだけとする。現行実装では `ActiveWorkbook.Worksheets("SheetName")` がこの条件で有効化済みで、unqualified `Worksheets("SheetName")` / `Application.Worksheets("SheetName")` は同じ条件で別途判断する。
 
 ## 確認した公式ソース
 
@@ -29,8 +29,9 @@
 
 ## 現行前提
 
-- current product は `ThisWorkbook.Worksheets("Sheet1")` のような workbook identity を静的に固定できる root だけを user-facing にしている。
-- broad root (`ActiveWorkbook.Worksheets("Sheet1")` / unqualified `Worksheets("Sheet1")`) は、manifest と runtime identity の両方が無い限り閉じたままである。
+- current product は `ThisWorkbook.Worksheets("Sheet1")` のような静的 workbook-qualified root と、manifest + runtime identity がそろった `ActiveWorkbook.Worksheets("Sheet1")` を user-facing にしている。
+- `ActiveWorkbook.Worksheets("Sheet1")` は、manifest と runtime identity の両方がそろったときだけ user-facing に開く。
+- unqualified `Worksheets("Sheet1")` / `Application.Worksheets("Sheet1")` は Office VBA 上で active workbook family だが、同じ gating helper を共有するかは別 task として整理する。
 - `workbook-binding.json` は disk artifact、active workbook identity provider は runtime artifact であり、役割を混ぜない。
 - host 実装はまだ存在しないため、今決めるのは contract と gating rule までとする。
 
@@ -204,5 +205,5 @@
 
 ## 次段の候補
 
-- `available` snapshot と manifest match がそろったときだけ、`ActiveWorkbook.Worksheets("SheetName")` 系 broad root を resolver へ限定接続する。
-- 最初の user-facing 接続先は `OLEObject.Object` / `Shape.OLEFormat.Object` の既存 worksheet control owner 導線に絞り、`unqualified Worksheets("SheetName")` は同じ gating helper を共有できるか別途検証する。
+- `available` snapshot と manifest match がそろったときだけ、unqualified `Worksheets("SheetName")` / `Application.Worksheets("SheetName")` を `ActiveWorkbook.Worksheets("SheetName")` と同じ broad root family として resolver へ限定接続するかを検証する。
+- user-facing 接続先は引き続き `OLEObject.Object` / `Shape.OLEFormat.Object` の既存 worksheet control owner 導線に絞り、`Sheets` / `ActiveSheet` / grouped selector は broad root family に含めない。
