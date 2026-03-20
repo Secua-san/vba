@@ -1,10 +1,16 @@
 import path from "node:path";
 import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient/node";
+import {
+  ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD,
+  ACTIVE_WORKBOOK_IDENTITY_TEST_STATE_REQUEST_METHOD
+} from "../../core/src/index";
+import {
+  TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND,
+  TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND
+} from "./testCommands";
 
 let client: LanguageClient | undefined;
-const ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION = "vba/activeWorkbookIdentity";
-const TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND = "vba.test.setActiveWorkbookIdentitySnapshot";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const serverModule = context.asAbsolutePath(path.join("dist", "server", "index.js"));
@@ -47,7 +53,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           throw new Error("language client is not ready");
         }
 
-        await Promise.resolve(client.sendNotification(ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION, snapshot));
+        await Promise.resolve(client.sendNotification(ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD, snapshot));
+      })
+    );
+    context.subscriptions.push(
+      vscode.commands.registerCommand(TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND, async () => {
+        if (!client) {
+          throw new Error("language client is not ready");
+        }
+
+        return client.sendRequest(ACTIVE_WORKBOOK_IDENTITY_TEST_STATE_REQUEST_METHOD);
       })
     );
   }

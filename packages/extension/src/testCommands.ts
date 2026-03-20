@@ -1,0 +1,2 @@
+export const TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND = "vba.test.getActiveWorkbookIdentitySnapshot";
+export const TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND = "vba.test.setActiveWorkbookIdentitySnapshot";

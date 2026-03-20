@@ -1226,6 +1226,91 @@ Option Explicit`
   }
 });
 
+test("document service keeps ActiveWorkbook broad root closed when manifest and sidecar bundle roots differ", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const outerBundleRoot = path.join(workspaceRoot, "outer-bundle");
+  const innerBundleRoot = path.join(outerBundleRoot, "inner-bundle");
+  const moduleDirectory = path.join(innerBundleRoot, "modules");
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+End Sub`;
+
+  mkdirSync(moduleDirectory, { recursive: true });
+  writeWorkbookBindingManifest(outerBundleRoot, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "C:\\Fixtures\\outer-bundle.xlsm",
+      isAddIn: false,
+      name: "outer-bundle.xlsm",
+      path: "C:\\Fixtures",
+      sourceKind: "openxml-package"
+    }
+  });
+  writeWorksheetControlMetadataSidecar(innerBundleRoot, {
+    artifact: "worksheet-control-metadata-sidecar",
+    owners: [
+      {
+        controls: [
+          {
+            codeName: "chkFinished",
+            controlType: "CheckBox",
+            progId: "Forms.CheckBox.1",
+            shapeId: 3,
+            shapeName: "CheckBox1"
+          }
+        ],
+        ownerKind: "worksheet",
+        sheetCodeName: "Sheet1",
+        sheetName: "Sheet One",
+        status: "supported"
+      }
+    ],
+    version: 1,
+    workbook: {
+      name: "inner-bundle.xlsm",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "C:\\Fixtures\\outer-bundle.xlsm",
+        isAddin: false,
+        name: "outer-bundle.xlsm",
+        path: "C:\\Fixtures"
+      },
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    service.analyzeText(uri, "vba", 1, text);
+
+    const state = service.getState(uri);
+    const objectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+
+    assert.equal(state?.workbookBindingManifest?.bundleRoot, outerBundleRoot);
+    assert.equal(state?.worksheetControlMetadata?.bundleRoot, innerBundleRoot);
+    assert.equal(objectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 test("document service reloads the root document module sidecar after sidecar-only regeneration", () => {
   const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
   const workspaceRoot = path.join(temporaryDirectory, "workspace");
