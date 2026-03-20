@@ -3999,6 +3999,274 @@ Option Explicit`
   }
 });
 
+test("document service caches active workbook identity snapshot and logs manifest match / mismatch", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-active-workbook-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleA = path.join(workspaceRoot, "bundle-a");
+  const bundleB = path.join(workspaceRoot, "bundle-b");
+  const moduleAUri = pathToFileURL(path.join(bundleA, "Module1.bas")).href;
+  const moduleBUri = pathToFileURL(path.join(bundleB, "Module2.bas")).href;
+  const logs = [];
+
+  mkdirSync(bundleA, { recursive: true });
+  mkdirSync(bundleB, { recursive: true });
+  writeWorkbookBindingManifest(bundleA, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "C:\\Work\\Book1.xlsm",
+      isAddIn: false,
+      name: "Book1.xlsm",
+      path: "C:\\Work",
+      sourceKind: "openxml-package"
+    }
+  });
+  writeWorkbookBindingManifest(bundleB, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "C:\\Work\\OtherBook.xlsm",
+      isAddIn: false,
+      name: "OtherBook.xlsm",
+      path: "C:\\Work",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry),
+      workspaceRoots: [workspaceRoot]
+    });
+
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "c:/work/BOOK1.xlsm",
+        isAddin: false,
+        name: "Book1.xlsm",
+        path: "c:/work"
+      },
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const stateA = service.analyzeText(
+      moduleAUri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+    const stateB = service.analyzeText(
+      moduleBUri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module2"
+Option Explicit`
+    );
+
+    assert.equal(stateA.activeWorkbookIdentity?.state, "available");
+    assert.equal(stateA.workbookBindingManifest?.status, "loaded");
+    assert.equal(stateA.workbookBindingManifest?.workbookName, "Book1.xlsm");
+    assert.equal(stateB.workbookBindingManifest?.workbookName, "OtherBook.xlsm");
+    assert.equal(logs.some((entry) => entry.code === "active-workbook-identity.updated"), true);
+    assert.equal(logs.some((entry) => entry.code === "active-workbook-identity.match"), true);
+    assert.equal(logs.some((entry) => entry.code === "active-workbook-identity.mismatch"), true);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service logs binding-missing when active workbook is available but manifest is absent", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-active-workbook-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const moduleDirectory = path.join(workspaceRoot, "src");
+  const logs = [];
+
+  mkdirSync(moduleDirectory, { recursive: true });
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry),
+      workspaceRoots: [workspaceRoot]
+    });
+    const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "C:\\Work\\Book1.xlsm",
+        isAddin: false,
+        name: "Book1.xlsm",
+        path: "C:\\Work"
+      },
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.workbookBindingManifest, undefined);
+    assert.equal(logs.some((entry) => entry.code === "active-workbook-identity.binding-missing"), true);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service logs binding-disabled when active workbook snapshot is unavailable", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-active-workbook-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "bundle");
+  const logs = [];
+
+  mkdirSync(bundleRoot, { recursive: true });
+  writeWorkbookBindingManifest(bundleRoot, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "C:\\Work\\Book1.xlsm",
+      isAddIn: false,
+      name: "Book1.xlsm",
+      path: "C:\\Work",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry),
+      workspaceRoots: [workspaceRoot]
+    });
+    const uri = pathToFileURL(path.join(bundleRoot, "Module1.bas")).href;
+
+    service.setActiveWorkbookIdentitySnapshot({
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      reason: "host-unreachable",
+      state: "unavailable",
+      version: 1
+    });
+
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+    service.analyzeText(
+      uri,
+      "vba",
+      2,
+      `Attribute VB_Name = "Module1"
+Option Explicit
+' edit`
+    );
+
+    assert.equal(state.activeWorkbookIdentity?.state, "unavailable");
+    assert.equal(logs.some((entry) => entry.code === "active-workbook-identity.unavailable"), true);
+    assert.equal(logs.filter((entry) => entry.code === "active-workbook-identity.binding-disabled").length, 1);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
+test("document service rejects invalid active workbook identity payloads", () => {
+  const service = createDocumentService();
+
+  service.setActiveWorkbookIdentitySnapshot({
+    identity: {
+      fullName: "",
+      isAddin: "no",
+      name: "Book1.xlsm"
+    },
+    observedAt: "not-a-date",
+    providerKind: "excel-active-workbook",
+    state: "available",
+    version: 1
+  });
+
+  const state = service.analyzeText(
+    "file:///C:/temp/Module1.bas",
+    "vba",
+    1,
+    `Attribute VB_Name = "Module1"
+Option Explicit`
+  );
+
+  assert.equal(state.activeWorkbookIdentity?.state, "invalid");
+  assert.equal(state.activeWorkbookIdentity?.issues.some((issue) => issue.path === "$.identity.fullName"), true);
+});
+
+test("document service rejects available snapshot and manifest when unsaved / add-in values are mixed in", () => {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-active-workbook-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "bundle");
+  const logs = [];
+
+  mkdirSync(bundleRoot, { recursive: true });
+  writeWorkbookBindingManifest(bundleRoot, {
+    artifact: "workbook-binding-manifest",
+    bindingKind: "active-workbook-fullname",
+    version: 1,
+    workbook: {
+      fullName: "Addin.xlam",
+      isAddIn: true,
+      name: "Addin.xlam",
+      path: "",
+      sourceKind: "openxml-package"
+    }
+  });
+
+  try {
+    const service = createDocumentService({
+      logger: (entry) => logs.push(entry),
+      workspaceRoots: [workspaceRoot]
+    });
+    const uri = pathToFileURL(path.join(bundleRoot, "Module1.bas")).href;
+
+    service.setActiveWorkbookIdentitySnapshot({
+      identity: {
+        fullName: "C:\\Work\\Addin.xlam",
+        isAddin: true,
+        name: "Addin.xlam",
+        path: ""
+      },
+      observedAt: "2026-03-21T00:00:00.000Z",
+      providerKind: "excel-active-workbook",
+      state: "available",
+      version: 1
+    });
+
+    const state = service.analyzeText(
+      uri,
+      "vba",
+      1,
+      `Attribute VB_Name = "Module1"
+Option Explicit`
+    );
+
+    assert.equal(state.activeWorkbookIdentity?.state, "invalid");
+    assert.equal(state.workbookBindingManifest?.status, "ignored");
+    assert.equal(logs.some((entry) => entry.code === "active-workbook-identity.match"), false);
+    assert.equal(logs.some((entry) => entry.code === "active-workbook-identity.invalid-payload"), true);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 function assertSemanticToken(text, tokens, lineIndex, identifier, expected, occurrence = 0) {
   const lines = text.split("\n");
   const line = lines[lineIndex];
@@ -4058,6 +4326,12 @@ function writeWorksheetControlMetadataSidecar(bundleRoot, metadata) {
   const sidecarDirectory = path.join(bundleRoot, ".vba");
   mkdirSync(sidecarDirectory, { recursive: true });
   writeFileSync(path.join(sidecarDirectory, "worksheet-control-metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+}
+
+function writeWorkbookBindingManifest(bundleRoot, manifest) {
+  const manifestDirectory = path.join(bundleRoot, ".vba");
+  mkdirSync(manifestDirectory, { recursive: true });
+  writeFileSync(path.join(manifestDirectory, "workbook-binding.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 function applyTextEdit(text, edit) {

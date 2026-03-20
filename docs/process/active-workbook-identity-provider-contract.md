@@ -152,6 +152,7 @@
 
 - custom LSP notification 名は `vba/activeWorkbookIdentity` とする。
 - diff / patch ではなく snapshot 全体の置き換え通知にする。
+- extension は host bridge から実 payload を取得できるまで placeholder snapshot を送らない。未受信は server 側で「runtime state 未初期化」として扱う。
 - server は最新 snapshot だけを cache し、document 単位ではなく workspace window 単位の runtime state として扱う。
 - cache 前に schema validation を行い、不正 payload は reject して broad root を閉じたままにする。
 
@@ -203,6 +204,5 @@
 
 ## 次段の候補
 
-- extension / server 間の `vba/activeWorkbookIdentity` notification と server cache を read-only で追加する。
-- resolver 連携前に、snapshot 受信 log と `binding-missing` / `binding-disabled` の区別だけを観測可能にする。
-- `reason` / field 欠損 / 型不整合をどの validation error code へ落とすかを、transport 実装と同じ PR で固定する。
+- `available` snapshot と manifest match がそろったときだけ、`ActiveWorkbook.Worksheets("SheetName")` 系 broad root を resolver へ限定接続する。
+- 最初の user-facing 接続先は `OLEObject.Object` / `Shape.OLEFormat.Object` の既存 worksheet control owner 導線に絞り、`unqualified Worksheets("SheetName")` は同じ gating helper を共有できるか別途検証する。

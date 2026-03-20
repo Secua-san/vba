@@ -35,6 +35,26 @@ export type {
   BuiltinSignatureParameter
 } from "./reference/builtinReference";
 export {
+  ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD,
+  ACTIVE_WORKBOOK_IDENTITY_PROVIDER_KIND,
+  ACTIVE_WORKBOOK_IDENTITY_VERSION,
+  normalizeWorkbookFullNameForComparison,
+  parseActiveWorkbookIdentitySnapshot
+} from "./reference/activeWorkbookIdentity";
+export type {
+  ActiveWorkbookIdentityAvailableSnapshot,
+  ActiveWorkbookIdentityFields,
+  ActiveWorkbookIdentityParseResult,
+  ActiveWorkbookIdentityProtectedViewSnapshot,
+  ActiveWorkbookIdentitySnapshot,
+  ActiveWorkbookIdentityUnavailableReason,
+  ActiveWorkbookIdentityUnavailableSnapshot,
+  ActiveWorkbookIdentityUnsupportedReason,
+  ActiveWorkbookIdentityUnsupportedSnapshot,
+  ActiveWorkbookIdentityValidationIssue,
+  ActiveWorkbookProtectedViewFields
+} from "./reference/activeWorkbookIdentity";
+export {
   buildWorksheetControlMetadataSidecarPath,
   findNearestWorksheetControlMetadataSidecar,
   getSupportedWorksheetControlMetadataOwners,
@@ -56,6 +76,24 @@ export type {
   WorksheetControlMetadataUnsupportedOwner,
   WorksheetControlMetadataValidationIssue
 } from "./reference/worksheetControlMetadataSidecar";
+export {
+  buildWorkbookBindingManifestPath,
+  findNearestWorkbookBindingManifest,
+  parseWorkbookBindingManifest,
+  WORKBOOK_BINDING_MANIFEST_ARTIFACT,
+  WORKBOOK_BINDING_MANIFEST_BINDING_KIND,
+  WORKBOOK_BINDING_MANIFEST_DIRECTORY_NAME,
+  WORKBOOK_BINDING_MANIFEST_FILE_NAME,
+  WORKBOOK_BINDING_MANIFEST_VERSION
+} from "./reference/workbookBindingManifest";
+export type {
+  WorkbookBindingManifest,
+  WorkbookBindingManifestLocation,
+  WorkbookBindingManifestLookupOptions,
+  WorkbookBindingManifestParseResult,
+  WorkbookBindingManifestValidationIssue,
+  WorkbookBindingManifestWorkbook
+} from "./reference/workbookBindingManifest";
 export { buildModuleSymbols, getAccessibleSymbolsAtLine } from "./symbol/buildModuleSymbols";
 export { normalizeIdentifier } from "./types/helpers";
 export type {

@@ -419,10 +419,14 @@
   - [docs/process/active-workbook-identity-provider-contract.md](docs/process/active-workbook-identity-provider-contract.md) を追加し、`Application.ActiveWorkbook` / `ActiveProtectedViewWindow` / `ProtectedViewWindow.Workbook` / `Workbook.Saved` / `Workbook.IsAddin` を根拠に、`available` / `unavailable` / `protected-view` / `unsupported` state と log 方針を整理した
   - [docs/process/workbook-binding-manifest-feasibility.md](docs/process/workbook-binding-manifest-feasibility.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) を更新し、manifest policy と runtime provider contract の責務分離を明確化した
 
-- [ ] active workbook identity snapshot transport の最小実装を整理する
-  - extension / server 間の custom LSP notification `vba/activeWorkbookIdentity` と server cache を read-only で追加し、resolver へはまだ接続しない段階を設計する
-  - snapshot 受信 log と `binding-missing` / `binding-disabled` / `match` / `mismatch` の gating log をどう分けて観測するか、最小の実装単位を決める
-  - `ActiveWorkbookIdentitySnapshot` の validation 境界と `invalid-payload` log code を transport 実装と同じ PR で固定する
+- [x] active workbook identity snapshot transport の最小実装を整理する
+  - `packages/core` に `ActiveWorkbookIdentitySnapshot` / `workbook-binding.json` の schema helper、validation、nearest ancestor lookup、`normalizeWorkbookFullNameForComparison` を追加し、runtime snapshot と manifest matching rule を共有できるようにした
+  - `packages/server` に custom notification `vba/activeWorkbookIdentity`、snapshot cache、`binding-missing` / `binding-disabled` / `match` / `mismatch` / `invalid-payload` log を read-only で追加し、resolver へはまだ接続しない段階で状態観測できるようにした
+  - `packages/extension` は host bridge 実装前に placeholder snapshot を送らず、runtime state 未初期化のまま待機する。notification 経路自体は server 側へ追加済みで、host 実装時に `vba/activeWorkbookIdentity` をそのまま流せるようにした
+
+- [ ] workbook-bound broad root gating の最小接続を追加する
+  - `available` snapshot と `workbook-binding.json` の match がそろったときだけ、`ActiveWorkbook.Worksheets("SheetName")` 系 broad root を current bundle sidecar lookup の候補へ開く
+  - 最初の接続対象は既存の `OLEObject.Object` / `Shape.OLEFormat.Object` と同じ worksheet control owner 導線に限定し、resolver 条件と負例を server / extension test で固定する
 
 ## メモ
 

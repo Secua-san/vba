@@ -41,6 +41,7 @@ import type {
   WorkspaceSymbolResolution
 } from "./lsp/documentService";
 import type { Diagnostic, OutlineSymbol, SymbolInfo } from "../../core/src/index";
+import { ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD } from "../../core/src/index";
 
 export { createDocumentService } from "./lsp/documentService";
 
@@ -53,7 +54,12 @@ export function startServer(): void {
   const documents = new TextDocuments(TextDocument);
   const documentService = createDocumentService({
     logger: (entry) => {
-      const message = `[worksheet-control-metadata] ${entry.message}`;
+      const channel = entry.code.startsWith("active-workbook-identity.")
+        ? "active-workbook-identity"
+        : entry.code.startsWith("worksheet-control-metadata.")
+          ? "worksheet-control-metadata"
+          : "vba";
+      const message = `[${channel}] ${entry.message}`;
 
       if (entry.level === "warn") {
         connection.console.warn(message);
@@ -157,6 +163,10 @@ export function startServer(): void {
     for (const document of documents.all()) {
       analyzeAndPublish(document);
     }
+  });
+
+  connection.onNotification(ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD, (snapshot) => {
+    documentService.setActiveWorkbookIdentitySnapshot(snapshot);
   });
 
   connection.onDidChangeWatchedFiles(async (params) => {
