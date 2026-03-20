@@ -1163,15 +1163,42 @@ export async function run(): Promise<void> {
     findPositionAfterToken(worksheetBroadRootDocument, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
     (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
   );
+  const worksheetBroadRootItemObjectCompletionSuppressed = await waitForCompletions(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const applicationBroadRootItemObjectCompletionSuppressed = await waitForCompletions(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(
+      worksheetBroadRootDocument,
+      'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'
+    ),
+    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
   const worksheetBroadRootShapeHoverSuppressed = await waitForNoHover(
     worksheetBroadRootDocument,
     findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
+  );
+  const worksheetBroadRootItemShapeHoverSuppressed = await waitForNoHover(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(
+      worksheetBroadRootDocument,
+      'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
+    )
   );
   const applicationBroadRootShapeSignatureSuppressed = await waitForNoSignatureHelp(
     worksheetBroadRootDocument,
     findPositionAfterToken(
       worksheetBroadRootDocument,
       'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+    )
+  );
+  const applicationBroadRootItemShapeSignatureSuppressed = await waitForNoSignatureHelp(
+    worksheetBroadRootDocument,
+    findPositionAfterToken(
+      worksheetBroadRootDocument,
+      'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
     )
   );
 
@@ -1185,8 +1212,18 @@ export async function run(): Promise<void> {
     false,
     'Application.Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'
   );
+  assert.equal(
+    worksheetBroadRootItemObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+    false
+  );
+  assert.equal(
+    applicationBroadRootItemObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+    false
+  );
   assert.equal(worksheetBroadRootShapeHoverSuppressed, true);
+  assert.equal(worksheetBroadRootItemShapeHoverSuppressed, true);
   assert.equal(applicationBroadRootShapeSignatureSuppressed, true);
+  assert.equal(applicationBroadRootItemShapeSignatureSuppressed, true);
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
   try {
@@ -1198,6 +1235,19 @@ export async function run(): Promise<void> {
     const applicationBroadRootObjectCompletionItems = await waitForCompletions(
       worksheetBroadRootDocument,
       findPositionAfterToken(worksheetBroadRootDocument, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const worksheetBroadRootItemObjectCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const applicationBroadRootItemObjectCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'
+      ),
       (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
     );
     const worksheetBroadRootShapeCompletionItems = await waitForCompletions(
@@ -1213,9 +1263,33 @@ export async function run(): Promise<void> {
       ),
       (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
     );
+    const worksheetBroadRootItemShapeCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.'
+      ),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const applicationBroadRootItemShapeCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.'
+      ),
+      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
     const worksheetBroadRootObjectHover = await waitForHover(
       worksheetBroadRootDocument,
       findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
+      (hovers) => hovers.length > 0
+    );
+    const worksheetBroadRootItemObjectHover = await waitForHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
+      ),
       (hovers) => hovers.length > 0
     );
     const applicationBroadRootObjectSignature = await waitForSignatureHelp(
@@ -1226,9 +1300,25 @@ export async function run(): Promise<void> {
       ),
       (help) => help.signatures.length > 0
     );
+    const applicationBroadRootItemObjectSignature = await waitForSignatureHelp(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
+      ),
+      (help) => help.signatures.length > 0
+    );
     const worksheetBroadRootShapeHover = await waitForHover(
       worksheetBroadRootDocument,
       findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'),
+      (hovers) => hovers.length > 0
+    );
+    const worksheetBroadRootItemShapeHover = await waitForHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
+      ),
       (hovers) => hovers.length > 0
     );
     const applicationBroadRootShapeSignature = await waitForSignatureHelp(
@@ -1236,6 +1326,14 @@ export async function run(): Promise<void> {
       findPositionAfterToken(
         worksheetBroadRootDocument,
         'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+      ),
+      (help) => help.signatures.length > 0
+    );
+    const applicationBroadRootItemShapeSignature = await waitForSignatureHelp(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
       ),
       (help) => help.signatures.length > 0
     );
@@ -1255,10 +1353,40 @@ export async function run(): Promise<void> {
       worksheetBroadRootDocument,
       findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu')
     );
+    const worksheetRootItemHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const worksheetRootItemCompletionSuppressed = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.'),
+      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const applicationRootItemCompletionSuppressed = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'
+      ),
+      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
+    const applicationRootItemSignatureSuppressed = await waitForNoSignatureHelp(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+      )
+    );
     const worksheetBroadRootValueCompletion = worksheetBroadRootObjectCompletionItems.find(
       (item) => getCompletionItemLabel(item) === "Value"
     );
     const applicationBroadRootValueCompletion = applicationBroadRootObjectCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
+    const worksheetBroadRootItemValueCompletion = worksheetBroadRootItemObjectCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
+    const applicationBroadRootItemValueCompletion = applicationBroadRootItemObjectCompletionItems.find(
       (item) => getCompletionItemLabel(item) === "Value"
     );
     const worksheetBroadRootShapeCompletion = worksheetBroadRootShapeCompletionItems.find(
@@ -1267,31 +1395,67 @@ export async function run(): Promise<void> {
     const applicationBroadRootShapeCompletion = applicationBroadRootShapeCompletionItems.find(
       (item) => getCompletionItemLabel(item) === "Value"
     );
+    const worksheetBroadRootItemShapeCompletion = worksheetBroadRootItemShapeCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
+    const applicationBroadRootItemShapeCompletion = applicationBroadRootItemShapeCompletionItems.find(
+      (item) => getCompletionItemLabel(item) === "Value"
+    );
     const worksheetBroadRootObjectHoverText = getHoverContentsText(worksheetBroadRootObjectHover[0]);
+    const worksheetBroadRootItemObjectHoverText = getHoverContentsText(worksheetBroadRootItemObjectHover[0]);
     const worksheetBroadRootShapeHoverText = getHoverContentsText(worksheetBroadRootShapeHover[0]);
+    const worksheetBroadRootItemShapeHoverText = getHoverContentsText(worksheetBroadRootItemShapeHover[0]);
 
     assert.ok(worksheetBroadRootValueCompletion?.detail?.includes("CheckBox property"));
     assert.ok(applicationBroadRootValueCompletion?.detail?.includes("CheckBox property"));
+    assert.ok(worksheetBroadRootItemValueCompletion?.detail?.includes("CheckBox property"));
+    assert.ok(applicationBroadRootItemValueCompletion?.detail?.includes("CheckBox property"));
     assert.ok(worksheetBroadRootShapeCompletion?.detail?.includes("CheckBox property"));
     assert.ok(applicationBroadRootShapeCompletion?.detail?.includes("CheckBox property"));
+    assert.ok(worksheetBroadRootItemShapeCompletion?.detail?.includes("CheckBox property"));
+    assert.ok(applicationBroadRootItemShapeCompletion?.detail?.includes("CheckBox property"));
     assert.equal(
       worksheetBroadRootObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
       false,
       'Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'
     );
     assert.equal(
+      worksheetBroadRootItemObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+      false,
+      'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'
+    );
+    assert.equal(
       applicationBroadRootShapeCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
       false,
       'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'
     );
+    assert.equal(
+      applicationBroadRootItemShapeCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
+      false,
+      'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'
+    );
     assert.equal(worksheetBroadRootObjectHoverText.includes("CheckBox.Value"), true);
+    assert.equal(worksheetBroadRootItemObjectHoverText.includes("CheckBox.Value"), true);
     assert.equal(worksheetBroadRootShapeHoverText.includes("CheckBox.Value"), true);
+    assert.equal(worksheetBroadRootItemShapeHoverText.includes("CheckBox.Value"), true);
     assert.equal(applicationBroadRootObjectSignature.signatures[0]?.label, "Select(Replace) As Object");
+    assert.equal(applicationBroadRootItemObjectSignature.signatures[0]?.label, "Select(Replace) As Object");
     assert.equal(applicationBroadRootShapeSignature.signatures[0]?.label, "Select(Replace) As Object");
+    assert.equal(applicationBroadRootItemShapeSignature.signatures[0]?.label, "Select(Replace) As Object");
     assert.equal(sheetsBroadRootHoverSuppressed, true);
     assert.equal(activeSheetBroadRootHoverSuppressed, true);
     assert.equal(indexedBroadRootHoverSuppressed, true);
     assert.equal(dynamicBroadRootHoverSuppressed, true);
+    assert.equal(worksheetRootItemHoverSuppressed, true);
+    assert.equal(
+      worksheetRootItemCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+      false
+    );
+    assert.equal(
+      applicationRootItemCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+      false
+    );
+    assert.equal(applicationRootItemSignatureSuppressed, true);
 
     await setActiveWorkbookIdentitySnapshot({
       identity: {
@@ -1309,6 +1473,13 @@ export async function run(): Promise<void> {
     const mismatchedWorksheetBroadRootHoverSuppressed = await waitForNoHover(
       worksheetBroadRootDocument,
       findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    );
+    const mismatchedWorksheetBroadRootItemHoverSuppressed = await waitForNoHover(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
+      )
     );
     const mismatchedApplicationBroadRootSignatureSuppressed = await waitForNoSignatureHelp(
       worksheetBroadRootDocument,
@@ -1330,8 +1501,17 @@ export async function run(): Promise<void> {
       ),
       (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
     );
+    const mismatchedApplicationBroadRootItemCompletionItems = await waitForCompletions(
+      worksheetBroadRootDocument,
+      findPositionAfterToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.'
+      ),
+      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+    );
 
     assert.equal(mismatchedWorksheetBroadRootHoverSuppressed, true);
+    assert.equal(mismatchedWorksheetBroadRootItemHoverSuppressed, true);
     assert.equal(mismatchedApplicationBroadRootSignatureSuppressed, true);
     assert.equal(
       mismatchedWorksheetBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
@@ -1339,6 +1519,10 @@ export async function run(): Promise<void> {
     );
     assert.equal(
       mismatchedApplicationBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      false
+    );
+    assert.equal(
+      mismatchedApplicationBroadRootItemCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
       false
     );
   } finally {
