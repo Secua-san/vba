@@ -2,6 +2,27 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import * as vscode from "vscode";
 
+const TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND = "vba.test.setActiveWorkbookIdentitySnapshot";
+const ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT = {
+  identity: {
+    fullName: "c:/fixtures/FIXTURES.xlsm",
+    isAddin: false,
+    name: "fixtures.xlsm",
+    path: "c:/fixtures"
+  },
+  observedAt: "2026-03-21T00:00:00.000Z",
+  providerKind: "excel-active-workbook",
+  state: "available",
+  version: 1
+} as const;
+const ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT = {
+  observedAt: "2026-03-21T00:01:00.000Z",
+  providerKind: "excel-active-workbook",
+  reason: "no-active-workbook",
+  state: "unavailable",
+  version: 1
+} as const;
+
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension("tagi0.vba-extension");
   assert.ok(extension, "extension must be discoverable");
@@ -675,6 +696,43 @@ export async function run(): Promise<void> {
   assert.equal(activeWorkbookNamedObjectSelectSuppressed, true);
   assert.equal(thisWorkbookCodeNameObjectSelectSuppressed, true);
 
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
+
+  const activeWorkbookBoundOleObjectObjectCompletionItems = await waitForCompletions(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const activeWorkbookBoundOleObjectHover = await waitForHover(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
+    (hovers) => hovers.length > 0
+  );
+  const activeWorkbookBoundOleObjectSelectSignatureHelp = await waitForSignatureHelp(
+    oleObjectBuiltInDocument,
+    findPositionAfterToken(oleObjectBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('),
+    (help) => help.signatures.length > 0
+  );
+  const activeWorkbookBoundOleObjectValueCompletion = activeWorkbookBoundOleObjectObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const activeWorkbookBoundOleObjectSelectCompletion = activeWorkbookBoundOleObjectObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Select"
+  );
+  const activeWorkbookBoundOleObjectHoverText = getHoverContentsText(activeWorkbookBoundOleObjectHover[0]);
+
+  assert.ok(activeWorkbookBoundOleObjectValueCompletion?.detail?.includes("CheckBox property"));
+  assert.ok(activeWorkbookBoundOleObjectSelectCompletion?.detail?.includes("CheckBox method"));
+  assert.equal(
+    activeWorkbookBoundOleObjectObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
+    false,
+    "match 済み active workbook の OLEObject.Object は control owner へ解決し、OLEObject method を出さない"
+  );
+  assert.equal(activeWorkbookBoundOleObjectHoverText.includes("CheckBox.Value"), true);
+  assert.equal(activeWorkbookBoundOleObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
+
   const shapesBuiltInDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "ShapesBuiltIn.bas"));
   await vscode.window.showTextDocument(shapesBuiltInDocument);
 
@@ -1046,6 +1104,43 @@ export async function run(): Promise<void> {
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 39, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 40, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 41, "Value");
+
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
+
+  const activeWorkbookBoundShapeObjectCompletionItems = await waitForCompletions(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
+  );
+  const activeWorkbookBoundShapeObjectHover = await waitForHover(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'),
+    (hovers) => hovers.length > 0
+  );
+  const activeWorkbookBoundShapeObjectSelectSignatureHelp = await waitForSignatureHelp(
+    shapesBuiltInDocument,
+    findPositionAfterToken(shapesBuiltInDocument, 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('),
+    (help) => help.signatures.length > 0
+  );
+  const activeWorkbookBoundShapeObjectValueCompletion = activeWorkbookBoundShapeObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Value"
+  );
+  const activeWorkbookBoundShapeObjectSelectCompletion = activeWorkbookBoundShapeObjectCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Select"
+  );
+  const activeWorkbookBoundShapeObjectHoverText = getHoverContentsText(activeWorkbookBoundShapeObjectHover[0]);
+
+  assert.ok(activeWorkbookBoundShapeObjectValueCompletion?.detail?.includes("CheckBox property"));
+  assert.ok(activeWorkbookBoundShapeObjectSelectCompletion?.detail?.includes("CheckBox method"));
+  assert.equal(
+    activeWorkbookBoundShapeObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
+    false,
+    "match 済み active workbook の Shape.OLEFormat.Object は control owner へ解決し、Shape 専用 method を出さない"
+  );
+  assert.equal(activeWorkbookBoundShapeObjectHoverText.includes("CheckBox.Value"), true);
+  assert.equal(activeWorkbookBoundShapeObjectSelectSignatureHelp.signatures[0]?.label, "Select(Replace) As Object");
+
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
 
   const worksheetControlCodeNameDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "WorksheetControlCodeName.bas")
@@ -3337,6 +3432,10 @@ async function waitForSemanticTokens(
   }
 
   return new vscode.SemanticTokens(new Uint32Array());
+}
+
+async function setActiveWorkbookIdentitySnapshot(snapshot: unknown): Promise<void> {
+  await vscode.commands.executeCommand(TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND, snapshot);
 }
 
 async function waitForFormattedDocument(document: vscode.TextDocument, expectedText: string): Promise<string> {

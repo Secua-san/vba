@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "artifact": "workbook-binding-manifest",
+  "bindingKind": "active-workbook-fullname",
+  "workbook": {
+    "fullName": "C:\\Fixtures\\fixtures.xlsm",
+    "name": "fixtures.xlsm",
+    "path": "C:\\Fixtures",
+    "isAddIn": false,
+    "sourceKind": "openxml-package"
+  }
+}

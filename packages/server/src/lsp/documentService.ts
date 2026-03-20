@@ -2012,12 +2012,26 @@ function resolveBuiltinMemberOwnerForPath(
     character: rootStartCharacter,
     line
   });
+  const normalizedRootSegment = stripIndexedAccessMarker(rootSegment);
 
   if (!rootResolution) {
-    return resolveBuiltinMemberOwner(pathSegments);
+    const builtinContext = getBroadRootBuiltinContext(uri, normalizedRootSegment, getDocumentState);
+
+    if (!builtinContext) {
+      return resolveBuiltinMemberOwner(pathSegments);
+    }
+
+    const sidecarOwnerName = resolveWorksheetControlOwnerFromSidecar(
+      builtinContext,
+      memberSegments,
+      pathSegmentDetails?.slice(1),
+      getWorksheetControlMetadataState
+    );
+
+    return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, memberSegments);
   }
 
-  const builtinContext = getDocumentModuleBuiltinContext(rootResolution, stripIndexedAccessMarker(rootSegment), getDocumentState);
+  const builtinContext = getDocumentModuleBuiltinContext(rootResolution, normalizedRootSegment, getDocumentState);
 
   if (!builtinContext) {
     return undefined;
@@ -2039,6 +2053,24 @@ function getDocumentModuleBuiltinOwnerName(
   getDocumentState: (uri: string) => DocumentState | undefined
 ): string | undefined {
   return getDocumentModuleBuiltinContext(resolution, rootSegment, getDocumentState)?.ownerName;
+}
+
+function getBroadRootBuiltinContext(
+  uri: string,
+  rootSegment: string,
+  getDocumentState: (uri: string) => DocumentState | undefined
+): DocumentModuleBuiltinContext | undefined {
+  const state = getDocumentState(uri);
+
+  if (!state || normalizeIdentifier(rootSegment) !== "activeworkbook" || !hasMatchedActiveWorkbookBinding(state)) {
+    return undefined;
+  }
+
+  return {
+    ownerName: "Workbook",
+    rootModuleName: state.analysis.module.name,
+    rootUri: uri
+  };
 }
 
 function getDocumentModuleBuiltinContext(
@@ -2088,6 +2120,16 @@ function getDocumentModuleBuiltinContext(
   }
 
   return undefined;
+}
+
+function hasMatchedActiveWorkbookBinding(state: DocumentState | undefined): boolean {
+  return (
+    state?.activeWorkbookIdentity?.state === "available" &&
+    state.workbookBindingManifest?.status === "loaded" &&
+    typeof state.activeWorkbookIdentity.normalizedFullName === "string" &&
+    typeof state.workbookBindingManifest.normalizedFullName === "string" &&
+    state.activeWorkbookIdentity.normalizedFullName === state.workbookBindingManifest.normalizedFullName
+  );
 }
 
 function resolveWorksheetControlOwnerFromSidecar(
