@@ -29,16 +29,23 @@ Public Sub Demo()
     Debug.Print Sheet1.OLEObjects.Item("CheckBox1").Object.
     Debug.Print Chart1.OLEObjects("CheckBox1").Object.
     Debug.Print ActiveSheet.OLEObjects("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
     Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.
     Debug.Print ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.Value
-    Debug.Print ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value
     Debug.Print Sheet1.OLEObjects("CheckBox1").Object.Value
     Debug.Print Sheet1.OLEObjects.Item("CheckBox1").Object.Value
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Value
+    Call ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Call ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
+    Call ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.Select(
+    Call ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
     Call ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Select(
-    Call ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.Select(
 End Sub
 
 Private Function GetIndex() As Long

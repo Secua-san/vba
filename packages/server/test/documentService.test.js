@@ -488,14 +488,15 @@ Public Sub Demo()
     Debug.Print Sheet1.Shapes.Item("PlainShape").OLEFormat.Object.
     Debug.Print Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
     Debug.Print Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.
     Debug.Print ThisWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.
-    Debug.Print ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Value
-    Call ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(
-    Call ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Call ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
     Debug.Print Sheet1.Shapes("CheckBox1").OLEFormat.Object(1).
 End Sub`;
 
@@ -515,7 +516,7 @@ End Sub`;
         ],
         ownerKind: "worksheet",
         sheetCodeName: "Sheet1",
-        sheetName: "Sheet1",
+        sheetName: "Sheet One",
         status: "supported"
       }
     ],
@@ -630,11 +631,11 @@ Option Explicit`
     );
     const thisWorkbookWorksheetNameRootObjectMembers = service.getCompletionSymbols(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.')
     );
     const thisWorkbookWorksheetNameRootItemObjectMembers = service.getCompletionSymbols(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.')
     );
     const thisWorkbookWorksheetIndexedObjectMembers = service.getCompletionSymbols(
       uri,
@@ -642,7 +643,11 @@ Option Explicit`
     );
     const activeWorkbookWorksheetNameRootObjectMembers = service.getCompletionSymbols(
       uri,
-      findPositionAfterTokenInText(text, 'ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.')
+      findPositionAfterTokenInText(text, 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.')
+    );
+    const thisWorkbookWorksheetCodeNameObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.')
     );
     const indexedObjectCallMembers = service.getCompletionSymbols(
       uri,
@@ -659,11 +664,11 @@ Option Explicit`
     );
     const thisWorkbookNamedValueHover = service.getHover(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Valu')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
     );
     const thisWorkbookItemNamedValueHover = service.getHover(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Valu')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu')
     );
     const namedSelectSignature = service.getSignatureHelp(
       uri,
@@ -675,11 +680,11 @@ Option Explicit`
     );
     const thisWorkbookNamedSelectSignature = service.getSignatureHelp(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(')
     );
     const thisWorkbookItemNamedSelectSignature = service.getSignatureHelp(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object.Select(')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(')
     );
     const tokens = service.getSemanticTokens(uri);
 
@@ -726,6 +731,7 @@ Option Explicit`
     assert.equal(thisWorkbookWorksheetNameRootItemObjectMembers.some((resolution) => resolution.symbol.name === "Value"), true);
     assert.equal(thisWorkbookWorksheetIndexedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(activeWorkbookWorksheetNameRootObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(thisWorkbookWorksheetCodeNameObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(indexedObjectCallMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(nameHover?.contents.includes("Shape.Name"), true);
     assert.equal(nameHover?.contents.includes("excel.shape.name"), true);
@@ -742,8 +748,8 @@ Option Explicit`
     assertSemanticToken(text, tokens, 16, "OLEFormat", { modifiers: [], type: "variable" });
     assertSemanticToken(text, tokens, 20, "Value", { modifiers: [], type: "variable" });
     assertSemanticToken(text, tokens, 22, "Select", { modifiers: [], type: "function" });
-    assertSemanticToken(text, tokens, 37, "Value", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 39, "Select", { modifiers: [], type: "function" });
+    assertSemanticToken(text, tokens, 38, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 40, "Select", { modifiers: [], type: "function" });
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }
@@ -772,16 +778,17 @@ Public Sub Demo()
     Debug.Print ActiveSheet.OLEObjects("CheckBox1").Object.
     Debug.Print Sheet1.OLEObjects("CheckBox1").Object.Value
     Debug.Print Sheet1.OLEObjects.Item("CheckBox1").Object.Value
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.
     Debug.Print ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.
-    Debug.Print ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value
-    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.Value
+    Debug.Print ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Value
     Call Sheet1.OLEObjects("CheckBox1").Object.Select(
     Call Sheet1.OLEObjects.Item("CheckBox1").Object.Select(
-    Call ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Select(
-    Call ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.Select(
+    Call ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Call ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
     Call Chart1.OLEObjects("CheckBox1").Object.Select(
 End Sub`;
 
@@ -801,7 +808,7 @@ End Sub`;
         ],
         ownerKind: "worksheet",
         sheetCodeName: "Sheet1",
-        sheetName: "Sheet1",
+        sheetName: "Sheet One",
         status: "supported"
       },
       {
@@ -882,11 +889,11 @@ Option Explicit`
     );
     const thisWorkbookNamedObjectMembers = service.getCompletionSymbols(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
     );
     const thisWorkbookItemNamedObjectMembers = service.getCompletionSymbols(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.')
     );
     const thisWorkbookIndexedObjectMembers = service.getCompletionSymbols(
       uri,
@@ -894,7 +901,11 @@ Option Explicit`
     );
     const activeWorkbookNamedObjectMembers = service.getCompletionSymbols(
       uri,
-      findPositionAfterTokenInText(text, 'ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.')
+      findPositionAfterTokenInText(text, 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.')
+    );
+    const thisWorkbookCodeNameObjectMembers = service.getCompletionSymbols(
+      uri,
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.')
     );
     const namedValueHover = service.getHover(
       uri,
@@ -906,11 +917,11 @@ Option Explicit`
     );
     const thisWorkbookNamedValueHover = service.getHover(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Valu')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
     );
     const thisWorkbookItemNamedValueHover = service.getHover(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.Valu')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu')
     );
     const namedSelectSignature = service.getSignatureHelp(
       uri,
@@ -922,11 +933,11 @@ Option Explicit`
     );
     const thisWorkbookNamedSelectSignature = service.getSignatureHelp(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Select(')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(')
     );
     const thisWorkbookItemNamedSelectSignature = service.getSignatureHelp(
       uri,
-      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet1").OLEObjects.Item("CheckBox1").Object.Select(')
+      findPositionAfterTokenInText(text, 'ThisWorkbook.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(')
     );
     const chartSelectSignature = service.getSignatureHelp(
       uri,
@@ -954,6 +965,7 @@ Option Explicit`
     assert.equal(thisWorkbookItemNamedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), true);
     assert.equal(thisWorkbookIndexedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(activeWorkbookNamedObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
+    assert.equal(thisWorkbookCodeNameObjectMembers.some((resolution) => resolution.symbol.name === "Value"), false);
     assert.equal(namedValueHover?.contents.includes("CheckBox.Value"), true);
     assert.equal(namedValueHover?.contents.includes("microsoft.office.interop.excel.checkbox.value"), true);
     assert.equal(itemNamedValueHover?.contents.includes("CheckBox.Value"), true);
@@ -965,9 +977,9 @@ Option Explicit`
     assert.equal(thisWorkbookItemNamedSelectSignature?.label, "Select(Replace) As Object");
     assert.equal(chartSelectSignature, undefined);
     assertSemanticToken(text, tokens, 13, "Value", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 19, "Value", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 21, "Select", { modifiers: [], type: "function" });
-    assertSemanticToken(text, tokens, 23, "Select", { modifiers: [], type: "function" });
+    assertSemanticToken(text, tokens, 20, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 22, "Select", { modifiers: [], type: "function" });
+    assertSemanticToken(text, tokens, 24, "Select", { modifiers: [], type: "function" });
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }

@@ -398,9 +398,10 @@
   - `OLEObject.Object` と `Shape.OLEFormat.Object` は `workbook root identity + sheetName + shapeName` lookup helper を将来共有できるが、`ActiveSheet` / chartsheet / `ShapeRange` は引き続き除外境界として維持する
 
 - [x] Shape.OLEFormat.Object を ThisWorkbook.Worksheets("SheetName") root に限定接続する
-  - `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` を sidecar 連携で control owner へ進め、completion / hover / signature help / semantic token を server / extension test で回帰固定した
-  - shared helper により `ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object` と `.Item("CheckBox1").Object` も同じ workbook-qualified root から control owner へ進み、server / extension test で固定した
-  - `ThisWorkbook` 起点の workbook root identity を `Worksheets("Sheet1")` 連鎖でも保持して resolver へ伝播させ、generic `Worksheet` owner に降りた後も current bundle の sidecar を選べるようにした
+  - `ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` を sidecar 連携で control owner へ進め、completion / hover / signature help / semantic token を server / extension test で回帰固定した
+  - shared helper により `ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object` と `.Item("CheckBox1").Object` も同じ workbook-qualified root から control owner へ進み、server / extension test で固定した
+  - `sheetCodeName` と `sheetName` が一致しない fixture（`sheetCodeName = "Sheet1"`, `sheetName = "Sheet One"`）を導入し、`Worksheets("Sheet One")` のみが解決される境界を server / extension test で固定した
+  - `ThisWorkbook` 起点の workbook root identity を `Worksheets("SheetName")` 連鎖でも保持して resolver へ伝播させ、generic `Worksheet` owner に降りた後も current bundle の sidecar を選べるようにした
   - `sheetName + shapeName` lookup は `OLEObject.Object` / `Shape.OLEFormat.Object` の共通 helper で扱える形に整理しつつ、`ActiveWorkbook` / unqualified `Worksheets` / `ThisWorkbook.Worksheets(1)` / `ActiveSheet` / chartsheet / `ShapeRange` は引き続き負例で固定した
 
 - [ ] workbook-qualified 以外の explicit sheet-name root 展開条件を整理する
