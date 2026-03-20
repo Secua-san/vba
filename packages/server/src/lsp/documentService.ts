@@ -2,10 +2,13 @@ import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  normalizeWorkbookFullNameForComparison,
+  parseActiveWorkbookIdentitySnapshot,
   analyzeModule,
   areTypesCompatible,
   collectByRefArgumentDiagnostics,
   extractIdentifierAtPosition,
+  findNearestWorkbookBindingManifest,
   findNearestWorksheetControlMetadataSidecar,
   findDefinition,
   formatModuleIndentation,
@@ -22,6 +25,7 @@ import {
   markIndexedAccessPathSegment,
   getSymbolTypeName,
   normalizeIdentifier,
+  parseWorkbookBindingManifest,
   parseWorksheetControlMetadataSidecar,
   removeStringAndDateLiterals,
   resolveBuiltinMemberOwner,
@@ -29,6 +33,9 @@ import {
   stripIndexedAccessMarker,
   splitCodeAndComment,
   type AnalysisResult,
+  type ActiveWorkbookIdentityFields,
+  type ActiveWorkbookIdentitySnapshot,
+  type ActiveWorkbookIdentityValidationIssue,
   type BuiltinCallableSignature,
   type BuiltinCompletionKind,
   type BuiltinMemberReferenceItem,
@@ -40,6 +47,7 @@ import {
   type LinePosition,
   type SourceRange,
   type SymbolInfo,
+  type WorkbookBindingManifestValidationIssue,
   type WorksheetControlMetadataSidecarControl,
   type WorksheetControlMetadataSupportedOwner,
   type WorksheetControlMetadataValidationIssue
@@ -50,14 +58,19 @@ const WORKSHEET_DOCUMENT_BASE_GUID = "00020820-0000-0000-c000-000000000046";
 const CHART_DOCUMENT_BASE_GUID = "00020821-0000-0000-c000-000000000046";
 
 export interface DocumentState {
+  activeWorkbookIdentity?: ActiveWorkbookIdentityState;
   analysis: AnalysisResult;
   languageId: string;
   text: string;
   uri: string;
   version: number;
+  workbookBindingManifest?: WorkbookBindingManifestState;
   worksheetControlMetadata?: WorksheetControlMetadataState;
 }
 
+type ActiveWorkbookIdentityFieldsState = Readonly<ActiveWorkbookIdentityFields>;
+type ActiveWorkbookIdentityIssueState = Readonly<ActiveWorkbookIdentityValidationIssue>;
+type WorkbookBindingIssueState = Readonly<WorkbookBindingManifestValidationIssue>;
 type WorksheetControlMetadataControlState = Readonly<WorksheetControlMetadataSidecarControl>;
 type WorksheetControlMetadataIssueState = Readonly<WorksheetControlMetadataValidationIssue>;
 type WorksheetControlMetadataSupportedOwnerState = Readonly<
@@ -65,6 +78,31 @@ type WorksheetControlMetadataSupportedOwnerState = Readonly<
 > & {
   readonly controls: readonly WorksheetControlMetadataControlState[];
 };
+
+export interface ActiveWorkbookIdentityState {
+  readonly issues: readonly ActiveWorkbookIdentityIssueState[];
+  readonly normalizedFullName?: string;
+  readonly observedAt?: string;
+  readonly protectedView?: Readonly<{
+    sourceName?: string;
+    sourcePath?: string;
+  }>;
+  readonly rawFullName?: string;
+  readonly reason?: string;
+  readonly state: "available" | "invalid" | "protected-view" | "unavailable" | "unsupported";
+  readonly workbook?: ActiveWorkbookIdentityFieldsState;
+}
+
+export interface WorkbookBindingManifestState {
+  readonly bundleRoot: string;
+  readonly fullName?: string;
+  readonly isAddIn?: boolean;
+  readonly issues: readonly WorkbookBindingIssueState[];
+  readonly manifestPath: string;
+  readonly normalizedFullName?: string;
+  readonly status: "ignored" | "loaded";
+  readonly workbookName?: string;
+}
 
 export interface WorksheetControlMetadataState {
   readonly bundleRoot: string;
@@ -168,7 +206,14 @@ export interface DocumentService {
   getSignatureHelp: (uri: string, position: LinePosition) => SignatureHint | undefined;
   getState: (uri: string) => DocumentState | undefined;
   remove: (uri: string) => void;
+  setActiveWorkbookIdentitySnapshot: (snapshot: unknown) => void;
   setWorkspaceRoots: (workspaceRoots: readonly string[]) => void;
+}
+
+interface WorkbookBindingManifestCacheEntry {
+  mtimeMs: number;
+  size: number;
+  state: WorkbookBindingManifestState;
 }
 
 interface WorksheetControlMetadataCacheEntry {
@@ -178,7 +223,10 @@ interface WorksheetControlMetadataCacheEntry {
 }
 
 export function createDocumentService(options?: DocumentServiceOptions): DocumentService {
+  let activeWorkbookIdentityState: ActiveWorkbookIdentityState | undefined;
+  const activeWorkbookBindingLogKeys = new Map<string, string>();
   const documentStates = new Map<string, DocumentState>();
+  const workbookBindingManifestCache = new Map<string, WorkbookBindingManifestCacheEntry>();
   const worksheetControlMetadataCache = new Map<string, WorksheetControlMetadataCacheEntry>();
   let workspaceIndex = createWorkspaceIndex([]);
   let workspaceRoots = normalizeWorkspaceRoots(options?.workspaceRoots);
@@ -308,6 +356,334 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     }
 
     return deduplicateReferences(references);
+  }
+
+  function createActiveWorkbookIdentityState(input: {
+    issues?: readonly ActiveWorkbookIdentityValidationIssue[];
+    snapshot?: ActiveWorkbookIdentitySnapshot;
+    state: ActiveWorkbookIdentityState["state"];
+  }): ActiveWorkbookIdentityState {
+    const issues = Object.freeze(
+      (input.issues ?? []).map((issue) => Object.freeze({ ...issue }) satisfies ActiveWorkbookIdentityIssueState)
+    );
+
+    if (!input.snapshot) {
+      return Object.freeze({
+        issues,
+        state: input.state
+      });
+    }
+
+    const workbook =
+      "identity" in input.snapshot
+        ? Object.freeze({
+            ...input.snapshot.identity
+          } satisfies ActiveWorkbookIdentityFieldsState)
+        : undefined;
+    const normalizedFullName =
+      input.snapshot.state === "available" || input.snapshot.state === "unsupported"
+        ? normalizeWorkbookFullNameForComparison(input.snapshot.identity.fullName)
+        : undefined;
+    const protectedView =
+      input.snapshot.state === "protected-view" && input.snapshot.protectedView
+        ? Object.freeze({ ...input.snapshot.protectedView })
+        : undefined;
+
+    return Object.freeze({
+      issues,
+      ...(normalizedFullName ? { normalizedFullName } : {}),
+      observedAt: input.snapshot.observedAt,
+      ...(protectedView ? { protectedView } : {}),
+      ...("identity" in input.snapshot ? { rawFullName: input.snapshot.identity.fullName } : {}),
+      ...("reason" in input.snapshot ? { reason: input.snapshot.reason } : {}),
+      state: input.state,
+      ...(workbook ? { workbook } : {})
+    });
+  }
+
+  function cloneActiveWorkbookIdentityState(
+    state: ActiveWorkbookIdentityState | undefined
+  ): ActiveWorkbookIdentityState | undefined {
+    if (!state) {
+      return undefined;
+    }
+
+    return Object.freeze({
+      issues: Object.freeze(state.issues.map((issue) => Object.freeze({ ...issue }) satisfies ActiveWorkbookIdentityIssueState)),
+      ...(state.normalizedFullName ? { normalizedFullName: state.normalizedFullName } : {}),
+      ...(state.observedAt ? { observedAt: state.observedAt } : {}),
+      ...(state.protectedView ? { protectedView: Object.freeze({ ...state.protectedView }) } : {}),
+      ...(state.rawFullName ? { rawFullName: state.rawFullName } : {}),
+      ...(state.reason ? { reason: state.reason } : {}),
+      state: state.state,
+      ...(state.workbook ? { workbook: Object.freeze({ ...state.workbook }) satisfies ActiveWorkbookIdentityFieldsState } : {})
+    });
+  }
+
+  function emitActiveWorkbookIdentitySnapshotLogs(state: ActiveWorkbookIdentityState): void {
+    if (state.state === "invalid") {
+      for (const issue of state.issues) {
+        log?.({
+          code: "active-workbook-identity.invalid-payload",
+          level: "warn",
+          message: `${issue.path} ${issue.message}`
+        });
+      }
+
+      return;
+    }
+
+    switch (state.state) {
+      case "available":
+        log?.({
+          code: "active-workbook-identity.updated",
+          level: "info",
+          message: `${state.rawFullName ?? "(unknown)"} を active workbook として受信しました`
+        });
+        break;
+      case "protected-view":
+        log?.({
+          code: "active-workbook-identity.protected-view",
+          level: "warn",
+          message: [
+            "active workbook は Protected View のため broad root は無効です",
+            state.protectedView?.sourcePath || state.protectedView?.sourceName
+              ? `(${[state.protectedView?.sourcePath, state.protectedView?.sourceName].filter(Boolean).join("\\")})`
+              : ""
+          ]
+            .filter(Boolean)
+            .join(" ")
+        });
+        break;
+      case "unavailable":
+        log?.({
+          code: "active-workbook-identity.unavailable",
+          level: "warn",
+          message: `active workbook を取得できません: ${state.reason ?? "unknown"}`
+        });
+        break;
+      case "unsupported":
+        log?.({
+          code: "active-workbook-identity.unsupported",
+          level: "warn",
+          message: `active workbook は broad root 対象外です: ${state.reason ?? "unknown"}`
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  function createWorkbookBindingManifestState(input: {
+    bundleRoot: string;
+    fullName?: string;
+    isAddIn?: boolean;
+    issues: readonly WorkbookBindingManifestValidationIssue[];
+    manifestPath: string;
+    status: "ignored" | "loaded";
+    workbookName?: string;
+  }): WorkbookBindingManifestState {
+    const issues = Object.freeze(
+      input.issues.map((issue) => Object.freeze({ ...issue }) satisfies WorkbookBindingIssueState)
+    );
+    const normalizedFullName = input.fullName ? normalizeWorkbookFullNameForComparison(input.fullName) : undefined;
+
+    return Object.freeze({
+      bundleRoot: input.bundleRoot,
+      ...(input.fullName ? { fullName: input.fullName } : {}),
+      ...(typeof input.isAddIn === "boolean" ? { isAddIn: input.isAddIn } : {}),
+      issues,
+      manifestPath: input.manifestPath,
+      ...(normalizedFullName ? { normalizedFullName } : {}),
+      status: input.status,
+      ...(input.workbookName ? { workbookName: input.workbookName } : {})
+    });
+  }
+
+  function cloneWorkbookBindingManifestState(
+    state: WorkbookBindingManifestState | undefined
+  ): WorkbookBindingManifestState | undefined {
+    if (!state) {
+      return undefined;
+    }
+
+    return Object.freeze({
+      bundleRoot: state.bundleRoot,
+      ...(state.fullName ? { fullName: state.fullName } : {}),
+      ...(typeof state.isAddIn === "boolean" ? { isAddIn: state.isAddIn } : {}),
+      issues: Object.freeze(state.issues.map((issue) => Object.freeze({ ...issue }) satisfies WorkbookBindingIssueState)),
+      manifestPath: state.manifestPath,
+      ...(state.normalizedFullName ? { normalizedFullName: state.normalizedFullName } : {}),
+      status: state.status,
+      ...(state.workbookName ? { workbookName: state.workbookName } : {})
+    });
+  }
+
+  function getCachedWorkbookBindingManifest(manifestPath: string): WorkbookBindingManifestCacheEntry | undefined {
+    const cachedEntry = workbookBindingManifestCache.get(manifestPath);
+
+    if (!cachedEntry) {
+      return undefined;
+    }
+
+    try {
+      const manifestStat = statSync(manifestPath);
+
+      if (manifestStat.mtimeMs === cachedEntry.mtimeMs && manifestStat.size === cachedEntry.size) {
+        return cachedEntry;
+      }
+    } catch {
+      workbookBindingManifestCache.delete(manifestPath);
+    }
+
+    return undefined;
+  }
+
+  function loadWorkbookBindingManifestState(
+    bundleRoot: string,
+    manifestPath: string
+  ): WorkbookBindingManifestState {
+    try {
+      const rawText = readFileSync(manifestPath, "utf8");
+      const manifestStat = statSync(manifestPath);
+      const parseResult = parseWorkbookBindingManifest(rawText);
+      const state = createWorkbookBindingManifestState(
+        parseResult.manifest
+          ? {
+              bundleRoot,
+              fullName: parseResult.manifest.workbook.fullName,
+              isAddIn: parseResult.manifest.workbook.isAddIn,
+              issues: parseResult.issues,
+              manifestPath,
+              status: "loaded",
+              workbookName: parseResult.manifest.workbook.name
+            }
+          : {
+              bundleRoot,
+              issues: parseResult.issues,
+              manifestPath,
+              status: "ignored"
+            }
+      );
+
+      workbookBindingManifestCache.set(manifestPath, {
+        mtimeMs: manifestStat.mtimeMs,
+        size: manifestStat.size,
+        state
+      });
+
+      return state;
+    } catch (error) {
+      return createWorkbookBindingManifestState({
+        bundleRoot,
+        issues: [
+          {
+            code: "invalid-json",
+            message: `manifest を読み込めません: ${String(error)}`,
+            path: "$"
+          }
+        ],
+        manifestPath,
+        status: "ignored"
+      });
+    }
+  }
+
+  function getWorkbookBindingManifestState(uri: string): WorkbookBindingManifestState | undefined {
+    const filePath = getFilePathFromUri(uri);
+
+    if (!filePath) {
+      return undefined;
+    }
+
+    const location = findNearestWorkbookBindingManifest(filePath, { workspaceRoots });
+
+    if (!location) {
+      return undefined;
+    }
+
+    const cached = getCachedWorkbookBindingManifest(location.manifestPath);
+    return cloneWorkbookBindingManifestState(
+      cached?.state ?? loadWorkbookBindingManifestState(location.bundleRoot, location.manifestPath)
+    );
+  }
+
+  function emitActiveWorkbookIdentityBindingLog(
+    uri: string,
+    bindingState: WorkbookBindingManifestState | undefined
+  ): void {
+    if (!activeWorkbookIdentityState || activeWorkbookIdentityState.state === "invalid") {
+      activeWorkbookBindingLogKeys.delete(uri);
+      return;
+    }
+
+    if (activeWorkbookIdentityState.state !== "available") {
+      emitActiveWorkbookIdentityBindingLogOnce(uri, {
+        code: "active-workbook-identity.binding-disabled",
+        level: "info",
+        message: `${uri}: broad root binding は active workbook state=${activeWorkbookIdentityState.state}${activeWorkbookIdentityState.reason ? ` (${activeWorkbookIdentityState.reason})` : ""} のため無効です`,
+        uri
+      });
+      return;
+    }
+
+    if (!bindingState) {
+      emitActiveWorkbookIdentityBindingLogOnce(uri, {
+        code: "active-workbook-identity.binding-missing",
+        level: "info",
+        message: `${uri}: workbook-binding.json が見つからないため broad root binding は無効です`,
+        uri
+      });
+      return;
+    }
+
+    if (bindingState.status !== "loaded") {
+      emitActiveWorkbookIdentityBindingLogOnce(uri, {
+        code: "active-workbook-identity.binding-disabled",
+        level: "warn",
+        message: `${bindingState.manifestPath}: workbook binding manifest が無効なため broad root binding は無効です`,
+        uri
+      });
+      return;
+    }
+
+    if (!bindingState.normalizedFullName || !activeWorkbookIdentityState.normalizedFullName) {
+      emitActiveWorkbookIdentityBindingLogOnce(uri, {
+        code: "active-workbook-identity.binding-disabled",
+        level: "warn",
+        message: `${bindingState.manifestPath}: 比較に必要な fullName が不足しているため broad root binding は無効です`,
+        uri
+      });
+      return;
+    }
+
+    if (bindingState.normalizedFullName === activeWorkbookIdentityState.normalizedFullName) {
+      emitActiveWorkbookIdentityBindingLogOnce(uri, {
+        code: "active-workbook-identity.match",
+        level: "info",
+        message: `${bindingState.manifestPath}: active workbook と bundle manifest が一致しました`,
+        uri
+      });
+      return;
+    }
+
+    emitActiveWorkbookIdentityBindingLogOnce(uri, {
+      code: "active-workbook-identity.mismatch",
+      level: "info",
+      message: `${bindingState.manifestPath}: active workbook と bundle manifest が一致しません`,
+      uri
+    });
+  }
+
+  function emitActiveWorkbookIdentityBindingLogOnce(uri: string, entry: DocumentServiceLogEntry): void {
+    const nextKey = `${entry.code}|${entry.level}|${entry.message}`;
+
+    if (activeWorkbookBindingLogKeys.get(uri) === nextKey) {
+      return;
+    }
+
+    activeWorkbookBindingLogKeys.set(uri, nextKey);
+    log?.(entry);
   }
 
   function emitWorksheetControlMetadataLogs(uri: string, state: WorksheetControlMetadataState): void {
@@ -493,13 +869,16 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     analyzeText(uri: string, languageId: string, version: number, text: string): DocumentState {
       const analysis = analyzeModule(text, { fileName: getFileNameFromUri(uri) });
       const state: DocumentState = {
+        activeWorkbookIdentity: cloneActiveWorkbookIdentityState(activeWorkbookIdentityState),
         analysis,
         languageId,
         text,
         uri,
         version,
+        workbookBindingManifest: getWorkbookBindingManifestState(uri),
         worksheetControlMetadata: getWorksheetControlMetadataState(uri)
       };
+      emitActiveWorkbookIdentityBindingLog(uri, state.workbookBindingManifest);
       documentStates.set(uri, state);
       workspaceIndex = createWorkspaceIndex([...documentStates.values()]);
       return state;
@@ -698,18 +1077,48 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
       return documentStates.get(uri);
     },
     remove(uri: string): void {
+      activeWorkbookBindingLogKeys.delete(uri);
       documentStates.delete(uri);
       workspaceIndex = createWorkspaceIndex([...documentStates.values()]);
     },
+    setActiveWorkbookIdentitySnapshot(snapshot: unknown): void {
+      const parseResult = parseActiveWorkbookIdentitySnapshot(snapshot);
+      activeWorkbookIdentityState = parseResult.snapshot
+        ? createActiveWorkbookIdentityState({
+            snapshot: parseResult.snapshot,
+            state: parseResult.snapshot.state
+          })
+        : createActiveWorkbookIdentityState({
+            issues: parseResult.issues,
+            state: "invalid"
+          });
+      emitActiveWorkbookIdentitySnapshotLogs(activeWorkbookIdentityState);
+
+      for (const [uri, state] of documentStates) {
+        const nextState: DocumentState = {
+          ...state,
+          activeWorkbookIdentity: cloneActiveWorkbookIdentityState(activeWorkbookIdentityState),
+          workbookBindingManifest: getWorkbookBindingManifestState(uri),
+          worksheetControlMetadata: getWorksheetControlMetadataState(uri)
+        };
+        documentStates.set(uri, nextState);
+        emitActiveWorkbookIdentityBindingLog(uri, nextState.workbookBindingManifest);
+      }
+    },
     setWorkspaceRoots(nextWorkspaceRoots: readonly string[]): void {
       workspaceRoots = normalizeWorkspaceRoots(nextWorkspaceRoots);
+      workbookBindingManifestCache.clear();
       worksheetControlMetadataCache.clear();
 
       for (const [uri, state] of documentStates) {
-        documentStates.set(uri, {
+        const nextState: DocumentState = {
           ...state,
+          activeWorkbookIdentity: cloneActiveWorkbookIdentityState(activeWorkbookIdentityState),
+          workbookBindingManifest: getWorkbookBindingManifestState(uri),
           worksheetControlMetadata: getWorksheetControlMetadataState(uri)
-        });
+        };
+        documentStates.set(uri, nextState);
+        emitActiveWorkbookIdentityBindingLog(uri, nextState.workbookBindingManifest);
       }
     }
   };

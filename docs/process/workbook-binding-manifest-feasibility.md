@@ -172,5 +172,5 @@
 
 ## 次段の候補
 
-- extension / server 間の `vba/activeWorkbookIdentity` notification と snapshot cache の最小実装を追加する。
-- manifest matching helper と snapshot gating log を read-only で先に観測可能にする。
+- `available` snapshot と manifest match がそろったときだけ、`ActiveWorkbook.Worksheets("SheetName")` 系 broad root を current bundle sidecar lookup へ限定接続する。
+- broad root gating は `OLEObject.Object` / `Shape.OLEFormat.Object` の両導線でそろえ、manifest mismatch と unavailable snapshot の負例を test で固定する。
