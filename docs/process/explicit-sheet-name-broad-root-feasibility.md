@@ -7,6 +7,7 @@
 - broad root family の対象構文は `Worksheets("literal sheetName")` / `Worksheets.Item("literal sheetName")` と `Application.Worksheets("literal sheetName")` / `Application.Worksheets.Item("literal sheetName")` を同一扱いにし、`available` snapshot と manifest match がそろったときだけ sidecar lookup を開く。
 - built-in broad root gating は `Worksheets` root が built-in collection として解決できた場合にだけ適用し、同名の変数、関数、メンバーへ shadow されているときは user-defined symbol を優先する。
 - `OLEObject.Object` と `Shape.OLEFormat.Object` の broad root 境界は同じ PR、同じ条件で動かす。
+- `Application.ThisWorkbook` / `Application.ActiveWorkbook` を含む workbook-qualified root の扱いは、派生論点として [application-workbook-root-feasibility.md](./application-workbook-root-feasibility.md) に分離する。
 
 ## 確認した公式ソース
 
@@ -84,7 +85,7 @@
 
 ## 推奨方針
 
-### 現時点で user-facing な経路
+### 現時点で user-facing な経路の代表例
 
 - user-facing:
   - `ThisWorkbook.Worksheets("Sheet1").OLEObjects("ShapeName").Object`
@@ -103,6 +104,8 @@
   - `Worksheets(1).OLEObjects("ShapeName").Object`
   - `Worksheets(GetSheetName()).OLEObjects("ShapeName").Object`
   - `Worksheets(Array("Sheet1")).OLEObjects("ShapeName").Object`
+
+- 上の列挙は broad-root family の代表例であり、実装済みの全パターンを網羅列挙するものではない。
 
 ### unqualified broad root を開く条件
 
@@ -128,7 +131,6 @@
 - `Sheets` / `ActiveSheet` / grouped / numeric / dynamic selector / shadow case を broad root family から除外する理由を残す。
 - broad root の可否を `OLEObject.Object` / `Shape.OLEFormat.Object` 共通の判断として整理する。
 
-## 次段の候補
+## 関連メモ
 
-- `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を static current-bundle root として扱えるか、既存 `ThisWorkbook` helper との整合を整理する。
-- `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を active workbook broad-root family に寄せるか、manifest + snapshot gating の観点で整理する。
+- `Application.ThisWorkbook` / `Application.ActiveWorkbook` root の整理結果は [application-workbook-root-feasibility.md](./application-workbook-root-feasibility.md) を参照する。

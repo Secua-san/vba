@@ -466,9 +466,15 @@
   - `OLEObject.Object` / `Shape.OLEFormat.Object` の両経路で `ThisWorkbook.Worksheets.Item("SheetName")` は静的 current bundle root、`ActiveWorkbook.Worksheets.Item("SheetName")` は manifest + snapshot gating 下だけ user-facing に開くことを server / extension test で固定した
   - `ThisWorkbook.Worksheets.Item("Sheet1")` / `ActiveWorkbook.Worksheets.Item("Sheet1")` の codeName 指定と、`ThisWorkbook.Worksheets.Item(1)` / `ActiveWorkbook.Worksheets.Item(1)` の numeric selector は、match 済み snapshot 下でも従来どおり control owner に昇格しない負例のまま固定した
 
-- [ ] `Application.ThisWorkbook` / `Application.ActiveWorkbook` root を整理する
-  - `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は `ThisWorkbook` direct root と同じ current bundle workbook identity を使って sidecar lookup へ進められるかを整理する
-  - `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は既存の workbook-bound gating と同じ manifest + snapshot 条件で user-facing にできるかを一次情報と既存 helper の観点から整理する
+- [x] `Application.ThisWorkbook` / `Application.ActiveWorkbook` root を整理する
+  - [docs/process/application-workbook-root-feasibility.md](docs/process/application-workbook-root-feasibility.md) を追加し、`Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は `ThisWorkbook` direct root と同じ static current-bundle family、`Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は `ActiveWorkbook` direct root と同じ manifest + snapshot gating family として扱う方針を一次情報ベースで整理した
+  - ADR [0005](docs/adr/0005-explicit-sheet-name-root-policy.md) を更新し、`Application` qualifier を挟んでも workbook root identity の意味は変えないこと、ただし built-in `Application` として解決できる場合にだけ sidecar lookup を有効にする shadow 境界を固定した
+  - [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md)、[docs/process/workbook-binding-manifest-feasibility.md](docs/process/workbook-binding-manifest-feasibility.md)、[docs/process/README.md](docs/process/README.md) を更新し、既存 broad-root / binding メモとの参照導線をそろえた
+
+- [ ] `Application.ThisWorkbook` / `Application.ActiveWorkbook` root の最小接続を追加する
+  - `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を、既存 `ThisWorkbook` direct root と同じ current bundle workbook identity で `OLEObject.Object` / `Shape.OLEFormat.Object` の sidecar lookup へ流す
+  - `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を、既存 `ActiveWorkbook` direct root と同じ manifest + snapshot gating で `OLEObject.Object` / `Shape.OLEFormat.Object` の sidecar lookup へ流す
+  - `Application` shadow、codeName selector、numeric selector、dynamic selector、chartsheet / unsupported owner は従来どおり負例で固定し、server / extension test と docs を更新する
 
 ## メモ
 

@@ -19,7 +19,7 @@
 - DialogSheet 系: [dialogsheet-interop-source-feasibility.md](dialogsheet-interop-source-feasibility.md), [dialogsheet-control-collection-feasibility.md](dialogsheet-control-collection-feasibility.md)
 - Worksheet / Chart control 系: [worksheet-chart-control-collection-feasibility.md](worksheet-chart-control-collection-feasibility.md), [worksheet-chart-control-entrypoint-feasibility.md](worksheet-chart-control-entrypoint-feasibility.md), [worksheet-chart-control-identity-feasibility.md](worksheet-chart-control-identity-feasibility.md), [worksheet-chart-control-metadata-source-poc.md](worksheet-chart-control-metadata-source-poc.md), [worksheet-control-metadata-sidecar-artifact.md](worksheet-control-metadata-sidecar-artifact.md), [worksheet-chart-shapes-root-feasibility.md](worksheet-chart-shapes-root-feasibility.md)
 - Shape / explicit sheet-name root 系: [shape-oleformat-object-promotion-feasibility.md](shape-oleformat-object-promotion-feasibility.md), [shape-oleformat-object-explicit-sheet-root-feasibility.md](shape-oleformat-object-explicit-sheet-root-feasibility.md), [explicit-sheet-name-broad-root-feasibility.md](explicit-sheet-name-broad-root-feasibility.md)
-- Workbook binding / active workbook 系: [workbook-binding-manifest-feasibility.md](workbook-binding-manifest-feasibility.md), [active-workbook-identity-provider-contract.md](active-workbook-identity-provider-contract.md)
+- Workbook binding / active workbook 系: [workbook-binding-manifest-feasibility.md](workbook-binding-manifest-feasibility.md), [active-workbook-identity-provider-contract.md](active-workbook-identity-provider-contract.md), [application-workbook-root-feasibility.md](application-workbook-root-feasibility.md)
 
 ## 読み方
 
