@@ -60,9 +60,11 @@
 - `WorksheetBroadRootBuiltIn.bas` / `ApplicationWorkbookRootBuiltIn.bas` の completion / semantic は shared 化済み
 - hover / signature も、positive と non-shadow negative は shared 化する
 - shadow hover / signature は package-local のまま残す
-  - extension 側は fixture 内に先行出現があるため `occurrenceIndex = 1`
-  - server 側は shadow 専用 fixture で `occurrenceIndex = 0`
-  - shared spec に per-scope occurrence override を持ち込むより、現段階では local のほうが読みやすい
+  - extension 側の shadow hover は `Demo()` と `ShadowedApplication()` の両方に同じ `.Value` anchor があるため `occurrenceIndex = 1`
+  - extension 側の shadow signature は現状 `ShadowedApplication()` 側にしか direct `.Select(` anchor が無く `occurrenceIndex = 0` で足りるが、hover だけ shared spec から外して signature だけ shared に寄せると shadow matrix の見通しが悪くなる
+  - server 側は shadow 専用 inline fixture なので hover / signature とも `occurrenceIndex = 0`
+  - この差は package ごとの fixture topology に由来するため、shared spec に per-scope / per-kind occurrence override を持ち込むより、現段階では local のほうが読みやすい
+  - 将来 shared 化を再検討するなら、先に extension / server の shadow fixture 構成を寄せ、同じ anchor が同じ occurrence で参照できる形にそろえる
 
 package-local adapter に残す対象:
 
@@ -81,6 +83,26 @@ package-local adapter に残す対象:
 
 今回の CodeRabbit 指摘の通り、anchor token ベースへ寄せると `Demo()` と `ShadowedApplication()` のような重複文字列で `occurrenceIndex` 抜けが起きやすい。  
 そのため shared spec へ切り出すときは、`occurrenceIndex` を optional 扱いにせず、重複しうる anchor は明示指定を必須にする。
+
+### 6. per-scope occurrence override は導入しない
+
+`applicationWorkbookRoot.shadowed` のように package ごとで occurrence がずれるケースはあるが、v1 では shared spec schema に
+
+- `occurrenceIndexByScope`
+- `occurrenceIndexByKind`
+- `fixtureVariant`
+
+のような override を足さない。理由:
+
+- hover / signature の shadow ケースだけのために shared spec を複雑化すると、`test-support/` が「正本」ではなく「ミニ DSL」になって review しづらい
+- server / extension の local adapter は既に `occurrenceIndex` を扱えるので、shadow 系だけ local に残しても重複量は小さい
+- fixture topology を寄せれば override 無しで shared 化できる可能性があり、schema 追加を先にすると戻しにくい
+
+再評価のトリガー:
+
+- shadow hover / signature と同種の per-scope occurrence 差分が別 family でも 2 箇所以上出たとき
+- extension / server の shadow fixture を専用 fixture へそろえ、同じ anchor が同じ occurrence で取れるようになったとき
+- shared spec へ残した local case が review 負荷の主因になり、schema 複雑化のコストを上回ると判断できたとき
 
 ## やらないこと
 
@@ -101,3 +123,4 @@ package-local adapter に残す対象:
 - workbook root family の fixture anchor が server / extension で二重管理されない
 - `CompletionItem.detail` や async wait 条件のような package 固有事情は shared spec に漏れ出さない
 - review 時に「どの anchor を shared 正本で持ち、どの期待値を package-local で持つか」が 1 画面で追える
+- shadow hover / signature が package-local のまま残る理由と、shared 化を再検討する条件がこの文書だけで説明できる

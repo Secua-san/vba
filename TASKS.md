@@ -510,9 +510,14 @@
   - shadow hover / signature は extension と server で `occurrenceIndex` が異なるため local に残し、境界を [docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) に明記した
   - 検証として `npm run test --workspace @vba/server`、`npx tsc -p packages/extension/tsconfig.test.json`、`npm run lint`、`npm run package` を通した
 
-- [ ] workbook root family の shadow hover / signature occurrence 差分を整理する
-  - extension の `ShadowedApplication` section では duplicate anchor があるため `occurrenceIndex = 1` を使い、server の shadow 専用 fixture では `occurrenceIndex = 0` のままなので、shared 化するなら fixture 構成か spec schema のどちらを寄せるかを決める
-  - shared spec に per-scope occurrence override を持ち込むか、shadow 系だけ package-local に残す現方針を固定するかを整理する
+- [x] workbook root family の shadow hover / signature occurrence 差分を整理する
+  - [docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) を更新し、extension の shadow hover は duplicate `.Value` anchor のため `occurrenceIndex = 1`、extension の shadow signature と server 側 shadow fixture は `occurrenceIndex = 0` で足りる実態を文書化した
+  - v1 では shared spec schema に per-scope / per-kind occurrence override を追加せず、shadow hover / signature は package-local のまま残す判断を固定した
+  - shared 化を再検討する条件を「shadow fixture topology を寄せられたとき」または「同種の per-scope occurrence 差分が別 family でも増えたとき」として整理した
+
+- [ ] workbook root family の shadow fixture topology をそろえる条件を整理する
+  - extension の `ApplicationWorkbookRootBuiltIn.bas` と server の shadow 専用 inline fixture で、direct `.Value` / `.Select(` anchor の出現回数と section 構造が違うため、shared 化を進めるならどちらへ寄せるかを決める
+  - `per-scope occurrence override` を増やさずに shared 化する前提で、専用 fixture 分離・anchor 正規化・section 再配置の候補と副作用を比較する
 
 ## メモ
 
