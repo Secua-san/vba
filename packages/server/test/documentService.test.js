@@ -6,6 +6,7 @@ const test = require("node:test");
 const { pathToFileURL } = require("node:url");
 const { createDocumentService } = require("../dist/index.js");
 const { markIndexedAccessPathSegment, resolveBuiltinMemberOwnerFromRootType } = require("../../core/dist/index.js");
+const { workbookRootFamilyCaseTables } = require("../../../test-support/workbookRootFamilyCaseTables.cjs");
 
 test("document service analyzes text and exposes LSP-ready data", () => {
   const service = createDocumentService();
@@ -1336,26 +1337,26 @@ Private Function GetIndex() As Long
     GetIndex = 1
 End Function`;
   const { service, uri, cleanup } = createWorksheetBroadRootFixture(text);
-  const closedCompletionChecks = [
-    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'unqualified Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'Application.Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'unqualified Worksheets("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない']
-  ];
-  const matchedCompletionChecks = [
-    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
-    ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する']
-  ];
-  const nonTargetCompletionChecks = [
-    ['Sheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'Sheets root は broad root family の対象外を維持する'],
-    ['ActiveSheet.OLEObjects("CheckBox1").Object.', "Value", 'ActiveSheet root は broad root family の対象外を維持する'],
-    ['Worksheets(1).OLEObjects("CheckBox1").Object.', "Value", 'numeric selector の Worksheets root は broad root family の対象外を維持する'],
-    ['Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.', "Value", 'dynamic selector の Worksheets root は broad root family の対象外を維持する'],
-    ['Application.Worksheets(1).OLEObjects("CheckBox1").Object.', "Value", 'numeric selector の Application.Worksheets root は broad root family の対象外を維持する'],
-    ['Application.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.', "Value", 'dynamic selector の Application.Worksheets root は broad root family の対象外を維持する']
-  ];
+  const broadRootDirectPositiveCompletionEntries = getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "positive", {
+    scope: "server-worksheet-broad-root-direct",
+    text
+  });
+  const broadRootDirectNegativeCompletionEntries = getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "negative", {
+    scope: "server-worksheet-broad-root-direct",
+    text
+  });
+  const closedCompletionChecks = mapSharedWorkbookRootClosedCompletionCases(
+    broadRootDirectPositiveCompletionEntries,
+    (entry) => `snapshot 未一致では ${entry.anchor} broad root を開かない`
+  );
+  const matchedCompletionChecks = mapSharedWorkbookRootPositiveCompletionCases(
+    broadRootDirectPositiveCompletionEntries,
+    (entry) => `${entry.anchor} は control owner へ解決する`
+  );
+  const nonTargetCompletionChecks = mapSharedWorkbookRootClosedCompletionCases(
+    broadRootDirectNegativeCompletionEntries,
+    (entry) => `${entry.anchor} は broad root family の対象外を維持する`
+  );
   const hoverChecks = [
     ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', "CheckBox.Value", 'Worksheets("Sheet One") の OLEObject.Object hover は control owner へ解決する'],
     ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', "CheckBox.Value", 'Worksheets("Sheet One") の Shape.OLEFormat.Object hover は control owner へ解決する']
@@ -1496,24 +1497,18 @@ Public Sub Demo()
     Call Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
 End Sub`;
   const { service, uri, cleanup } = createWorksheetBroadRootFixture(text);
-  const closedCompletionChecks = [
-    ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
-  ];
-  const matchedCompletionChecks = [
-    ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
-    ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
-  ];
+  const broadRootItemPositiveCompletionEntries = getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "positive", {
+    scope: "server-worksheet-broad-root-item",
+    text
+  });
+  const closedCompletionChecks = mapSharedWorkbookRootClosedCompletionCases(
+    broadRootItemPositiveCompletionEntries,
+    (entry) => `snapshot 未一致では ${entry.anchor} broad root を開かない`
+  );
+  const matchedCompletionChecks = mapSharedWorkbookRootPositiveCompletionCases(
+    broadRootItemPositiveCompletionEntries,
+    (entry) => `${entry.anchor} は control owner へ解決する`
+  );
   const matchedHoverChecks = [
     'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu',
     'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu',
@@ -2193,10 +2188,48 @@ End Type`;
   const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
 
   try {
-    const staticCompletionCases = [
-      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
-      ['Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する']
-    ];
+    const applicationOleStaticPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
+      scope: "server-application-ole",
+      state: "static",
+      text
+    });
+    const applicationOleMatchedPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
+      scope: "server-application-ole",
+      state: "matched",
+      text
+    });
+    const applicationOleStaticNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+      scope: "server-application-ole",
+      state: "static",
+      text
+    });
+    const applicationOleMatchedNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+      scope: "server-application-ole",
+      state: "matched",
+      text
+    });
+    const applicationOleStaticNegativeSemanticEntries = getSharedWorkbookRootSemanticEntries(
+      "applicationWorkbookRoot",
+      "negative",
+      {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }
+    );
+    const applicationOleMatchedNegativeSemanticEntries = getSharedWorkbookRootSemanticEntries(
+      "applicationWorkbookRoot",
+      "negative",
+      {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }
+    );
+    const staticCompletionCases = mapSharedWorkbookRootPositiveCompletionCases(
+      applicationOleStaticPositiveEntries,
+      (entry) => `${entry.anchor} は control owner へ解決する`
+    );
     const staticHoverCases = [
       ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する']
     ];
@@ -2204,11 +2237,17 @@ End Type`;
       ['Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する']
     ];
     const staticClosedCompletionCases = [
-      ['Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.', "Value", 'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので control owner に昇格しない'],
-      ['Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.', "Value", 'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので control owner に昇格しない'],
-      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-      ['Application.Caller.OLEObjects("CheckBox1").Object.', "Value", 'Application.Caller は workbook root family に昇格しない'],
-      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'Application.Range("A1") は workbook root family に昇格しない']
+      ...mapSharedWorkbookRootClosedCompletionCases(
+        applicationOleStaticNegativeEntries,
+        (entry) =>
+          entry.reason === "snapshot-closed"
+            ? `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+            : `${entry.anchor} は control owner に昇格しない`
+      ),
+      ...mapSharedWorkbookRootClosedCompletionCases(
+        applicationOleMatchedPositiveEntries,
+        (entry) => `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+      )
     ];
     const staticNoHoverCases = [
       ['Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので hover を出さない'],
@@ -2223,92 +2262,21 @@ End Type`;
       ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'Application.Caller は workbook root family に昇格しない'],
       ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Range("A1") は workbook root family に昇格しない']
     ];
-    const staticSemanticChecks = [
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        { modifiers: [], type: "variable" },
-        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は semantic token を出す'
-      ],
-      [
-        'Call Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-        "Select",
-        { modifiers: [], type: "function" },
-        'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は semantic token を出す'
-      ]
-    ];
-    const staticNoSemanticChecks = [
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Call Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
-        "Select",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は snapshot 未一致の間は semantic token を出さない'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-        "Select",
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は snapshot 未一致の間は semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
-        "Select",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.Caller は workbook root family に昇格しないため semantic token を出さない'
-      ],
-      [
-        'Call Application.Caller.OLEObjects("CheckBox1").Object.Select(',
-        "Select",
-        'Application.Caller は workbook root family に昇格しないため semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.Range("A1") は workbook root family に昇格しないため semantic token を出さない'
-      ],
-      [
-        'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        'Application.Range("A1") は workbook root family に昇格しないため semantic token を出さない'
-      ]
-    ];
+    const staticSemanticChecks = mapSharedWorkbookRootSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }),
+      (entry) => `${entry.anchor} は semantic token を出す`
+    );
+    const staticNoSemanticChecks = mapSharedWorkbookRootNoSemanticCases(
+      applicationOleStaticNegativeSemanticEntries,
+      (entry) =>
+        entry.reason === "snapshot-closed"
+          ? `${entry.anchor} は snapshot 未一致の間は semantic token を出さない`
+          : `${entry.anchor} は semantic token を出さない`
+    );
 
     assertWorkbookRootCompletionCases(service, uri, text, staticCompletionCases);
     assertWorkbookRootHoverCases(service, uri, text, staticHoverCases);
@@ -2323,22 +2291,20 @@ End Type`;
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
-    const matchedCompletionCases = [
-      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
-      ['Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する']
-    ];
+    const matchedCompletionCases = mapSharedWorkbookRootPositiveCompletionCases(
+      applicationOleMatchedPositiveEntries,
+      (entry) => `${entry.anchor} は control owner へ解決する`
+    );
     const matchedHoverCases = [
       ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する']
     ];
     const matchedSignatureCases = [
       ['Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する']
     ];
-    const matchedClosedCompletionCases = [
-      ['Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.', "Value", 'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので control owner に昇格しない'],
-      ['Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.', "Value", 'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので control owner に昇格しない'],
-      ['Application.Caller.OLEObjects("CheckBox1").Object.', "Value", 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
-      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
-    ];
+    const matchedClosedCompletionCases = mapSharedWorkbookRootClosedCompletionCases(
+      applicationOleMatchedNegativeEntries,
+      (entry) => `${entry.anchor} は control owner に昇格しない`
+    );
     const matchedNoHoverCases = [
       ['Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので hover を出さない'],
       ['Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので hover を出さない'],
@@ -2350,82 +2316,18 @@ End Type`;
       ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
       ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
     ];
-    const matchedSemanticChecks = [
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        { modifiers: [], type: "variable" },
-        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は semantic token を出す'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-        "Select",
-        { modifiers: [], type: "function" },
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は semantic token を出す'
-      ]
-    ];
-    const matchedNoSemanticCases = [
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Call Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
-        "Select",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
-        "Select",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.Value',
-        "Value",
-        'snapshot 一致後も Application.Caller は semantic token を出さない'
-      ],
-      [
-        'Call Application.Caller.OLEObjects("CheckBox1").Object.Select(',
-        "Select",
-        'snapshot 一致後も Application.Caller は semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'snapshot 一致後も Application.Range("A1") は semantic token を出さない'
-      ],
-      [
-        'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        'snapshot 一致後も Application.Range("A1") は semantic token を出さない'
-      ]
-    ];
+    const matchedSemanticChecks = mapSharedWorkbookRootSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }),
+      (entry) => `${entry.anchor} は semantic token を出す`
+    );
+    const matchedNoSemanticCases = mapSharedWorkbookRootNoSemanticCases(
+      applicationOleMatchedNegativeSemanticEntries,
+      (entry) => `${entry.anchor} は semantic token を出さない`
+    );
 
     assertWorkbookRootCompletionCases(service, uri, text, matchedCompletionCases);
     assertWorkbookRootHoverCases(service, uri, text, matchedHoverCases);
@@ -2473,26 +2375,45 @@ End Function`;
   const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
 
   try {
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      true
+    const applicationShapeStaticPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
+      scope: "server-application-shape",
+      state: "static",
+      text
+    });
+    const applicationShapeMatchedPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
+      scope: "server-application-shape",
+      state: "matched",
+      text
+    });
+    const applicationShapeStaticNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+      scope: "server-application-shape",
+      state: "static",
+      text
+    });
+    const applicationShapeMatchedNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+      scope: "server-application-shape",
+      state: "matched",
+      text
+    });
+    const staticCompletionCases = mapSharedWorkbookRootPositiveCompletionCases(
+      applicationShapeStaticPositiveEntries,
+      (entry) => `${entry.anchor} は control owner へ解決する`
     );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.',
-        "Value"
+    const staticClosedCompletionCases = [
+      ...mapSharedWorkbookRootClosedCompletionCases(
+        applicationShapeStaticNegativeEntries,
+        (entry) =>
+          entry.reason === "snapshot-closed"
+            ? `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+            : `${entry.anchor} は control owner に昇格しない`
       ),
-      true
-    );
+      ...mapSharedWorkbookRootClosedCompletionCases(
+        applicationShapeMatchedPositiveEntries,
+        (entry) => `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+      )
+    ];
+    assertWorkbookRootCompletionCases(service, uri, text, staticCompletionCases);
+    assertWorkbookRootClosedCompletionCases(service, uri, text, staticClosedCompletionCases);
     assert.equal(
       getHoverAfterToken(
         service,
@@ -2512,16 +2433,6 @@ End Function`;
       "Select(Replace) As Object"
     );
     assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
       getHoverAfterToken(
         service,
         uri,
@@ -2529,16 +2440,6 @@ End Function`;
         'Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu'
       ),
       undefined
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      false
     );
     assert.equal(
       getHoverAfterToken(
@@ -2559,16 +2460,6 @@ End Function`;
       undefined
     );
     assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
       getHoverAfterToken(
         service,
         uri,
@@ -2587,72 +2478,25 @@ End Function`;
       undefined
     );
 
-    const staticSemanticChecks = [
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        { modifiers: [], type: "variable" },
-        'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は semantic token を出す'
-      ],
-      [
-        'Call Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        { modifiers: [], type: "function" },
-        'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は semantic token を出す'
-      ]
-    ];
-    const staticNoSemanticChecks = [
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Call Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は snapshot 未一致の間は semantic token を出さない'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は snapshot 未一致の間は semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ]
-    ];
+    const staticSemanticChecks = mapSharedWorkbookRootSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      (entry) => `${entry.anchor} は semantic token を出す`
+    );
+    const staticNoSemanticChecks = mapSharedWorkbookRootNoSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      (entry) =>
+        entry.reason === "snapshot-closed"
+          ? `${entry.anchor} は snapshot 未一致の間は semantic token を出さない`
+          : `${entry.anchor} は semantic token を出さない`
+    );
 
     let tokens = service.getSemanticTokens(uri);
     assertWorkbookRootSemanticCases(text, tokens, staticSemanticChecks);
@@ -2660,26 +2504,16 @@ End Function`;
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      true
+    const matchedCompletionCases = mapSharedWorkbookRootPositiveCompletionCases(
+      applicationShapeMatchedPositiveEntries,
+      (entry) => `${entry.anchor} は control owner へ解決する`
     );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      true
+    const matchedClosedCompletionCases = mapSharedWorkbookRootClosedCompletionCases(
+      applicationShapeMatchedNegativeEntries,
+      (entry) => `${entry.anchor} は control owner に昇格しない`
     );
+    assertWorkbookRootCompletionCases(service, uri, text, matchedCompletionCases);
+    assertWorkbookRootClosedCompletionCases(service, uri, text, matchedClosedCompletionCases);
     assert.equal(
       getHoverAfterToken(
         service,
@@ -2699,16 +2533,6 @@ End Function`;
       "Select(Replace) As Object"
     );
     assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
       getHoverAfterToken(
         service,
         uri,
@@ -2716,16 +2540,6 @@ End Function`;
         'Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu'
       ),
       undefined
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      false
     );
     assert.equal(
       getHoverAfterToken(
@@ -2746,62 +2560,22 @@ End Function`;
       undefined
     );
 
-    const matchedSemanticChecks = [
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        { modifiers: [], type: "variable" },
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は semantic token を出す'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        { modifiers: [], type: "function" },
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は semantic token を出す'
-      ]
-    ];
-    const matchedNoSemanticChecks = [
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Call Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
-      ],
-      [
-        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
-        "Value",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
-      ],
-      [
-        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
-        "Select",
-        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
-      ]
-    ];
+    const matchedSemanticChecks = mapSharedWorkbookRootSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      (entry) => `${entry.anchor} は semantic token を出す`
+    );
+    const matchedNoSemanticChecks = mapSharedWorkbookRootNoSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      (entry) => `${entry.anchor} は semantic token を出さない`
+    );
 
     tokens = service.getSemanticTokens(uri);
     assertWorkbookRootSemanticCases(text, tokens, matchedSemanticChecks);
@@ -2832,10 +2606,19 @@ End Sub`;
 
   try {
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
-    assertWorkbookRootClosedCompletionCases(service, uri, text, [
-      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "shadowed Application.ThisWorkbook root は control owner に昇格しない"],
-      ['Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "shadowed Application.ActiveWorkbook root は control owner に昇格しない"]
-    ]);
+    assertWorkbookRootClosedCompletionCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootClosedCompletionCases(
+        getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+          scope: "server-application-shadowed",
+          state: "shadowed",
+          text
+        }),
+        (entry) => `${entry.anchor} は control owner に昇格しない`
+      )
+    );
     assertWorkbookRootNoHoverCases(service, uri, text, [
       ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', "shadowed Application.ThisWorkbook root は hover を出さない"],
       ['Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', "shadowed Application.ActiveWorkbook root は hover を出さない"]
@@ -6245,6 +6028,7 @@ function hasCompletionSymbolAfterToken(service, uri, text, token, symbolName) {
 }
 
 function assertWorkbookRootCompletionCases(service, uri, text, cases) {
+  assert.ok(cases.length > 0, "workbook root completion cases must not be empty");
   for (const [token, symbolName, blockedSymbolName, message] of cases) {
     assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
     assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, blockedSymbolName), false, message);
@@ -6252,6 +6036,7 @@ function assertWorkbookRootCompletionCases(service, uri, text, cases) {
 }
 
 function assertWorkbookRootClosedCompletionCases(service, uri, text, cases) {
+  assert.ok(cases.length > 0, "workbook root closed completion cases must not be empty");
   for (const [token, symbolName, message] of cases) {
     assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
   }
@@ -6282,15 +6067,83 @@ function assertWorkbookRootNoSignatureCases(service, uri, text, cases) {
 }
 
 function assertWorkbookRootSemanticCases(text, tokens, cases) {
+  assert.ok(cases.length > 0, "workbook root semantic cases must not be empty");
   for (const [anchorToken, identifier, expected, message, occurrenceIndex = 0] of cases) {
     assertSemanticTokenByAnchor(text, tokens, anchorToken, identifier, expected, occurrenceIndex, message);
   }
 }
 
 function assertWorkbookRootNoSemanticCases(text, tokens, cases) {
+  assert.ok(cases.length > 0, "workbook root negative semantic cases must not be empty");
   for (const [anchorToken, identifier, message, occurrenceIndex = 0] of cases) {
     assertNoSemanticTokenByAnchor(text, tokens, anchorToken, identifier, occurrenceIndex, message);
   }
+}
+
+function getSharedWorkbookRootCompletionEntries(familyName, polarity, options = {}) {
+  const { scope, state, text } = options;
+  const normalizedText = text?.replace(/\r\n?/g, "\n");
+  return workbookRootFamilyCaseTables[familyName].completion[polarity].filter((entry) => {
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    if (state && entry.state !== state) {
+      return false;
+    }
+    if (normalizedText && !normalizedText.includes(entry.anchor)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function getSharedWorkbookRootSemanticEntries(familyName, polarity, options = {}) {
+  const { scope, state, text } = options;
+  const normalizedText = text?.replace(/\r\n?/g, "\n");
+  return workbookRootFamilyCaseTables[familyName].semantic[polarity].filter((entry) => {
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    if (state && entry.state !== state) {
+      return false;
+    }
+    if (normalizedText && !normalizedText.includes(entry.anchor)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function mapSharedWorkbookRootPositiveCompletionCases(entries, messageBuilder) {
+  return entries.map((entry) => [
+    entry.anchor,
+    "Value",
+    entry.route === "shape" ? "Delete" : "Activate",
+    messageBuilder(entry)
+  ]);
+}
+
+function mapSharedWorkbookRootClosedCompletionCases(entries, messageBuilder) {
+  return entries.map((entry) => [entry.anchor, "Value", messageBuilder(entry)]);
+}
+
+function mapSharedWorkbookRootSemanticCases(entries, messageBuilder) {
+  return entries.map((entry) => [
+    entry.anchor,
+    entry.identifier,
+    { modifiers: [], type: entry.tokenKind === "method" ? "function" : "variable" },
+    messageBuilder(entry),
+    entry.occurrenceIndex ?? 0
+  ]);
+}
+
+function mapSharedWorkbookRootNoSemanticCases(entries, messageBuilder) {
+  return entries.map((entry) => [
+    entry.anchor,
+    entry.identifier,
+    messageBuilder(entry),
+    entry.occurrenceIndex ?? 0
+  ]);
 }
 
 function getHoverAfterToken(service, uri, text, token) {
