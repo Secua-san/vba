@@ -1599,6 +1599,382 @@ End Sub`;
   }
 });
 
+test("document service resolves workbook-qualified worksheet root item selectors for OLEObject.Object", () => {
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Value
+    Call ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Call ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value
+    Call ThisWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(
+    Call ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Value
+    Call ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Call ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Value
+    Call ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(
+    Call ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(
+End Sub`;
+  const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
+  const nonTargetCompletionChecks = [
+    ['ThisWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.', "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.', "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.', "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.', "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない']
+  ];
+  const staticCompletionChecks = [
+    ['ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+    ['ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する']
+  ];
+  const staticHoverChecks = [
+    'ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu',
+    'ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
+  ];
+  const staticSignatureChecks = [
+    'ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+    'ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
+  ];
+  const nonTargetHoverChecks = [
+    ['ThisWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Valu', 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Valu', 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない']
+  ];
+  const nonTargetSignatureChecks = [
+    'ThisWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(',
+    'ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(',
+    'ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(',
+    'ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select('
+  ];
+  const closedCompletionChecks = [
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", 'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
+  ];
+  const matchedCompletionChecks = [
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する']
+  ];
+  const matchedHoverChecks = [
+    'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu',
+    'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
+  ];
+  const matchedSignatureChecks = [
+    'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+    'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
+  ];
+  const nonTargetSemanticChecks = [
+    [10, "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [11, "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [12, "Select", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [13, "Select", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [22, "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [23, "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [24, "Select", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [25, "Select", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない']
+  ];
+
+  try {
+    for (const [token, symbolName, blockedSymbolName, message] of staticCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, blockedSymbolName), false, message);
+    }
+    for (const token of staticHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes("CheckBox.Value"), true);
+    }
+    for (const token of staticSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, "Select(Replace) As Object");
+    }
+    for (const [token, symbolName, message] of nonTargetCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    }
+    for (const [token, message] of nonTargetHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, message);
+    }
+    for (const token of nonTargetSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
+    }
+    for (const [token, symbolName, message] of closedCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} hover を出さない`);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
+    }
+    let tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+
+    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
+
+    for (const [token, symbolName, blockedSymbolName, message] of matchedCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, blockedSymbolName), false, message);
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes("CheckBox.Value"), true);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, "Select(Replace) As Object");
+    }
+    for (const [token, symbolName, message] of nonTargetCompletionChecks.slice(2)) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    }
+    for (const [token, message] of nonTargetHoverChecks.slice(2)) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, message);
+    }
+    for (const token of nonTargetSignatureChecks.slice(2)) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+
+    service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
+
+    for (const [token, symbolName] of matchedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `mismatch snapshot では ${token} broad root を開かない`
+      );
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `mismatch snapshot では ${token} hover を出さない`);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(
+        getSignatureHelpAfterToken(service, uri, text, token),
+        undefined,
+        `mismatch snapshot では ${token} signature help を出さない`
+      );
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+
+    service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
+
+    for (const [token, symbolName] of matchedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `unavailable snapshot では ${token} broad root を開かない`
+      );
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+  } finally {
+    cleanup();
+  }
+});
+
+test("document service resolves workbook-qualified worksheet root item selectors for Shape.OLEFormat.Object", () => {
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Call ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value
+    Call ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Call ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Call ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Select(
+End Sub`;
+  const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
+  const nonTargetCompletionChecks = [
+    ['ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.', "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.', "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない']
+  ];
+  const staticCompletionChecks = [
+    ['ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
+  ];
+  const staticHoverChecks = [
+    'ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
+    'ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
+  ];
+  const staticSignatureChecks = [
+    'ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+    'ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
+  ];
+  const nonTargetHoverChecks = [
+    ['ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Valu', 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu', 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Valu', 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので control owner に昇格しない'],
+    ['ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu', 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので control owner に昇格しない']
+  ];
+  const nonTargetSignatureChecks = [
+    'ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+    'ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Select(',
+    'ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+    'ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Select('
+  ];
+  const closedCompletionChecks = [
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", 'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
+  ];
+  const matchedCompletionChecks = [
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
+  ];
+  const matchedHoverChecks = [
+    'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
+    'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
+  ];
+  const matchedSignatureChecks = [
+    'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+    'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
+  ];
+  const nonTargetSemanticChecks = [
+    [10, "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [11, "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [12, "Select", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [13, "Select", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [22, "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [23, "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [24, "Select", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [25, "Select", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない']
+  ];
+
+  try {
+    for (const [token, symbolName, blockedSymbolName, message] of staticCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, blockedSymbolName), false, message);
+    }
+    for (const token of staticHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes("CheckBox.Value"), true);
+    }
+    for (const token of staticSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, "Select(Replace) As Object");
+    }
+    for (const [token, symbolName, message] of nonTargetCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    }
+    for (const [token, message] of nonTargetHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, message);
+    }
+    for (const token of nonTargetSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
+    }
+    for (const [token, symbolName, message] of closedCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} hover を出さない`);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
+    }
+    let tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+
+    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
+
+    for (const [token, symbolName, blockedSymbolName, message] of matchedCompletionChecks) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, blockedSymbolName), false, message);
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes("CheckBox.Value"), true);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, "Select(Replace) As Object");
+    }
+    for (const [token, symbolName, message] of nonTargetCompletionChecks.slice(2)) {
+      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    }
+    for (const [token, message] of nonTargetHoverChecks.slice(2)) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, message);
+    }
+    for (const token of nonTargetSignatureChecks.slice(2)) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+
+    service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
+
+    for (const [token, symbolName] of matchedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `mismatch snapshot では ${token} broad root を開かない`
+      );
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `mismatch snapshot では ${token} hover を出さない`);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(
+        getSignatureHelpAfterToken(service, uri, text, token),
+        undefined,
+        `mismatch snapshot では ${token} signature help を出さない`
+      );
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+
+    service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
+
+    for (const [token, symbolName] of matchedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `unavailable snapshot では ${token} broad root を開かない`
+      );
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
+  } finally {
+    cleanup();
+  }
+});
+
 test("document service keeps unqualified worksheet broad root closed when Worksheets is shadowed", () => {
   const text = `Attribute VB_Name = "Module1"
 Option Explicit
@@ -4931,6 +5307,43 @@ function createWorksheetBroadRootFixture(text) {
     writeDefaultWorksheetBroadRootArtifacts(bundleRoot);
 
     const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+    service.analyzeText(uri, "vba", 1, text);
+
+    return {
+      service,
+      uri,
+      cleanup() {
+        rmSync(temporaryDirectory, { force: true, recursive: true });
+      }
+    };
+  } catch (error) {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+    throw error;
+  }
+}
+
+function createWorkbookQualifiedWorksheetRootFixture(text) {
+  const temporaryDirectory = mkdtempSync(path.join(os.tmpdir(), "vba-server-sidecar-"));
+  const workspaceRoot = path.join(temporaryDirectory, "workspace");
+  const bundleRoot = path.join(workspaceRoot, "book1");
+  const moduleDirectory = path.join(bundleRoot, "modules");
+  const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
+  const thisWorkbookUri = pathToFileURL(path.join(bundleRoot, "ThisWorkbook.cls")).href;
+
+  try {
+    mkdirSync(moduleDirectory, { recursive: true });
+    writeDefaultWorksheetBroadRootArtifacts(bundleRoot);
+
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+    service.analyzeText(
+      thisWorkbookUri,
+      "vba",
+      1,
+      `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+    );
     service.analyzeText(uri, "vba", 1, text);
 
     return {

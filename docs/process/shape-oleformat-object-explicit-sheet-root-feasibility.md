@@ -80,12 +80,14 @@
 
 - `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object`
 - `ThisWorkbook.Worksheets("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object`
+- `ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object`
+- `ThisWorkbook.Worksheets.Item("Sheet1").Shapes.Item("CheckBox1").OLEFormat.Object`
 - 必要なら同時に `ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object` 系も同じ helper へ寄せる。
 - negative は `ActiveWorkbook`、unqualified `Worksheets`、`Application.Worksheets`、`ActiveSheet`、chartsheet、numeric / dynamic selector、`ShapeRange` を維持する。
 
 ## 2026-03-15 時点の完了状態
 
-- `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` と `.Item("CheckBox1")` は user-facing に解決する。
+- `ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object` / `.Item("CheckBox1")` と `ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object` / `.Item("CheckBox1")` は user-facing に解決する。
 - shared helper により `ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object` と `.Item("CheckBox1").Object` も同じ workbook-qualified root から user-facing に解決する。
 - resolver は `ThisWorkbook` 起点の workbook root identity を `Worksheets("Sheet1")` 連鎖でも保持し、current bundle の sidecar から `sheetName + shapeName` を引ける。
 - `ThisWorkbook.Worksheets(1)`、unqualified `Worksheets("Sheet1")`、`Application.Worksheets("Sheet1")`、`ActiveSheet`、chartsheet、`ShapeRange` は引き続き除外境界として維持する。`ActiveWorkbook.Worksheets("Sheet1")` は後続の broad root gating で user-facing 化済みだが、この文書の対象外とする。

@@ -461,9 +461,14 @@
   - broad root family の `.Item` 回帰を追加したうえで、`npm run lint` / `npm test` / `npm run package` を通して direct call form の既存境界と root `.Item` 非対象境界が崩れていないことを確認した
   - この「v1 非対象」判断は後続の `unqualified worksheet broad root の root .Item("SheetName") 形式を再評価` で superseded 済み
 
-- [ ] workbook-qualified worksheet root の `.Item("SheetName")` 形式を整理する
-  - `ThisWorkbook.Worksheets.Item("SheetName")` / `ActiveWorkbook.Worksheets.Item("SheetName")` は Office VBA 上では direct call form と等価のため、current bundle root / workbook-bound broad root でも同じ sheetName selector として扱うかを整理する
-  - 実装へ進める場合は `ThisWorkbook.Worksheets("SheetName")` / `ActiveWorkbook.Worksheets("SheetName")` 既存導線と同じ workbook identity / manifest gating にそろえ、server / extension test で direct call form との非衝突を固定する
+- [x] workbook-qualified worksheet root の `.Item("SheetName")` 形式を整理する
+  - `ThisWorkbook.Worksheets.Item("SheetName")` / `ActiveWorkbook.Worksheets.Item("SheetName")` は `Worksheets.Item` の既定メンバー規則に従って direct call form と同じ sheetName selector として扱い、`packages/server` の workbook-qualified root sidecar lookup を共通 helper へ寄せた
+  - `OLEObject.Object` / `Shape.OLEFormat.Object` の両経路で `ThisWorkbook.Worksheets.Item("SheetName")` は静的 current bundle root、`ActiveWorkbook.Worksheets.Item("SheetName")` は manifest + snapshot gating 下だけ user-facing に開くことを server / extension test で固定した
+  - `ThisWorkbook.Worksheets.Item("Sheet1")` / `ActiveWorkbook.Worksheets.Item("Sheet1")` の codeName 指定と、`ThisWorkbook.Worksheets.Item(1)` / `ActiveWorkbook.Worksheets.Item(1)` の numeric selector は、match 済み snapshot 下でも従来どおり control owner に昇格しない負例のまま固定した
+
+- [ ] `Application.ThisWorkbook` / `Application.ActiveWorkbook` root を整理する
+  - `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は `ThisWorkbook` direct root と同じ current bundle workbook identity を使って sidecar lookup へ進められるかを整理する
+  - `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は既存の workbook-bound gating と同じ manifest + snapshot 条件で user-facing にできるかを一次情報と既存 helper の観点から整理する
 
 ## メモ
 

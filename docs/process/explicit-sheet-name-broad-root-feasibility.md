@@ -2,7 +2,7 @@
 
 ## 結論
 
-- `ActiveWorkbook.Worksheets("SheetName")` は、`available` snapshot、manifest 存在、manifest match、対応 owner の 4 条件がそろったときだけ current bundle sidecar lookup を開いてよい。この条件は現行実装で user-facing に有効化済みである。
+- `ActiveWorkbook.Worksheets("SheetName")` と `ActiveWorkbook.Worksheets.Item("SheetName")` は、`available` snapshot、manifest 存在、manifest match、対応 owner の 4 条件がそろったときだけ current bundle sidecar lookup を開いてよい。この条件は現行実装で user-facing に有効化済みである。
 - unqualified `Worksheets("SheetName")` と `Application.Worksheets("SheetName")` は Office VBA 上で active workbook を対象にするため、静的 current bundle root ではないが、broad root gating 条件は `ActiveWorkbook.Worksheets("SheetName")` と同一 family として扱ってよい。
 - broad root family の対象構文は `Worksheets("literal sheetName")` / `Worksheets.Item("literal sheetName")` と `Application.Worksheets("literal sheetName")` / `Application.Worksheets.Item("literal sheetName")` を同一扱いにし、`available` snapshot と manifest match がそろったときだけ sidecar lookup を開く。
 - built-in broad root gating は `Worksheets` root が built-in collection として解決できた場合にだけ適用し、同名の変数、関数、メンバーへ shadow されているときは user-defined symbol を優先する。
@@ -39,8 +39,8 @@
 
 - current product の sidecar lookup は bundle-local artifact `/.vba/worksheet-control-metadata.json` を対象にする。
 - `ThisWorkbook.Worksheets("Sheet One")` 経路では workbook root identity を保持し、current bundle の sidecar から `sheetName + shapeName` を引ける。
-- `ActiveWorkbook.Worksheets("Sheet One")` は workbook binding manifest と active workbook snapshot が一致したときだけ、`OLEObject.Object` / `Shape.OLEFormat.Object` の既存 worksheet control owner 導線へ進める。
-- unqualified `Worksheets("Sheet One")`、`Application.Worksheets("Sheet One")`、`ActiveSheet` は現時点では保守動作として未解決のまま固定している。
+- `ActiveWorkbook.Worksheets("Sheet One")` と `ActiveWorkbook.Worksheets.Item("Sheet One")` は workbook binding manifest と active workbook snapshot が一致したときだけ、`OLEObject.Object` / `Shape.OLEFormat.Object` の既存 worksheet control owner 導線へ進める。
+- unqualified `Worksheets("Sheet One")` / `Worksheets.Item("Sheet One")` と `Application.Worksheets("Sheet One")` / `Application.Worksheets.Item("Sheet One")` は、manifest + snapshot match 時だけ broad root family として user-facing に開く。`ActiveSheet` は引き続き未解決のまま固定している。
 - `Sheet1.Shapes("CheckBox1").OLEFormat.Object` と `Sheet1.OLEObjects("CheckBox1").Object` は、document module alias 起点の bundle identity を持てるため user-facing に解決している。
 - unqualified `Worksheets(1)` / `Worksheets(i + 1)` は built-in `Worksheet` surface までは既に user-facing だが、`sheetName + shapeName` lookup を要する control owner 昇格には使っていない。
 
@@ -91,6 +91,8 @@
   - `ThisWorkbook.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
   - `ActiveWorkbook.Worksheets("Sheet1").OLEObjects("ShapeName").Object`
   - `ActiveWorkbook.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
+  - `ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("ShapeName").Object`
+  - `ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("ShapeName").OLEFormat.Object`
   - `Worksheets("Sheet1").OLEObjects("ShapeName").Object`
   - `Worksheets.Item("Sheet1").OLEObjects("ShapeName").Object`
   - `Application.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
@@ -122,12 +124,11 @@
 
 ## 今回の完了条件
 
-- `ActiveWorkbook.Worksheets("Sheet1")` は runtime gating で user-facing に開く一方、unqualified `Worksheets("Sheet1")` は別判断であることを docs 上で矛盾なく整理する。
-- unqualified `Worksheets("Sheet1")` と `Application.Worksheets("Sheet1")` を same broad-root family として扱う条件を、一次情報ベースで整理する。
+- `ActiveWorkbook.Worksheets("Sheet1")`、unqualified `Worksheets("Sheet1")`、`Application.Worksheets("Sheet1")` を same broad-root family として扱う条件を、`.Item("Sheet1")` を含めて一次情報ベースで整理する。
 - `Sheets` / `ActiveSheet` / grouped / numeric / dynamic selector / shadow case を broad root family から除外する理由を残す。
 - broad root の可否を `OLEObject.Object` / `Shape.OLEFormat.Object` 共通の判断として整理する。
 
 ## 次段の候補
 
-- `available` snapshot と manifest match がそろったときだけ、`Worksheets("SheetName")` と `Application.Worksheets("SheetName")` broad root を current bundle sidecar lookup へ限定接続する。
-- `OLEObject.Object` / `Shape.OLEFormat.Object` の両方で broad root の gating 条件、shadow case、非対象 selector の負例をそろえる。
+- `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を static current-bundle root として扱えるか、既存 `ThisWorkbook` helper との整合を整理する。
+- `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を active workbook broad-root family に寄せるか、manifest + snapshot gating の観点で整理する。
