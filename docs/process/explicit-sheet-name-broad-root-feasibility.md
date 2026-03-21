@@ -4,7 +4,7 @@
 
 - `ActiveWorkbook.Worksheets("SheetName")` は、`available` snapshot、manifest 存在、manifest match、対応 owner の 4 条件がそろったときだけ current bundle sidecar lookup を開いてよい。この条件は現行実装で user-facing に有効化済みである。
 - unqualified `Worksheets("SheetName")` と `Application.Worksheets("SheetName")` は Office VBA 上で active workbook を対象にするため、静的 current bundle root ではないが、broad root gating 条件は `ActiveWorkbook.Worksheets("SheetName")` と同一 family として扱ってよい。
-- broad root family の v1 対象構文は `Worksheets("literal sheetName")` と `Application.Worksheets("literal sheetName")` に限る。`Worksheets.Item("literal sheetName")`、`Application.Worksheets.Item("literal sheetName")`、`Sheets`、`ActiveSheet`、numeric selector、dynamic selector、grouped selector は sidecar lookup の対象にしない。
+- broad root family の対象構文は `Worksheets("literal sheetName")` / `Worksheets.Item("literal sheetName")` と `Application.Worksheets("literal sheetName")` / `Application.Worksheets.Item("literal sheetName")` を同一扱いにし、`available` snapshot と manifest match がそろったときだけ sidecar lookup を開く。
 - built-in broad root gating は `Worksheets` root が built-in collection として解決できた場合にだけ適用し、同名の変数、関数、メンバーへ shadow されているときは user-defined symbol を優先する。
 - `OLEObject.Object` と `Shape.OLEFormat.Object` の broad root 境界は同じ PR、同じ条件で動かす。
 
@@ -20,6 +20,10 @@
   - active window が無い場合や Protected View では `Nothing` になり得る。
 - [Application.Worksheets property (Excel)](https://learn.microsoft.com/office/vba/api/excel.application.worksheets)
   - object qualifier 無しの `Worksheets` は active workbook の worksheet collection を返す。
+- [Worksheets.Item property (Excel)](https://learn.microsoft.com/office/vba/api/excel.worksheets.item)
+  - `Item` は collection から単一 object を返し、default member として `ActiveWorkbook.Worksheets.Item(1)` と `ActiveWorkbook.Worksheets(1)` は等価である。
+- [Returning an Object from a Collection (Excel)](https://learn.microsoft.com/office/vba/excel/concepts/workbooks-and-worksheets/returning-an-object-from-a-collection-excel)
+  - collection の `Item` は既定メンバーであり、省略形と同じ object を返す。
 - [Application.Sheets property (Excel)](https://learn.microsoft.com/office/vba/api/excel.application.sheets)
   - object qualifier 無しの `Sheets` は `ActiveWorkbook.Sheets` と等価であり、worksheet 以外も混在する。
 - [Workbook.Worksheets property (Excel)](https://learn.microsoft.com/office/vba/api/excel.workbook.worksheets)
@@ -51,7 +55,8 @@
 ### 2. `ActiveWorkbook` と unqualified `Worksheets` は同じ runtime gating family にできる
 
 - `Application.Worksheets` の正本は、object qualifier 無しの `Worksheets` が active workbook の worksheet collection を返すと明記している。
-- したがって `Worksheets("Sheet1")` と `Application.Worksheets("Sheet1")` は、user-facing に開くなら `ActiveWorkbook.Worksheets("Sheet1")` と同じ runtime 条件で開くべきである。
+- `Worksheets.Item` の正本は `Item` が既定メンバーであると明記しているため、`Worksheets.Item("Sheet1")` と `Application.Worksheets.Item("Sheet1")` も direct call form と同じ worksheet selector とみなしてよい。
+- したがって `Worksheets("Sheet1")` / `Worksheets.Item("Sheet1")` と `Application.Worksheets("Sheet1")` / `Application.Worksheets.Item("Sheet1")` は、user-facing に開くなら `ActiveWorkbook.Worksheets("Sheet1")` と同じ runtime 条件で開くべきである。
 - root の書き方だけで gating 条件が変わると、「同じ active workbook root なのに `ActiveWorkbook` では解決し unqualified では解決しない」という docs / 実装の不整合が起きやすい。
 
 ### 3. `ThisWorkbook` だけが「コードを含む workbook」を静的に固定できる
@@ -86,13 +91,11 @@
   - `ThisWorkbook.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
   - `ActiveWorkbook.Worksheets("Sheet1").OLEObjects("ShapeName").Object`
   - `ActiveWorkbook.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
-- 非 user-facing:
   - `Worksheets("Sheet1").OLEObjects("ShapeName").Object`
-  - `Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
-  - `Application.Worksheets("Sheet1").OLEObjects("ShapeName").Object`
-  - `Application.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
   - `Worksheets.Item("Sheet1").OLEObjects("ShapeName").Object`
+  - `Application.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
   - `Application.Worksheets.Item("Sheet1").Shapes("ShapeName").OLEFormat.Object`
+- 非 user-facing:
   - `Sheets("Sheet1").OLEObjects("ShapeName").Object`
   - `ActiveSheet.OLEObjects("ShapeName").Object`
   - `Worksheets(1).OLEObjects("ShapeName").Object`
@@ -105,14 +108,13 @@
 - current bundle の `workbook-binding.json` 存在
 - manifest と active workbook snapshot の match
 - root が built-in `Worksheets` collection として解決できる
-- path が `Worksheets("literal sheetName")` または `Application.Worksheets("literal sheetName")`
+- path が `Worksheets("literal sheetName")` / `Worksheets.Item("literal sheetName")` または `Application.Worksheets("literal sheetName")` / `Application.Worksheets.Item("literal sheetName")`
 - `OLEObject.Object` / `Shape.OLEFormat.Object` を同じ PR・同じ条件で開く
 
 ### 維持する除外境界
 
 - `Sheets`
 - `ActiveSheet`
-- root `.Item("literal sheetName")`
 - numeric selector
 - dynamic selector
 - grouped selector

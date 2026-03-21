@@ -2085,17 +2085,15 @@ function getBroadRootBuiltinContext(
   }
 
   if (normalizeIdentifier(rootSegment) === "worksheets") {
-    const sheetName =
-      pathSegmentDetails?.[0]?.accessKind === "literal"
-        ? parseStringLiteralSelectorValue(pathSegmentDetails[0].selectorText)
-        : undefined;
+    const worksheetRootSelector = resolveWorksheetsRootSelector(pathSegmentDetails, 0);
 
-    return sheetName
+    return worksheetRootSelector
       ? {
           ownerName: "Worksheet",
+          memberPathOffset: worksheetRootSelector.memberPathOffset,
           rootModuleName: state.analysis.module.name,
           rootUri: uri,
-          worksheetControlSheetName: sheetName
+          worksheetControlSheetName: worksheetRootSelector.sheetName
         }
       : undefined;
   }
@@ -2105,22 +2103,18 @@ function getBroadRootBuiltinContext(
   }
 
   const applicationSegment = pathSegmentDetails?.[0];
-  const worksheetsSegment = pathSegmentDetails?.[1];
-  const sheetName =
-    normalizeIdentifier(applicationSegment?.text ?? "") === "application" &&
-    applicationSegment?.accessKind === "none" &&
-    normalizeIdentifier(worksheetsSegment?.text ?? "") === "worksheets" &&
-    worksheetsSegment?.accessKind === "literal"
-      ? parseStringLiteralSelectorValue(worksheetsSegment.selectorText)
+  const worksheetRootSelector =
+    normalizeIdentifier(applicationSegment?.text ?? "") === "application" && applicationSegment?.accessKind === "none"
+      ? resolveWorksheetsRootSelector(pathSegmentDetails, 1)
       : undefined;
 
-  return sheetName
+  return worksheetRootSelector
     ? {
         ownerName: "Worksheet",
-        memberPathOffset: 1,
+        memberPathOffset: 1 + worksheetRootSelector.memberPathOffset,
         rootModuleName: state.analysis.module.name,
         rootUri: uri,
-        worksheetControlSheetName: sheetName
+        worksheetControlSheetName: worksheetRootSelector.sheetName
       }
     : undefined;
 }
@@ -2439,6 +2433,35 @@ function parseStringLiteralSelectorValue(selectorText: string | undefined): stri
   }
 
   return normalizedSelectorText.slice(1, -1).replace(/""/gu, "\"");
+}
+
+function resolveWorksheetsRootSelector(
+  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
+  collectionSegmentIndex: number
+): { memberPathOffset: number; sheetName: string } | undefined {
+  const collectionSegment = pathSegmentDetails?.[collectionSegmentIndex];
+
+  if (normalizeIdentifier(collectionSegment?.text ?? "") !== "worksheets") {
+    return undefined;
+  }
+
+  if (collectionSegment?.accessKind === "literal") {
+    const sheetName = parseStringLiteralSelectorValue(collectionSegment.selectorText);
+    return sheetName ? { memberPathOffset: 0, sheetName } : undefined;
+  }
+
+  if (collectionSegment?.accessKind !== "none") {
+    return undefined;
+  }
+
+  const itemSegment = pathSegmentDetails?.[collectionSegmentIndex + 1];
+
+  if (normalizeIdentifier(itemSegment?.text ?? "") !== "item" || itemSegment?.accessKind !== "literal") {
+    return undefined;
+  }
+
+  const sheetName = parseStringLiteralSelectorValue(itemSegment.selectorText);
+  return sheetName ? { memberPathOffset: 1, sheetName } : undefined;
 }
 
 function isWorkbookDocumentState(state: DocumentState | undefined): boolean {

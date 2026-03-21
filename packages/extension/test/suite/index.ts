@@ -1169,7 +1169,15 @@ export async function run(): Promise<void> {
     ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'unqualified Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
     ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'Application.Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
     ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'unqualified Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
+    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', 'Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
   ] as const;
   const broadRootMatchedCompletionChecks = [
     ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'CheckBox property', "Activate", 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
@@ -1179,26 +1187,51 @@ export async function run(): Promise<void> {
     ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
     ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
     ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
+    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', 'CheckBox property', "Activate", 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'CheckBox property', "Activate", 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', 'CheckBox property', "Activate", 'Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'CheckBox property', "Activate", 'Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
   ] as const;
   const broadRootMatchedHoverChecks = [
     ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Worksheets("Sheet One") の OLEObject.Object hover は control owner へ解決する'],
     ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu', 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'],
     ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', 'Worksheets("Sheet One") の Shape.OLEFormat.Object hover は control owner へ解決する'],
-    ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu', 'Worksheets("Sheet One").Shapes.Item("CheckBox1") の hover は control owner へ解決する']
+    ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu', 'Worksheets("Sheet One").Shapes.Item("CheckBox1") の hover は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu', 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu', 'Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', 'Worksheets.Item("Sheet One").Shapes("CheckBox1") の hover は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu', 'Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の hover は control owner へ解決する']
   ] as const;
   const broadRootMatchedSignatureChecks = [
     ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(', 'Application.Worksheets("Sheet One") の OLEObject.Object signature help は control owner へ解決する'],
     ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'],
     ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets("Sheet One") の Shape.OLEFormat.Object signature help は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する']
+    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(', 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の signature help は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(', 'Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の signature help は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Worksheets.Item("Sheet One").Shapes("CheckBox1") の signature help は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") の signature help は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する']
   ] as const;
   const broadRootNonTargetHoverChecks = [
     ['Sheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Sheets root は broad root family の対象外を維持する'],
     ['ActiveSheet.OLEObjects("CheckBox1").Object.Valu', 'ActiveSheet root は broad root family の対象外を維持する'],
     ['Worksheets(1).OLEObjects("CheckBox1").Object.Valu', 'numeric selector の Worksheets root は broad root family の対象外を維持する'],
     ['Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Worksheets root は broad root family の対象外を維持する'],
-    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Worksheets.Item("Sheet One") は root .Item 形式のため broad root を開かない']
+    ['Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'numeric selector の Worksheets.Item root は broad root family の対象外を維持する'],
+    ['Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Worksheets.Item root は broad root family の対象外を維持する'],
+    ['Application.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'numeric selector の Application.Worksheets.Item root は broad root family の対象外を維持する'],
+    ['Application.Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Application.Worksheets.Item root は broad root family の対象外を維持する']
   ] as const;
 
   for (const [token, message] of broadRootClosedCompletionChecks) {
@@ -1206,28 +1239,12 @@ export async function run(): Promise<void> {
 
     assert.equal(hasCompletionItemLabel(items, "Value"), false, message);
   }
-  assert.equal(
-    await waitForNoHoverAtToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'),
-    true
-  );
-  assert.equal(
-    await waitForNoHoverAtToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'),
-    true
-  );
-  assert.equal(
-    await waitForNoSignatureHelpAtToken(
-      worksheetBroadRootDocument,
-      'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-    ),
-    true
-  );
-  assert.equal(
-    await waitForNoSignatureHelpAtToken(
-      worksheetBroadRootDocument,
-      'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-    ),
-    true
-  );
+  for (const [token, message] of broadRootMatchedHoverChecks) {
+    assert.equal(await waitForNoHoverAtToken(worksheetBroadRootDocument, token), true, message);
+  }
+  for (const [token, message] of broadRootMatchedSignatureChecks) {
+    assert.equal(await waitForNoSignatureHelpAtToken(worksheetBroadRootDocument, token), true, message);
+  }
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
   try {
@@ -1254,92 +1271,22 @@ export async function run(): Promise<void> {
       assert.equal(await waitForNoHoverAtToken(worksheetBroadRootDocument, token), true, message);
     }
 
-    const worksheetRootItemCompletionSuppressed = await waitForCompletionLabelStateAtToken(
-      worksheetBroadRootDocument,
-      'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.',
-      "Value",
-      false
-    );
-    const applicationRootItemCompletionSuppressed = await waitForCompletionLabelStateAtToken(
-      worksheetBroadRootDocument,
-      'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
-      "Value",
-      false
-    );
-
-    assert.equal(
-      hasCompletionItemLabel(worksheetRootItemCompletionSuppressed, "Value"),
-      false,
-      'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は root .Item 形式のため broad root を開かない'
-    );
-    assert.equal(
-      hasCompletionItemLabel(applicationRootItemCompletionSuppressed, "Value"),
-      false,
-      'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は root .Item 形式のため broad root を開かない'
-    );
-    assert.equal(
-      await waitForNoSignatureHelpAtToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-      ),
-      true
-    );
-
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_MISMATCHED_SNAPSHOT);
 
-    assert.equal(
-      await waitForNoHoverAtToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
-      true
-    );
-    assert.equal(
-      await waitForNoHoverAtToken(
-        worksheetBroadRootDocument,
-        'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
-      ),
-      true
-    );
-    assert.equal(
-      await waitForNoSignatureHelpAtToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-      ),
-      true
-    );
-
-    const mismatchedWorksheetBroadRootCompletionItems = await waitForCompletionLabelStateAtToken(
-      worksheetBroadRootDocument,
-      'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
-      "Value",
-      false
-    );
-    const mismatchedApplicationBroadRootCompletionItems = await waitForCompletionLabelStateAtToken(
-      worksheetBroadRootDocument,
-      'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
-      "Value",
-      false
-    );
-    const mismatchedApplicationBroadRootItemCompletionItems = await waitForCompletionLabelStateAtToken(
-      worksheetBroadRootDocument,
-      'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.',
-      "Value",
-      false
-    );
-
-    assert.equal(
-      hasCompletionItemLabel(mismatchedWorksheetBroadRootCompletionItems, "Value"),
-      false,
-      'mismatch snapshot では Worksheets("Sheet One").Shapes("CheckBox1") broad root を開かない'
-    );
-    assert.equal(
-      hasCompletionItemLabel(mismatchedApplicationBroadRootCompletionItems, "Value"),
-      false,
-      'mismatch snapshot では Application.Worksheets("Sheet One").OLEObjects("CheckBox1") broad root を開かない'
-    );
-    assert.equal(
-      hasCompletionItemLabel(mismatchedApplicationBroadRootItemCompletionItems, "Value"),
-      false,
-      'mismatch snapshot では Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") broad root を開かない'
-    );
+    for (const [token, , , message] of broadRootMatchedCompletionChecks) {
+      const items = await waitForCompletionLabelStateAtToken(worksheetBroadRootDocument, token, "Value", false);
+      assert.equal(hasCompletionItemLabel(items, "Value"), false, `mismatch snapshot では ${message}`);
+    }
+    for (const [token, message] of broadRootMatchedHoverChecks) {
+      assert.equal(await waitForNoHoverAtToken(worksheetBroadRootDocument, token), true, `mismatch snapshot では ${message}`);
+    }
+    for (const [token, message] of broadRootMatchedSignatureChecks) {
+      assert.equal(
+        await waitForNoSignatureHelpAtToken(worksheetBroadRootDocument, token),
+        true,
+        `mismatch snapshot では ${message}`
+      );
+    }
   } finally {
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
   }
