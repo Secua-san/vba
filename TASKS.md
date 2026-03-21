@@ -471,10 +471,17 @@
   - ADR [0005](docs/adr/0005-explicit-sheet-name-root-policy.md) を更新し、`Application` qualifier を挟んでも workbook root identity の意味は変えないこと、ただし built-in `Application` として解決できる場合にだけ sidecar lookup を有効にする shadow 境界を固定した
   - [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md)、[docs/process/workbook-binding-manifest-feasibility.md](docs/process/workbook-binding-manifest-feasibility.md)、[docs/process/README.md](docs/process/README.md) を更新し、既存 broad-root / binding メモとの参照導線をそろえた
 
-- [ ] `Application.ThisWorkbook` / `Application.ActiveWorkbook` root の最小接続を追加する
-  - `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を、既存 `ThisWorkbook` direct root と同じ current bundle workbook identity で `OLEObject.Object` / `Shape.OLEFormat.Object` の sidecar lookup へ流す
-  - `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を、既存 `ActiveWorkbook` direct root と同じ manifest + snapshot gating で `OLEObject.Object` / `Shape.OLEFormat.Object` の sidecar lookup へ流す
-  - `Application` shadow、codeName selector、numeric selector、dynamic selector、chartsheet / unsupported owner は従来どおり負例で固定し、server / extension test と docs を更新する
+- [x] `Application.ThisWorkbook` / `Application.ActiveWorkbook` root の最小接続を追加する
+  - `packages/server/src/lsp/documentService.ts` の broad-root resolver を拡張し、built-in `Application` qualifier の直後に `ThisWorkbook` / `ActiveWorkbook` が続く場合は、それぞれ既存 `ThisWorkbook` direct root と `ActiveWorkbook` broad-root family へ寄せて `OLEObject.Object` / `Shape.OLEFormat.Object` の sidecar lookup へ流すようにした
+  - `packages/server/test/documentService.test.js`、`packages/extension/test/suite/index.ts`、`packages/extension/test/fixtures/ApplicationWorkbookRootBuiltIn.bas` を追加・更新し、`Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は static current-bundle family、`Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` は manifest + snapshot match 下だけ開くこと、`Application` shadow、codeName selector、numeric selector は従来どおり負例のままであることを completion / hover / signature help / semantic token まで固定した
+  - CodeRabbit 指摘対応として、indexed access の `ActiveWorkbook("...")` を direct workbook root と誤認しない `accessKind === "none"` ガードを `packages/server/src/lsp/documentService.ts` に追加し、server 側に専用の負例テストを追加した
+  - [docs/process/application-workbook-root-feasibility.md](docs/process/application-workbook-root-feasibility.md) と [docs/process/workbook-binding-manifest-feasibility.md](docs/process/workbook-binding-manifest-feasibility.md) を更新し、方針整理で止まっていた `Application.ThisWorkbook` / `Application.ActiveWorkbook` root が user-facing 実装済みになったことを反映した
+  - 検証として `npm run build`、`npm test --workspace @vba/server`、`npm run lint`、`npm run package` を通した。`npm run test --workspace vba-extension` はこの Codex セッション自体が Code を使用中のため CLI 実行が弾かれ、別インスタンスが無い環境での再確認が必要
+
+- [ ] workbook root family の resolver / test matrix を整理する
+  - `packages/server/src/lsp/documentService.ts` の `ThisWorkbook` / `ActiveWorkbook` / `Application.ThisWorkbook` / `Application.ActiveWorkbook` / `Worksheets` / `Application.Worksheets` 判定を shared helper へ寄せ、selector / shadow / gating 条件の分岐を 1 か所へ集約する
+  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` の workbook root matrix を配列駆動 helper へ寄せ、current-bundle と broad-root family の対称ケースを崩しにくくする
+  - 振る舞いを変えない整理 PR として docs / `TASKS.md` の説明も整える
 
 ## メモ
 

@@ -32,7 +32,7 @@
   - `ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")`
   - unqualified `Worksheets("SheetName")` / `.Item("SheetName")`
   - `Application.Worksheets("SheetName")` / `.Item("SheetName")`
-- policy は未整理だったが、未実装:
+- 今回の実装で user-facing 済み:
   - `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")`
   - `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")`
 - 既存 docs では `ThisWorkbook` と `ActiveWorkbook` の意味は整理済みであり、今回の論点は `Application.` qualifier を挟んでも workbook root identity が変わらないかどうかに限られる。
@@ -107,14 +107,14 @@
   - root が built-in family として解決できる
   - selector は literal `sheetName`
 
-## 今回の完了条件
+## 実装反映メモ
 
-- `Application.ThisWorkbook` を `ThisWorkbook` と同じ static current-bundle root family とみなせる根拠を整理する。
-- `Application.ActiveWorkbook` を `ActiveWorkbook` と同じ broad-root family とみなせる根拠を整理する。
-- `Application` shadow 時は built-in family に入れない境界を残す。
-- `OLEObject.Object` と `Shape.OLEFormat.Object` を qualifier 有無で分けない方針を残す。
+- `packages/server/src/lsp/documentService.ts` では、built-in `Application` qualifier の直後に `ThisWorkbook` / `ActiveWorkbook` が来る場合だけ、既存 workbook root family と同じ helper へ流す。
+- `Application.ThisWorkbook` は manifest / snapshot 非依存の static current-bundle family として扱い、`ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` と同じ sidecar lookup を使う。
+- `Application.ActiveWorkbook` は既存 `ActiveWorkbook` direct root と同じ manifest + snapshot gating 下だけ開き、`Application` shadow 時は workbook root family に入れない。
+- `OLEObject.Object` と `Shape.OLEFormat.Object` は qualifier 有無で分けず、completion / hover / signature help / semantic token を server / extension fixture で対称に固定した。
 
 ## 次段の候補
 
-- `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を `ThisWorkbook` direct root と同じ helper で最小接続する。
-- `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を既存 broad-root gating helper へ寄せて最小接続する。
+- workbook root family の resolver を shared helper へ寄せ、`ThisWorkbook` / `ActiveWorkbook` / `Application.*` / unqualified `Worksheets` の selector / shadow / gating 条件を 1 か所で見られるようにする。
+- server / extension の workbook root matrix を配列駆動 helper へ寄せ、current-bundle family と broad-root family の対称ケース追加をしやすくする。

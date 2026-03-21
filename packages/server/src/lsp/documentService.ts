@@ -2072,11 +2072,20 @@ function getBroadRootBuiltinContext(
 ): DocumentModuleBuiltinContext | undefined {
   const state = getDocumentState(uri);
 
-  if (!state || !hasMatchedActiveWorkbookBinding(state)) {
+  if (!state) {
     return undefined;
   }
 
-  if (normalizeIdentifier(rootSegment) === "activeworkbook") {
+  const activeWorkbookSegment = pathSegmentDetails?.[0];
+
+  if (
+    normalizeIdentifier(activeWorkbookSegment?.text ?? rootSegment) === "activeworkbook" &&
+    activeWorkbookSegment?.accessKind === "none"
+  ) {
+    if (!hasMatchedActiveWorkbookBinding(state)) {
+      return undefined;
+    }
+
     return {
       ownerName: "Workbook",
       rootModuleName: state.analysis.module.name,
@@ -2085,6 +2094,10 @@ function getBroadRootBuiltinContext(
   }
 
   if (normalizeIdentifier(rootSegment) === "worksheets") {
+    if (!hasMatchedActiveWorkbookBinding(state)) {
+      return undefined;
+    }
+
     const worksheetRootSelector = resolveWorksheetsRootSelector(pathSegmentDetails, 0);
 
     return worksheetRootSelector
@@ -2103,10 +2116,21 @@ function getBroadRootBuiltinContext(
   }
 
   const applicationSegment = pathSegmentDetails?.[0];
-  const worksheetRootSelector =
-    normalizeIdentifier(applicationSegment?.text ?? "") === "application" && applicationSegment?.accessKind === "none"
-      ? resolveWorksheetsRootSelector(pathSegmentDetails, 1)
-      : undefined;
+  if (normalizeIdentifier(applicationSegment?.text ?? "") !== "application" || applicationSegment?.accessKind !== "none") {
+    return undefined;
+  }
+
+  const applicationWorkbookContext = getApplicationWorkbookRootBuiltinContext(state, uri, pathSegmentDetails);
+
+  if (applicationWorkbookContext) {
+    return applicationWorkbookContext;
+  }
+
+  if (!hasMatchedActiveWorkbookBinding(state)) {
+    return undefined;
+  }
+
+  const worksheetRootSelector = resolveWorksheetsRootSelector(pathSegmentDetails, 1);
 
   return worksheetRootSelector
     ? {
@@ -2117,6 +2141,39 @@ function getBroadRootBuiltinContext(
         worksheetControlSheetName: worksheetRootSelector.sheetName
       }
     : undefined;
+}
+
+function getApplicationWorkbookRootBuiltinContext(
+  state: DocumentState,
+  uri: string,
+  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined
+): DocumentModuleBuiltinContext | undefined {
+  const workbookSegment = pathSegmentDetails?.[1];
+  const normalizedWorkbookSegment = normalizeIdentifier(workbookSegment?.text ?? "");
+
+  if (workbookSegment?.accessKind !== "none") {
+    return undefined;
+  }
+
+  if (normalizedWorkbookSegment === "thisworkbook") {
+    return {
+      ownerName: "Workbook",
+      memberPathOffset: 1,
+      rootModuleName: state.analysis.module.name,
+      rootUri: uri
+    };
+  }
+
+  if (normalizedWorkbookSegment === "activeworkbook" && hasMatchedActiveWorkbookBinding(state)) {
+    return {
+      ownerName: "Workbook",
+      memberPathOffset: 1,
+      rootModuleName: state.analysis.module.name,
+      rootUri: uri
+    };
+  }
+
+  return undefined;
 }
 
 function getDocumentModuleBuiltinContext(

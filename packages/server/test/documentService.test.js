@@ -1787,6 +1787,56 @@ End Sub`;
   }
 });
 
+test("document service keeps indexed ActiveWorkbook roots closed", () => {
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(
+End Sub`;
+  const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
+
+  try {
+    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
+
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false,
+      'indexed ActiveWorkbook root は workbook broad root として扱わない'
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu'
+      ),
+      undefined,
+      'indexed ActiveWorkbook root は hover を出さない'
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select('
+      ),
+      undefined,
+      'indexed ActiveWorkbook root は signature help を出さない'
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("document service resolves workbook-qualified worksheet root item selectors for Shape.OLEFormat.Object", () => {
   const text = `Attribute VB_Name = "Module1"
 Option Explicit
@@ -2046,6 +2096,582 @@ End Sub`;
         uri,
         text,
         'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('
+      ),
+      undefined
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("document service resolves Application.ThisWorkbook worksheet OLEObject roots and gates Application.ActiveWorkbook", () => {
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value
+    Debug.Print Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value
+    Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.
+    Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value
+    Call Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value
+    Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value
+    Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.
+    Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value
+    Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(
+End Sub
+
+Private Function GetIndex() As Long
+    GetIndex = 1
+End Function`;
+  const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
+
+  try {
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
+      )?.contents.includes("CheckBox.Value"),
+      true
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
+      )?.label,
+      "Select(Replace) As Object"
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(service, uri, text, 'Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu'),
+      undefined
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select('
+      ),
+      undefined
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
+      ),
+      undefined
+    );
+
+    let tokens = service.getSemanticTokens(uri);
+    assertSemanticToken(text, tokens, 6, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 7, "Select", { modifiers: [], type: "function" });
+    assertNoSemanticToken(text, tokens, 15, "Value");
+    assertNoSemanticToken(text, tokens, 20, "Value");
+
+    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
+
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
+      )?.contents.includes("CheckBox.Value"),
+      true
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
+      )?.label,
+      "Select(Replace) As Object"
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select('
+      ),
+      undefined
+    );
+
+    tokens = service.getSemanticTokens(uri);
+    assertSemanticToken(text, tokens, 15, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 16, "Select", { modifiers: [], type: "function" });
+    assertNoSemanticToken(text, tokens, 17, "Value");
+    assertNoSemanticToken(text, tokens, 20, "Value");
+  } finally {
+    cleanup();
+  }
+});
+
+test("document service resolves Application.ThisWorkbook worksheet Shape roots and gates Application.ActiveWorkbook", () => {
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(
+End Sub
+
+Private Function GetIndex() As Long
+    GetIndex = 1
+End Function`;
+  const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
+
+  try {
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
+      )?.contents.includes("CheckBox.Value"),
+      true
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
+      )?.label,
+      "Select(Replace) As Object"
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select('
+      ),
+      undefined
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
+      ),
+      undefined
+    );
+
+    let tokens = service.getSemanticTokens(uri);
+    assertSemanticToken(text, tokens, 6, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 7, "Select", { modifiers: [], type: "function" });
+    assertNoSemanticToken(text, tokens, 15, "Value");
+    assertNoSemanticToken(text, tokens, 20, "Value");
+
+    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
+
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      true
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
+      )?.contents.includes("CheckBox.Value"),
+      true
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
+      )?.label,
+      "Select(Replace) As Object"
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select('
+      ),
+      undefined
+    );
+
+    tokens = service.getSemanticTokens(uri);
+    assertSemanticToken(text, tokens, 15, "Value", { modifiers: [], type: "variable" });
+    assertSemanticToken(text, tokens, 16, "Select", { modifiers: [], type: "function" });
+    assertNoSemanticToken(text, tokens, 17, "Value");
+    assertNoSemanticToken(text, tokens, 20, "Value");
+  } finally {
+    cleanup();
+  }
+});
+
+test("document service keeps Application workbook roots closed when Application is shadowed", () => {
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Private Type Application
+    Name As String
+End Type
+
+Public Sub Demo()
+    Dim Application As Application
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(
+End Sub`;
+  const { service, uri, cleanup } = createWorksheetBroadRootFixture(text);
+
+  try {
+    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
+
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('
+      ),
+      undefined
+    );
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
+        "Value"
+      ),
+      false
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
+      ),
+      undefined
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
       ),
       undefined
     );
