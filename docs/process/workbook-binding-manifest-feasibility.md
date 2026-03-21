@@ -161,14 +161,14 @@
 
 - 上の列挙は broad-root family の代表例であり、実装済みの全パターンを網羅列挙するものではない。
 
-### policy は決まったが未実装のもの
+### policy に沿って user-facing 済みのもの
 
 - `Application.ThisWorkbook.Worksheets("Sheet1")...`
-  - `ThisWorkbook` direct root と同じ static current-bundle family に入れる方針は確定したが、まだ user-facing には接続していない。
+  - `ThisWorkbook` direct root と同じ static current-bundle family として `OLEObject.Object` / `Shape.OLEFormat.Object` の sidecar lookup へ接続済み。
 - `Application.ActiveWorkbook.Worksheets("Sheet1")...`
-  - `ActiveWorkbook` direct root と同じ manifest + snapshot gating family に入れる方針は確定したが、まだ user-facing には接続していない。
+  - `ActiveWorkbook` direct root と同じ manifest + snapshot gating family として、match 時だけ `OLEObject.Object` / `Shape.OLEFormat.Object` の sidecar lookup へ接続済み。
 
-### 将来開ける条件
+### active-workbook family を開く条件
 
 - bundle-local `workbook-binding.json` が存在する
 - manifest の `workbook.fullName` が runtime active workbook の `FullName` と一致する
