@@ -1675,14 +1675,46 @@ End Sub`;
     'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
   ];
   const nonTargetSemanticChecks = [
-    [10, "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [11, "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
-    [12, "Select", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [13, "Select", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
-    [22, "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
-    [23, "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [24, "Select", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [25, "Select", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない']
+    [
+      'Debug.Print ThisWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Value',
+      "Value",
+      'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Debug.Print ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+      "Value",
+      'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ],
+    [
+      'Call ThisWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(',
+      "Select",
+      'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Call ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(',
+      "Select",
+      'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ],
+    [
+      'Debug.Print ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+      "Value",
+      'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ],
+    [
+      'Debug.Print ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Value',
+      "Value",
+      'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Call ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(',
+      "Select",
+      'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Call ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(',
+      "Select",
+      'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ]
   ];
 
   try {
@@ -1715,9 +1747,7 @@ End Sub`;
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
     }
     let tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
@@ -1741,9 +1771,7 @@ End Sub`;
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
     }
     tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 
@@ -1765,9 +1793,7 @@ End Sub`;
       );
     }
     tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
@@ -1779,9 +1805,7 @@ End Sub`;
       );
     }
     tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
   } finally {
     cleanup();
   }
@@ -1913,14 +1937,46 @@ End Sub`;
     'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
   ];
   const nonTargetSemanticChecks = [
-    [10, "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [11, "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
-    [12, "Select", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [13, "Select", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
-    [22, "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
-    [23, "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [24, "Select", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
-    [25, "Select", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない']
+    [
+      'Debug.Print ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+      "Value",
+      'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Debug.Print ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+      "Value",
+      'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ],
+    [
+      'Call ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+      "Select",
+      'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Call ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Select(',
+      "Select",
+      'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ],
+    [
+      'Debug.Print ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+      "Value",
+      'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ],
+    [
+      'Debug.Print ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+      "Value",
+      'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Call ActiveWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+      "Select",
+      'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'
+    ],
+    [
+      'Call ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Select(',
+      "Select",
+      'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+    ]
   ];
 
   try {
@@ -1953,9 +2009,7 @@ End Sub`;
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
     }
     let tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
@@ -1979,9 +2033,7 @@ End Sub`;
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
     }
     tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 
@@ -2003,9 +2055,7 @@ End Sub`;
       );
     }
     tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
@@ -2017,9 +2067,7 @@ End Sub`;
       );
     }
     tokens = service.getSemanticTokens(uri);
-    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
-      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
-    }
+    assertWorkbookRootNoSemanticCases(text, tokens, nonTargetSemanticChecks);
   } finally {
     cleanup();
   }
@@ -2175,6 +2223,92 @@ End Type`;
       ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'Application.Caller は workbook root family に昇格しない'],
       ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Range("A1") は workbook root family に昇格しない']
     ];
+    const staticSemanticChecks = [
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        { modifiers: [], type: "variable" },
+        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は semantic token を出す'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
+        "Select",
+        { modifiers: [], type: "function" },
+        'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は semantic token を出す'
+      ]
+    ];
+    const staticNoSemanticChecks = [
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は snapshot 未一致の間は semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は snapshot 未一致の間は semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.Caller は workbook root family に昇格しないため semantic token を出さない'
+      ],
+      [
+        'Call Application.Caller.OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.Caller は workbook root family に昇格しないため semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.Range("A1") は workbook root family に昇格しないため semantic token を出さない'
+      ],
+      [
+        'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.Range("A1") は workbook root family に昇格しないため semantic token を出さない'
+      ]
+    ];
 
     assertWorkbookRootCompletionCases(service, uri, text, staticCompletionCases);
     assertWorkbookRootHoverCases(service, uri, text, staticHoverCases);
@@ -2184,10 +2318,8 @@ End Type`;
     assertWorkbookRootNoSignatureCases(service, uri, text, staticNoSignatureCases);
 
     let tokens = service.getSemanticTokens(uri);
-    assertSemanticToken(text, tokens, 6, "Value", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 7, "Select", { modifiers: [], type: "function" });
-    assertNoSemanticToken(text, tokens, 15, "Value");
-    assertNoSemanticToken(text, tokens, 20, "Value");
+    assertWorkbookRootSemanticCases(text, tokens, staticSemanticChecks);
+    assertWorkbookRootNoSemanticCases(text, tokens, staticNoSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
@@ -2218,6 +2350,82 @@ End Type`;
       ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
       ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
     ];
+    const matchedSemanticChecks = [
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        { modifiers: [], type: "variable" },
+        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は semantic token を出す'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
+        "Select",
+        { modifiers: [], type: "function" },
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は semantic token を出す'
+      ]
+    ];
+    const matchedNoSemanticCases = [
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'snapshot 一致後も Application.Caller は semantic token を出さない'
+      ],
+      [
+        'Call Application.Caller.OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'snapshot 一致後も Application.Caller は semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'snapshot 一致後も Application.Range("A1") は semantic token を出さない'
+      ],
+      [
+        'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'snapshot 一致後も Application.Range("A1") は semantic token を出さない'
+      ]
+    ];
 
     assertWorkbookRootCompletionCases(service, uri, text, matchedCompletionCases);
     assertWorkbookRootHoverCases(service, uri, text, matchedHoverCases);
@@ -2227,10 +2435,8 @@ End Type`;
     assertWorkbookRootNoSignatureCases(service, uri, text, matchedNoSignatureCases);
 
     tokens = service.getSemanticTokens(uri);
-    assertSemanticToken(text, tokens, 15, "Value", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 16, "Select", { modifiers: [], type: "function" });
-    assertNoSemanticToken(text, tokens, 17, "Value");
-    assertNoSemanticToken(text, tokens, 20, "Value");
+    assertWorkbookRootSemanticCases(text, tokens, matchedSemanticChecks);
+    assertWorkbookRootNoSemanticCases(text, tokens, matchedNoSemanticCases);
   } finally {
     cleanup();
   }
@@ -2381,11 +2587,76 @@ End Function`;
       undefined
     );
 
+    const staticSemanticChecks = [
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        { modifiers: [], type: "variable" },
+        'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は semantic token を出す'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        { modifiers: [], type: "function" },
+        'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は semantic token を出す'
+      ]
+    ];
+    const staticNoSemanticChecks = [
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は snapshot 未一致の間は semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は snapshot 未一致の間は semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ]
+    ];
+
     let tokens = service.getSemanticTokens(uri);
-    assertSemanticToken(text, tokens, 6, "Value", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 7, "Select", { modifiers: [], type: "function" });
-    assertNoSemanticToken(text, tokens, 15, "Value");
-    assertNoSemanticToken(text, tokens, 20, "Value");
+    assertWorkbookRootSemanticCases(text, tokens, staticSemanticChecks);
+    assertWorkbookRootNoSemanticCases(text, tokens, staticNoSemanticChecks);
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
@@ -2475,11 +2746,66 @@ End Function`;
       undefined
     );
 
+    const matchedSemanticChecks = [
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        { modifiers: [], type: "variable" },
+        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は semantic token を出す'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        { modifiers: [], type: "function" },
+        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は semantic token を出す'
+      ]
+    ];
+    const matchedNoSemanticChecks = [
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ]
+    ];
+
     tokens = service.getSemanticTokens(uri);
-    assertSemanticToken(text, tokens, 15, "Value", { modifiers: [], type: "variable" });
-    assertSemanticToken(text, tokens, 16, "Select", { modifiers: [], type: "function" });
-    assertNoSemanticToken(text, tokens, 17, "Value");
-    assertNoSemanticToken(text, tokens, 20, "Value");
+    assertWorkbookRootSemanticCases(text, tokens, matchedSemanticChecks);
+    assertWorkbookRootNoSemanticCases(text, tokens, matchedNoSemanticChecks);
   } finally {
     cleanup();
   }
@@ -5955,6 +6281,18 @@ function assertWorkbookRootNoSignatureCases(service, uri, text, cases) {
   }
 }
 
+function assertWorkbookRootSemanticCases(text, tokens, cases) {
+  for (const [anchorToken, identifier, expected, message, occurrenceIndex = 0] of cases) {
+    assertSemanticTokenByAnchor(text, tokens, anchorToken, identifier, expected, occurrenceIndex, message);
+  }
+}
+
+function assertWorkbookRootNoSemanticCases(text, tokens, cases) {
+  for (const [anchorToken, identifier, message, occurrenceIndex = 0] of cases) {
+    assertNoSemanticTokenByAnchor(text, tokens, anchorToken, identifier, occurrenceIndex, message);
+  }
+}
+
 function getHoverAfterToken(service, uri, text, token) {
   return service.getHover(uri, findPositionAfterTokenInText(text, token));
 }
@@ -5982,13 +6320,76 @@ function applyTextEdit(text, edit) {
   return normalizedText.slice(0, startOffset) + edit.newText + normalizedText.slice(endOffset);
 }
 
-function findPositionAfterTokenInText(text, token, offsetFromEnd = 0) {
+function findPositionAfterTokenInText(text, token, offsetFromEnd = 0, occurrenceIndex = 0) {
   const normalizedText = text.replace(/\r\n?/g, "\n");
-  const startOffset = normalizedText.indexOf(token);
-
-  assert.notEqual(startOffset, -1, `token not found in text: ${token}`);
+  const startOffset = findTokenStartOffsetInText(normalizedText, token, occurrenceIndex);
 
   return toPosition(normalizedText, startOffset + token.length + offsetFromEnd);
+}
+
+function findIdentifierPositionInTokenOccurrence(text, anchorToken, identifier, occurrenceIndex = 0) {
+  assert.equal(anchorToken.includes("\n"), false, `anchor token must stay on a single line: ${anchorToken}`);
+  const normalizedText = text.replace(/\r\n?/g, "\n");
+  const startOffset = findTokenStartOffsetInText(normalizedText, anchorToken, occurrenceIndex);
+  const anchorPosition = toPosition(normalizedText, startOffset);
+  const identifierOffset = anchorToken.lastIndexOf(identifier);
+
+  assert.notEqual(identifierOffset, -1, `identifier '${identifier}' must exist in anchor token: ${anchorToken}`);
+
+  return {
+    lineIndex: anchorPosition.line,
+    startCharacter: anchorPosition.character + identifierOffset
+  };
+}
+
+function assertSemanticTokenByAnchor(text, tokens, anchorToken, identifier, expected, occurrenceIndex = 0, message) {
+  const { lineIndex, startCharacter } = findIdentifierPositionInTokenOccurrence(text, anchorToken, identifier, occurrenceIndex);
+  const token = tokens.find(
+    (entry) =>
+      entry.range.start.line === lineIndex &&
+      entry.range.start.character === startCharacter &&
+      entry.range.end.line === lineIndex &&
+      entry.range.end.character === startCharacter + identifier.length
+  );
+
+  assert.ok(token, message ?? `semantic token '${identifier}' must exist at ${lineIndex}:${startCharacter}`);
+  assert.equal(token.type, expected.type, message);
+  assert.deepEqual([...token.modifiers].sort(), [...expected.modifiers].sort(), message);
+}
+
+function assertNoSemanticTokenByAnchor(text, tokens, anchorToken, identifier, occurrenceIndex = 0, message) {
+  const { lineIndex, startCharacter } = findIdentifierPositionInTokenOccurrence(text, anchorToken, identifier, occurrenceIndex);
+
+  assert.equal(
+    tokens.some(
+      (entry) =>
+        entry.range.start.line === lineIndex &&
+        entry.range.start.character === startCharacter &&
+        entry.range.end.line === lineIndex &&
+        entry.range.end.character === startCharacter + identifier.length
+    ),
+    false,
+    message ?? `semantic token '${identifier}' must not exist at ${lineIndex}:${startCharacter}`
+  );
+}
+
+function findTokenStartOffsetInText(text, token, occurrenceIndex = 0) {
+  assert.ok(occurrenceIndex >= 0, `occurrence index must be non-negative: ${occurrenceIndex}`);
+
+  let startOffset = -1;
+  let searchOffset = 0;
+
+  for (let index = 0; index <= occurrenceIndex; index += 1) {
+    startOffset = text.indexOf(token, searchOffset);
+    if (startOffset === -1) {
+      break;
+    }
+
+    searchOffset = startOffset + token.length;
+  }
+
+  assert.notEqual(startOffset, -1, `token not found in text: ${token} [${occurrenceIndex}]`);
+  return startOffset;
 }
 
 function toOffset(text, position) {
