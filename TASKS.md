@@ -515,9 +515,14 @@
   - v1 では shared spec schema に per-scope / per-kind occurrence override を追加せず、shadow hover / signature は package-local のまま残す判断を固定した
   - shared 化を再検討する条件を「shadow fixture topology を寄せられたとき」または「同種の per-scope occurrence 差分が別 family でも増えたとき」として整理した
 
-- [ ] workbook root family の shadow fixture topology をそろえる条件を整理する
-  - extension の `ApplicationWorkbookRootBuiltIn.bas` と server の shadow 専用 inline fixture で、direct `.Value` / `.Select(` anchor の出現回数と section 構造が違うため、shared 化を進めるならどちらへ寄せるかを決める
-  - `per-scope occurrence override` を増やさずに shared 化する前提で、専用 fixture 分離・anchor 正規化・section 再配置の候補と副作用を比較する
+- [x] workbook root family の shadow fixture topology をそろえる条件を整理する
+  - [docs/process/workbook-root-shadow-fixture-topology-feasibility.md](docs/process/workbook-root-shadow-fixture-topology-feasibility.md) を追加し、extension は `Demo()` + `ShadowedApplication()` の mixed fixture、server は shadow 専用 inline fixture という topology 差を比較した
+  - `per-scope occurrence override` を shared spec schema に追加する案は不採用とし、shadow shared 化を再開するなら extension 側の shadow section を専用 fixture へ分離する案を第一候補として整理した
+  - [docs/process/README.md](docs/process/README.md) に導線を追加し、fixture topology を寄せる前に切り分ける条件を明文化した
+
+- [ ] workbook root family の shadow 専用 fixture 分離 PoC を整理する
+  - extension の `ShadowedApplication()` を別 fixture へ切り出した場合に、document 数・helper・shared spec への影響がどこまで増えるかを見積もる
+  - server 側 inline text を維持したまま同じ anchor topology を再現できるか、または canonical shadow text source が必要かを比較する
 
 ## メモ
 
