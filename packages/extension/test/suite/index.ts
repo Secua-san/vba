@@ -17,6 +17,7 @@ type WorkbookRootFamilyScope =
   | "server-worksheet-broad-root-item";
 type WorkbookRootFamilyState = "closed" | "matched" | "shadowed" | "static";
 type WorkbookRootFamilyRoute = "ole" | "shape";
+type WorkbookRootFamilySemanticFamilyName = "applicationWorkbookRoot";
 type WorkbookRootFamilyReason =
   | "code-name-selector"
   | "dynamic-selector"
@@ -25,7 +26,7 @@ type WorkbookRootFamilyReason =
   | "shadowed-root"
   | "snapshot-closed";
 
-type WorkbookRootFamilyCompletionEntryBase = {
+type WorkbookRootFamilyCaseEntryBase = {
   anchor: string;
   occurrenceIndex?: number;
   reason?: WorkbookRootFamilyReason;
@@ -33,11 +34,12 @@ type WorkbookRootFamilyCompletionEntryBase = {
   state?: WorkbookRootFamilyState;
 };
 
-type WorkbookRootFamilyPositiveCompletionEntry = WorkbookRootFamilyCompletionEntryBase & {
+type WorkbookRootFamilyPositiveCompletionEntry = WorkbookRootFamilyCaseEntryBase & {
   route: WorkbookRootFamilyRoute;
 };
 
-type WorkbookRootFamilyNegativeCompletionEntry = WorkbookRootFamilyCompletionEntryBase;
+type WorkbookRootFamilyNegativeCompletionEntry = WorkbookRootFamilyCaseEntryBase;
+type WorkbookRootFamilyInteractionEntry = WorkbookRootFamilyCaseEntryBase;
 
 type WorkbookRootFamilySemanticEntry = {
   anchor: string;
@@ -55,15 +57,31 @@ type WorkbookRootFamilyCaseTables = {
       negative: readonly WorkbookRootFamilyNegativeCompletionEntry[];
       positive: readonly WorkbookRootFamilyPositiveCompletionEntry[];
     };
+    hover: {
+      negative: readonly WorkbookRootFamilyInteractionEntry[];
+      positive: readonly WorkbookRootFamilyInteractionEntry[];
+    };
     semantic: {
       negative: readonly WorkbookRootFamilySemanticEntry[];
       positive: readonly WorkbookRootFamilySemanticEntry[];
+    };
+    signature: {
+      negative: readonly WorkbookRootFamilyInteractionEntry[];
+      positive: readonly WorkbookRootFamilyInteractionEntry[];
     };
   };
   worksheetBroadRoot: {
     completion: {
       negative: readonly WorkbookRootFamilyNegativeCompletionEntry[];
       positive: readonly WorkbookRootFamilyPositiveCompletionEntry[];
+    };
+    hover: {
+      negative: readonly WorkbookRootFamilyInteractionEntry[];
+      positive: readonly WorkbookRootFamilyInteractionEntry[];
+    };
+    signature: {
+      negative: readonly WorkbookRootFamilyInteractionEntry[];
+      positive: readonly WorkbookRootFamilyInteractionEntry[];
     };
   };
 };
@@ -1802,42 +1820,22 @@ export async function run(): Promise<void> {
     getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "positive", { scope: "extension" }),
     (entry) => `${entry.anchor} は control owner へ解決する`
   );
-  const broadRootMatchedHoverChecks = [
-    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Worksheets("Sheet One") の OLEObject.Object hover は control owner へ解決する'],
-    ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu', 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'],
-    ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', 'Worksheets("Sheet One") の Shape.OLEFormat.Object hover は control owner へ解決する'],
-    ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu', 'Worksheets("Sheet One").Shapes.Item("CheckBox1") の hover は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu', 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu', 'Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', 'Worksheets.Item("Sheet One").Shapes("CheckBox1") の hover は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu', 'Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の hover は control owner へ解決する']
-  ] as const;
-  const broadRootMatchedSignatureChecks = [
-    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(', 'Application.Worksheets("Sheet One") の OLEObject.Object signature help は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets("Sheet One") の Shape.OLEFormat.Object signature help は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(', 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の signature help は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(', 'Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の signature help は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Worksheets.Item("Sheet One").Shapes("CheckBox1") の signature help は control owner へ解決する'],
-    ['Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") の signature help は control owner へ解決する'],
-    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する']
-  ] as const;
-  const broadRootNonTargetHoverChecks = [
-    ['Sheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Sheets root は broad root family の対象外を維持する'],
-    ['ActiveSheet.OLEObjects("CheckBox1").Object.Valu', 'ActiveSheet root は broad root family の対象外を維持する'],
-    ['Worksheets(1).OLEObjects("CheckBox1").Object.Valu', 'numeric selector の Worksheets root は broad root family の対象外を維持する'],
-    ['Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Worksheets root は broad root family の対象外を維持する'],
-    ['Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'numeric selector の Worksheets.Item root は broad root family の対象外を維持する'],
-    ['Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Worksheets.Item root は broad root family の対象外を維持する'],
-    ['Application.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'numeric selector の Application.Worksheets.Item root は broad root family の対象外を維持する'],
-    ['Application.Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Application.Worksheets.Item root は broad root family の対象外を維持する']
-  ] as const;
+  const broadRootMatchedHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "hover", "positive", { scope: "extension" }),
+    (entry) => `${entry.anchor} の hover は control owner へ解決する`
+  );
+  const broadRootMatchedSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "signature", "positive", { scope: "extension" }),
+    (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+  );
+  const broadRootNonTargetHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "hover", "negative", { scope: "extension" }),
+    (entry) => `${entry.anchor} は broad root family の対象外を維持する`
+  );
+  const broadRootNonTargetSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "signature", "negative", { scope: "extension" }),
+    (entry) => `${entry.anchor} は broad root family の対象外を維持する`
+  );
 
   await assertWorkbookRootClosedCompletionCases(
     worksheetBroadRootDocument,
@@ -1849,11 +1847,19 @@ export async function run(): Promise<void> {
   );
   await assertWorkbookRootNoHoverCases(
     worksheetBroadRootDocument,
-    broadRootMatchedHoverChecks.map(([token, message]) => [token, `no-active-workbook では ${message}`] as const)
+    broadRootMatchedHoverChecks.map(([token, message, occurrenceIndex = 0]) => [
+      token,
+      `no-active-workbook では ${message}`,
+      occurrenceIndex
+    ] as const)
   );
   await assertWorkbookRootNoSignatureCases(
     worksheetBroadRootDocument,
-    broadRootMatchedSignatureChecks.map(([token, message]) => [token, `no-active-workbook では ${message}`] as const)
+    broadRootMatchedSignatureChecks.map(([token, message, occurrenceIndex = 0]) => [
+      token,
+      `no-active-workbook では ${message}`,
+      occurrenceIndex
+    ] as const)
   );
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
@@ -1862,6 +1868,7 @@ export async function run(): Promise<void> {
     await assertWorkbookRootHoverCases(worksheetBroadRootDocument, broadRootMatchedHoverChecks);
     await assertWorkbookRootSignatureCases(worksheetBroadRootDocument, broadRootMatchedSignatureChecks);
     await assertWorkbookRootNoHoverCases(worksheetBroadRootDocument, broadRootNonTargetHoverChecks);
+    await assertWorkbookRootNoSignatureCases(worksheetBroadRootDocument, broadRootNonTargetSignatureChecks);
 
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_MISMATCHED_SNAPSHOT);
 
@@ -1875,11 +1882,19 @@ export async function run(): Promise<void> {
     );
     await assertWorkbookRootNoHoverCases(
       worksheetBroadRootDocument,
-      broadRootMatchedHoverChecks.map(([token, message]) => [token, `mismatch snapshot では ${message}`] as const)
+      broadRootMatchedHoverChecks.map(([token, message, occurrenceIndex = 0]) => [
+        token,
+        `mismatch snapshot では ${message}`,
+        occurrenceIndex
+      ] as const)
     );
     await assertWorkbookRootNoSignatureCases(
       worksheetBroadRootDocument,
-      broadRootMatchedSignatureChecks.map(([token, message]) => [token, `mismatch snapshot では ${message}`] as const)
+      broadRootMatchedSignatureChecks.map(([token, message, occurrenceIndex = 0]) => [
+        token,
+        `mismatch snapshot では ${message}`,
+        occurrenceIndex
+      ] as const)
     );
   } finally {
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
@@ -2033,30 +2048,90 @@ export async function run(): Promise<void> {
       state: "shadowed"
     }
   );
+  const applicationWorkbookStaticHoverEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "hover",
+    "positive",
+    {
+      scope: "extension",
+      state: "static"
+    }
+  );
+  const applicationWorkbookStaticSignatureEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "signature",
+    "positive",
+    {
+      scope: "extension",
+      state: "static"
+    }
+  );
+  const applicationWorkbookStaticNegativeHoverEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "hover",
+    "negative",
+    {
+      scope: "extension",
+      state: "static"
+    }
+  );
+  const applicationWorkbookStaticNegativeSignatureEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "signature",
+    "negative",
+    {
+      scope: "extension",
+      state: "static"
+    }
+  );
+  const applicationWorkbookMatchedHoverEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "hover",
+    "positive",
+    {
+      scope: "extension",
+      state: "matched"
+    }
+  );
+  const applicationWorkbookMatchedSignatureEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "signature",
+    "positive",
+    {
+      scope: "extension",
+      state: "matched"
+    }
+  );
+  const applicationWorkbookMatchedNegativeHoverEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "hover",
+    "negative",
+    {
+      scope: "extension",
+      state: "matched"
+    }
+  );
+  const applicationWorkbookMatchedNegativeSignatureEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "signature",
+    "negative",
+    {
+      scope: "extension",
+      state: "matched"
+    }
+  );
   const applicationWorkbookStaticCompletionChecks = mapExtensionWorkbookRootPositiveCompletionCases(
     applicationWorkbookStaticPositiveCompletionEntries,
     (entry) => `${entry.anchor} は control owner へ解決する`
   );
-  const applicationWorkbookStaticHoverChecks = [
-    [
-      'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu',
-      'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1") の hover は control owner へ解決する'
-    ]
-  ] as const;
-  const applicationWorkbookStaticSignatureChecks = [
-    [
-      'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-      'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
-      'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する'
-    ]
-  ] as const;
+  const applicationWorkbookStaticHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookStaticHoverEntries,
+    (entry) => `${entry.anchor} の hover は control owner へ解決する`
+  );
+  const applicationWorkbookStaticSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookStaticSignatureEntries,
+    (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+  );
   const applicationWorkbookStaticNonTargetCompletionChecks = mapExtensionWorkbookRootClosedCompletionCases(
     applicationWorkbookStaticNegativeCompletionEntries,
     (entry) =>
@@ -2064,82 +2139,32 @@ export async function run(): Promise<void> {
         ? `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
         : `${entry.anchor} は control owner に昇格しない`
   );
-  const applicationWorkbookStaticNonTargetHoverChecks = [
-    [
-      'Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Valu',
-      'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので hover を出さない'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu',
-      'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので hover を出さない'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'Application.ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので hover を出さない'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu',
-      'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので hover を出さない'
-    ],
-    [
-      'Application.Caller.OLEObjects("CheckBox1").Object.Valu',
-      'Application.Caller は workbook root family に昇格しない'
-    ],
-    [
-      'Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'Application.Range("A1") は workbook root family に昇格しない'
-    ]
-  ] as const;
-  const applicationWorkbookStaticNonTargetSignatureChecks = [
-    [
-      'Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Select(',
-      'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので signature help を出さない'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(',
-      'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので signature help を出さない'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(',
-      'Application.ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので signature help を出さない'
-    ],
-    [
-      'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
-      'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので signature help を出さない'
-    ],
-    [
-      'Application.Caller.OLEObjects("CheckBox1").Object.Select(',
-      'Application.Caller は workbook root family に昇格しない'
-    ],
-    [
-      'Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
-      'Application.Range("A1") は workbook root family に昇格しない'
-    ]
-  ] as const;
+  const applicationWorkbookStaticNonTargetHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookStaticNegativeHoverEntries.filter((entry) => entry.reason !== "snapshot-closed"),
+    (entry) =>
+      entry.reason === "non-target-root"
+        ? `${entry.anchor} は workbook root family に昇格しない`
+        : `${entry.anchor} は control owner に昇格しない`
+  );
+  const applicationWorkbookStaticNonTargetSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookStaticNegativeSignatureEntries.filter((entry) => entry.reason !== "snapshot-closed"),
+    (entry) =>
+      entry.reason === "non-target-root"
+        ? `${entry.anchor} は workbook root family に昇格しない`
+        : `${entry.anchor} は control owner に昇格しない`
+  );
   const applicationWorkbookClosedCompletionChecks = mapExtensionWorkbookRootClosedCompletionCases(
     applicationWorkbookMatchedPositiveCompletionEntries,
     (entry) => `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
   );
-  const applicationWorkbookClosedHoverChecks = [
-    [
-      'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu',
-      'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'
-    ]
-  ] as const;
-  const applicationWorkbookClosedSignatureChecks = [
-    [
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
-    ]
-  ] as const;
+  const applicationWorkbookClosedHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookStaticNegativeHoverEntries.filter((entry) => entry.reason === "snapshot-closed"),
+    (entry) => `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+  );
+  const applicationWorkbookClosedSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookStaticNegativeSignatureEntries.filter((entry) => entry.reason === "snapshot-closed"),
+    (entry) => `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+  );
 
   await assertWorkbookRootCompletionCases(applicationWorkbookRootDocument, applicationWorkbookStaticCompletionChecks);
   await assertWorkbookRootHoverCases(applicationWorkbookRootDocument, applicationWorkbookStaticHoverChecks);
@@ -2164,7 +2189,7 @@ export async function run(): Promise<void> {
     applicationWorkbookRootDocument.getText(),
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootSemanticCases(
-      getSharedWorkbookRootSemanticEntries("positive", {
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
         scope: "extension",
         state: "static"
       }),
@@ -2175,7 +2200,7 @@ export async function run(): Promise<void> {
     applicationWorkbookRootDocument.getText(),
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootNoSemanticCases(
-      getSharedWorkbookRootSemanticEntries("negative", {
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
         scope: "extension",
         state: "static"
       }),
@@ -2192,66 +2217,32 @@ export async function run(): Promise<void> {
     applicationWorkbookMatchedPositiveCompletionEntries,
     (entry) => `${entry.anchor} は control owner へ解決する`
   );
-  const applicationWorkbookMatchedHoverChecks = [
-    [
-      'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu',
-      'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する'
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1") の hover は control owner へ解決する'
-    ]
-  ] as const;
-  const applicationWorkbookMatchedSignatureChecks = [
-    [
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
-      'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する'
-    ]
-  ] as const;
+  const applicationWorkbookMatchedHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookMatchedHoverEntries,
+    (entry) => `${entry.anchor} の hover は control owner へ解決する`
+  );
+  const applicationWorkbookMatchedSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookMatchedSignatureEntries,
+    (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+  );
   const applicationWorkbookMatchedNonTargetCompletionChecks = mapExtensionWorkbookRootClosedCompletionCases(
     applicationWorkbookMatchedNegativeCompletionEntries,
     (entry) => `${entry.anchor} は control owner に昇格しない`
   );
-  const applicationWorkbookMatchedNonTargetHoverChecks = [
-    [
-      'Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Valu',
-      'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので hover を出さない'
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'Application.ActiveWorkbook.Worksheets(1) は numeric selector なので hover を出さない'
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので hover を出さない'
-    ],
-    [
-      'Application.Caller.OLEObjects("CheckBox1").Object.Valu',
-      'snapshot 一致後も Application.Caller は workbook root family に昇格しない'
-    ],
-    [
-      'Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない'
-    ]
-  ] as const;
-  const applicationWorkbookMatchedNonTargetSignatureChecks = [
-    [
-      'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
-      'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので signature help を出さない'
-    ],
-    [
-      'Application.Caller.OLEObjects("CheckBox1").Object.Select(',
-      'snapshot 一致後も Application.Caller は workbook root family に昇格しない'
-    ],
-    [
-      'Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
-      'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない'
-    ]
-  ] as const;
+  const applicationWorkbookMatchedNonTargetHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookMatchedNegativeHoverEntries,
+    (entry) =>
+      entry.reason === "non-target-root"
+        ? `snapshot 一致後も ${entry.anchor} は workbook root family に昇格しない`
+        : `${entry.anchor} は control owner に昇格しない`
+  );
+  const applicationWorkbookMatchedNonTargetSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookMatchedNegativeSignatureEntries,
+    (entry) =>
+      entry.reason === "non-target-root"
+        ? `snapshot 一致後も ${entry.anchor} は workbook root family に昇格しない`
+        : `${entry.anchor} は control owner に昇格しない`
+  );
   const applicationWorkbookMatchedShadowCompletionChecks = mapExtensionWorkbookRootClosedCompletionCases(
     applicationWorkbookShadowedCompletionEntries,
     (entry) => `${entry.anchor} は control owner に昇格しない`
@@ -2295,7 +2286,7 @@ export async function run(): Promise<void> {
     applicationWorkbookRootDocument.getText(),
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootSemanticCases(
-      getSharedWorkbookRootSemanticEntries("positive", {
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
         scope: "extension",
         state: "matched"
       }),
@@ -2306,7 +2297,7 @@ export async function run(): Promise<void> {
     applicationWorkbookRootDocument.getText(),
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootNoSemanticCases(
-      getSharedWorkbookRootSemanticEntries("negative", {
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
         scope: "extension",
         state: "matched"
       }),
@@ -4564,11 +4555,30 @@ function getSharedWorkbookRootCompletionEntries(
 }
 
 function getSharedWorkbookRootSemanticEntries(
+  familyName: WorkbookRootFamilySemanticFamilyName,
   polarity: "negative" | "positive",
   options: { scope?: WorkbookRootFamilyScope; state?: WorkbookRootFamilyState } = {}
 ): readonly WorkbookRootFamilySemanticEntry[] {
   const { scope, state } = options;
-  return workbookRootFamilyCaseTables.applicationWorkbookRoot.semantic[polarity].filter((entry) => {
+  return workbookRootFamilyCaseTables[familyName].semantic[polarity].filter((entry) => {
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    if (state && entry.state !== state) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function getSharedWorkbookRootInteractionEntries(
+  familyName: keyof WorkbookRootFamilyCaseTables,
+  interactionKind: "hover" | "signature",
+  polarity: "negative" | "positive",
+  options: { scope?: WorkbookRootFamilyScope; state?: WorkbookRootFamilyState } = {}
+): readonly WorkbookRootFamilyInteractionEntry[] {
+  const { scope, state } = options;
+  return workbookRootFamilyCaseTables[familyName][interactionKind][polarity].filter((entry) => {
     if (scope && !entry.scopes.includes(scope)) {
       return false;
     }
@@ -4594,10 +4604,18 @@ function mapExtensionWorkbookRootPositiveCompletionCases(
 }
 
 function mapExtensionWorkbookRootClosedCompletionCases(
-  entries: readonly WorkbookRootFamilyCompletionEntryBase[],
-  messageBuilder: (entry: WorkbookRootFamilyCompletionEntryBase) => string
+  entries: readonly WorkbookRootFamilyCaseEntryBase[],
+  messageBuilder: (entry: WorkbookRootFamilyCaseEntryBase) => string
 ): readonly WorkbookRootClosedCompletionCase[] {
   assert.ok(entries.length > 0, "workbook root closed completion shared cases must not be empty");
+  return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
+}
+
+function mapExtensionWorkbookRootInteractionCases(
+  entries: readonly WorkbookRootFamilyInteractionEntry[],
+  messageBuilder: (entry: WorkbookRootFamilyInteractionEntry) => string
+): readonly WorkbookRootHoverCase[] {
+  assert.ok(entries.length > 0, "workbook root interaction shared cases must not be empty");
   return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 
