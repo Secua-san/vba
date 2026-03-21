@@ -2026,18 +2026,18 @@ function resolveBuiltinMemberOwnerForPath(
     line
   });
   const normalizedRootSegment = stripIndexedAccessMarker(rootSegment);
-  const effectiveRootResolution = shouldIgnoreWorkbookRootFamilyResolution(rootResolution, normalizedRootSegment, pathSegmentDetails)
-    ? undefined
-    : rootResolution;
+  const ignoredTypeWorkbookRootFamilyContext = getIgnoredTypeWorkbookRootFamilyBuiltinContext(
+    uri,
+    rootResolution,
+    normalizedRootSegment,
+    pathSegmentDetails,
+    getDocumentState
+  );
+  const effectiveRootResolution = ignoredTypeWorkbookRootFamilyContext ? undefined : rootResolution;
 
   const builtinContext =
-    getWorkbookRootFamilyBuiltinContext(
-      uri,
-      effectiveRootResolution,
-      normalizedRootSegment,
-      pathSegmentDetails,
-      getDocumentState
-    ) ??
+    ignoredTypeWorkbookRootFamilyContext ??
+    getWorkbookRootFamilyBuiltinContext(uri, effectiveRootResolution, normalizedRootSegment, pathSegmentDetails, getDocumentState) ??
     (effectiveRootResolution
       ? getDocumentModuleBuiltinContext(effectiveRootResolution, normalizedRootSegment, getDocumentState)
       : undefined);
@@ -2059,16 +2059,18 @@ function resolveBuiltinMemberOwnerForPath(
   return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, adjustedMemberSegments);
 }
 
-function shouldIgnoreWorkbookRootFamilyResolution(
+function getIgnoredTypeWorkbookRootFamilyBuiltinContext(
+  uri: string,
   resolution: WorkspaceSymbolResolution | undefined,
   rootSegment: string,
-  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined
-): boolean {
-  if (!resolution || !resolveWorkbookRootFamilyPath(rootSegment, pathSegmentDetails)) {
-    return false;
+  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
+): DocumentModuleBuiltinContext | undefined {
+  if (!resolution || (resolution.symbol.kind !== "type" && resolution.symbol.kind !== "enum")) {
+    return undefined;
   }
 
-  return resolution.symbol.kind === "type" || resolution.symbol.kind === "enum";
+  return getWorkbookRootFamilyBuiltinContext(uri, undefined, rootSegment, pathSegmentDetails, getDocumentState);
 }
 
 function getDocumentModuleBuiltinOwnerName(

@@ -1693,20 +1693,6 @@ export async function run(): Promise<void> {
   );
   await vscode.window.showTextDocument(worksheetBroadRootDocument);
 
-  const broadRootClosedCompletionChecks = [
-    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'unqualified Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'Application.Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'unqualified Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', 'Application.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Application.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
-  ] as const;
   const broadRootMatchedCompletionChecks = [
     ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'CheckBox property', "Activate", 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
     ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'CheckBox property', "Activate", 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
@@ -1762,9 +1748,18 @@ export async function run(): Promise<void> {
     ['Application.Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Application.Worksheets.Item root は broad root family の対象外を維持する']
   ] as const;
 
-  await assertWorkbookRootClosedCompletionCases(worksheetBroadRootDocument, broadRootClosedCompletionChecks);
-  await assertWorkbookRootNoHoverCases(worksheetBroadRootDocument, broadRootMatchedHoverChecks);
-  await assertWorkbookRootNoSignatureCases(worksheetBroadRootDocument, broadRootMatchedSignatureChecks);
+  await assertWorkbookRootClosedCompletionCases(
+    worksheetBroadRootDocument,
+    broadRootMatchedCompletionChecks.map(([token, , , message]) => [token, `no-active-workbook では ${message}`] as const)
+  );
+  await assertWorkbookRootNoHoverCases(
+    worksheetBroadRootDocument,
+    broadRootMatchedHoverChecks.map(([token, message]) => [token, `no-active-workbook では ${message}`] as const)
+  );
+  await assertWorkbookRootNoSignatureCases(
+    worksheetBroadRootDocument,
+    broadRootMatchedSignatureChecks.map(([token, message]) => [token, `no-active-workbook では ${message}`] as const)
+  );
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
   try {
@@ -1887,7 +1882,7 @@ export async function run(): Promise<void> {
   );
   const applicationWorkbookThisWorkbookDefinitions = await waitForDefinitions(
     applicationWorkbookRootDocument,
-    findPositionAfterToken(applicationWorkbookRootDocument, "ThisWorkbook", -1),
+    findPositionAfterToken(applicationWorkbookRootDocument, "Application.ThisWorkbook", -1),
     (locations) =>
       locations.some((location) => location.uri.toString() === applicationWorkbookThisWorkbookDocument.uri.toString())
   );
