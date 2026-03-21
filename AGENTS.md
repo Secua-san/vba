@@ -44,6 +44,6 @@
 - 外部 MCP サーバー呼び出しは共通の retry / rate-limit 層を必ず通し、`429` 検知、`Retry-After` 優先、未指定時の指数バックオフ + ジッター、呼び出し間隔制御、同一問い合わせの重複抑止、対象 MCP 名を含む retry / wait / 最終失敗理由ログを実装する
 - 同じ論点を繰り返し検討して進まない場合は、`docs/process/sub-agent-escalation.md` に従ってサブエージェントへ切り替える
 - `reviewer` が利用できない場合は、`C:\Users\tagi0\.codex\config.toml` と `C:\Users\tagi0\.codex\agents\reviewer.toml` を確認し、設定を直してから PR 作成へ進む
-- CodeRabbit レビュー確認後は、`docs/process/coderabbit-review-summaries.md` の案内に従って当月ログへ要約と横展開候補を追記する
+- CodeRabbit レビュー記録を残す場合は `docs/process/coderabbit-review-logs/YYYY-MM.md` に直接追記し、ログは参照用ではなく記録専用として扱う
 - 自己レビューと CodeRabbit の重複指摘、および `required` / `optional` の判断は `docs/process/coderabbit-review.md` の正本ルールに従う
 - ルール変更時は重複記載を増やさず、正本ドキュメントを更新する

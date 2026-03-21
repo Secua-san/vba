@@ -33,8 +33,7 @@
 - PR 作成前に、主担当とは別視点のサブエージェントレビューを最低 1 回実施する
 - 既定の担当は `reviewer` とし、確認観点は「回帰」「境界条件」「テスト不足」「不要差分」とする
 - `reviewer` が使えない場合は設定不整合として扱い、`C:\Users\tagi0\.codex\config.toml` と `C:\Users\tagi0\.codex\agents\reviewer.toml` を確認してから作業を再開する
-- PR 前レビューの結果要約は `docs/process/coderabbit-review-summaries.md` の案内に従って当月ログへ追記する
-- 指摘が 0 件でも結果を要約して記録し、PR 本文作成に進む
+- 指摘が 0 件でも結果を要約してから PR 本文作成に進む
 - 重大な指摘が残る場合は PR を作成せず、先に修正する
 - PR 前レビューの指摘と CodeRabbit の指摘が同一論点で重なった場合は、`docs/process/coderabbit-review.md` の重複指摘ルールに従って原則修正する
 - `required` / `optional` のような運用上の挙動差の判断基準も、`docs/process/coderabbit-review.md` を正本として扱う
