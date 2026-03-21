@@ -1364,10 +1364,6 @@ End Function`;
     ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(', "Select(Replace) As Object", 'Application.Worksheets("Sheet One") の OLEObject.Object signature help は control owner へ解決する'],
     ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', "Select(Replace) As Object", 'Application.Worksheets("Sheet One") の Shape.OLEFormat.Object signature help は control owner へ解決する']
   ];
-  const mismatchedClosedChecks = [
-    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'mismatch snapshot では Worksheets("Sheet One").OLEObjects("CheckBox1") broad root を開かない'],
-    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'mismatch snapshot では Application.Worksheets("Sheet One").OLEObjects("CheckBox1") broad root を開かない']
-  ];
 
   try {
     for (const [token, symbolName, message] of closedCompletionChecks) {
@@ -1412,36 +1408,61 @@ End Function`;
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 
-    for (const [token, symbolName, message] of mismatchedClosedChecks) {
-      assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    for (const [token, symbolName] of closedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `mismatch snapshot では ${token} broad root を開かない`
+      );
     }
-    assert.equal(getHoverAfterToken(service, uri, text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'), undefined);
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('
-      ),
-      undefined
-    );
+    for (const [token, symbolName] of nonTargetCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `mismatch snapshot でも ${token} は broad root family の対象外を維持する`
+      );
+    }
+    for (const [token] of hoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `mismatch snapshot では ${token} hover を出さない`);
+    }
+    for (const [token] of signatureChecks) {
+      assert.equal(
+        getSignatureHelpAfterToken(service, uri, text, token),
+        undefined,
+        `mismatch snapshot では ${token} signature help を出さない`
+      );
+    }
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
-    assert.equal(
-      hasCompletionSymbolAfterToken(service, uri, text, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value"),
-      false
-    );
-    assert.equal(getHoverAfterToken(service, uri, text, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'), undefined);
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('
-      ),
-      undefined
-    );
+    for (const [token, symbolName] of closedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `unavailable snapshot では ${token} broad root を開かない`
+      );
+    }
+    for (const [token, symbolName] of nonTargetCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `unavailable snapshot でも ${token} は broad root family の対象外を維持する`
+      );
+    }
+    for (const [token] of hoverChecks) {
+      assert.equal(
+        getHoverAfterToken(service, uri, text, token),
+        undefined,
+        `unavailable snapshot では ${token} hover を出さない`
+      );
+    }
+    for (const [token] of signatureChecks) {
+      assert.equal(
+        getSignatureHelpAfterToken(service, uri, text, token),
+        undefined,
+        `unavailable snapshot では ${token} signature help を出さない`
+      );
+    }
   } finally {
     cleanup();
   }
@@ -1479,6 +1500,14 @@ End Sub`;
     ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
     ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
   ];
+  const matchedHoverChecks = [
+    'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu',
+    'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
+  ];
+  const matchedSignatureChecks = [
+    'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
+    'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
+  ];
 
   try {
     for (const [token, symbolName, message] of closedCompletionChecks) {
@@ -1491,36 +1520,12 @@ End Sub`;
       assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
       assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, forbiddenSymbolName), false, message);
     }
-    assert.equal(
-      getHoverAfterToken(service, uri, text, 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu')?.contents.includes(
-        "CheckBox.Value"
-      ),
-      true
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
-      )?.label,
-      "Select(Replace) As Object"
-    );
-    assert.equal(
-      getHoverAfterToken(service, uri, text, 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu')?.contents.includes(
-        "CheckBox.Value"
-      ),
-      true
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-      )?.label,
-      "Select(Replace) As Object"
-    );
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes("CheckBox.Value"), true);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, "Select(Replace) As Object");
+    }
     assert.equal(
       hasCompletionSymbolAfterToken(
         service,
@@ -1559,22 +1564,47 @@ End Sub`;
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.',
-        "Value"
-      ),
-      false,
-      'mismatch snapshot では Worksheets("Sheet One").OLEObjects.Item("CheckBox1") broad root を開かない'
-    );
-    assert.equal(
-      getHoverAfterToken(service, uri, text, 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'),
-      undefined,
-      'mismatch snapshot では Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") broad root を開かない'
-    );
+    for (const [token, symbolName] of closedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `mismatch snapshot では ${token} broad root を開かない`
+      );
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `mismatch snapshot では ${token} hover を出さない`);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(
+        getSignatureHelpAfterToken(service, uri, text, token),
+        undefined,
+        `mismatch snapshot では ${token} signature help を出さない`
+      );
+    }
+
+    service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
+
+    for (const [token, symbolName] of closedCompletionChecks) {
+      assert.equal(
+        hasCompletionSymbolAfterToken(service, uri, text, token, symbolName),
+        false,
+        `unavailable snapshot では ${token} broad root を開かない`
+      );
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(
+        getHoverAfterToken(service, uri, text, token),
+        undefined,
+        `unavailable snapshot では ${token} hover を出さない`
+      );
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(
+        getSignatureHelpAfterToken(service, uri, text, token),
+        undefined,
+        `unavailable snapshot では ${token} signature help を出さない`
+      );
+    }
   } finally {
     cleanup();
   }
@@ -4907,19 +4937,24 @@ function createWorksheetBroadRootFixture(text) {
   const moduleDirectory = path.join(bundleRoot, "modules");
   const uri = pathToFileURL(path.join(moduleDirectory, "Module1.bas")).href;
 
-  mkdirSync(moduleDirectory, { recursive: true });
-  writeDefaultWorksheetBroadRootArtifacts(bundleRoot);
+  try {
+    mkdirSync(moduleDirectory, { recursive: true });
+    writeDefaultWorksheetBroadRootArtifacts(bundleRoot);
 
-  const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
-  service.analyzeText(uri, "vba", 1, text);
+    const service = createDocumentService({ workspaceRoots: [workspaceRoot] });
+    service.analyzeText(uri, "vba", 1, text);
 
-  return {
-    service,
-    uri,
-    cleanup() {
-      rmSync(temporaryDirectory, { force: true, recursive: true });
-    }
-  };
+    return {
+      service,
+      uri,
+      cleanup() {
+        rmSync(temporaryDirectory, { force: true, recursive: true });
+      }
+    };
+  } catch (error) {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
+    throw error;
+  }
 }
 
 function writeDefaultWorksheetBroadRootArtifacts(bundleRoot) {
