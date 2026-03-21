@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] ドキュメント導線と CodeRabbit 記録の整理
+  - `docs/README.md` と `docs/process/README.md` を、「最初に読む正本」と「必要なときだけ開く機能別メモ」に整理し、入口からの参照階層を浅くした
+  - `docs/process/coderabbit-review.md` を正本に寄せ、CodeRabbit 月次ログは `docs/process/coderabbit-review-logs/YYYY-MM.md` へ直接記録する方式に変え、案内用の中継ページを廃止した
+  - `docs/process/mslearn-signature-regeneration.md`、`docs/process/sub-agent-escalation.md`、`AGENTS.md` からレビュー記録まわりの重複説明を削り、ログは記録専用で参照しない方針にそろえた
+
 - [x] Worksheet control metadata sidecar artifact の仕様整理
   - sidecar 正本パスを `<bundle-root>/.vba/worksheet-control-metadata.json` に固定し、nearest ancestor lookup と workspace root での打ち切り規則を [docs/process/worksheet-control-metadata-sidecar-artifact.md](docs/process/worksheet-control-metadata-sidecar-artifact.md) に整理した
   - `owners[]` に `worksheet` / `chartsheet` を統一し、未対応 owner を `status: "unsupported"` と `reason` 付き record で表す schema v1 を定義した
@@ -70,7 +75,7 @@
 
 - [x] ドキュメント導線とレビュー履歴の整理
   - `docs/README.md`、`docs/process/README.md`、`docs/adr/README.md` を追加し、入口から要件、ADR、運用詳細へ辿る導線を整理
-  - `docs/process/coderabbit-review-summaries.md` を軽い案内ページへ変更し、実ログを `docs/process/coderabbit-review-logs/2026-03.md` へ分割してレビュー履歴の肥大化を抑制
+  - CodeRabbit 実ログを `docs/process/coderabbit-review-logs/2026-03.md` へ分割し、レビュー履歴の肥大化を抑制
   - `README.md`、`AGENTS.md`、関連運用文書の参照先を新しい入口へ寄せ、重複記載を削減
 
 - [x] DialogSheet common callable の最小プロトタイプ
@@ -151,8 +156,8 @@
   - `Choose` の可変長必須引数と `Transpose` の単一必須引数を server / extension テストで回帰確認
   - `XLookup` / `XMATCH` / `Address` は現行 Learn JSON で確認できなかったため、次候補で再整理する
 
-- [x] CodeRabbit レビュー要約ログ運用の追加
-  - `docs/process/coderabbit-review-summaries.md` を新規追加し、PR ごとのレビュー要約テンプレートと記録を追加
+- [x] CodeRabbit レビュー記録運用の追加
+  - CodeRabbit の月次記録テンプレートを整備し、PR ごとのレビュー記録を開始した
   - 要約には「この作業で当てはまりそうな内容（横展開候補）」を必須項目として定義
   - `docs/process/coderabbit-review.md` / `docs/process/sub-agent-escalation.md` / `AGENTS.md` にログ追記ルールを反映
 
