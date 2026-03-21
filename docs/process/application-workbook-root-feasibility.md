@@ -6,6 +6,7 @@
 - `Application.ActiveWorkbook.Worksheets("SheetName")` と `Application.ActiveWorkbook.Worksheets.Item("SheetName")` は、`ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` と同じ active-workbook broad-root family として扱ってよい。
 - `Application` qualifier を付けても workbook identity の意味は変わらないため、`OLEObject.Object` と `Shape.OLEFormat.Object` は direct root と同じ条件で同時に開閉するべきである。
 - ただし `Application` 自体が user-defined symbol に shadow される場合は built-in family に入れず、sidecar lookup は無効のまま維持する。
+- module-level の `Type Application` / `Enum Application` のような type-only symbol は value root としては扱わず、`Application.ThisWorkbook` / `Application.ActiveWorkbook` family を塞がない。
 - 今回は policy の整理までとし、user-facing の最小接続は後続タスクへ分離する。
 
 ## 確認した公式ソース
@@ -68,6 +69,8 @@
 - `codeName` selector
 - numeric selector
 - dynamic selector
+- `Application.Caller`
+- `Application.Range(...)`
 - grouped selector
 - `Sheets`
 - `ActiveSheet`
@@ -113,8 +116,12 @@
 - `Application.ThisWorkbook` は manifest / snapshot 非依存の static current-bundle family として扱い、`ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` と同じ sidecar lookup を使う。
 - `Application.ActiveWorkbook` は既存 `ActiveWorkbook` direct root と同じ manifest + snapshot gating 下だけ開き、`Application` shadow 時は workbook root family に入れない。
 - `OLEObject.Object` と `Shape.OLEFormat.Object` は qualifier 有無で分けず、completion / hover / signature help / semantic token を server / extension fixture で対称に固定した。
+- 後続の整理で `getWorkbookRootFamilyBuiltinContext()` と `resolveWorkbookRootFamilyPath()` に family 判定を集約し、`ThisWorkbook` / `ActiveWorkbook` / `Application.*` / `Worksheets` / `Application.Worksheets` の selector / gating 分岐を 1 か所で追えるようにした。
+- type-only の `Application` root 解決は workbook root family 判定の手前で無視し、module-level `Type Application` があっても `Application.ThisWorkbook` / `Application.ActiveWorkbook` の current-bundle / broad-root matrix が閉じないようにした。
+- `Application.Caller` / `Application.Range("A1")` は workbook root family に昇格しない負例を server / extension に追加し、`Application.*` selector の将来拡張でも broad-root family に誤接続しない境界を固定した。
+- server / extension の workbook root matrix は配列駆動 helper を通す形に寄せ、current-bundle family と broad-root family の対称ケース追加時に重複 loop を増やさない構成へ整理した。
 
 ## 次段の候補
 
-- workbook root family の resolver を shared helper へ寄せ、`ThisWorkbook` / `ActiveWorkbook` / `Application.*` / unqualified `Worksheets` の selector / shadow / gating 条件を 1 か所で見られるようにする。
-- server / extension の workbook root matrix を配列駆動 helper へ寄せ、current-bundle family と broad-root family の対称ケース追加をしやすくする。
+- workbook root family の semantic token assert と fixture 依存の line number を helper へ寄せ、current-bundle family / broad-root family 追加時の保守点を減らす。
+- workbook root family fixture を token ベースで追いやすく整え、`WorksheetBroadRootBuiltIn.bas` と `ApplicationWorkbookRootBuiltIn.bas` の line number 追従コストを下げる。
