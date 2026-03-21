@@ -55,12 +55,22 @@
   - signature positive / negative
   - semantic positive / negative
 
+現時点の適用範囲:
+
+- `WorksheetBroadRootBuiltIn.bas` / `ApplicationWorkbookRootBuiltIn.bas` の completion / semantic は shared 化済み
+- hover / signature も、positive と non-shadow negative は shared 化する
+- shadow hover / signature は package-local のまま残す
+  - extension 側は fixture 内に先行出現があるため `occurrenceIndex = 1`
+  - server 側は shadow 専用 fixture で `occurrenceIndex = 0`
+  - shared spec に per-scope occurrence override を持ち込むより、現段階では local のほうが読みやすい
+
 package-local adapter に残す対象:
 
 - server 側の `symbol.name`
 - extension 側の `CompletionItem.detail` fragment
 - package ごとの failure message
 - decoded token / hover / signature help の最終 assertion shape
+- shadow hover / signature の occurrence 差分
 
 ### 4. duplicated string のうち、shared 化対象は「fixture と 1 対 1 に対応する anchor」だけにする
 

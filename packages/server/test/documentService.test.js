@@ -1363,14 +1363,26 @@ End Function`;
     broadRootDirectNegativeCompletionEntries,
     (entry) => `${entry.anchor} は broad root family の対象外を維持する`
   );
-  const hoverChecks = [
-    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', "CheckBox.Value", 'Worksheets("Sheet One") の OLEObject.Object hover は control owner へ解決する'],
-    ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', "CheckBox.Value", 'Worksheets("Sheet One") の Shape.OLEFormat.Object hover は control owner へ解決する']
-  ];
-  const signatureChecks = [
-    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(', "Select(Replace) As Object", 'Application.Worksheets("Sheet One") の OLEObject.Object signature help は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', "Select(Replace) As Object", 'Application.Worksheets("Sheet One") の Shape.OLEFormat.Object signature help は control owner へ解決する']
-  ];
+  const hoverChecks = mapSharedWorkbookRootInteractionCases(
+    requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "hover", "positive", {
+        scope: "server-worksheet-broad-root-direct",
+        text
+      }),
+      "worksheet broad root direct positive hover cases must not be empty"
+    ),
+    (entry) => `${entry.anchor} の hover は control owner へ解決する`
+  );
+  const signatureChecks = mapSharedWorkbookRootInteractionCases(
+    requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "signature", "positive", {
+        scope: "server-worksheet-broad-root-direct",
+        text
+      }),
+      "worksheet broad root direct positive signature cases must not be empty"
+    ),
+    (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+  );
 
   try {
     for (const [token, symbolName, message] of closedCompletionChecks) {
@@ -1406,11 +1418,11 @@ End Function`;
     for (const [token, symbolName, message] of nonTargetCompletionChecks) {
       assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
     }
-    for (const [token, expectedFragment, message] of hoverChecks) {
-      assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes(expectedFragment), true, message);
+    for (const [token, message, occurrenceIndex = 0] of hoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token, occurrenceIndex)?.contents.includes("CheckBox.Value"), true, message);
     }
-    for (const [token, expectedLabel, message] of signatureChecks) {
-      assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, expectedLabel, message);
+    for (const [token, message, occurrenceIndex = 0] of signatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex)?.label, "Select(Replace) As Object", message);
     }
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
@@ -1429,12 +1441,12 @@ End Function`;
         `mismatch snapshot でも ${token} は broad root family の対象外を維持する`
       );
     }
-    for (const [token] of hoverChecks) {
-      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `mismatch snapshot では ${token} hover を出さない`);
+    for (const [token, , occurrenceIndex = 0] of hoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token, occurrenceIndex), undefined, `mismatch snapshot では ${token} hover を出さない`);
     }
-    for (const [token] of signatureChecks) {
+    for (const [token, , occurrenceIndex = 0] of signatureChecks) {
       assert.equal(
-        getSignatureHelpAfterToken(service, uri, text, token),
+        getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex),
         undefined,
         `mismatch snapshot では ${token} signature help を出さない`
       );
@@ -1456,16 +1468,16 @@ End Function`;
         `unavailable snapshot でも ${token} は broad root family の対象外を維持する`
       );
     }
-    for (const [token] of hoverChecks) {
+    for (const [token, , occurrenceIndex = 0] of hoverChecks) {
       assert.equal(
-        getHoverAfterToken(service, uri, text, token),
+        getHoverAfterToken(service, uri, text, token, occurrenceIndex),
         undefined,
         `unavailable snapshot では ${token} hover を出さない`
       );
     }
-    for (const [token] of signatureChecks) {
+    for (const [token, , occurrenceIndex = 0] of signatureChecks) {
       assert.equal(
-        getSignatureHelpAfterToken(service, uri, text, token),
+        getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex),
         undefined,
         `unavailable snapshot では ${token} signature help を出さない`
       );
@@ -1518,28 +1530,36 @@ End Sub`;
     broadRootItemPositiveCompletionEntries,
     (entry) => `${entry.anchor} は control owner へ解決する`
   );
-  const matchedHoverChecks = [
-    'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu',
-    'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu',
-    'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu',
-    'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
-  ];
-  const matchedSignatureChecks = [
-    'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-    'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
-    'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
-    'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-  ];
+  const matchedHoverChecks = mapSharedWorkbookRootInteractionCases(
+    requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "hover", "positive", {
+        scope: "server-worksheet-broad-root-item",
+        text
+      }),
+      "worksheet broad root item positive hover cases must not be empty"
+    ),
+    (entry) => `${entry.anchor} の hover は control owner へ解決する`
+  );
+  const matchedSignatureChecks = mapSharedWorkbookRootInteractionCases(
+    requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "signature", "positive", {
+        scope: "server-worksheet-broad-root-item",
+        text
+      }),
+      "worksheet broad root item positive signature cases must not be empty"
+    ),
+    (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+  );
 
   try {
     for (const [token, symbolName, message] of closedCompletionChecks) {
       assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
     }
-    for (const token of matchedHoverChecks) {
-      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} hover を出さない`);
+    for (const [token, , occurrenceIndex = 0] of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token, occurrenceIndex), undefined, `snapshot 未一致では ${token} hover を出さない`);
     }
-    for (const token of matchedSignatureChecks) {
-      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
+    for (const [token, , occurrenceIndex = 0] of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex), undefined, `snapshot 未一致では ${token} signature help を出さない`);
     }
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
@@ -1548,11 +1568,11 @@ End Sub`;
       assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
       assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, forbiddenSymbolName), false, message);
     }
-    for (const token of matchedHoverChecks) {
-      assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes("CheckBox.Value"), true);
+    for (const [token, , occurrenceIndex = 0] of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token, occurrenceIndex)?.contents.includes("CheckBox.Value"), true);
     }
-    for (const token of matchedSignatureChecks) {
-      assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, "Select(Replace) As Object");
+    for (const [token, , occurrenceIndex = 0] of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex)?.label, "Select(Replace) As Object");
     }
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
@@ -1564,12 +1584,12 @@ End Sub`;
         `mismatch snapshot では ${token} broad root を開かない`
       );
     }
-    for (const token of matchedHoverChecks) {
-      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `mismatch snapshot では ${token} hover を出さない`);
+    for (const [token, , occurrenceIndex = 0] of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token, occurrenceIndex), undefined, `mismatch snapshot では ${token} hover を出さない`);
     }
-    for (const token of matchedSignatureChecks) {
+    for (const [token, , occurrenceIndex = 0] of matchedSignatureChecks) {
       assert.equal(
-        getSignatureHelpAfterToken(service, uri, text, token),
+        getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex),
         undefined,
         `mismatch snapshot では ${token} signature help を出さない`
       );
@@ -1584,16 +1604,16 @@ End Sub`;
         `unavailable snapshot では ${token} broad root を開かない`
       );
     }
-    for (const token of matchedHoverChecks) {
+    for (const [token, , occurrenceIndex = 0] of matchedHoverChecks) {
       assert.equal(
-        getHoverAfterToken(service, uri, text, token),
+        getHoverAfterToken(service, uri, text, token, occurrenceIndex),
         undefined,
         `unavailable snapshot では ${token} hover を出さない`
       );
     }
-    for (const token of matchedSignatureChecks) {
+    for (const [token, , occurrenceIndex = 0] of matchedSignatureChecks) {
       assert.equal(
-        getSignatureHelpAfterToken(service, uri, text, token),
+        getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex),
         undefined,
         `unavailable snapshot では ${token} signature help を出さない`
       );
@@ -2249,12 +2269,46 @@ End Type`;
       applicationOleStaticPositiveEntries,
       (entry) => `${entry.anchor} は control owner へ解決する`
     );
-    const staticHoverCases = [
-      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する']
-    ];
-    const staticSignatureCases = [
-      ['Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する']
-    ];
+    const applicationOleStaticHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "positive", {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }),
+      "application workbook root OLE static positive hover cases must not be empty"
+    );
+    const applicationOleStaticSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "positive", {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }),
+      "application workbook root OLE static positive signature cases must not be empty"
+    );
+    const applicationOleStaticNegativeHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "negative", {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }),
+      "application workbook root OLE static negative hover cases must not be empty"
+    );
+    const applicationOleStaticNegativeSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "negative", {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }),
+      "application workbook root OLE static negative signature cases must not be empty"
+    );
+    const staticHoverCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleStaticHoverEntries,
+      (entry) => `${entry.anchor} の hover は control owner へ解決する`
+    );
+    const staticSignatureCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleStaticSignatureEntries,
+      (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+    );
     const staticClosedCompletionCases = [
       ...mapSharedWorkbookRootClosedCompletionCases(
         applicationOleStaticNegativeEntries,
@@ -2268,19 +2322,24 @@ End Type`;
         (entry) => `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
       )
     ];
-    const staticNoHoverCases = [
-      ['Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので hover を出さない'],
-      ['Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので hover を出さない'],
-      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-      ['Application.Caller.OLEObjects("CheckBox1").Object.Valu', 'Application.Caller は workbook root family に昇格しない'],
-      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Valu', 'Application.Range("A1") は workbook root family に昇格しない']
-    ];
-    const staticNoSignatureCases = [
-      ['Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(', 'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので signature help を出さない'],
-      ['Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-      ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'Application.Caller は workbook root family に昇格しない'],
-      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Range("A1") は workbook root family に昇格しない']
-    ];
+    const staticNoHoverCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleStaticNegativeHoverEntries,
+      (entry) =>
+        entry.reason === "snapshot-closed"
+          ? `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+          : entry.reason === "non-target-root"
+            ? `${entry.anchor} は workbook root family に昇格しない`
+            : `${entry.anchor} は control owner に昇格しない`
+    );
+    const staticNoSignatureCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleStaticNegativeSignatureEntries,
+      (entry) =>
+        entry.reason === "snapshot-closed"
+          ? `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+          : entry.reason === "non-target-root"
+            ? `${entry.anchor} は workbook root family に昇格しない`
+            : `${entry.anchor} は control owner に昇格しない`
+    );
     const staticSemanticChecks = mapSharedWorkbookRootSemanticCases(
       requireSharedWorkbookRootEntries(
         getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
@@ -2317,27 +2376,64 @@ End Type`;
       applicationOleMatchedPositiveEntries,
       (entry) => `${entry.anchor} は control owner へ解決する`
     );
-    const matchedHoverCases = [
-      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する']
-    ];
-    const matchedSignatureCases = [
-      ['Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する']
-    ];
+    const applicationOleMatchedHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "positive", {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }),
+      "application workbook root OLE matched positive hover cases must not be empty"
+    );
+    const applicationOleMatchedSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "positive", {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }),
+      "application workbook root OLE matched positive signature cases must not be empty"
+    );
+    const applicationOleMatchedNegativeHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "negative", {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }),
+      "application workbook root OLE matched negative hover cases must not be empty"
+    );
+    const applicationOleMatchedNegativeSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "negative", {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }),
+      "application workbook root OLE matched negative signature cases must not be empty"
+    );
+    const matchedHoverCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleMatchedHoverEntries,
+      (entry) => `${entry.anchor} の hover は control owner へ解決する`
+    );
+    const matchedSignatureCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleMatchedSignatureEntries,
+      (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+    );
     const matchedClosedCompletionCases = mapSharedWorkbookRootClosedCompletionCases(
       applicationOleMatchedNegativeEntries,
       (entry) => `${entry.anchor} は control owner に昇格しない`
     );
-    const matchedNoHoverCases = [
-      ['Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので hover を出さない'],
-      ['Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので hover を出さない'],
-      ['Application.Caller.OLEObjects("CheckBox1").Object.Valu', 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
-      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Valu', 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
-    ];
-    const matchedNoSignatureCases = [
-      ['Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(', 'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので signature help を出さない'],
-      ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
-      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
-    ];
+    const matchedNoHoverCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleMatchedNegativeHoverEntries,
+      (entry) =>
+        entry.reason === "non-target-root"
+          ? `snapshot 一致後も ${entry.anchor} は workbook root family に昇格しない`
+          : `${entry.anchor} は control owner に昇格しない`
+    );
+    const matchedNoSignatureCases = mapSharedWorkbookRootInteractionCases(
+      applicationOleMatchedNegativeSignatureEntries,
+      (entry) =>
+        entry.reason === "non-target-root"
+          ? `snapshot 一致後も ${entry.anchor} は workbook root family に昇格しない`
+          : `${entry.anchor} は control owner に昇格しない`
+    );
     const matchedSemanticChecks = mapSharedWorkbookRootSemanticCases(
       requireSharedWorkbookRootEntries(
         getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
@@ -2436,6 +2532,38 @@ End Function`;
       applicationShapeStaticPositiveEntries,
       (entry) => `${entry.anchor} は control owner へ解決する`
     );
+    const applicationShapeStaticHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "positive", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      "application workbook root shape static positive hover cases must not be empty"
+    );
+    const applicationShapeStaticSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "positive", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      "application workbook root shape static positive signature cases must not be empty"
+    );
+    const applicationShapeStaticNegativeHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "negative", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      "application workbook root shape static negative hover cases must not be empty"
+    );
+    const applicationShapeStaticNegativeSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "negative", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      "application workbook root shape static negative signature cases must not be empty"
+    );
     const staticClosedCompletionCases = [
       ...mapSharedWorkbookRootClosedCompletionCases(
         applicationShapeStaticNegativeEntries,
@@ -2451,68 +2579,51 @@ End Function`;
     ];
     assertWorkbookRootCompletionCases(service, uri, text, staticCompletionCases);
     assertWorkbookRootClosedCompletionCases(service, uri, text, staticClosedCompletionCases);
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
-      )?.contents.includes("CheckBox.Value"),
-      true
+    assertWorkbookRootHoverCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeStaticHoverEntries,
+        (entry) => `${entry.anchor} の hover は control owner へ解決する`
+      )
     );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-      )?.label,
-      "Select(Replace) As Object"
+    assertWorkbookRootSignatureCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeStaticSignatureEntries,
+        (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+      )
     );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu'
-      ),
-      undefined
+    assertWorkbookRootNoHoverCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeStaticNegativeHoverEntries,
+        (entry) =>
+          entry.reason === "snapshot-closed"
+            ? `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+            : entry.reason === "non-target-root"
+              ? `${entry.anchor} は workbook root family に昇格しない`
+              : `${entry.anchor} は control owner に昇格しない`
+      )
     );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select('
-      ),
-      undefined
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-      ),
-      undefined
+    assertWorkbookRootNoSignatureCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeStaticNegativeSignatureEntries,
+        (entry) =>
+          entry.reason === "snapshot-closed"
+            ? `${entry.anchor} は snapshot 未一致の間は broad root を開かない`
+            : entry.reason === "non-target-root"
+              ? `${entry.anchor} は workbook root family に昇格しない`
+              : `${entry.anchor} は control owner に昇格しない`
+      )
     );
 
     const staticSemanticChecks = mapSharedWorkbookRootSemanticCases(
@@ -2555,52 +2666,81 @@ End Function`;
       applicationShapeMatchedNegativeEntries,
       (entry) => `${entry.anchor} は control owner に昇格しない`
     );
+    const applicationShapeMatchedHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "positive", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      "application workbook root shape matched positive hover cases must not be empty"
+    );
+    const applicationShapeMatchedSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "positive", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      "application workbook root shape matched positive signature cases must not be empty"
+    );
+    const applicationShapeMatchedNegativeHoverEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "negative", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      "application workbook root shape matched negative hover cases must not be empty"
+    );
+    const applicationShapeMatchedNegativeSignatureEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "negative", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      "application workbook root shape matched negative signature cases must not be empty"
+    );
     assertWorkbookRootCompletionCases(service, uri, text, matchedCompletionCases);
     assertWorkbookRootClosedCompletionCases(service, uri, text, matchedClosedCompletionCases);
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
-      )?.contents.includes("CheckBox.Value"),
-      true
+    assertWorkbookRootHoverCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeMatchedHoverEntries,
+        (entry) => `${entry.anchor} の hover は control owner へ解決する`
+      )
     );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-      )?.label,
-      "Select(Replace) As Object"
+    assertWorkbookRootSignatureCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeMatchedSignatureEntries,
+        (entry) => `${entry.anchor} の signature help は control owner へ解決する`
+      )
     );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Valu'
-      ),
-      undefined
+    assertWorkbookRootNoHoverCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeMatchedNegativeHoverEntries,
+        (entry) =>
+          entry.reason === "non-target-root"
+            ? `snapshot 一致後も ${entry.anchor} は workbook root family に昇格しない`
+            : `${entry.anchor} は control owner に昇格しない`
+      )
     );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select('
-      ),
-      undefined
+    assertWorkbookRootNoSignatureCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        applicationShapeMatchedNegativeSignatureEntries,
+        (entry) =>
+          entry.reason === "non-target-root"
+            ? `snapshot 一致後も ${entry.anchor} は workbook root family に昇格しない`
+            : `${entry.anchor} は control owner に昇格しない`
+      )
     );
 
     const matchedSemanticChecks = mapSharedWorkbookRootSemanticCases(
@@ -6163,6 +6303,23 @@ function getSharedWorkbookRootSemanticEntries(familyName, polarity, options = {}
   });
 }
 
+function getSharedWorkbookRootInteractionEntries(familyName, interactionKind, polarity, options = {}) {
+  const { scope, state, text } = options;
+  const normalizedText = text?.replace(/\r\n?/g, "\n");
+  return workbookRootFamilyCaseTables[familyName][interactionKind][polarity].filter((entry) => {
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    if (state && entry.state !== state) {
+      return false;
+    }
+    if (normalizedText && !normalizedText.includes(entry.anchor)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function requireSharedWorkbookRootEntries(entries, message) {
   assert.ok(entries.length > 0, message);
   return entries;
@@ -6179,6 +6336,10 @@ function mapSharedWorkbookRootPositiveCompletionCases(entries, messageBuilder) {
 
 function mapSharedWorkbookRootClosedCompletionCases(entries, messageBuilder) {
   return entries.map((entry) => [entry.anchor, "Value", messageBuilder(entry)]);
+}
+
+function mapSharedWorkbookRootInteractionCases(entries, messageBuilder) {
+  return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 
 function mapSharedWorkbookRootSemanticCases(entries, messageBuilder) {
@@ -6200,12 +6361,12 @@ function mapSharedWorkbookRootNoSemanticCases(entries, messageBuilder) {
   ]);
 }
 
-function getHoverAfterToken(service, uri, text, token) {
-  return service.getHover(uri, findPositionAfterTokenInText(text, token));
+function getHoverAfterToken(service, uri, text, token, occurrenceIndex = 0) {
+  return service.getHover(uri, findPositionAfterTokenInText(text, token, 0, occurrenceIndex));
 }
 
-function getSignatureHelpAfterToken(service, uri, text, token) {
-  return service.getSignatureHelp(uri, findPositionAfterTokenInText(text, token));
+function getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex = 0) {
+  return service.getSignatureHelp(uri, findPositionAfterTokenInText(text, token, 0, occurrenceIndex));
 }
 
 function writeWorksheetControlMetadataSidecar(bundleRoot, metadata) {

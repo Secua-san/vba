@@ -504,9 +504,15 @@
   - `packages/extension/test/suite/index.ts` では `test-support/` の CJS 正本を runtime 解決し、`CompletionItem.detail` / blocked label / async wait 条件 / failure message は local に残したまま shared spec から tuple を組み立てる形へ整理した
   - 検証として `npm run test --workspace @vba/server`、`npx tsc -p packages/extension/tsconfig.test.json`、`npm run lint`、`npm run package` を通した。`npm run test --workspace vba-extension` はこの Codex セッションで Code を使用中のため CLI 実行が弾かれた
 
-- [ ] workbook root family の hover / signature anchor shared 化を再評価する
-  - 今回は completion / semantic の canonical spec だけを抽出したため、`WorksheetBroadRootBuiltIn.bas` / `ApplicationWorkbookRootBuiltIn.bas` の hover / signature anchor も shared 化する価値があるか、diagnostic message と async wait 条件の読みやすさを崩さずに整理する
-  - 特に extension 側の `waitForNoHoverAtToken` / `waitForNoSignatureHelpAtToken` と server 側の同期 assert で、anchor だけ shared 化し message は local に残す境界を再確認する
+- [x] workbook root family の hover / signature anchor shared 化を再評価する
+  - `test-support/workbookRootFamilyCaseTables.cjs` に `hover` / `signature` の shared spec を追加し、`WorksheetBroadRootBuiltIn.bas` と `ApplicationWorkbookRootBuiltIn.bas` の positive / non-shadow negative anchor を canonical spec へ切り出した
+  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` を更新し、hover / signature も shared spec から package-local message と assertion shape を組み立てる adapter へ寄せた
+  - shadow hover / signature は extension と server で `occurrenceIndex` が異なるため local に残し、境界を [docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) に明記した
+  - 検証として `npm run test --workspace @vba/server`、`npx tsc -p packages/extension/tsconfig.test.json`、`npm run lint`、`npm run package` を通した
+
+- [ ] workbook root family の shadow hover / signature occurrence 差分を整理する
+  - extension の `ShadowedApplication` section では duplicate anchor があるため `occurrenceIndex = 1` を使い、server の shadow 専用 fixture では `occurrenceIndex = 0` のままなので、shared 化するなら fixture 構成か spec schema のどちらを寄せるかを決める
+  - shared spec に per-scope occurrence override を持ち込むか、shadow 系だけ package-local に残す現方針を固定するかを整理する
 
 ## メモ
 
