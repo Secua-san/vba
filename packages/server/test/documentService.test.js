@@ -2195,7 +2195,9 @@ Public Sub Demo()
     Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value
     Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
     Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value
+    Call Application.ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(
     Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value
+    Call Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(
     Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.
     Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value
     Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(
@@ -6232,26 +6234,26 @@ function assertWorkbookRootClosedCompletionCases(service, uri, text, cases) {
 }
 
 function assertWorkbookRootHoverCases(service, uri, text, cases, expectedFragment = "CheckBox.Value") {
-  for (const [token, message] of cases) {
-    assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes(expectedFragment), true, message);
+  for (const [token, message, occurrenceIndex = 0] of cases) {
+    assert.equal(getHoverAfterToken(service, uri, text, token, occurrenceIndex)?.contents.includes(expectedFragment), true, message);
   }
 }
 
 function assertWorkbookRootNoHoverCases(service, uri, text, cases) {
-  for (const [token, message] of cases) {
-    assert.equal(getHoverAfterToken(service, uri, text, token), undefined, message);
+  for (const [token, message, occurrenceIndex = 0] of cases) {
+    assert.equal(getHoverAfterToken(service, uri, text, token, occurrenceIndex), undefined, message);
   }
 }
 
 function assertWorkbookRootSignatureCases(service, uri, text, cases, expectedLabel = "Select(Replace) As Object") {
-  for (const [token, message] of cases) {
-    assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, expectedLabel, message);
+  for (const [token, message, occurrenceIndex = 0] of cases) {
+    assert.equal(getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex)?.label, expectedLabel, message);
   }
 }
 
 function assertWorkbookRootNoSignatureCases(service, uri, text, cases) {
-  for (const [token, message] of cases) {
-    assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, message);
+  for (const [token, message, occurrenceIndex = 0] of cases) {
+    assert.equal(getSignatureHelpAfterToken(service, uri, text, token, occurrenceIndex), undefined, message);
   }
 }
 

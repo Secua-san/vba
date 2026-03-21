@@ -274,7 +274,48 @@ const worksheetBroadRoot = {
         scopes: ["extension", "server-worksheet-broad-root-item"]
       }
     ],
-    negative: []
+    negative: [
+      {
+        anchor: 'Sheets("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+        reason: "non-target-root",
+        scopes: ["extension"]
+      },
+      {
+        anchor: 'ActiveSheet.OLEObjects("CheckBox1").Object.Select(',
+        reason: "non-target-root",
+        scopes: ["extension"]
+      },
+      {
+        anchor: 'Worksheets(1).OLEObjects("CheckBox1").Object.Select(',
+        reason: "numeric-selector",
+        scopes: ["extension"]
+      },
+      {
+        anchor: 'Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        reason: "dynamic-selector",
+        scopes: ["extension"]
+      },
+      {
+        anchor: 'Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(',
+        reason: "numeric-selector",
+        scopes: ["extension"]
+      },
+      {
+        anchor: 'Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        reason: "dynamic-selector",
+        scopes: ["extension"]
+      },
+      {
+        anchor: 'Application.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(',
+        reason: "numeric-selector",
+        scopes: ["extension"]
+      },
+      {
+        anchor: 'Application.Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        reason: "dynamic-selector",
+        scopes: ["extension"]
+      }
+    ]
   }
 };
 
@@ -662,10 +703,22 @@ const applicationWorkbookRoot = {
         scopes: ["extension", "server-application-shape"]
       },
       {
+        anchor: 'Application.ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(',
+        reason: "code-name-selector",
+        state: "matched",
+        scopes: ["extension", "server-application-ole"]
+      },
+      {
+        anchor: 'Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(',
+        reason: "numeric-selector",
+        state: "matched",
+        scopes: ["extension", "server-application-ole"]
+      },
+      {
         anchor: 'Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
         reason: "dynamic-selector",
         state: "matched",
-        scopes: ["server-application-ole"]
+        scopes: ["extension", "server-application-ole"]
       },
       {
         anchor: 'Application.Caller.OLEObjects("CheckBox1").Object.Select(',

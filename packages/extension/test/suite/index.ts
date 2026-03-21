@@ -1832,6 +1832,10 @@ export async function run(): Promise<void> {
     getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "hover", "negative", { scope: "extension" }),
     (entry) => `${entry.anchor} は broad root family の対象外を維持する`
   );
+  const broadRootNonTargetSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    getSharedWorkbookRootInteractionEntries("worksheetBroadRoot", "signature", "negative", { scope: "extension" }),
+    (entry) => `${entry.anchor} は broad root family の対象外を維持する`
+  );
 
   await assertWorkbookRootClosedCompletionCases(
     worksheetBroadRootDocument,
@@ -1843,11 +1847,19 @@ export async function run(): Promise<void> {
   );
   await assertWorkbookRootNoHoverCases(
     worksheetBroadRootDocument,
-    broadRootMatchedHoverChecks.map(([token, message]) => [token, `no-active-workbook では ${message}`] as const)
+    broadRootMatchedHoverChecks.map(([token, message, occurrenceIndex = 0]) => [
+      token,
+      `no-active-workbook では ${message}`,
+      occurrenceIndex
+    ] as const)
   );
   await assertWorkbookRootNoSignatureCases(
     worksheetBroadRootDocument,
-    broadRootMatchedSignatureChecks.map(([token, message]) => [token, `no-active-workbook では ${message}`] as const)
+    broadRootMatchedSignatureChecks.map(([token, message, occurrenceIndex = 0]) => [
+      token,
+      `no-active-workbook では ${message}`,
+      occurrenceIndex
+    ] as const)
   );
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
@@ -1856,6 +1868,7 @@ export async function run(): Promise<void> {
     await assertWorkbookRootHoverCases(worksheetBroadRootDocument, broadRootMatchedHoverChecks);
     await assertWorkbookRootSignatureCases(worksheetBroadRootDocument, broadRootMatchedSignatureChecks);
     await assertWorkbookRootNoHoverCases(worksheetBroadRootDocument, broadRootNonTargetHoverChecks);
+    await assertWorkbookRootNoSignatureCases(worksheetBroadRootDocument, broadRootNonTargetSignatureChecks);
 
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_MISMATCHED_SNAPSHOT);
 
@@ -1869,11 +1882,19 @@ export async function run(): Promise<void> {
     );
     await assertWorkbookRootNoHoverCases(
       worksheetBroadRootDocument,
-      broadRootMatchedHoverChecks.map(([token, message]) => [token, `mismatch snapshot では ${message}`] as const)
+      broadRootMatchedHoverChecks.map(([token, message, occurrenceIndex = 0]) => [
+        token,
+        `mismatch snapshot では ${message}`,
+        occurrenceIndex
+      ] as const)
     );
     await assertWorkbookRootNoSignatureCases(
       worksheetBroadRootDocument,
-      broadRootMatchedSignatureChecks.map(([token, message]) => [token, `mismatch snapshot では ${message}`] as const)
+      broadRootMatchedSignatureChecks.map(([token, message, occurrenceIndex = 0]) => [
+        token,
+        `mismatch snapshot では ${message}`,
+        occurrenceIndex
+      ] as const)
     );
   } finally {
     await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);

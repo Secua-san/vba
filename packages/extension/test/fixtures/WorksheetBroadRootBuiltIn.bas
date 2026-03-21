@@ -55,6 +55,14 @@ Public Sub Demo()
     Debug.Print Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value
     Debug.Print Application.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value
     Debug.Print Application.Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Sheets("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Call ActiveSheet.OLEObjects("CheckBox1").Object.Select(
+    Call Worksheets(1).OLEObjects("CheckBox1").Object.Select(
+    Call Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(
+    Call Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call Application.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(
+    Call Application.Worksheets.Item(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(
 End Sub
 
 Private Function GetIndex() As Long
