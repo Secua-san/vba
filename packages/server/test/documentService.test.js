@@ -1468,7 +1468,7 @@ End Function`;
   }
 });
 
-test("document service resolves unqualified worksheet broad root item selectors and keeps root Item closed", () => {
+test("document service resolves unqualified worksheet broad root item selectors including root Item forms", () => {
   const text = `Attribute VB_Name = "Module1"
 Option Explicit
 
@@ -1483,35 +1483,59 @@ Public Sub Demo()
     Debug.Print Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Value
     Call Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
     Debug.Print Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.
     Debug.Print Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.
     Debug.Print Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Debug.Print Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Value
+    Debug.Print Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value
+    Debug.Print Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Value
+    Call Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(
+    Call Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(
     Call Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
 End Sub`;
   const { service, uri, cleanup } = createWorksheetBroadRootFixture(text);
   const closedCompletionChecks = [
     ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
     ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
-    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'Worksheets.Item("Sheet One") は root .Item 形式のため broad root を開かない'],
-    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets.Item("Sheet One") は root .Item 形式のため broad root を開かない']
+    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
   ];
   const matchedCompletionChecks = [
     ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
     ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
     ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
-    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
+    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+    ['Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', "Value", "Delete", 'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
   ];
   const matchedHoverChecks = [
     'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu',
-    'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
+    'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu',
+    'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu',
+    'Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
   ];
   const matchedSignatureChecks = [
     'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
-    'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
+    'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
+    'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+    'Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
   ];
 
   try {
     for (const [token, symbolName, message] of closedCompletionChecks) {
       assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+    }
+    for (const token of matchedHoverChecks) {
+      assert.equal(getHoverAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} hover を出さない`);
+    }
+    for (const token of matchedSignatureChecks) {
+      assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
     }
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
@@ -1526,41 +1550,6 @@ End Sub`;
     for (const token of matchedSignatureChecks) {
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, "Select(Replace) As Object");
     }
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      false,
-      'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は root .Item 形式のため broad root を開かない'
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      false,
-      'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は root .Item 形式のため broad root を開かない'
-    );
-    assert.equal(
-      getHoverAfterToken(service, uri, text, 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-      ),
-      undefined
-    );
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 

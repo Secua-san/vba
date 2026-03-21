@@ -6,6 +6,12 @@
 
 ## 完了
 
+- [x] unqualified worksheet broad root の root `.Item("SheetName")` 形式を再評価
+  - `packages/server/src/lsp/documentService.ts` の broad root root-selector 解釈を拡張し、`Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` を direct call form と同じ sheetName literal として扱えるようにした
+  - `packages/server/test/documentService.test.js`、`packages/extension/test/suite/index.ts`、`packages/extension/test/fixtures/WorksheetBroadRootBuiltIn.bas` を更新し、snapshot 未一致では閉じ、manifest match 時には completion / hover / signature help が開くことを root `.Item` と child `.Item` の両方で固定した
+  - ADR [0005](docs/adr/0005-explicit-sheet-name-root-policy.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) を更新し、`Worksheets.Item` は既定メンバーとして direct call form と同一 family で扱う根拠を Microsoft Learn ベースで追記した
+  - `npm run lint`、`npm test`、`npm run package` を通して broad root family と既存の非対象境界が崩れていないことを確認した
+
 - [x] broad root family の重複テスト補助を整理
   - `packages/server/test/documentService.test.js` に worksheet broad root 専用 fixture / snapshot / token lookup helper を追加し、`matched` / `mismatched` / `unavailable` / shadow / root `.Item` 非対象ケースの重複した setup と query を削減した
   - `packages/extension/test/suite/index.ts` に token 指定の completion / hover / signature helper を追加し、`WorksheetBroadRootBuiltIn.bas` の broad root 行列テストを状態別の配列駆動へ寄せた
@@ -453,10 +459,11 @@
   - `Worksheets("SheetName").OLEObjects.Item("ShapeName").Object`、`Application.Worksheets("SheetName").OLEObjects.Item("ShapeName").Object`、`Worksheets("SheetName").Shapes.Item("ShapeName").OLEFormat.Object`、`Application.Worksheets("SheetName").Shapes.Item("ShapeName").OLEFormat.Object` を broad root family の正例として server / extension test へ追加した
   - `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` のような root `.Item` 形式は v1 非対象として [docs/adr/0005-explicit-sheet-name-root-policy.md](docs/adr/0005-explicit-sheet-name-root-policy.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) に明記し、snapshot match 中でも開かない負例を固定した
   - broad root family の `.Item` 回帰を追加したうえで、`npm run lint` / `npm test` / `npm run package` を通して direct call form の既存境界と root `.Item` 非対象境界が崩れていないことを確認した
+  - この「v1 非対象」判断は後続の `unqualified worksheet broad root の root .Item("SheetName") 形式を再評価` で superseded 済み
 
-- [ ] unqualified worksheet broad root の root `.Item("SheetName")` 形式を再評価する
-  - 現在は `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` を v1 非対象として閉じているため、Office VBA 上の意味と既存 broad root family との整合を docs から再確認する
-  - 実装へ進める場合は `Worksheets("SheetName")` 既存導線と同じ runtime gating / manifest matching / shadow 境界にそろえ、server / extension test で direct call form との非衝突を固定する
+- [ ] workbook-qualified worksheet root の `.Item("SheetName")` 形式を整理する
+  - `ThisWorkbook.Worksheets.Item("SheetName")` / `ActiveWorkbook.Worksheets.Item("SheetName")` は Office VBA 上では direct call form と等価のため、current bundle root / workbook-bound broad root でも同じ sheetName selector として扱うかを整理する
+  - 実装へ進める場合は `ThisWorkbook.Worksheets("SheetName")` / `ActiveWorkbook.Worksheets("SheetName")` 既存導線と同じ workbook identity / manifest gating にそろえ、server / extension test で direct call form との非衝突を固定する
 
 ## メモ
 
