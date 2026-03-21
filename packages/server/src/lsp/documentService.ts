@@ -1171,6 +1171,13 @@ interface DocumentModuleBuiltinContext {
   worksheetControlSheetName?: string;
 }
 
+interface WorkbookRootFamilyPathMatch {
+  family: "active-workbook" | "current-bundle";
+  memberPathOffset: number;
+  ownerName: "Workbook" | "Worksheet";
+  worksheetSelectorStartIndex?: number;
+}
+
 interface WorksheetControlSidecarLookupContext {
   allowDirectCodeName: boolean;
   memberSegments: readonly string[];
@@ -2019,41 +2026,51 @@ function resolveBuiltinMemberOwnerForPath(
     line
   });
   const normalizedRootSegment = stripIndexedAccessMarker(rootSegment);
+  const ignoredTypeWorkbookRootFamilyContext = getIgnoredTypeWorkbookRootFamilyBuiltinContext(
+    uri,
+    rootResolution,
+    normalizedRootSegment,
+    pathSegmentDetails,
+    getDocumentState
+  );
+  const effectiveRootResolution = ignoredTypeWorkbookRootFamilyContext ? undefined : rootResolution;
 
-  if (!rootResolution) {
-    const builtinContext = getBroadRootBuiltinContext(uri, normalizedRootSegment, pathSegmentDetails, getDocumentState);
-
-    if (!builtinContext) {
-      return resolveBuiltinMemberOwner(pathSegments);
-    }
-
-    const memberPathOffset = builtinContext.memberPathOffset ?? 0;
-    const adjustedMemberSegments = memberSegments.slice(memberPathOffset);
-    const adjustedPathSegmentDetails = pathSegmentDetails?.slice(1 + memberPathOffset);
-    const sidecarOwnerName = resolveWorksheetControlOwnerFromSidecar(
-      builtinContext,
-      adjustedMemberSegments,
-      adjustedPathSegmentDetails,
-      getWorksheetControlMetadataState
-    );
-
-    return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, adjustedMemberSegments);
-  }
-
-  const builtinContext = getDocumentModuleBuiltinContext(rootResolution, normalizedRootSegment, getDocumentState);
+  const builtinContext =
+    ignoredTypeWorkbookRootFamilyContext ??
+    getWorkbookRootFamilyBuiltinContext(uri, effectiveRootResolution, normalizedRootSegment, pathSegmentDetails, getDocumentState) ??
+    (effectiveRootResolution
+      ? getDocumentModuleBuiltinContext(effectiveRootResolution, normalizedRootSegment, getDocumentState)
+      : undefined);
 
   if (!builtinContext) {
-    return undefined;
+    return effectiveRootResolution ? undefined : resolveBuiltinMemberOwner(pathSegments);
   }
 
+  const memberPathOffset = builtinContext.memberPathOffset ?? 0;
+  const adjustedMemberSegments = memberSegments.slice(memberPathOffset);
+  const adjustedPathSegmentDetails = pathSegmentDetails?.slice(1 + memberPathOffset);
   const sidecarOwnerName = resolveWorksheetControlOwnerFromSidecar(
     builtinContext,
-    memberSegments,
-    pathSegmentDetails?.slice(1),
+    adjustedMemberSegments,
+    adjustedPathSegmentDetails,
     getWorksheetControlMetadataState
   );
 
-  return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, memberSegments);
+  return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, adjustedMemberSegments);
+}
+
+function getIgnoredTypeWorkbookRootFamilyBuiltinContext(
+  uri: string,
+  resolution: WorkspaceSymbolResolution | undefined,
+  rootSegment: string,
+  pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined
+): DocumentModuleBuiltinContext | undefined {
+  if (!resolution || (resolution.symbol.kind !== "type" && resolution.symbol.kind !== "enum")) {
+    return undefined;
+  }
+
+  return getWorkbookRootFamilyBuiltinContext(uri, undefined, rootSegment, pathSegmentDetails, getDocumentState);
 }
 
 function getDocumentModuleBuiltinOwnerName(
@@ -2064,78 +2081,56 @@ function getDocumentModuleBuiltinOwnerName(
   return getDocumentModuleBuiltinContext(resolution, rootSegment, getDocumentState)?.ownerName;
 }
 
-function getBroadRootBuiltinContext(
+function getWorkbookRootFamilyBuiltinContext(
   uri: string,
+  resolution: WorkspaceSymbolResolution | undefined,
   rootSegment: string,
   pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined
 ): DocumentModuleBuiltinContext | undefined {
+  const workbookDocumentContext = resolution
+    ? getWorkbookDocumentBuiltinContext(resolution, rootSegment, getDocumentState)
+    : undefined;
+
+  if (workbookDocumentContext) {
+    return workbookDocumentContext;
+  }
+
   const state = getDocumentState(uri);
 
   if (!state) {
     return undefined;
   }
 
-  const activeWorkbookSegment = pathSegmentDetails?.[0];
+  if (resolution) {
+    return undefined;
+  }
 
-  if (
-    normalizeIdentifier(activeWorkbookSegment?.text ?? rootSegment) === "activeworkbook" &&
-    activeWorkbookSegment?.accessKind === "none"
-  ) {
-    if (!hasMatchedActiveWorkbookBinding(state)) {
-      return undefined;
-    }
+  const rootFamilyPath = resolveWorkbookRootFamilyPath(rootSegment, pathSegmentDetails);
 
+  if (!rootFamilyPath) {
+    return undefined;
+  }
+
+  if (rootFamilyPath.family === "active-workbook" && !hasMatchedActiveWorkbookBinding(state)) {
+    return undefined;
+  }
+
+  if (rootFamilyPath.ownerName === "Workbook") {
     return {
       ownerName: "Workbook",
+      memberPathOffset: rootFamilyPath.memberPathOffset,
       rootModuleName: state.analysis.module.name,
       rootUri: uri
     };
   }
 
-  if (normalizeIdentifier(rootSegment) === "worksheets") {
-    if (!hasMatchedActiveWorkbookBinding(state)) {
-      return undefined;
-    }
-
-    const worksheetRootSelector = resolveWorksheetsRootSelector(pathSegmentDetails, 0);
-
-    return worksheetRootSelector
-      ? {
-          ownerName: "Worksheet",
-          memberPathOffset: worksheetRootSelector.memberPathOffset,
-          rootModuleName: state.analysis.module.name,
-          rootUri: uri,
-          worksheetControlSheetName: worksheetRootSelector.sheetName
-        }
-      : undefined;
-  }
-
-  if (normalizeIdentifier(rootSegment) !== "application") {
-    return undefined;
-  }
-
-  const applicationSegment = pathSegmentDetails?.[0];
-  if (normalizeIdentifier(applicationSegment?.text ?? "") !== "application" || applicationSegment?.accessKind !== "none") {
-    return undefined;
-  }
-
-  const applicationWorkbookContext = getApplicationWorkbookRootBuiltinContext(state, uri, pathSegmentDetails);
-
-  if (applicationWorkbookContext) {
-    return applicationWorkbookContext;
-  }
-
-  if (!hasMatchedActiveWorkbookBinding(state)) {
-    return undefined;
-  }
-
-  const worksheetRootSelector = resolveWorksheetsRootSelector(pathSegmentDetails, 1);
+  const worksheetRootSelector = resolveWorksheetsRootSelector(pathSegmentDetails, rootFamilyPath.worksheetSelectorStartIndex ?? 0);
 
   return worksheetRootSelector
     ? {
         ownerName: "Worksheet",
-        memberPathOffset: 1 + worksheetRootSelector.memberPathOffset,
+        memberPathOffset: rootFamilyPath.memberPathOffset + worksheetRootSelector.memberPathOffset,
         rootModuleName: state.analysis.module.name,
         rootUri: uri,
         worksheetControlSheetName: worksheetRootSelector.sheetName
@@ -2143,40 +2138,68 @@ function getBroadRootBuiltinContext(
     : undefined;
 }
 
-function getApplicationWorkbookRootBuiltinContext(
-  state: DocumentState,
-  uri: string,
+function resolveWorkbookRootFamilyPath(
+  rootSegment: string,
   pathSegmentDetails: readonly MemberAccessPathSegment[] | undefined
-): DocumentModuleBuiltinContext | undefined {
-  const workbookSegment = pathSegmentDetails?.[1];
-  const normalizedWorkbookSegment = normalizeIdentifier(workbookSegment?.text ?? "");
+): WorkbookRootFamilyPathMatch | undefined {
+  const normalizedRootSegment = normalizeIdentifier(rootSegment);
+  const rootPathSegment = pathSegmentDetails?.[0];
 
-  if (workbookSegment?.accessKind !== "none") {
+  if (normalizedRootSegment === "activeworkbook") {
+    return normalizeIdentifier(rootPathSegment?.text ?? "") === "activeworkbook" && rootPathSegment?.accessKind === "none"
+      ? {
+          family: "active-workbook",
+          memberPathOffset: 0,
+          ownerName: "Workbook"
+        }
+      : undefined;
+  }
+
+  if (normalizedRootSegment === "worksheets") {
+    return {
+      family: "active-workbook",
+      memberPathOffset: 0,
+      ownerName: "Worksheet",
+      worksheetSelectorStartIndex: 0
+    };
+  }
+
+  if (normalizedRootSegment !== "application") {
     return undefined;
   }
 
-  if (normalizedWorkbookSegment === "thisworkbook") {
+  if (normalizeIdentifier(rootPathSegment?.text ?? "") !== "application" || rootPathSegment?.accessKind !== "none") {
+    return undefined;
+  }
+
+  const workbookSegment = pathSegmentDetails?.[1];
+  const normalizedWorkbookSegment = normalizeIdentifier(workbookSegment?.text ?? "");
+
+  if (workbookSegment?.accessKind === "none" && normalizedWorkbookSegment === "thisworkbook") {
     return {
-      ownerName: "Workbook",
+      family: "current-bundle",
       memberPathOffset: 1,
-      rootModuleName: state.analysis.module.name,
-      rootUri: uri
+      ownerName: "Workbook"
     };
   }
 
-  if (normalizedWorkbookSegment === "activeworkbook" && hasMatchedActiveWorkbookBinding(state)) {
+  if (workbookSegment?.accessKind === "none" && normalizedWorkbookSegment === "activeworkbook") {
     return {
-      ownerName: "Workbook",
+      family: "active-workbook",
       memberPathOffset: 1,
-      rootModuleName: state.analysis.module.name,
-      rootUri: uri
+      ownerName: "Workbook"
     };
   }
 
-  return undefined;
+  return {
+    family: "active-workbook",
+    memberPathOffset: 1,
+    ownerName: "Worksheet",
+    worksheetSelectorStartIndex: 1
+  };
 }
 
-function getDocumentModuleBuiltinContext(
+function getWorkbookDocumentBuiltinContext(
   resolution: WorkspaceSymbolResolution,
   rootSegment: string,
   getDocumentState: (uri: string) => DocumentState | undefined
@@ -2191,12 +2214,34 @@ function getDocumentModuleBuiltinContext(
     return undefined;
   }
 
-  if (isWorkbookDocumentState(state) && normalizeIdentifier(rootSegment) === "thisworkbook") {
-    return {
-      ownerName: "Workbook",
-      rootModuleName: state.analysis.module.name,
-      rootUri: resolution.uri
-    };
+  return isWorkbookDocumentState(state) && normalizeIdentifier(rootSegment) === "thisworkbook"
+    ? {
+        ownerName: "Workbook",
+        rootModuleName: state.analysis.module.name,
+        rootUri: resolution.uri
+      }
+    : undefined;
+}
+
+function getDocumentModuleBuiltinContext(
+  resolution: WorkspaceSymbolResolution,
+  rootSegment: string,
+  getDocumentState: (uri: string) => DocumentState | undefined
+): DocumentModuleBuiltinContext | undefined {
+  const workbookContext = getWorkbookDocumentBuiltinContext(resolution, rootSegment, getDocumentState);
+
+  if (workbookContext) {
+    return workbookContext;
+  }
+
+  if (resolution.symbol.kind !== "module") {
+    return undefined;
+  }
+
+  const state = getDocumentState(resolution.uri);
+
+  if (!state) {
+    return undefined;
   }
 
   if (

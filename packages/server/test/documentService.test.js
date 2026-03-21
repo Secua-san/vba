@@ -2127,122 +2127,61 @@ Public Sub Demo()
     Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.
     Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value
     Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(
+    Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.
+    Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.Value
+    Call Application.Caller.OLEObjects("CheckBox1").Object.Select(
+    Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.
+    Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value
+    Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(
 End Sub
 
 Private Function GetIndex() As Long
     GetIndex = 1
-End Function`;
+End Function
+
+Private Type Application
+    Name As String
+End Type`;
   const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
 
   try {
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      true
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.',
-        "Value"
-      ),
-      true
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
-      )?.contents.includes("CheckBox.Value"),
-      true
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
-      )?.label,
-      "Select(Replace) As Object"
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
-      getHoverAfterToken(service, uri, text, 'Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu'),
-      undefined
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select('
-      ),
-      undefined
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
-      ),
-      undefined
-    );
+    const staticCompletionCases = [
+      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+      ['Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する']
+    ];
+    const staticHoverCases = [
+      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する']
+    ];
+    const staticSignatureCases = [
+      ['Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する']
+    ];
+    const staticClosedCompletionCases = [
+      ['Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.', "Value", 'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので control owner に昇格しない'],
+      ['Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.', "Value", 'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので control owner に昇格しない'],
+      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+      ['Application.Caller.OLEObjects("CheckBox1").Object.', "Value", 'Application.Caller は workbook root family に昇格しない'],
+      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'Application.Range("A1") は workbook root family に昇格しない']
+    ];
+    const staticNoHoverCases = [
+      ['Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので hover を出さない'],
+      ['Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu', 'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので hover を出さない'],
+      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+      ['Application.Caller.OLEObjects("CheckBox1").Object.Valu', 'Application.Caller は workbook root family に昇格しない'],
+      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Valu', 'Application.Range("A1") は workbook root family に昇格しない']
+    ];
+    const staticNoSignatureCases = [
+      ['Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(', 'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので signature help を出さない'],
+      ['Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+      ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'Application.Caller は workbook root family に昇格しない'],
+      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Range("A1") は workbook root family に昇格しない']
+    ];
+
+    assertWorkbookRootCompletionCases(service, uri, text, staticCompletionCases);
+    assertWorkbookRootHoverCases(service, uri, text, staticHoverCases);
+    assertWorkbookRootSignatureCases(service, uri, text, staticSignatureCases);
+    assertWorkbookRootClosedCompletionCases(service, uri, text, staticClosedCompletionCases);
+    assertWorkbookRootNoHoverCases(service, uri, text, staticNoHoverCases);
+    assertWorkbookRootNoSignatureCases(service, uri, text, staticNoSignatureCases);
 
     let tokens = service.getSemanticTokens(uri);
     assertSemanticToken(text, tokens, 6, "Value", { modifiers: [], type: "variable" });
@@ -2252,91 +2191,40 @@ End Function`;
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      true
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.',
-        "Value"
-      ),
-      true
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
-      )?.contents.includes("CheckBox.Value"),
-      true
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
-      )?.label,
-      "Select(Replace) As Object"
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select('
-      ),
-      undefined
-    );
+    const matchedCompletionCases = [
+      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "Activate", 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+      ['Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.', "Value", "Activate", 'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する']
+    ];
+    const matchedHoverCases = [
+      ['Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する']
+    ];
+    const matchedSignatureCases = [
+      ['Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する']
+    ];
+    const matchedClosedCompletionCases = [
+      ['Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.', "Value", 'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので control owner に昇格しない'],
+      ['Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.', "Value", 'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので control owner に昇格しない'],
+      ['Application.Caller.OLEObjects("CheckBox1").Object.', "Value", 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
+      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.', "Value", 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
+    ];
+    const matchedNoHoverCases = [
+      ['Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので hover を出さない'],
+      ['Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Valu', 'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので hover を出さない'],
+      ['Application.Caller.OLEObjects("CheckBox1").Object.Valu', 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
+      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Valu', 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
+    ];
+    const matchedNoSignatureCases = [
+      ['Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(', 'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので signature help を出さない'],
+      ['Application.Caller.OLEObjects("CheckBox1").Object.Select(', 'snapshot 一致後も Application.Caller は workbook root family に昇格しない'],
+      ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
+    ];
+
+    assertWorkbookRootCompletionCases(service, uri, text, matchedCompletionCases);
+    assertWorkbookRootHoverCases(service, uri, text, matchedHoverCases);
+    assertWorkbookRootSignatureCases(service, uri, text, matchedSignatureCases);
+    assertWorkbookRootClosedCompletionCases(service, uri, text, matchedClosedCompletionCases);
+    assertWorkbookRootNoHoverCases(service, uri, text, matchedNoHoverCases);
+    assertWorkbookRootNoSignatureCases(service, uri, text, matchedNoSignatureCases);
 
     tokens = service.getSemanticTokens(uri);
     assertSemanticToken(text, tokens, 15, "Value", { modifiers: [], type: "variable" });
@@ -2618,63 +2506,18 @@ End Sub`;
 
   try {
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
-
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('
-      ),
-      undefined
-    );
-    assert.equal(
-      hasCompletionSymbolAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
-        "Value"
-      ),
-      false
-    );
-    assert.equal(
-      getHoverAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'
-      ),
-      undefined
-    );
-    assert.equal(
-      getSignatureHelpAfterToken(
-        service,
-        uri,
-        text,
-        'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-      ),
-      undefined
-    );
+    assertWorkbookRootClosedCompletionCases(service, uri, text, [
+      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', "Value", "shadowed Application.ThisWorkbook root は control owner に昇格しない"],
+      ['Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', "Value", "shadowed Application.ActiveWorkbook root は control owner に昇格しない"]
+    ]);
+    assertWorkbookRootNoHoverCases(service, uri, text, [
+      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', "shadowed Application.ThisWorkbook root は hover を出さない"],
+      ['Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', "shadowed Application.ActiveWorkbook root は hover を出さない"]
+    ]);
+    assertWorkbookRootNoSignatureCases(service, uri, text, [
+      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(', "shadowed Application.ThisWorkbook root は signature help を出さない"],
+      ['Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', "shadowed Application.ActiveWorkbook root は signature help を出さない"]
+    ]);
   } finally {
     cleanup();
   }
@@ -6073,6 +5916,43 @@ function hasCompletionSymbolAfterToken(service, uri, text, token, symbolName) {
   return getCompletionSymbolsAfterToken(service, uri, text, token).some(
     (resolution) => resolution.symbol.name === symbolName
   );
+}
+
+function assertWorkbookRootCompletionCases(service, uri, text, cases) {
+  for (const [token, symbolName, blockedSymbolName, message] of cases) {
+    assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), true, message);
+    assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, blockedSymbolName), false, message);
+  }
+}
+
+function assertWorkbookRootClosedCompletionCases(service, uri, text, cases) {
+  for (const [token, symbolName, message] of cases) {
+    assert.equal(hasCompletionSymbolAfterToken(service, uri, text, token, symbolName), false, message);
+  }
+}
+
+function assertWorkbookRootHoverCases(service, uri, text, cases, expectedFragment = "CheckBox.Value") {
+  for (const [token, message] of cases) {
+    assert.equal(getHoverAfterToken(service, uri, text, token)?.contents.includes(expectedFragment), true, message);
+  }
+}
+
+function assertWorkbookRootNoHoverCases(service, uri, text, cases) {
+  for (const [token, message] of cases) {
+    assert.equal(getHoverAfterToken(service, uri, text, token), undefined, message);
+  }
+}
+
+function assertWorkbookRootSignatureCases(service, uri, text, cases, expectedLabel = "Select(Replace) As Object") {
+  for (const [token, message] of cases) {
+    assert.equal(getSignatureHelpAfterToken(service, uri, text, token)?.label, expectedLabel, message);
+  }
+}
+
+function assertWorkbookRootNoSignatureCases(service, uri, text, cases) {
+  for (const [token, message] of cases) {
+    assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, message);
+  }
 }
 
 function getHoverAfterToken(service, uri, text, token) {

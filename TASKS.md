@@ -478,10 +478,19 @@
   - [docs/process/application-workbook-root-feasibility.md](docs/process/application-workbook-root-feasibility.md) と [docs/process/workbook-binding-manifest-feasibility.md](docs/process/workbook-binding-manifest-feasibility.md) を更新し、方針整理で止まっていた `Application.ThisWorkbook` / `Application.ActiveWorkbook` root が user-facing 実装済みになったことを反映した
   - 検証として `npm run build`、`npm test --workspace @vba/server`、`npm run lint`、`npm run package` を通した。`npm run test --workspace vba-extension` はこの Codex セッション自体が Code を使用中のため CLI 実行が弾かれ、別インスタンスが無い環境での再確認が必要
 
-- [ ] workbook root family の resolver / test matrix を整理する
-  - `packages/server/src/lsp/documentService.ts` の `ThisWorkbook` / `ActiveWorkbook` / `Application.ThisWorkbook` / `Application.ActiveWorkbook` / `Worksheets` / `Application.Worksheets` 判定を shared helper へ寄せ、selector / shadow / gating 条件の分岐を 1 か所へ集約する
-  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` の workbook root matrix を配列駆動 helper へ寄せ、current-bundle と broad-root family の対称ケースを崩しにくくする
-  - 振る舞いを変えない整理 PR として docs / `TASKS.md` の説明も整える
+- [x] workbook root family の resolver / test matrix を整理する
+  - `packages/server/src/lsp/documentService.ts` に `getWorkbookRootFamilyBuiltinContext()`、`resolveWorkbookRootFamilyPath()`、`getWorkbookDocumentBuiltinContext()` を追加し、`ThisWorkbook` / `ActiveWorkbook` / `Application.ThisWorkbook` / `Application.ActiveWorkbook` / `Worksheets` / `Application.Worksheets` の workbook root family 判定を shared helper へ寄せた
+  - workbook root family にだけ関係する type-only root 解決は built-in family 判定の手前で無視するようにし、module-level `Type Application` が `Application.ThisWorkbook` / `Application.ActiveWorkbook` を塞がないことを server / extension の matrix で固定した
+  - `Application.Caller` / `Application.Range("A1")` は workbook root family に昇格しない負例を server / extension に追加し、今後 `Application.*` selector 解析を広げても broad root family へ誤接続しない境界を固定した
+  - `packages/server/test/documentService.test.js` に workbook root 用の completion / hover / signature helper を追加し、`Application.ThisWorkbook` / `Application.ActiveWorkbook` と shadow case の matrix 実行を helper 経由へ寄せた
+  - `packages/extension/test/suite/index.ts` に workbook root 用の async helper と診断しやすい completion summary を追加し、`WorksheetBroadRootBuiltIn.bas` と `ApplicationWorkbookRootBuiltIn.bas` の current-bundle / broad-root matrix を配列駆動 helper で回すように整理した
+  - `packages/extension/test/fixtures/ApplicationWorkbookRootBuiltIn.bas` を server 側の matrix と揃え、negative hover / signature と shadow 用 token の不足を補った
+  - 検証として `npm run build --workspace @vba/server`、`npm test --workspace @vba/server`、`npx tsc -p packages/extension/tsconfig.test.json`、`npm run build`、`npm run test --workspace vba-extension` を通した
+
+- [ ] workbook root family の semantic token / fixture helper を追加整理する
+  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` に残っている workbook root family 専用の semantic token assert と fixture 行番号依存を、current-bundle / broad-root family 共通 helper へ寄せる
+  - `ApplicationWorkbookRootBuiltIn.bas` と `WorksheetBroadRootBuiltIn.bas` の matrix を token 名ベースで追いやすい形に整え、将来の root family 追加時に line number 追従だけで壊れにくくする
+  - docs / `TASKS.md` には「挙動変更なしの整理」であることを維持して記録する
 
 ## メモ
 
