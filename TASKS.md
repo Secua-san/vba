@@ -454,9 +454,9 @@
   - `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` のような root `.Item` 形式は v1 非対象として [docs/adr/0005-explicit-sheet-name-root-policy.md](docs/adr/0005-explicit-sheet-name-root-policy.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) に明記し、snapshot match 中でも開かない負例を固定した
   - broad root family の `.Item` 回帰を追加したうえで、`npm run lint` / `npm test` / `npm run package` を通して direct call form の既存境界と root `.Item` 非対象境界が崩れていないことを確認した
 
-- [ ] broad root family の重複テスト補助を整理する
-  - `ActiveWorkbook` / unqualified `Worksheets` / `Application.Worksheets` で同じ gating matrix を毎回手書きしているため、server / extension test の broad-root helper を整理して追加ケースの差分を読みやすくする
-  - review 指摘で出やすい `matched available` / `mismatched available` / `unavailable` / shadow / root `.Item` 非対象の組み合わせを helper へ寄せ、次段の broad root 追加時に negative coverage を落としにくくする
+- [ ] unqualified worksheet broad root の root `.Item("SheetName")` 形式を再評価する
+  - 現在は `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` を v1 非対象として閉じているため、Office VBA 上の意味と既存 broad root family との整合を docs から再確認する
+  - 実装へ進める場合は `Worksheets("SheetName")` 既存導線と同じ runtime gating / manifest matching / shadow 境界にそろえ、server / extension test で direct call form との非衝突を固定する
 
 ## メモ
 
