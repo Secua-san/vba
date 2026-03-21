@@ -813,9 +813,17 @@ export async function run(): Promise<void> {
     [
       'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu',
       'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'
+    ],
+    [
+      'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu',
+      'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
     ]
   ] as const;
   const workbookQualifiedRootItemOleClosedSignatureChecks = [
+    [
+      'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+      'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は snapshot 未一致の間は broad root を開かない'
+    ],
     [
       'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
       'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
@@ -870,7 +878,6 @@ export async function run(): Promise<void> {
     type: "function"
   });
   assertNoDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 57, "Value");
-  assertNoDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 58, "Value");
   assertNoDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 58, "Value");
   assertNoDecodedSemanticToken(oleObjectBuiltInDocument.getText(), decodedOleObjectTokens, 67, "Value");
 
@@ -927,6 +934,10 @@ export async function run(): Promise<void> {
       [
         'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu',
         'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の hover は control owner へ解決する'
+      ],
+      [
+        'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu',
+        'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'
       ]
     ] as const;
     const workbookQualifiedRootItemOleMatchedNonTargetCompletionChecks = [
@@ -960,6 +971,10 @@ export async function run(): Promise<void> {
       ]
     ] as const;
     const workbookQualifiedRootItemOleMatchedSignatureChecks = [
+      [
+        'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+        'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1") の signature help は control owner へ解決する'
+      ],
       [
         'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(',
         'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'
@@ -1472,9 +1487,17 @@ export async function run(): Promise<void> {
     [
       'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
       'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'
+    ],
+    [
+      'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu',
+      'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
     ]
   ] as const;
   const workbookQualifiedRootItemShapeClosedSignatureChecks = [
+    [
+      'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+      'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1") は snapshot 未一致の間は broad root を開かない'
+    ],
     [
       'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
       'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
@@ -1529,7 +1552,6 @@ export async function run(): Promise<void> {
     type: "function"
   });
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 59, "Value");
-  assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 60, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 60, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 69, "Value");
 
@@ -1586,6 +1608,10 @@ export async function run(): Promise<void> {
       [
         'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
         'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1") の hover は control owner へ解決する'
+      ],
+      [
+        'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu',
+        'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の hover は control owner へ解決する'
       ]
     ] as const;
     const workbookQualifiedRootItemShapeMatchedNonTargetCompletionChecks = [
@@ -1619,6 +1645,10 @@ export async function run(): Promise<void> {
       ]
     ] as const;
     const workbookQualifiedRootItemShapeMatchedSignatureChecks = [
+      [
+        'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1") の signature help は control owner へ解決する'
+      ],
       [
         'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
         'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する'

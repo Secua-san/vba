@@ -1674,6 +1674,16 @@ End Sub`;
     'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(',
     'ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
   ];
+  const nonTargetSemanticChecks = [
+    [10, "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [11, "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [12, "Select", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [13, "Select", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [22, "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [23, "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [24, "Select", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [25, "Select", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない']
+  ];
 
   try {
     for (const [token, symbolName, blockedSymbolName, message] of staticCompletionChecks) {
@@ -1704,6 +1714,10 @@ End Sub`;
     for (const token of matchedSignatureChecks) {
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
     }
+    let tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
@@ -1726,6 +1740,10 @@ End Sub`;
     for (const token of nonTargetSignatureChecks.slice(2)) {
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
     }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 
@@ -1746,6 +1764,10 @@ End Sub`;
         `mismatch snapshot では ${token} signature help を出さない`
       );
     }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
@@ -1755,6 +1777,10 @@ End Sub`;
         false,
         `unavailable snapshot では ${token} broad root を開かない`
       );
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
     }
   } finally {
     cleanup();
@@ -1836,6 +1862,16 @@ End Sub`;
     'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
     'ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
   ];
+  const nonTargetSemanticChecks = [
+    [10, "Value", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [11, "Value", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [12, "Select", 'ThisWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [13, "Select", 'ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [22, "Value", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'],
+    [23, "Value", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [24, "Select", 'ActiveWorkbook.Worksheets.Item("Sheet1") は codeName 指定なので semantic token を出さない'],
+    [25, "Select", 'ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない']
+  ];
 
   try {
     for (const [token, symbolName, blockedSymbolName, message] of staticCompletionChecks) {
@@ -1866,6 +1902,10 @@ End Sub`;
     for (const token of matchedSignatureChecks) {
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined, `snapshot 未一致では ${token} signature help を出さない`);
     }
+    let tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
 
     service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
 
@@ -1888,6 +1928,10 @@ End Sub`;
     for (const token of nonTargetSignatureChecks.slice(2)) {
       assert.equal(getSignatureHelpAfterToken(service, uri, text, token), undefined);
     }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 
@@ -1908,6 +1952,10 @@ End Sub`;
         `mismatch snapshot では ${token} signature help を出さない`
       );
     }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
+    }
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
@@ -1917,6 +1965,10 @@ End Sub`;
         false,
         `unavailable snapshot では ${token} broad root を開かない`
       );
+    }
+    tokens = service.getSemanticTokens(uri);
+    for (const [lineIndex, identifier, message] of nonTargetSemanticChecks) {
+      assertNoSemanticToken(text, tokens, lineIndex, identifier, 0, message);
     }
   } finally {
     cleanup();
