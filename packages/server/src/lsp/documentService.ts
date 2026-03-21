@@ -2309,25 +2309,23 @@ function getWorksheetControlSidecarLookupContext(
     return undefined;
   }
 
-  const [worksheetSegment, ...worksheetPathSegments] = pathSegmentDetails;
-  const sheetName =
-    normalizeIdentifier(worksheetSegment?.text ?? "") === "worksheets" && worksheetSegment?.accessKind === "literal"
-      ? parseStringLiteralSelectorValue(worksheetSegment.selectorText)
-      : undefined;
+  const worksheetRootSelector = resolveWorksheetsRootSelector(pathSegmentDetails, 0);
 
-  if (!sheetName) {
+  if (!worksheetRootSelector) {
     return undefined;
   }
 
   const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
-    (owner) => owner.ownerKind === "worksheet" && normalizeIdentifier(owner.sheetName) === normalizeIdentifier(sheetName)
+    (owner) =>
+      owner.ownerKind === "worksheet" &&
+      normalizeIdentifier(owner.sheetName) === normalizeIdentifier(worksheetRootSelector.sheetName)
   );
 
   return supportedOwner
     ? {
         allowDirectCodeName: false,
-        memberSegments: memberSegments.slice(1),
-        pathSegmentDetails: worksheetPathSegments,
+        memberSegments: memberSegments.slice(1 + worksheetRootSelector.memberPathOffset),
+        pathSegmentDetails: pathSegmentDetails.slice(1 + worksheetRootSelector.memberPathOffset),
         rootOwnerName: "Worksheet",
         supportedOwner
       }
