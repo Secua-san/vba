@@ -292,7 +292,7 @@ const applicationWorkbookRoot = {
         anchor: 'Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.',
         reason: "non-target-root",
         state: "matched",
-        scopes: ["extension", "server-application-ole", "server-application-shadowed"]
+        scopes: ["extension", "server-application-ole", "server-application-shape", "server-application-shadowed"]
       },
       {
         anchor: 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
@@ -479,14 +479,14 @@ const applicationWorkbookRoot = {
         identifier: "Value",
         reason: "non-target-root",
         state: "static",
-        scopes: ["server-application-ole"]
+        scopes: ["server-application-ole", "server-application-shape"]
       },
       {
         anchor: 'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
         identifier: "Select",
         reason: "non-target-root",
         state: "static",
-        scopes: ["server-application-ole"]
+        scopes: ["server-application-ole", "server-application-shape"]
       },
       {
         anchor: 'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
@@ -635,14 +635,14 @@ const applicationWorkbookRoot = {
         identifier: "Value",
         reason: "non-target-root",
         state: "matched",
-        scopes: ["extension", "server-application-ole"]
+        scopes: ["extension", "server-application-ole", "server-application-shape"]
       },
       {
         anchor: 'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
         identifier: "Select",
         reason: "non-target-root",
         state: "matched",
-        scopes: ["server-application-ole"]
+        scopes: ["server-application-ole", "server-application-shape"]
       },
       {
         anchor: 'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',

@@ -1337,14 +1337,20 @@ Private Function GetIndex() As Long
     GetIndex = 1
 End Function`;
   const { service, uri, cleanup } = createWorksheetBroadRootFixture(text);
-  const broadRootDirectPositiveCompletionEntries = getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "positive", {
-    scope: "server-worksheet-broad-root-direct",
-    text
-  });
-  const broadRootDirectNegativeCompletionEntries = getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "negative", {
-    scope: "server-worksheet-broad-root-direct",
-    text
-  });
+  const broadRootDirectPositiveCompletionEntries = requireSharedWorkbookRootEntries(
+    getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "positive", {
+      scope: "server-worksheet-broad-root-direct",
+      text
+    }),
+    "worksheet broad root direct positive completion cases must not be empty"
+  );
+  const broadRootDirectNegativeCompletionEntries = requireSharedWorkbookRootEntries(
+    getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "negative", {
+      scope: "server-worksheet-broad-root-direct",
+      text
+    }),
+    "worksheet broad root direct negative completion cases must not be empty"
+  );
   const closedCompletionChecks = mapSharedWorkbookRootClosedCompletionCases(
     broadRootDirectPositiveCompletionEntries,
     (entry) => `snapshot 未一致では ${entry.anchor} broad root を開かない`
@@ -1497,10 +1503,13 @@ Public Sub Demo()
     Call Application.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(
 End Sub`;
   const { service, uri, cleanup } = createWorksheetBroadRootFixture(text);
-  const broadRootItemPositiveCompletionEntries = getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "positive", {
-    scope: "server-worksheet-broad-root-item",
-    text
-  });
+  const broadRootItemPositiveCompletionEntries = requireSharedWorkbookRootEntries(
+    getSharedWorkbookRootCompletionEntries("worksheetBroadRoot", "positive", {
+      scope: "server-worksheet-broad-root-item",
+      text
+    }),
+    "worksheet broad root item positive completion cases must not be empty"
+  );
   const closedCompletionChecks = mapSharedWorkbookRootClosedCompletionCases(
     broadRootItemPositiveCompletionEntries,
     (entry) => `snapshot 未一致では ${entry.anchor} broad root を開かない`
@@ -2188,43 +2197,53 @@ End Type`;
   const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
 
   try {
-    const applicationOleStaticPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
-      scope: "server-application-ole",
-      state: "static",
-      text
-    });
-    const applicationOleMatchedPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
-      scope: "server-application-ole",
-      state: "matched",
-      text
-    });
-    const applicationOleStaticNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
-      scope: "server-application-ole",
-      state: "static",
-      text
-    });
-    const applicationOleMatchedNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
-      scope: "server-application-ole",
-      state: "matched",
-      text
-    });
-    const applicationOleStaticNegativeSemanticEntries = getSharedWorkbookRootSemanticEntries(
-      "applicationWorkbookRoot",
-      "negative",
-      {
+    const applicationOleStaticPositiveEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
         scope: "server-application-ole",
         state: "static",
         text
-      }
+      }),
+      "application workbook root OLE static positive completion cases must not be empty"
     );
-    const applicationOleMatchedNegativeSemanticEntries = getSharedWorkbookRootSemanticEntries(
-      "applicationWorkbookRoot",
-      "negative",
-      {
+    const applicationOleMatchedPositiveEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
         scope: "server-application-ole",
         state: "matched",
         text
-      }
+      }),
+      "application workbook root OLE matched positive completion cases must not be empty"
+    );
+    const applicationOleStaticNegativeEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }),
+      "application workbook root OLE static negative completion cases must not be empty"
+    );
+    const applicationOleMatchedNegativeEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }),
+      "application workbook root OLE matched negative completion cases must not be empty"
+    );
+    const applicationOleStaticNegativeSemanticEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-ole",
+        state: "static",
+        text
+      }),
+      "application workbook root OLE static negative semantic cases must not be empty"
+    );
+    const applicationOleMatchedNegativeSemanticEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-ole",
+        state: "matched",
+        text
+      }),
+      "application workbook root OLE matched negative semantic cases must not be empty"
     );
     const staticCompletionCases = mapSharedWorkbookRootPositiveCompletionCases(
       applicationOleStaticPositiveEntries,
@@ -2263,11 +2282,14 @@ End Type`;
       ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Range("A1") は workbook root family に昇格しない']
     ];
     const staticSemanticChecks = mapSharedWorkbookRootSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
-        scope: "server-application-ole",
-        state: "static",
-        text
-      }),
+      requireSharedWorkbookRootEntries(
+        getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+          scope: "server-application-ole",
+          state: "static",
+          text
+        }),
+        "application workbook root OLE static positive semantic cases must not be empty"
+      ),
       (entry) => `${entry.anchor} は semantic token を出す`
     );
     const staticNoSemanticChecks = mapSharedWorkbookRootNoSemanticCases(
@@ -2317,11 +2339,14 @@ End Type`;
       ['Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(', 'snapshot 一致後も Application.Range("A1") は workbook root family に昇格しない']
     ];
     const matchedSemanticChecks = mapSharedWorkbookRootSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
-        scope: "server-application-ole",
-        state: "matched",
-        text
-      }),
+      requireSharedWorkbookRootEntries(
+        getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+          scope: "server-application-ole",
+          state: "matched",
+          text
+        }),
+        "application workbook root OLE matched positive semantic cases must not be empty"
+      ),
       (entry) => `${entry.anchor} は semantic token を出す`
     );
     const matchedNoSemanticCases = mapSharedWorkbookRootNoSemanticCases(
@@ -2375,26 +2400,38 @@ End Function`;
   const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
 
   try {
-    const applicationShapeStaticPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
-      scope: "server-application-shape",
-      state: "static",
-      text
-    });
-    const applicationShapeMatchedPositiveEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
-      scope: "server-application-shape",
-      state: "matched",
-      text
-    });
-    const applicationShapeStaticNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
-      scope: "server-application-shape",
-      state: "static",
-      text
-    });
-    const applicationShapeMatchedNegativeEntries = getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
-      scope: "server-application-shape",
-      state: "matched",
-      text
-    });
+    const applicationShapeStaticPositiveEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      "application workbook root shape static positive completion cases must not be empty"
+    );
+    const applicationShapeMatchedPositiveEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "positive", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      "application workbook root shape matched positive completion cases must not be empty"
+    );
+    const applicationShapeStaticNegativeEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-shape",
+        state: "static",
+        text
+      }),
+      "application workbook root shape static negative completion cases must not be empty"
+    );
+    const applicationShapeMatchedNegativeEntries = requireSharedWorkbookRootEntries(
+      getSharedWorkbookRootCompletionEntries("applicationWorkbookRoot", "negative", {
+        scope: "server-application-shape",
+        state: "matched",
+        text
+      }),
+      "application workbook root shape matched negative completion cases must not be empty"
+    );
     const staticCompletionCases = mapSharedWorkbookRootPositiveCompletionCases(
       applicationShapeStaticPositiveEntries,
       (entry) => `${entry.anchor} は control owner へ解決する`
@@ -2479,19 +2516,25 @@ End Function`;
     );
 
     const staticSemanticChecks = mapSharedWorkbookRootSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
-        scope: "server-application-shape",
-        state: "static",
-        text
-      }),
+      requireSharedWorkbookRootEntries(
+        getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+          scope: "server-application-shape",
+          state: "static",
+          text
+        }),
+        "application workbook root shape static positive semantic cases must not be empty"
+      ),
       (entry) => `${entry.anchor} は semantic token を出す`
     );
     const staticNoSemanticChecks = mapSharedWorkbookRootNoSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
-        scope: "server-application-shape",
-        state: "static",
-        text
-      }),
+      requireSharedWorkbookRootEntries(
+        getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+          scope: "server-application-shape",
+          state: "static",
+          text
+        }),
+        "application workbook root shape static negative semantic cases must not be empty"
+      ),
       (entry) =>
         entry.reason === "snapshot-closed"
           ? `${entry.anchor} は snapshot 未一致の間は semantic token を出さない`
@@ -2561,19 +2604,25 @@ End Function`;
     );
 
     const matchedSemanticChecks = mapSharedWorkbookRootSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
-        scope: "server-application-shape",
-        state: "matched",
-        text
-      }),
+      requireSharedWorkbookRootEntries(
+        getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
+          scope: "server-application-shape",
+          state: "matched",
+          text
+        }),
+        "application workbook root shape matched positive semantic cases must not be empty"
+      ),
       (entry) => `${entry.anchor} は semantic token を出す`
     );
     const matchedNoSemanticChecks = mapSharedWorkbookRootNoSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
-        scope: "server-application-shape",
-        state: "matched",
-        text
-      }),
+      requireSharedWorkbookRootEntries(
+        getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+          scope: "server-application-shape",
+          state: "matched",
+          text
+        }),
+        "application workbook root shape matched negative semantic cases must not be empty"
+      ),
       (entry) => `${entry.anchor} は semantic token を出さない`
     );
 
@@ -6112,6 +6161,11 @@ function getSharedWorkbookRootSemanticEntries(familyName, polarity, options = {}
     }
     return true;
   });
+}
+
+function requireSharedWorkbookRootEntries(entries, message) {
+  assert.ok(entries.length > 0, message);
+  return entries;
 }
 
 function mapSharedWorkbookRootPositiveCompletionCases(entries, messageBuilder) {

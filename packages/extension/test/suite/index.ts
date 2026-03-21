@@ -25,14 +25,19 @@ type WorkbookRootFamilyReason =
   | "shadowed-root"
   | "snapshot-closed";
 
-type WorkbookRootFamilyCompletionEntry = {
+type WorkbookRootFamilyCompletionEntryBase = {
   anchor: string;
   occurrenceIndex?: number;
   reason?: WorkbookRootFamilyReason;
-  route: WorkbookRootFamilyRoute;
   scopes: readonly WorkbookRootFamilyScope[];
   state?: WorkbookRootFamilyState;
 };
+
+type WorkbookRootFamilyPositiveCompletionEntry = WorkbookRootFamilyCompletionEntryBase & {
+  route: WorkbookRootFamilyRoute;
+};
+
+type WorkbookRootFamilyNegativeCompletionEntry = WorkbookRootFamilyCompletionEntryBase;
 
 type WorkbookRootFamilySemanticEntry = {
   anchor: string;
@@ -47,8 +52,8 @@ type WorkbookRootFamilySemanticEntry = {
 type WorkbookRootFamilyCaseTables = {
   applicationWorkbookRoot: {
     completion: {
-      negative: readonly WorkbookRootFamilyCompletionEntry[];
-      positive: readonly WorkbookRootFamilyCompletionEntry[];
+      negative: readonly WorkbookRootFamilyNegativeCompletionEntry[];
+      positive: readonly WorkbookRootFamilyPositiveCompletionEntry[];
     };
     semantic: {
       negative: readonly WorkbookRootFamilySemanticEntry[];
@@ -57,8 +62,8 @@ type WorkbookRootFamilyCaseTables = {
   };
   worksheetBroadRoot: {
     completion: {
-      negative: readonly WorkbookRootFamilyCompletionEntry[];
-      positive: readonly WorkbookRootFamilyCompletionEntry[];
+      negative: readonly WorkbookRootFamilyNegativeCompletionEntry[];
+      positive: readonly WorkbookRootFamilyPositiveCompletionEntry[];
     };
   };
 };
@@ -4533,9 +4538,19 @@ function loadWorkbookRootFamilyCaseTables(): WorkbookRootFamilyCaseTables {
 
 function getSharedWorkbookRootCompletionEntries(
   familyName: keyof WorkbookRootFamilyCaseTables,
+  polarity: "positive",
+  options?: { scope?: WorkbookRootFamilyScope; state?: WorkbookRootFamilyState }
+): readonly WorkbookRootFamilyPositiveCompletionEntry[];
+function getSharedWorkbookRootCompletionEntries(
+  familyName: keyof WorkbookRootFamilyCaseTables,
+  polarity: "negative",
+  options?: { scope?: WorkbookRootFamilyScope; state?: WorkbookRootFamilyState }
+): readonly WorkbookRootFamilyNegativeCompletionEntry[];
+function getSharedWorkbookRootCompletionEntries(
+  familyName: keyof WorkbookRootFamilyCaseTables,
   polarity: "negative" | "positive",
   options: { scope?: WorkbookRootFamilyScope; state?: WorkbookRootFamilyState } = {}
-): readonly WorkbookRootFamilyCompletionEntry[] {
+): readonly WorkbookRootFamilyPositiveCompletionEntry[] | readonly WorkbookRootFamilyNegativeCompletionEntry[] {
   const { scope, state } = options;
   return workbookRootFamilyCaseTables[familyName].completion[polarity].filter((entry) => {
     if (scope && !entry.scopes.includes(scope)) {
@@ -4565,8 +4580,8 @@ function getSharedWorkbookRootSemanticEntries(
 }
 
 function mapExtensionWorkbookRootPositiveCompletionCases(
-  entries: readonly WorkbookRootFamilyCompletionEntry[],
-  messageBuilder: (entry: WorkbookRootFamilyCompletionEntry) => string
+  entries: readonly WorkbookRootFamilyPositiveCompletionEntry[],
+  messageBuilder: (entry: WorkbookRootFamilyPositiveCompletionEntry) => string
 ): readonly WorkbookRootCompletionCase[] {
   assert.ok(entries.length > 0, "workbook root positive completion shared cases must not be empty");
   return entries.map((entry) => [
@@ -4579,8 +4594,8 @@ function mapExtensionWorkbookRootPositiveCompletionCases(
 }
 
 function mapExtensionWorkbookRootClosedCompletionCases(
-  entries: readonly WorkbookRootFamilyCompletionEntry[],
-  messageBuilder: (entry: WorkbookRootFamilyCompletionEntry) => string
+  entries: readonly WorkbookRootFamilyCompletionEntryBase[],
+  messageBuilder: (entry: WorkbookRootFamilyCompletionEntryBase) => string
 ): readonly WorkbookRootClosedCompletionCase[] {
   assert.ok(entries.length > 0, "workbook root closed completion shared cases must not be empty");
   return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
