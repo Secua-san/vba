@@ -1787,6 +1787,56 @@ End Sub`;
   }
 });
 
+test("document service keeps indexed ActiveWorkbook roots closed", () => {
+  const text = `Attribute VB_Name = "Module1"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.
+    Debug.Print ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Value
+    Call ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select(
+End Sub`;
+  const { service, uri, cleanup } = createWorkbookQualifiedWorksheetRootFixture(text);
+
+  try {
+    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
+
+    assert.equal(
+      hasCompletionSymbolAfterToken(
+        service,
+        uri,
+        text,
+        'ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.',
+        "Value"
+      ),
+      false,
+      'indexed ActiveWorkbook root は workbook broad root として扱わない'
+    );
+    assert.equal(
+      getHoverAfterToken(
+        service,
+        uri,
+        text,
+        'ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu'
+      ),
+      undefined,
+      'indexed ActiveWorkbook root は hover を出さない'
+    );
+    assert.equal(
+      getSignatureHelpAfterToken(
+        service,
+        uri,
+        text,
+        'ActiveWorkbook("Book1").Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Select('
+      ),
+      undefined,
+      'indexed ActiveWorkbook root は signature help を出さない'
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("document service resolves workbook-qualified worksheet root item selectors for Shape.OLEFormat.Object", () => {
   const text = `Attribute VB_Name = "Module1"
 Option Explicit

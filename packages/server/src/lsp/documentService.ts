@@ -2076,7 +2076,12 @@ function getBroadRootBuiltinContext(
     return undefined;
   }
 
-  if (normalizeIdentifier(rootSegment) === "activeworkbook") {
+  const activeWorkbookSegment = pathSegmentDetails?.[0];
+
+  if (
+    normalizeIdentifier(activeWorkbookSegment?.text ?? rootSegment) === "activeworkbook" &&
+    activeWorkbookSegment?.accessKind === "none"
+  ) {
     if (!hasMatchedActiveWorkbookBinding(state)) {
       return undefined;
     }
