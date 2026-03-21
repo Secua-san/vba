@@ -498,9 +498,15 @@
   - server の CommonJS / 同期 assertion と extension の TypeScript / 非同期 assertion の差から、`resolveJsonModule` や copy step を増やさずに両方から読める `*.cjs` ベースを正本候補とする判断を整理した
   - `occurrenceIndex` を shared spec 側で明示管理し、shadow / duplicate anchor を package-local message と切り分ける方針を固定した
 
-- [ ] workbook root family の shared case spec を最小抽出する
-  - `test-support/workbookRootFamilyCaseTables.cjs` を追加し、`ApplicationWorkbookRootBuiltIn.bas` / `WorksheetBroadRootBuiltIn.bas` の semantic token + completion anchor を canonical spec として切り出す
-  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` には薄い adapter だけを残し、package 固有の `CompletionItem.detail` / async wait 条件 / failure message は local に維持する
+- [x] workbook root family の shared case spec を最小抽出する
+  - `test-support/workbookRootFamilyCaseTables.cjs` を追加し、`WorksheetBroadRootBuiltIn.bas` / `ApplicationWorkbookRootBuiltIn.bas` の completion anchor と application workbook root family の semantic anchor を canonical spec として切り出した
+  - `packages/server/test/documentService.test.js` では shared spec を fixture に存在する anchor だけへ絞る filter を通し、broad root / application workbook root の completion・semantic matrix を package-local helper へ変換する薄い adapter へ寄せた
+  - `packages/extension/test/suite/index.ts` では `test-support/` の CJS 正本を runtime 解決し、`CompletionItem.detail` / blocked label / async wait 条件 / failure message は local に残したまま shared spec から tuple を組み立てる形へ整理した
+  - 検証として `npm run test --workspace @vba/server`、`npx tsc -p packages/extension/tsconfig.test.json`、`npm run lint`、`npm run package` を通した。`npm run test --workspace vba-extension` はこの Codex セッションで Code を使用中のため CLI 実行が弾かれた
+
+- [ ] workbook root family の hover / signature anchor shared 化を再評価する
+  - 今回は completion / semantic の canonical spec だけを抽出したため、`WorksheetBroadRootBuiltIn.bas` / `ApplicationWorkbookRootBuiltIn.bas` の hover / signature anchor も shared 化する価値があるか、diagnostic message と async wait 条件の読みやすさを崩さずに整理する
+  - 特に extension 側の `waitForNoHoverAtToken` / `waitForNoSignatureHelpAtToken` と server 側の同期 assert で、anchor だけ shared 化し message は local に残す境界を再確認する
 
 ## メモ
 
