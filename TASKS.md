@@ -487,10 +487,15 @@
   - `packages/extension/test/fixtures/ApplicationWorkbookRootBuiltIn.bas` を server 側の matrix と揃え、negative hover / signature と shadow 用 token の不足を補った
   - 検証として `npm run build --workspace @vba/server`、`npm test --workspace @vba/server`、`npx tsc -p packages/extension/tsconfig.test.json`、`npm run build`、`npm run test --workspace vba-extension` を通した
 
-- [ ] workbook root family の semantic token / fixture helper を追加整理する
-  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` に残っている workbook root family 専用の semantic token assert と fixture 行番号依存を、current-bundle / broad-root family 共通 helper へ寄せる
-  - `ApplicationWorkbookRootBuiltIn.bas` と `WorksheetBroadRootBuiltIn.bas` の matrix を token 名ベースで追いやすい形に整え、将来の root family 追加時に line number 追従だけで壊れにくくする
-  - docs / `TASKS.md` には「挙動変更なしの整理」であることを維持して記録する
+- [x] workbook root family の semantic token / fixture helper を追加整理する
+  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` に workbook root family 用の semantic token helper を追加し、line number 固定ではなく anchor token ベースで `Value` / `Select` を検証する形へ寄せた
+  - workbook-qualified root item と `Application.ThisWorkbook` / `Application.ActiveWorkbook` matrix の semantic token assert を token 名ベースへ置き換え、fixture 行追加だけで壊れにくい構成にした
+  - `ApplicationWorkbookRootBuiltIn.bas` と `WorksheetBroadRootBuiltIn.bas` へ section comment を追加し、current-bundle family / broad-root family / non-target root の塊を読み分けやすくした
+  - 挙動変更なしの整理として `npm run lint`、`npm test`、`npm run package` を通した
+
+- [ ] workbook root family の matrix case table 共通化方針を整理する
+  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` は helper までは寄ったが case table は重複しているため、shared test util 化の可否とレビュー容易性のバランスを整理する
+  - `ApplicationWorkbookRootBuiltIn.bas` / `WorksheetBroadRootBuiltIn.bas` の token 名と test case table の対応を、今のまま各テスト内で持つか、別モジュールへ切り出すかを判断する
 
 ## メモ
 
