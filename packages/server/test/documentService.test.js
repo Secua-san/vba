@@ -2239,6 +2239,26 @@ End Type`;
     ];
     const staticNoSemanticChecks = [
       [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
         "Value",
         'Application.ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は snapshot 未一致の間は semantic token を出さない'
@@ -2249,13 +2269,43 @@ End Type`;
         'Application.ActiveWorkbook.Worksheets.Item("Sheet One").OLEObjects.Item("CheckBox1").Object は snapshot 未一致の間は semantic token を出さない'
       ],
       [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.Value',
         "Value",
         'Application.Caller は workbook root family に昇格しないため semantic token を出さない'
       ],
       [
+        'Call Application.Caller.OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.Caller は workbook root family に昇格しないため semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value',
         "Value",
+        'Application.Range("A1") は workbook root family に昇格しないため semantic token を出さない'
+      ],
+      [
+        'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
         'Application.Range("A1") は workbook root family に昇格しないため semantic token を出さない'
       ]
     ];
@@ -2316,6 +2366,26 @@ End Type`;
     ];
     const matchedNoSemanticCases = [
       [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
         "Value",
         'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
@@ -2331,13 +2401,28 @@ End Type`;
         'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
       ],
       [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.Caller.OLEObjects("CheckBox1").Object.Value',
         "Value",
         'snapshot 一致後も Application.Caller は semantic token を出さない'
       ],
       [
+        'Call Application.Caller.OLEObjects("CheckBox1").Object.Select(',
+        "Select",
+        'snapshot 一致後も Application.Caller は semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value',
         "Value",
+        'snapshot 一致後も Application.Range("A1") は semantic token を出さない'
+      ],
+      [
+        'Call Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
         'snapshot 一致後も Application.Range("A1") は semantic token を出さない'
       ]
     ];
@@ -2518,6 +2603,26 @@ End Function`;
     ];
     const staticNoSemanticChecks = [
       [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
         "Value",
         'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は snapshot 未一致の間は semantic token を出さない'
@@ -2526,6 +2631,26 @@ End Function`;
         'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
         "Select",
         'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は snapshot 未一致の間は semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets.Item(1) は numeric selector なので semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
       ]
     ];
 
@@ -2637,6 +2762,26 @@ End Function`;
     ];
     const matchedNoSemanticChecks = [
       [
+        'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets("Sheet1") は codeName 指定なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets.Item(1) は numeric selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Debug.Print Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
+        "Value",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
+        'Call Application.ThisWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ThisWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
+      ],
+      [
         'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
         "Value",
         'Application.ActiveWorkbook.Worksheets("Sheet1") は codeName 指定なので semantic token を出さない'
@@ -2650,6 +2795,11 @@ End Function`;
         'Debug.Print Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Value',
         "Value",
         'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので semantic token を出さない'
+      ],
+      [
+        'Call Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        "Select",
+        'Application.ActiveWorkbook.Worksheets(GetIndex()) は dynamic selector なので snapshot 一致後も semantic token を出さない'
       ]
     ];
 

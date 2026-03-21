@@ -2166,6 +2166,18 @@ export async function run(): Promise<void> {
       'Call Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(',
       "Select",
       'Application.ActiveWorkbook.Worksheets.Item("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は snapshot 未一致の間は semantic token を出さない'
+    ],
+    [
+      'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+      "Value",
+      "shadowed Application.ThisWorkbook は semantic token を出さない",
+      1
+    ],
+    [
+      'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+      "Value",
+      "shadowed Application.ActiveWorkbook は semantic token を出さない",
+      1
     ]
   ] as const);
 
@@ -2373,6 +2385,18 @@ export async function run(): Promise<void> {
       'Debug.Print Application.Range("A1").Shapes("CheckBox1").OLEFormat.Object.Value',
       "Value",
       'snapshot 一致後も Application.Range("A1") は semantic token を出さない'
+    ],
+    [
+      'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+      "Value",
+      "shadowed Application.ThisWorkbook は semantic token を出さない",
+      1
+    ],
+    [
+      'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+      "Value",
+      "shadowed Application.ActiveWorkbook は semantic token を出さない",
+      1
     ]
   ] as const);
 
