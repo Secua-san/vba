@@ -148,7 +148,7 @@
 
 ## user-facing 境界
 
-### 既に開いているもの
+### 既に開いているものの代表例
 
 - `ActiveWorkbook.Worksheets("Sheet1").OLEObjects("ShapeName").Object`
 - `ActiveWorkbook.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
@@ -159,10 +159,14 @@
 - `Application.Worksheets("Sheet1").Shapes("ShapeName").OLEFormat.Object`
 - `Application.Worksheets.Item("Sheet1").Shapes("ShapeName").OLEFormat.Object`
 
-### まだ開かないもの
+- 上の列挙は broad-root family の代表例であり、実装済みの全パターンを網羅列挙するものではない。
+
+### policy は決まったが未実装のもの
 
 - `Application.ThisWorkbook.Worksheets("Sheet1")...`
+  - `ThisWorkbook` direct root と同じ static current-bundle family に入れる方針は確定したが、まだ user-facing には接続していない。
 - `Application.ActiveWorkbook.Worksheets("Sheet1")...`
+  - `ActiveWorkbook` direct root と同じ manifest + snapshot gating family に入れる方針は確定したが、まだ user-facing には接続していない。
 
 ### 将来開ける条件
 
@@ -180,7 +184,6 @@
 - v1 の `FullName` 正規化ルールと generator / consumer の責務境界を残す。
 - broad root feature 開放に別途 host 契約が必要であることを明文化する。
 
-## 次段の候補
+## 関連メモ
 
-- `Application.ThisWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を manifest 非依存の static current-bundle root として扱うかを整理する。
-- `Application.ActiveWorkbook.Worksheets("SheetName")` / `.Item("SheetName")` を既存 broad-root family と同じ manifest + snapshot gating へ寄せるかを整理する。
+- `Application.ThisWorkbook` / `Application.ActiveWorkbook` root の整理結果は [application-workbook-root-feasibility.md](./application-workbook-root-feasibility.md) を参照する。
