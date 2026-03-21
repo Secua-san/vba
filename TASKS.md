@@ -493,9 +493,14 @@
   - `ApplicationWorkbookRootBuiltIn.bas` と `WorksheetBroadRootBuiltIn.bas` へ section comment を追加し、current-bundle family / broad-root family / non-target root の塊を読み分けやすくした
   - 挙動変更なしの整理として `npm run lint`、`npm test`、`npm run package` を通した
 
-- [ ] workbook root family の matrix case table 共通化方針を整理する
-  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` は helper までは寄ったが case table は重複しているため、shared test util 化の可否とレビュー容易性のバランスを整理する
-  - `ApplicationWorkbookRootBuiltIn.bas` / `WorksheetBroadRootBuiltIn.bas` の token 名と test case table の対応を、今のまま各テスト内で持つか、別モジュールへ切り出すかを判断する
+- [x] workbook root family の matrix case table 共通化方針を整理する
+  - [docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) を追加し、shared 化対象は helper ではなく repo root `test-support/` 配下の canonical case spec に限定し、server / extension は package-local adapter を維持する方針を固定した
+  - server の CommonJS / 同期 assertion と extension の TypeScript / 非同期 assertion の差から、`resolveJsonModule` や copy step を増やさずに両方から読める `*.cjs` ベースを正本候補とする判断を整理した
+  - `occurrenceIndex` を shared spec 側で明示管理し、shadow / duplicate anchor を package-local message と切り分ける方針を固定した
+
+- [ ] workbook root family の shared case spec を最小抽出する
+  - `test-support/workbookRootFamilyCaseTables.cjs` を追加し、`ApplicationWorkbookRootBuiltIn.bas` / `WorksheetBroadRootBuiltIn.bas` の semantic token + completion anchor を canonical spec として切り出す
+  - `packages/server/test/documentService.test.js` と `packages/extension/test/suite/index.ts` には薄い adapter だけを残し、package 固有の `CompletionItem.detail` / async wait 条件 / failure message は local に維持する
 
 ## メモ
 
