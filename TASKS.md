@@ -6,6 +6,11 @@
 
 ## 完了
 
+- [x] broad root family の重複テスト補助を整理
+  - `packages/server/test/documentService.test.js` に worksheet broad root 専用 fixture / snapshot / token lookup helper を追加し、`matched` / `mismatched` / `unavailable` / shadow / root `.Item` 非対象ケースの重複した setup と query を削減した
+  - `packages/extension/test/suite/index.ts` に token 指定の completion / hover / signature helper を追加し、`WorksheetBroadRootBuiltIn.bas` の broad root 行列テストを状態別の配列駆動へ寄せた
+  - `npm run lint --workspace @vba/server`、`npm run lint --workspace vba-extension`、`npm run test --workspace @vba/server`、`npm run test --workspace vba-extension`、`npm test`、`npm run package` を通して既存 broad root 挙動を維持した
+
 - [x] ドキュメント導線と CodeRabbit 記録の整理
   - `docs/README.md` と `docs/process/README.md` を、「最初に読む正本」と「必要なときだけ開く機能別メモ」に整理し、入口からの参照階層を浅くした
   - `docs/process/coderabbit-review.md` を正本に寄せ、CodeRabbit 月次ログは `docs/process/coderabbit-review-logs/YYYY-MM.md` へ直接記録する方式に変え、案内用の中継ページを廃止した
@@ -449,9 +454,9 @@
   - `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` のような root `.Item` 形式は v1 非対象として [docs/adr/0005-explicit-sheet-name-root-policy.md](docs/adr/0005-explicit-sheet-name-root-policy.md) と [docs/process/explicit-sheet-name-broad-root-feasibility.md](docs/process/explicit-sheet-name-broad-root-feasibility.md) に明記し、snapshot match 中でも開かない負例を固定した
   - broad root family の `.Item` 回帰を追加したうえで、`npm run lint` / `npm test` / `npm run package` を通して direct call form の既存境界と root `.Item` 非対象境界が崩れていないことを確認した
 
-- [ ] broad root family の重複テスト補助を整理する
-  - `ActiveWorkbook` / unqualified `Worksheets` / `Application.Worksheets` で同じ gating matrix を毎回手書きしているため、server / extension test の broad-root helper を整理して追加ケースの差分を読みやすくする
-  - review 指摘で出やすい `matched available` / `mismatched available` / `unavailable` / shadow / root `.Item` 非対象の組み合わせを helper へ寄せ、次段の broad root 追加時に negative coverage を落としにくくする
+- [ ] unqualified worksheet broad root の root `.Item("SheetName")` 形式を再評価する
+  - 現在は `Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` を v1 非対象として閉じているため、Office VBA 上の意味と既存 broad root family との整合を docs から再確認する
+  - 実装へ進める場合は `Worksheets("SheetName")` 既存導線と同じ runtime gating / manifest matching / shadow 境界にそろえ、server / extension test で direct call form との非衝突を固定する
 
 ## メモ
 
