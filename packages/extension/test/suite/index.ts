@@ -18,6 +18,18 @@ const ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT = {
   state: "available",
   version: 1
 } as const;
+const ACTIVE_WORKBOOK_MISMATCHED_SNAPSHOT = {
+  identity: {
+    fullName: "c:/fixtures/OTHER-BOOK.xlsm",
+    isAddin: false,
+    name: "other-book.xlsm",
+    path: "c:/fixtures"
+  },
+  observedAt: "2026-03-21T00:01:00.000Z",
+  providerKind: "excel-active-workbook",
+  state: "available",
+  version: 1
+} as const;
 const ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT = {
   observedAt: "2026-03-21T00:01:00.000Z",
   providerKind: "excel-active-workbook",
@@ -1153,382 +1165,178 @@ export async function run(): Promise<void> {
   );
   await vscode.window.showTextDocument(worksheetBroadRootDocument);
 
-  const worksheetBroadRootObjectCompletionSuppressed = await waitForCompletions(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
-    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  const broadRootClosedCompletionChecks = [
+    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'unqualified Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'Application.Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'],
+    ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'unqualified Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'],
+    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない']
+  ] as const;
+  const broadRootMatchedCompletionChecks = [
+    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'CheckBox property', "Activate", 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.', 'CheckBox property', "Activate", 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'],
+    ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'CheckBox property', "Activate", 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
+    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.', 'CheckBox property', "Activate", 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'],
+    ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'],
+    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.', 'CheckBox property', "Delete", 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する']
+  ] as const;
+  const broadRootMatchedHoverChecks = [
+    ['Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Worksheets("Sheet One") の OLEObject.Object hover は control owner へ解決する'],
+    ['Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu', 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1") の hover は control owner へ解決する'],
+    ['Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', 'Worksheets("Sheet One") の Shape.OLEFormat.Object hover は control owner へ解決する'],
+    ['Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu', 'Worksheets("Sheet One").Shapes.Item("CheckBox1") の hover は control owner へ解決する']
+  ] as const;
+  const broadRootMatchedSignatureChecks = [
+    ['Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(', 'Application.Worksheets("Sheet One") の OLEObject.Object signature help は control owner へ解決する'],
+    ['Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select(', 'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") の signature help は control owner へ解決する'],
+    ['Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets("Sheet One") の Shape.OLEFormat.Object signature help は control owner へ解決する'],
+    ['Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select(', 'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") の signature help は control owner へ解決する']
+  ] as const;
+  const broadRootNonTargetHoverChecks = [
+    ['Sheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Sheets root は broad root family の対象外を維持する'],
+    ['ActiveSheet.OLEObjects("CheckBox1").Object.Valu', 'ActiveSheet root は broad root family の対象外を維持する'],
+    ['Worksheets(1).OLEObjects("CheckBox1").Object.Valu', 'numeric selector の Worksheets root は broad root family の対象外を維持する'],
+    ['Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu', 'dynamic selector の Worksheets root は broad root family の対象外を維持する'],
+    ['Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu', 'Worksheets.Item("Sheet One") は root .Item 形式のため broad root を開かない']
+  ] as const;
+
+  for (const [token, message] of broadRootClosedCompletionChecks) {
+    const items = await waitForCompletionLabelStateAtToken(worksheetBroadRootDocument, token, "Value", false);
+
+    assert.equal(hasCompletionItemLabel(items, "Value"), false, message);
+  }
+  assert.equal(
+    await waitForNoHoverAtToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'),
+    true
   );
-  const applicationBroadRootObjectCompletionSuppressed = await waitForCompletions(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(worksheetBroadRootDocument, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
-    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+  assert.equal(
+    await waitForNoHoverAtToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'),
+    true
   );
-  const worksheetBroadRootItemObjectCompletionSuppressed = await waitForCompletions(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'),
-    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
-  );
-  const applicationBroadRootItemObjectCompletionSuppressed = await waitForCompletions(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(
-      worksheetBroadRootDocument,
-      'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'
-    ),
-    (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
-  );
-  const worksheetBroadRootShapeHoverSuppressed = await waitForNoHover(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu')
-  );
-  const worksheetBroadRootItemShapeHoverSuppressed = await waitForNoHover(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(
-      worksheetBroadRootDocument,
-      'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
-    )
-  );
-  const applicationBroadRootShapeSignatureSuppressed = await waitForNoSignatureHelp(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(
+  assert.equal(
+    await waitForNoSignatureHelpAtToken(
       worksheetBroadRootDocument,
       'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-    )
+    ),
+    true
   );
-  const applicationBroadRootItemShapeSignatureSuppressed = await waitForNoSignatureHelp(
-    worksheetBroadRootDocument,
-    findPositionAfterToken(
+  assert.equal(
+    await waitForNoSignatureHelpAtToken(
       worksheetBroadRootDocument,
       'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-    )
+    ),
+    true
   );
-
-  assert.equal(
-    worksheetBroadRootObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-    false,
-    'unqualified Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'
-  );
-  assert.equal(
-    applicationBroadRootObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-    false,
-    'Application.Worksheets("Sheet One") は snapshot 未一致の間は broad root を開かない'
-  );
-  assert.equal(
-    worksheetBroadRootItemObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-    false,
-    'unqualified Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
-  );
-  assert.equal(
-    applicationBroadRootItemObjectCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
-    false,
-    'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1") は snapshot 未一致の間は broad root を開かない'
-  );
-  assert.equal(worksheetBroadRootShapeHoverSuppressed, true);
-  assert.equal(worksheetBroadRootItemShapeHoverSuppressed, true);
-  assert.equal(applicationBroadRootShapeSignatureSuppressed, true);
-  assert.equal(applicationBroadRootItemShapeSignatureSuppressed, true);
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
   try {
-    const worksheetBroadRootObjectCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const applicationBroadRootObjectCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const worksheetBroadRootItemObjectCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const applicationBroadRootItemObjectCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.'
-      ),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const worksheetBroadRootShapeCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const applicationBroadRootShapeCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'
-      ),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const worksheetBroadRootItemShapeCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.'
-      ),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const applicationBroadRootItemShapeCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.'
-      ),
-      (items) => items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const worksheetBroadRootObjectHover = await waitForHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
-      (hovers) => hovers.length > 0
-    );
-    const worksheetBroadRootItemObjectHover = await waitForHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
-      ),
-      (hovers) => hovers.length > 0
-    );
-    const applicationBroadRootObjectSignature = await waitForSignatureHelp(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select('
-      ),
-      (help) => help.signatures.length > 0
-    );
-    const applicationBroadRootItemObjectSignature = await waitForSignatureHelp(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Select('
-      ),
-      (help) => help.signatures.length > 0
-    );
-    const worksheetBroadRootShapeHover = await waitForHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu'),
-      (hovers) => hovers.length > 0
-    );
-    const worksheetBroadRootItemShapeHover = await waitForHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Valu'
-      ),
-      (hovers) => hovers.length > 0
-    );
-    const applicationBroadRootShapeSignature = await waitForSignatureHelp(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-      ),
-      (help) => help.signatures.length > 0
-    );
-    const applicationBroadRootItemShapeSignature = await waitForSignatureHelp(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.Select('
-      ),
-      (help) => help.signatures.length > 0
-    );
-    const sheetsBroadRootHoverSuppressed = await waitForNoHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Sheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
-    );
-    const activeSheetBroadRootHoverSuppressed = await waitForNoHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'ActiveSheet.OLEObjects("CheckBox1").Object.Valu')
-    );
-    const indexedBroadRootHoverSuppressed = await waitForNoHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets(1).OLEObjects("CheckBox1").Object.Valu')
-    );
-    const dynamicBroadRootHoverSuppressed = await waitForNoHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.Valu')
-    );
-    const worksheetRootItemHoverSuppressed = await waitForNoHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.Valu')
-    );
-    const worksheetRootItemCompletionSuppressed = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.'),
-      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const applicationRootItemCompletionSuppressed = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'
-      ),
-      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const applicationRootItemSignatureSuppressed = await waitForNoSignatureHelp(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-      )
-    );
-    const worksheetBroadRootValueCompletion = worksheetBroadRootObjectCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const applicationBroadRootValueCompletion = applicationBroadRootObjectCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const worksheetBroadRootItemValueCompletion = worksheetBroadRootItemObjectCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const applicationBroadRootItemValueCompletion = applicationBroadRootItemObjectCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const worksheetBroadRootShapeCompletion = worksheetBroadRootShapeCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const applicationBroadRootShapeCompletion = applicationBroadRootShapeCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const worksheetBroadRootItemShapeCompletion = worksheetBroadRootItemShapeCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const applicationBroadRootItemShapeCompletion = applicationBroadRootItemShapeCompletionItems.find(
-      (item) => getCompletionItemLabel(item) === "Value"
-    );
-    const worksheetBroadRootObjectHoverText = getHoverContentsText(worksheetBroadRootObjectHover[0]);
-    const worksheetBroadRootItemObjectHoverText = getHoverContentsText(worksheetBroadRootItemObjectHover[0]);
-    const worksheetBroadRootShapeHoverText = getHoverContentsText(worksheetBroadRootShapeHover[0]);
-    const worksheetBroadRootItemShapeHoverText = getHoverContentsText(worksheetBroadRootItemShapeHover[0]);
+    for (const [token, detailFragment, blockedLabel, message] of broadRootMatchedCompletionChecks) {
+      const items = await waitForCompletionLabelStateAtToken(worksheetBroadRootDocument, token, "Value", true);
+      const completion = items.find((item) => getCompletionItemLabel(item) === "Value");
 
-    assert.ok(worksheetBroadRootValueCompletion?.detail?.includes("CheckBox property"));
-    assert.ok(applicationBroadRootValueCompletion?.detail?.includes("CheckBox property"));
-    assert.ok(worksheetBroadRootItemValueCompletion?.detail?.includes("CheckBox property"));
-    assert.ok(applicationBroadRootItemValueCompletion?.detail?.includes("CheckBox property"));
-    assert.ok(worksheetBroadRootShapeCompletion?.detail?.includes("CheckBox property"));
-    assert.ok(applicationBroadRootShapeCompletion?.detail?.includes("CheckBox property"));
-    assert.ok(worksheetBroadRootItemShapeCompletion?.detail?.includes("CheckBox property"));
-    assert.ok(applicationBroadRootItemShapeCompletion?.detail?.includes("CheckBox property"));
-    assert.equal(
-      worksheetBroadRootObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
-      false,
-      'Worksheets("Sheet One").OLEObjects("CheckBox1").Object は control owner へ解決する'
+      assert.ok(completion?.detail?.includes(detailFragment), message);
+      assert.equal(hasCompletionItemLabel(items, blockedLabel), false, message);
+    }
+    for (const [token, message] of broadRootMatchedHoverChecks) {
+      const hovers = await waitForHoverAtToken(worksheetBroadRootDocument, token, (items) => items.length > 0);
+      assert.equal(getHoverContentsText(hovers[0]).includes("CheckBox.Value"), true, message);
+    }
+    for (const [token, message] of broadRootMatchedSignatureChecks) {
+      const signatureHelp = await waitForSignatureHelpAtToken(
+        worksheetBroadRootDocument,
+        token,
+        (help) => help.signatures.length > 0
+      );
+      assert.equal(signatureHelp.signatures[0]?.label, "Select(Replace) As Object", message);
+    }
+    for (const [token, message] of broadRootNonTargetHoverChecks) {
+      assert.equal(await waitForNoHoverAtToken(worksheetBroadRootDocument, token), true, message);
+    }
+
+    const worksheetRootItemCompletionSuppressed = await waitForCompletionLabelStateAtToken(
+      worksheetBroadRootDocument,
+      'Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.',
+      "Value",
+      false
     );
-    assert.equal(
-      worksheetBroadRootItemObjectCompletionItems.some((item) => getCompletionItemLabel(item) === "Activate"),
-      false,
-      'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object は control owner へ解決する'
+    const applicationRootItemCompletionSuppressed = await waitForCompletionLabelStateAtToken(
+      worksheetBroadRootDocument,
+      'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
+      "Value",
+      false
     );
+
     assert.equal(
-      applicationBroadRootShapeCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
-      false,
-      'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object は control owner へ解決する'
-    );
-    assert.equal(
-      applicationBroadRootItemShapeCompletionItems.some((item) => getCompletionItemLabel(item) === "Delete"),
-      false,
-      'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object は control owner へ解決する'
-    );
-    assert.equal(worksheetBroadRootObjectHoverText.includes("CheckBox.Value"), true);
-    assert.equal(worksheetBroadRootItemObjectHoverText.includes("CheckBox.Value"), true);
-    assert.equal(worksheetBroadRootShapeHoverText.includes("CheckBox.Value"), true);
-    assert.equal(worksheetBroadRootItemShapeHoverText.includes("CheckBox.Value"), true);
-    assert.equal(applicationBroadRootObjectSignature.signatures[0]?.label, "Select(Replace) As Object");
-    assert.equal(applicationBroadRootItemObjectSignature.signatures[0]?.label, "Select(Replace) As Object");
-    assert.equal(applicationBroadRootShapeSignature.signatures[0]?.label, "Select(Replace) As Object");
-    assert.equal(applicationBroadRootItemShapeSignature.signatures[0]?.label, "Select(Replace) As Object");
-    assert.equal(sheetsBroadRootHoverSuppressed, true);
-    assert.equal(activeSheetBroadRootHoverSuppressed, true);
-    assert.equal(indexedBroadRootHoverSuppressed, true);
-    assert.equal(dynamicBroadRootHoverSuppressed, true);
-    assert.equal(worksheetRootItemHoverSuppressed, true);
-    assert.equal(
-      worksheetRootItemCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+      hasCompletionItemLabel(worksheetRootItemCompletionSuppressed, "Value"),
       false,
       'Worksheets.Item("Sheet One").OLEObjects("CheckBox1") は root .Item 形式のため broad root を開かない'
     );
     assert.equal(
-      applicationRootItemCompletionSuppressed.some((item) => getCompletionItemLabel(item) === "Value"),
+      hasCompletionItemLabel(applicationRootItemCompletionSuppressed, "Value"),
       false,
       'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1") は root .Item 形式のため broad root を開かない'
     );
-    assert.equal(applicationRootItemSignatureSuppressed, true);
-
-    await setActiveWorkbookIdentitySnapshot({
-      identity: {
-        fullName: "C:\\Fixtures\\OtherBook.xlsm",
-        isAddin: false,
-        name: "OtherBook.xlsm",
-        path: "C:\\Fixtures"
-      },
-      observedAt: "2026-03-21T00:01:00.000Z",
-      providerKind: "excel-active-workbook",
-      state: "available",
-      version: 1
-    });
-
-    const mismatchedWorksheetBroadRootHoverSuppressed = await waitForNoHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu')
+    assert.equal(
+      await waitForNoSignatureHelpAtToken(
+        worksheetBroadRootDocument,
+        'Application.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
+      ),
+      true
     );
-    const mismatchedWorksheetBroadRootItemHoverSuppressed = await waitForNoHover(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
+
+    await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_MISMATCHED_SNAPSHOT);
+
+    assert.equal(
+      await waitForNoHoverAtToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu'),
+      true
+    );
+    assert.equal(
+      await waitForNoHoverAtToken(
         worksheetBroadRootDocument,
         'Worksheets("Sheet One").OLEObjects.Item("CheckBox1").Object.Valu'
-      )
+      ),
+      true
     );
-    const mismatchedApplicationBroadRootSignatureSuppressed = await waitForNoSignatureHelp(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
+    assert.equal(
+      await waitForNoSignatureHelpAtToken(
         worksheetBroadRootDocument,
         'Application.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select('
-      )
-    );
-    const mismatchedWorksheetBroadRootCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(worksheetBroadRootDocument, 'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.'),
-      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const mismatchedApplicationBroadRootCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.'
       ),
-      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
-    );
-    const mismatchedApplicationBroadRootItemCompletionItems = await waitForCompletions(
-      worksheetBroadRootDocument,
-      findPositionAfterToken(
-        worksheetBroadRootDocument,
-        'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.'
-      ),
-      (items) => !items.some((item) => getCompletionItemLabel(item) === "Value")
+      true
     );
 
-    assert.equal(mismatchedWorksheetBroadRootHoverSuppressed, true);
-    assert.equal(mismatchedWorksheetBroadRootItemHoverSuppressed, true);
-    assert.equal(mismatchedApplicationBroadRootSignatureSuppressed, true);
+    const mismatchedWorksheetBroadRootCompletionItems = await waitForCompletionLabelStateAtToken(
+      worksheetBroadRootDocument,
+      'Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
+      "Value",
+      false
+    );
+    const mismatchedApplicationBroadRootCompletionItems = await waitForCompletionLabelStateAtToken(
+      worksheetBroadRootDocument,
+      'Application.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
+      "Value",
+      false
+    );
+    const mismatchedApplicationBroadRootItemCompletionItems = await waitForCompletionLabelStateAtToken(
+      worksheetBroadRootDocument,
+      'Application.Worksheets("Sheet One").Shapes.Item("CheckBox1").OLEFormat.Object.',
+      "Value",
+      false
+    );
+
     assert.equal(
-      mismatchedWorksheetBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      hasCompletionItemLabel(mismatchedWorksheetBroadRootCompletionItems, "Value"),
       false,
       'mismatch snapshot では Worksheets("Sheet One").Shapes("CheckBox1") broad root を開かない'
     );
     assert.equal(
-      mismatchedApplicationBroadRootCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      hasCompletionItemLabel(mismatchedApplicationBroadRootCompletionItems, "Value"),
       false,
       'mismatch snapshot では Application.Worksheets("Sheet One").OLEObjects("CheckBox1") broad root を開かない'
     );
     assert.equal(
-      mismatchedApplicationBroadRootItemCompletionItems.some((item) => getCompletionItemLabel(item) === "Value"),
+      hasCompletionItemLabel(mismatchedApplicationBroadRootItemCompletionItems, "Value"),
       false,
       'mismatch snapshot では Application.Worksheets("Sheet One").Shapes.Item("CheckBox1") broad root を開かない'
     );
@@ -3633,6 +3441,23 @@ async function waitForCompletions(
   return [];
 }
 
+async function waitForCompletionsAtToken(
+  document: vscode.TextDocument,
+  token: string,
+  predicate: (items: readonly vscode.CompletionItem[]) => boolean
+): Promise<readonly vscode.CompletionItem[]> {
+  return waitForCompletions(document, findPositionAfterToken(document, token), predicate);
+}
+
+async function waitForCompletionLabelStateAtToken(
+  document: vscode.TextDocument,
+  token: string,
+  label: string,
+  expectedPresent: boolean
+): Promise<readonly vscode.CompletionItem[]> {
+  return waitForCompletionsAtToken(document, token, (items) => hasCompletionItemLabel(items, label) === expectedPresent);
+}
+
 async function waitForDefinitions(
   document: vscode.TextDocument,
   position: vscode.Position,
@@ -3724,6 +3549,18 @@ async function waitForNoSignatureHelp(
   return true;
 }
 
+async function waitForSignatureHelpAtToken(
+  document: vscode.TextDocument,
+  token: string,
+  predicate: (help: vscode.SignatureHelp) => boolean
+): Promise<vscode.SignatureHelp> {
+  return waitForSignatureHelp(document, findPositionAfterToken(document, token), predicate);
+}
+
+async function waitForNoSignatureHelpAtToken(document: vscode.TextDocument, token: string): Promise<boolean> {
+  return waitForNoSignatureHelp(document, findPositionAfterToken(document, token));
+}
+
 async function waitForHover(
   document: vscode.TextDocument,
   position: vscode.Position,
@@ -3746,6 +3583,14 @@ async function waitForHover(
   return [];
 }
 
+async function waitForHoverAtToken(
+  document: vscode.TextDocument,
+  token: string,
+  predicate: (hovers: readonly vscode.Hover[]) => boolean
+): Promise<readonly vscode.Hover[]> {
+  return waitForHover(document, findPositionAfterToken(document, token), predicate);
+}
+
 async function waitForNoHover(document: vscode.TextDocument, position: vscode.Position): Promise<boolean> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const hovers = await vscode.commands.executeCommand<readonly vscode.Hover[]>(
@@ -3762,6 +3607,10 @@ async function waitForNoHover(document: vscode.TextDocument, position: vscode.Po
   }
 
   return true;
+}
+
+async function waitForNoHoverAtToken(document: vscode.TextDocument, token: string): Promise<boolean> {
+  return waitForNoHover(document, findPositionAfterToken(document, token));
 }
 
 async function waitForRename(
@@ -3969,6 +3818,10 @@ function getHoverContentsText(hover: vscode.Hover | undefined): string {
       return content.value;
     })
     .join("\n");
+}
+
+function hasCompletionItemLabel(items: readonly vscode.CompletionItem[], label: string): boolean {
+  return items.some((item) => getCompletionItemLabel(item) === label);
 }
 
 function getCompletionItemLabel(item: vscode.CompletionItem): string {
