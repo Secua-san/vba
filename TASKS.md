@@ -520,9 +520,13 @@
   - `per-scope occurrence override` を shared spec schema に追加する案は不採用とし、shadow shared 化を再開するなら extension 側の shadow section を専用 fixture へ分離する案を第一候補として整理した
   - [docs/process/README.md](docs/process/README.md) に導線を追加し、fixture topology を寄せる前に切り分ける条件を明文化した
 
-- [ ] workbook root family の shadow 専用 fixture 分離 PoC を整理する
-  - extension の `ShadowedApplication()` を別 fixture へ切り出した場合に、document 数・helper・shared spec への影響がどこまで増えるかを見積もる
-  - server 側 inline text を維持したまま同じ anchor topology を再現できるか、または canonical shadow text source が必要かを比較する
+- [x] workbook root family の shadow 専用 fixture 分離 PoC を整理する
+  - [docs/process/workbook-root-shadow-fixture-split-poc.md](docs/process/workbook-root-shadow-fixture-split-poc.md) を追加し、extension 側で `ShadowedApplication()` を別 fixture へ切り出した場合の document 数増加、helper 影響、shared spec への波及範囲を整理した
+  - server 側は inline shadow text を維持し、canonical shadow text source の導入は PoC 完了後に別判断へ切り分ける方針を固定した
+
+- [ ] workbook root family の shadow 専用 fixture 分離を最小実装する
+  - extension の `ApplicationWorkbookRootBuiltIn.bas` から `ShadowedApplication()` を shadow 専用 fixture へ切り出し、shadow hover / signature の `occurrenceIndex` を `0` にそろえられるか確認する
+  - server 側 inline text は維持したまま、shared shadow spec 化の前提が揃うかを `packages/server` / `packages/extension` の test で再評価する
 
 ## メモ
 
