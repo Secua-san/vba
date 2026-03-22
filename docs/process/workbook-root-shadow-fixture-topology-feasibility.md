@@ -5,15 +5,21 @@
 `Application.ThisWorkbook` / `Application.ActiveWorkbook` の shadow hover / signature を、将来 shared case spec へ寄せるならどの fixture topology にそろえるべきかを整理する。  
 このメモの焦点は test fixture の構成であり、resolver や shared spec schema を今すぐ変えることではない。
 
-## 現状
+## 状況更新
+
+- 2026-03-22 に候補 2 を採用し、extension 側の shadow section は [ApplicationWorkbookRootShadowed.bas](../../packages/extension/test/fixtures/ApplicationWorkbookRootShadowed.bas) へ分離済み
+- server 側は [packages/server/test/documentService.test.js](../../packages/server/test/documentService.test.js) の inline shadow text を維持している
+- shadow hover / signature の direct anchor は extension / server とも `occurrenceIndex = 0` で参照できるようになり、shared case spec 化を完了した
+
+## 実装前の比較
 
 ### extension 側
 
-- fixture は [packages/extension/test/fixtures/ApplicationWorkbookRootBuiltIn.bas](../../packages/extension/test/fixtures/ApplicationWorkbookRootBuiltIn.bas)
-- `Demo()` の中に current-bundle / active-workbook / non-target root がまとまっている
-- `ShadowedApplication()` が同じ module の後半にあり、`Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value` と `Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value` は `Demo()` と重複する
-- そのため shadow hover の direct `.Value` anchor は `occurrenceIndex = 1` が必要
-- 一方、shadow signature の direct `.Select(` anchor は現状 `ShadowedApplication()` 側にしか無く、`occurrenceIndex = 0` で足りる
+- fixture は [packages/extension/test/fixtures/ApplicationWorkbookRootBuiltIn.bas](../../packages/extension/test/fixtures/ApplicationWorkbookRootBuiltIn.bas) の mixed 構成だった
+- `Demo()` の中に current-bundle / active-workbook / non-target root がまとまっていた
+- `ShadowedApplication()` が同じ module の後半にあり、`Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value` と `Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value` は `Demo()` と重複していた
+- そのため shadow hover の direct `.Value` anchor は `occurrenceIndex = 1` が必要だった
+- 一方、shadow signature の direct `.Select(` anchor は `ShadowedApplication()` 側にしか無く、`occurrenceIndex = 0` で足りていた
 
 ### server 側
 
@@ -21,10 +27,10 @@
 - `Demo()` には shadow 用 token しか入っておらず、hover / signature とも `occurrenceIndex = 0`
 - server では workbook root family matrix の多くを inline text で組み立てており、fixture file を必須にしていない
 
-### 現在の方針
+### 当時の方針
 
 - 正本は [workbook-root-family-case-table-policy.md](workbook-root-family-case-table-policy.md)
-- shadow hover / signature は package-local のまま残す
+- shadow hover / signature は package-local のまま残し、dedicated shadow fixture 分離後に再評価する
 - v1 では shared spec schema に `occurrenceIndexByScope` / `occurrenceIndexByKind` を追加しない
 
 ## 候補
@@ -92,9 +98,9 @@
 
 ## 判断
 
-- v1 では fixture topology 自体は変えない
-- shadow hover / signature を shared 化したくなったときの第一候補は、「extension 側 shadow section の専用 fixture 分離」
-- server 側はその時点でも inline text 維持でよいが、shared shadow spec を本気で導入するなら canonical shadow text を file か generator のどちらで持つかを別タスクで決める
+- 当時の第一候補だった「extension 側 shadow section の専用 fixture 分離」を採用し、現在は実装済み
+- server 側は inline text 維持のままでよいという判断も継続した
+- canonical shadow text source は、shared shadow spec 導入後も drift が問題化した時点で別タスクとして判断する
 
 ## 先に満たす条件
 
@@ -102,8 +108,7 @@
 - extension 側で shadow 専用 fixture を追加しても test 導線が過度に複雑化しないこと
 - shared 化対象を hover / signature だけにするのか、completion / semantic まで含めるのかを先に切り分けること
 
-## 次の最小候補
+## 次の見直し候補
 
-1. extension の `ShadowedApplication()` を shadow 専用 fixture へ切り出したときの document 数増加と helper 影響を見積もる
-2. server 側は inline text のまま shadow 専用 fixture と同じ anchor topology を再現できるか確認する
-3. その上で shadow hover / signature の shared spec 化を再度判断する
+1. server / extension 間で shadow text source の drift が出るかを観測する
+2. drift が問題化した場合だけ canonical shadow text source を検討する

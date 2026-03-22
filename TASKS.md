@@ -524,9 +524,14 @@
   - [docs/process/workbook-root-shadow-fixture-split-poc.md](docs/process/workbook-root-shadow-fixture-split-poc.md) を追加し、extension 側で `ShadowedApplication()` を別 fixture へ切り出した場合の document 数増加、helper 影響、shared spec への波及範囲を整理した
   - server 側は inline shadow text を維持し、canonical shadow text source の導入は PoC 完了後に別判断へ切り分ける方針を固定した
 
-- [ ] workbook root family の shadow 専用 fixture 分離を最小実装する
-  - extension の `ApplicationWorkbookRootBuiltIn.bas` から `ShadowedApplication()` を shadow 専用 fixture へ切り出し、shadow hover / signature の `occurrenceIndex` を `0` にそろえられるか確認する
-  - server 側 inline text は維持したまま、shared shadow spec 化の前提が揃うかを `packages/server` / `packages/extension` の test で再評価する
+- [x] workbook root family の shadow 専用 fixture 分離を最小実装する
+  - extension の `ApplicationWorkbookRootBuiltIn.bas` から `ShadowedApplication()` を [ApplicationWorkbookRootShadowed.bas](packages/extension/test/fixtures/ApplicationWorkbookRootShadowed.bas) へ切り出し、shadow 用 document を別に開く構成へ変更した
+  - shadow semantic negative を `state: "shadowed"` へ寄せ、shadow hover / signature も server / extension で同じ shared entry を参照する形へ寄せた
+  - `npm run lint`、`npm test`、`npm run package` で回帰確認する
+
+- [ ] workbook root family の shadow text source canonical 化要否を整理する
+  - dedicated shadow fixture と server inline shadow text の二重管理が、実際に drift や review コストの主因になるかを観測する
+  - drift が問題化する場合にだけ、file 正本 / generator 正本 / inline 維持のどれを採るか比較する
 
 ## メモ
 
