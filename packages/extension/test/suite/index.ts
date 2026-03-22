@@ -1990,6 +1990,13 @@ export async function run(): Promise<void> {
     path.resolve(fixturesPath, "ApplicationWorkbookRootBuiltIn.bas")
   );
   await vscode.window.showTextDocument(applicationWorkbookRootDocument);
+  const applicationWorkbookRootText = applicationWorkbookRootDocument.getText();
+  const applicationWorkbookShadowedDocument = await vscode.workspace.openTextDocument(
+    path.resolve(fixturesPath, "ApplicationWorkbookRootShadowed.bas")
+  );
+  await vscode.window.showTextDocument(applicationWorkbookShadowedDocument);
+  const applicationWorkbookShadowedText = applicationWorkbookShadowedDocument.getText();
+  await vscode.window.showTextDocument(applicationWorkbookRootDocument);
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
   const applicationWorkbookThisWorkbookDocument = await vscode.workspace.openTextDocument(
     path.resolve(fixturesPath, "ThisWorkbook.cls")
@@ -2120,6 +2127,24 @@ export async function run(): Promise<void> {
       state: "matched"
     }
   );
+  const applicationWorkbookShadowedHoverEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "hover",
+    "negative",
+    {
+      scope: "extension",
+      state: "shadowed"
+    }
+  );
+  const applicationWorkbookShadowedSignatureEntries = getSharedWorkbookRootInteractionEntries(
+    "applicationWorkbookRoot",
+    "signature",
+    "negative",
+    {
+      scope: "extension",
+      state: "shadowed"
+    }
+  );
   const applicationWorkbookStaticCompletionChecks = mapExtensionWorkbookRootPositiveCompletionCases(
     applicationWorkbookStaticPositiveCompletionEntries,
     (entry) => `${entry.anchor} は control owner へ解決する`
@@ -2186,7 +2211,7 @@ export async function run(): Promise<void> {
   );
   let decodedApplicationWorkbookTokens = decodeSemanticTokens(applicationWorkbookTokens, applicationWorkbookLegend);
   assertWorkbookRootSemanticCases(
-    applicationWorkbookRootDocument.getText(),
+    applicationWorkbookRootText,
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootSemanticCases(
       getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
@@ -2197,7 +2222,7 @@ export async function run(): Promise<void> {
     )
   );
   assertWorkbookRootNoSemanticCases(
-    applicationWorkbookRootDocument.getText(),
+    applicationWorkbookRootText,
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootNoSemanticCases(
       getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
@@ -2208,6 +2233,19 @@ export async function run(): Promise<void> {
         entry.reason === "snapshot-closed"
           ? `${entry.anchor} は snapshot 未一致の間は semantic token を出さない`
           : `${entry.anchor} は semantic token を出さない`
+    )
+  );
+  let applicationWorkbookShadowedTokens = await waitForStableNoSemanticTokens(applicationWorkbookShadowedDocument);
+  let decodedApplicationWorkbookShadowedTokens = decodeSemanticTokens(applicationWorkbookShadowedTokens, applicationWorkbookLegend);
+  assertWorkbookRootNoSemanticCases(
+    applicationWorkbookShadowedText,
+    decodedApplicationWorkbookShadowedTokens,
+    mapExtensionWorkbookRootNoSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+        scope: "extension",
+        state: "shadowed"
+      }),
+      (entry) => `${entry.anchor} は shadowed Application qualifier のため semantic token を出さない`
     )
   );
 
@@ -2247,28 +2285,20 @@ export async function run(): Promise<void> {
     applicationWorkbookShadowedCompletionEntries,
     (entry) => `${entry.anchor} は control owner に昇格しない`
   );
-  const applicationWorkbookMatchedShadowHoverChecks = [
-    [
-      'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu',
-      'shadowed Application.ThisWorkbook root は hover を出さない',
-      1
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
-      'shadowed Application.ActiveWorkbook root は hover を出さない',
-      1
-    ]
-  ] as const;
-  const applicationWorkbookMatchedShadowSignatureChecks = [
-    [
-      'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(',
-      'shadowed Application.ThisWorkbook root は signature help を出さない'
-    ],
-    [
-      'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
-      'shadowed Application.ActiveWorkbook root は signature help を出さない'
-    ]
-  ] as const;
+  const applicationWorkbookMatchedShadowHoverChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookShadowedHoverEntries,
+    (entry) =>
+      entry.anchor.includes("ThisWorkbook")
+        ? "shadowed Application.ThisWorkbook root は hover を出さない"
+        : "shadowed Application.ActiveWorkbook root は hover を出さない"
+  );
+  const applicationWorkbookMatchedShadowSignatureChecks = mapExtensionWorkbookRootInteractionCases(
+    applicationWorkbookShadowedSignatureEntries,
+    (entry) =>
+      entry.anchor.includes("ThisWorkbook")
+        ? "shadowed Application.ThisWorkbook root は signature help を出さない"
+        : "shadowed Application.ActiveWorkbook root は signature help を出さない"
+  );
 
   await assertWorkbookRootCompletionCases(applicationWorkbookRootDocument, applicationWorkbookMatchedCompletionChecks);
   await assertWorkbookRootHoverCases(applicationWorkbookRootDocument, applicationWorkbookMatchedHoverChecks);
@@ -2276,14 +2306,14 @@ export async function run(): Promise<void> {
   await assertWorkbookRootClosedCompletionCases(applicationWorkbookRootDocument, applicationWorkbookMatchedNonTargetCompletionChecks);
   await assertWorkbookRootNoHoverCases(applicationWorkbookRootDocument, applicationWorkbookMatchedNonTargetHoverChecks);
   await assertWorkbookRootNoSignatureCases(applicationWorkbookRootDocument, applicationWorkbookMatchedNonTargetSignatureChecks);
-  await assertWorkbookRootClosedCompletionCases(applicationWorkbookRootDocument, applicationWorkbookMatchedShadowCompletionChecks);
-  await assertWorkbookRootNoHoverCases(applicationWorkbookRootDocument, applicationWorkbookMatchedShadowHoverChecks);
-  await assertWorkbookRootNoSignatureCases(applicationWorkbookRootDocument, applicationWorkbookMatchedShadowSignatureChecks);
+  await assertWorkbookRootClosedCompletionCases(applicationWorkbookShadowedDocument, applicationWorkbookMatchedShadowCompletionChecks);
+  await assertWorkbookRootNoHoverCases(applicationWorkbookShadowedDocument, applicationWorkbookMatchedShadowHoverChecks);
+  await assertWorkbookRootNoSignatureCases(applicationWorkbookShadowedDocument, applicationWorkbookMatchedShadowSignatureChecks);
 
   applicationWorkbookTokens = await waitForSemanticTokens(applicationWorkbookRootDocument, (tokens) => tokens.data.length > 0);
   decodedApplicationWorkbookTokens = decodeSemanticTokens(applicationWorkbookTokens, applicationWorkbookLegend);
   assertWorkbookRootSemanticCases(
-    applicationWorkbookRootDocument.getText(),
+    applicationWorkbookRootText,
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootSemanticCases(
       getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "positive", {
@@ -2294,7 +2324,7 @@ export async function run(): Promise<void> {
     )
   );
   assertWorkbookRootNoSemanticCases(
-    applicationWorkbookRootDocument.getText(),
+    applicationWorkbookRootText,
     decodedApplicationWorkbookTokens,
     mapExtensionWorkbookRootNoSemanticCases(
       getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
@@ -2302,6 +2332,19 @@ export async function run(): Promise<void> {
         state: "matched"
       }),
       (entry) => `${entry.anchor} は semantic token を出さない`
+    )
+  );
+  applicationWorkbookShadowedTokens = await waitForStableNoSemanticTokens(applicationWorkbookShadowedDocument);
+  decodedApplicationWorkbookShadowedTokens = decodeSemanticTokens(applicationWorkbookShadowedTokens, applicationWorkbookLegend);
+  assertWorkbookRootNoSemanticCases(
+    applicationWorkbookShadowedText,
+    decodedApplicationWorkbookShadowedTokens,
+    mapExtensionWorkbookRootNoSemanticCases(
+      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+        scope: "extension",
+        state: "shadowed"
+      }),
+      (entry) => `${entry.anchor} は shadowed Application qualifier のため semantic token を出さない`
     )
   );
 
@@ -4804,6 +4847,28 @@ async function waitForSemanticTokens(
   }
 
   return new vscode.SemanticTokens(new Uint32Array());
+}
+
+async function waitForStableNoSemanticTokens(document: vscode.TextDocument): Promise<vscode.SemanticTokens> {
+  let stableCount = 0;
+  let latestTokens = new vscode.SemanticTokens(new Uint32Array());
+
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const tokens =
+      (await vscode.commands.executeCommand<vscode.SemanticTokens>("vscode.provideDocumentSemanticTokens", document.uri)) ??
+      new vscode.SemanticTokens(new Uint32Array());
+
+    latestTokens = tokens;
+    stableCount = tokens.data.length === 0 ? stableCount + 1 : 0;
+
+    if (stableCount >= 3) {
+      return tokens;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return latestTokens;
 }
 
 async function setActiveWorkbookIdentitySnapshot(snapshot: unknown): Promise<void> {

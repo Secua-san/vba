@@ -2810,14 +2810,44 @@ End Sub`;
         (entry) => `${entry.anchor} は control owner に昇格しない`
       )
     );
-    assertWorkbookRootNoHoverCases(service, uri, text, [
-      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu', "shadowed Application.ThisWorkbook root は hover を出さない"],
-      ['Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu', "shadowed Application.ActiveWorkbook root は hover を出さない"]
-    ]);
-    assertWorkbookRootNoSignatureCases(service, uri, text, [
-      ['Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(', "shadowed Application.ThisWorkbook root は signature help を出さない"],
-      ['Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(', "shadowed Application.ActiveWorkbook root は signature help を出さない"]
-    ]);
+    assertWorkbookRootNoHoverCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        requireSharedWorkbookRootEntries(
+          getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "hover", "negative", {
+            scope: "server-application-shadowed",
+            state: "shadowed",
+            text
+          }),
+          "application workbook shadowed hover shared cases must not be empty"
+        ),
+        (entry) =>
+          entry.anchor.includes("ThisWorkbook")
+            ? "shadowed Application.ThisWorkbook root は hover を出さない"
+            : "shadowed Application.ActiveWorkbook root は hover を出さない"
+      )
+    );
+    assertWorkbookRootNoSignatureCases(
+      service,
+      uri,
+      text,
+      mapSharedWorkbookRootInteractionCases(
+        requireSharedWorkbookRootEntries(
+          getSharedWorkbookRootInteractionEntries("applicationWorkbookRoot", "signature", "negative", {
+            scope: "server-application-shadowed",
+            state: "shadowed",
+            text
+          }),
+          "application workbook shadowed signature shared cases must not be empty"
+        ),
+        (entry) =>
+          entry.anchor.includes("ThisWorkbook")
+            ? "shadowed Application.ThisWorkbook root は signature help を出さない"
+            : "shadowed Application.ActiveWorkbook root は signature help を出さない"
+      )
+    );
   } finally {
     cleanup();
   }

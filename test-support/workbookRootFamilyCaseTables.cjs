@@ -478,14 +478,12 @@ const applicationWorkbookRoot = {
         anchor: 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
         reason: "shadowed-root",
         state: "shadowed",
-        occurrenceIndex: 1,
         scopes: ["extension", "server-application-shadowed"]
       },
       {
         anchor: 'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
         reason: "shadowed-root",
         state: "shadowed",
-        occurrenceIndex: 1,
         scopes: ["extension", "server-application-shadowed"]
       }
     ]
@@ -615,6 +613,18 @@ const applicationWorkbookRoot = {
         reason: "non-target-root",
         state: "matched",
         scopes: ["extension", "server-application-ole", "server-application-shape"]
+      },
+      {
+        anchor: 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu',
+        reason: "shadowed-root",
+        state: "shadowed",
+        scopes: ["extension", "server-application-shadowed"]
+      },
+      {
+        anchor: 'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
+        reason: "shadowed-root",
+        state: "shadowed",
+        scopes: ["extension", "server-application-shadowed"]
       }
     ]
   },
@@ -731,6 +741,18 @@ const applicationWorkbookRoot = {
         reason: "non-target-root",
         state: "matched",
         scopes: ["extension", "server-application-ole", "server-application-shape"]
+      },
+      {
+        anchor: 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+        reason: "shadowed-root",
+        state: "shadowed",
+        scopes: ["extension", "server-application-shadowed"]
+      },
+      {
+        anchor: 'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        reason: "shadowed-root",
+        state: "shadowed",
+        scopes: ["extension", "server-application-shadowed"]
       }
     ]
   },
@@ -916,16 +938,14 @@ const applicationWorkbookRoot = {
         anchor: 'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
         identifier: "Value",
         reason: "shadowed-root",
-        state: "static",
-        occurrenceIndex: 1,
+        state: "shadowed",
         scopes: ["extension"]
       },
       {
         anchor: 'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
         identifier: "Value",
         reason: "shadowed-root",
-        state: "static",
-        occurrenceIndex: 1,
+        state: "shadowed",
         scopes: ["extension"]
       },
       {
@@ -1067,22 +1087,6 @@ const applicationWorkbookRoot = {
         reason: "non-target-root",
         state: "matched",
         scopes: ["server-application-ole", "server-application-shape"]
-      },
-      {
-        anchor: 'Debug.Print Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
-        identifier: "Value",
-        reason: "shadowed-root",
-        state: "matched",
-        occurrenceIndex: 1,
-        scopes: ["extension"]
-      },
-      {
-        anchor: 'Debug.Print Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
-        identifier: "Value",
-        reason: "shadowed-root",
-        state: "matched",
-        occurrenceIndex: 1,
-        scopes: ["extension"]
       },
       {
         anchor: 'Debug.Print Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
