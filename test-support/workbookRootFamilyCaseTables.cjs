@@ -617,12 +617,14 @@ const applicationWorkbookRoot = {
       {
         anchor: 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Valu',
         reason: "shadowed-root",
+        rootKind: "ThisWorkbook",
         state: "shadowed",
         scopes: ["extension", "server-application-shadowed"]
       },
       {
         anchor: 'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Valu',
         reason: "shadowed-root",
+        rootKind: "ActiveWorkbook",
         state: "shadowed",
         scopes: ["extension", "server-application-shadowed"]
       }
@@ -745,12 +747,14 @@ const applicationWorkbookRoot = {
       {
         anchor: 'Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(',
         reason: "shadowed-root",
+        rootKind: "ThisWorkbook",
         state: "shadowed",
         scopes: ["extension", "server-application-shadowed"]
       },
       {
         anchor: 'Application.ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
         reason: "shadowed-root",
+        rootKind: "ActiveWorkbook",
         state: "shadowed",
         scopes: ["extension", "server-application-shadowed"]
       }

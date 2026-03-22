@@ -17,6 +17,7 @@ type WorkbookRootFamilyScope =
   | "server-worksheet-broad-root-item";
 type WorkbookRootFamilyState = "closed" | "matched" | "shadowed" | "static";
 type WorkbookRootFamilyRoute = "ole" | "shape";
+type WorkbookRootFamilyRootKind = "ActiveWorkbook" | "ThisWorkbook";
 type WorkbookRootFamilySemanticFamilyName = "applicationWorkbookRoot";
 type WorkbookRootFamilyReason =
   | "code-name-selector"
@@ -30,6 +31,7 @@ type WorkbookRootFamilyCaseEntryBase = {
   anchor: string;
   occurrenceIndex?: number;
   reason?: WorkbookRootFamilyReason;
+  rootKind?: WorkbookRootFamilyRootKind;
   scopes: readonly WorkbookRootFamilyScope[];
   state?: WorkbookRootFamilyState;
 };
@@ -2235,18 +2237,18 @@ export async function run(): Promise<void> {
           : `${entry.anchor} は semantic token を出さない`
     )
   );
-  let applicationWorkbookShadowedTokens = await waitForStableNoSemanticTokens(applicationWorkbookShadowedDocument);
-  let decodedApplicationWorkbookShadowedTokens = decodeSemanticTokens(applicationWorkbookShadowedTokens, applicationWorkbookLegend);
-  assertWorkbookRootNoSemanticCases(
+  const applicationWorkbookShadowNoSemanticCases = mapExtensionWorkbookRootNoSemanticCases(
+    getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
+      scope: "extension",
+      state: "shadowed"
+    }),
+    (entry) => `${entry.anchor} は shadowed Application qualifier のため semantic token を出さない`
+  );
+  let decodedApplicationWorkbookShadowedTokens = await waitForNoSemanticTokensByCases(
+    applicationWorkbookShadowedDocument,
+    applicationWorkbookLegend,
     applicationWorkbookShadowedText,
-    decodedApplicationWorkbookShadowedTokens,
-    mapExtensionWorkbookRootNoSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
-        scope: "extension",
-        state: "shadowed"
-      }),
-      (entry) => `${entry.anchor} は shadowed Application qualifier のため semantic token を出さない`
-    )
+    applicationWorkbookShadowNoSemanticCases
   );
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
@@ -2288,14 +2290,14 @@ export async function run(): Promise<void> {
   const applicationWorkbookMatchedShadowHoverChecks = mapExtensionWorkbookRootInteractionCases(
     applicationWorkbookShadowedHoverEntries,
     (entry) =>
-      entry.anchor.includes("ThisWorkbook")
+      entry.rootKind === "ThisWorkbook"
         ? "shadowed Application.ThisWorkbook root は hover を出さない"
         : "shadowed Application.ActiveWorkbook root は hover を出さない"
   );
   const applicationWorkbookMatchedShadowSignatureChecks = mapExtensionWorkbookRootInteractionCases(
     applicationWorkbookShadowedSignatureEntries,
     (entry) =>
-      entry.anchor.includes("ThisWorkbook")
+      entry.rootKind === "ThisWorkbook"
         ? "shadowed Application.ThisWorkbook root は signature help を出さない"
         : "shadowed Application.ActiveWorkbook root は signature help を出さない"
   );
@@ -2334,18 +2336,11 @@ export async function run(): Promise<void> {
       (entry) => `${entry.anchor} は semantic token を出さない`
     )
   );
-  applicationWorkbookShadowedTokens = await waitForStableNoSemanticTokens(applicationWorkbookShadowedDocument);
-  decodedApplicationWorkbookShadowedTokens = decodeSemanticTokens(applicationWorkbookShadowedTokens, applicationWorkbookLegend);
-  assertWorkbookRootNoSemanticCases(
+  decodedApplicationWorkbookShadowedTokens = await waitForNoSemanticTokensByCases(
+    applicationWorkbookShadowedDocument,
+    applicationWorkbookLegend,
     applicationWorkbookShadowedText,
-    decodedApplicationWorkbookShadowedTokens,
-    mapExtensionWorkbookRootNoSemanticCases(
-      getSharedWorkbookRootSemanticEntries("applicationWorkbookRoot", "negative", {
-        scope: "extension",
-        state: "shadowed"
-      }),
-      (entry) => `${entry.anchor} は shadowed Application qualifier のため semantic token を出さない`
-    )
+    applicationWorkbookShadowNoSemanticCases
   );
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
@@ -4849,26 +4844,40 @@ async function waitForSemanticTokens(
   return new vscode.SemanticTokens(new Uint32Array());
 }
 
-async function waitForStableNoSemanticTokens(document: vscode.TextDocument): Promise<vscode.SemanticTokens> {
-  let stableCount = 0;
-  let latestTokens = new vscode.SemanticTokens(new Uint32Array());
+async function waitForNoSemanticTokensByCases(
+  document: vscode.TextDocument,
+  legend: vscode.SemanticTokensLegend,
+  text: string,
+  cases: readonly WorkbookRootNoSemanticCase[]
+): Promise<Array<{ endCharacter: number; line: number; modifiers: string[]; startCharacter: number; type: string }>> {
+  let latestTokenCount = 0;
+  let latestFailureMessage = "semantic token の安定待機が開始されませんでした。";
 
   for (let attempt = 0; attempt < 30; attempt += 1) {
     const tokens =
       (await vscode.commands.executeCommand<vscode.SemanticTokens>("vscode.provideDocumentSemanticTokens", document.uri)) ??
       new vscode.SemanticTokens(new Uint32Array());
+    const decodedTokens = decodeSemanticTokens(tokens, legend);
 
-    latestTokens = tokens;
-    stableCount = tokens.data.length === 0 ? stableCount + 1 : 0;
-
-    if (stableCount >= 3) {
-      return tokens;
+    latestTokenCount = tokens.data.length;
+    try {
+      assertWorkbookRootNoSemanticCases(text, decodedTokens, cases);
+      return decodedTokens;
+    } catch (error) {
+      latestFailureMessage = error instanceof Error ? error.message : String(error);
     }
 
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
-  return latestTokens;
+  assert.fail(
+    [
+      "waitForNoSemanticTokensByCases が対象 anchor の no-semantic 状態に到達しませんでした。",
+      `document=${document.uri.fsPath}`,
+      `latestTokenCount=${latestTokenCount}`,
+      `lastFailure=${latestFailureMessage}`
+    ].join(" ")
+  );
 }
 
 async function setActiveWorkbookIdentitySnapshot(snapshot: unknown): Promise<void> {
