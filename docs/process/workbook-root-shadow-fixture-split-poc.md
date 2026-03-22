@@ -28,7 +28,7 @@
 
 - shadow 専用 fixture 分離は有効だった
 - extension と server の shadow hover / signature は、scope ごとの `occurrenceIndex` override を追加せずに shared 化できた
-- server 側 canonical shadow text source は、この段階では不要と判断する
+- server 側 canonical shadow text source は、この段階では不要と判断し、後続の [workbook-root-shadow-text-source-canonicalization-feasibility.md](workbook-root-shadow-text-source-canonicalization-feasibility.md) を正本にする
 
 ## 残したもの
 
@@ -38,5 +38,5 @@
 
 ## 次の見直し候補
 
-1. workbook root family の shadow text source を canonical 化する必要が本当にあるかを整理する
-2. 同種の dedicated shadow fixture 分離が別 family でも必要になるかを観測する
+1. 同種の dedicated shadow fixture 分離が別 family でも必要になるかを観測する
+2. shadow text drift が review コストの主因になった時だけ、canonical text source の再比較へ戻る

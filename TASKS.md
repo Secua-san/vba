@@ -529,9 +529,13 @@
   - shadow semantic negative を `state: "shadowed"` へ寄せ、shadow hover / signature も server / extension で同じ shared entry を参照する形へ寄せた
   - `npm run lint`、`npm test`、`npm run package` で回帰確認する
 
-- [ ] workbook root family の shadow text source canonical 化要否を整理する
-  - dedicated shadow fixture と server inline shadow text の二重管理が、実際に drift や review コストの主因になるかを観測する
-  - drift が問題化する場合にだけ、file 正本 / generator 正本 / inline 維持のどれを採るか比較する
+- [x] workbook root family の shadow text source canonical 化要否を整理する
+  - [docs/process/workbook-root-shadow-text-source-canonicalization-feasibility.md](docs/process/workbook-root-shadow-text-source-canonicalization-feasibility.md) を追加し、canonical 化対象は full text ではなく shared anchor spec に留める判断を整理した
+  - dedicated shadow fixture と server inline shadow text の二重管理は、現時点では drift や review コストの主因ではないと整理し、file 正本 / generator 正本は再評価トリガー発火時のみ比較する方針を固定した
+
+- [ ] workbook root family と同種の dedicated shadow fixture 分離が別 family でも必要かを観測する
+  - workbook root family で使った `state: "shadowed"` + dedicated fixture 分離が、別の built-in family でも再発するかを観測する
+  - 2 family 以上で同種の shadow topology 差分が出た場合にだけ、共通運用ルールや shared spec 側 schema 追加を再整理する
 
 ## メモ
 

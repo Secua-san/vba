@@ -108,7 +108,7 @@ workbook root family の shadow case は dedicated fixture 分離で duplicate a
 ## 次の見直し候補
 
 1. workbook root family 以外の built-in family へ shared case spec を広げるときも、まず dedicated fixture と anchor topology の整理で吸収できるかを確認する
-2. workbook root family の shadow text source で drift が出た場合だけ、canonical text source の要否を再判断する
+2. workbook root family の shadow text source は [workbook-root-shadow-text-source-canonicalization-feasibility.md](workbook-root-shadow-text-source-canonicalization-feasibility.md) の判断を正本とし、drift が review 主因になった場合だけ再判断する
 
 ## 受け入れ条件
 
