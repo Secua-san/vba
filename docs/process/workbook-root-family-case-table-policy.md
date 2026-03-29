@@ -73,6 +73,23 @@ package-local adapter に残す対象:
 `Application.ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value` のような fixture 上の anchor token は shared 化する価値が高い。  
 一方で「hover を出さない」「snapshot 一致後も閉じる」などの文章メッセージは package ごとに持つ。
 
+### 4.5 scope 非対称だけでは shared spec から外さない
+
+shared spec entry は、`server` と `extension` の両方が使うことを必須条件にしない。  
+`scopes` は「その entry をどの package / slice が消費するか」を表す契約であり、ある entry が `extension` だけ、または `server` だけを持っていてもよい。
+
+shared spec に残してよい条件:
+
+- anchor / reason / state が family canonical source として意味を持つ
+- package 固有事情が helper / adapter 層に隔離されている
+- fixture anchor の正本を local file へ戻すより、`test-support/` に残した方が drift を抑えやすい
+
+shared spec から外すべき候補:
+
+- async wait 条件や failure message のように package 固有事情が主体になっている
+- canonical anchor ではなく local helper の都合でしか使わない
+- scope 非対称 entry が増えすぎて、family table より local file の方が主語を追いやすい
+
 ### 5. shadow / duplicate occurrence は canonical spec に必ず明示する
 
 anchor token ベースへ寄せると、同じ fixture 内で duplicate anchor が生じたときに `occurrenceIndex` 抜けが起きやすい。  
