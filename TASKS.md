@@ -2,11 +2,16 @@
 
 ## 進行中
 
-- [ ] worksheet broad root family の server-only shadow negative を helper / table へ寄せる要否を整理する
-  - `Worksheets` shadow と `Application` shadow を単発 test のまま残すか、server 側だけの配列駆動 helper や local table に寄せるかを整理する
-  - shared spec や extension matrix へ上げずに保守性だけ改善する余地があるかを切り分ける
+- [ ] worksheet broad root family の shadow negative coverage を direct OLE route 以外へ広げる要否を整理する
+  - 現在の shadow negative は `OLEObjects("CheckBox1").Object` の direct route だけなので、`Shapes("CheckBox1").OLEFormat.Object` や root `.Item("Sheet One")` を同じく server-only で固定すべきかを整理する
+  - helper / table を増やす前に、そもそも broad root shadow の coverage をどこまで持つべきかを切り分ける
 
 ## 完了
+
+- [x] worksheet broad root family の server-only shadow negative を helper / table へ寄せる要否を整理する
+  - [docs/process/worksheet-broad-root-shadow-server-helper-feasibility.md](docs/process/worksheet-broad-root-shadow-server-helper-feasibility.md) を追加し、`Worksheets` shadow / `Application` shadow は現時点では 2 本の明示 test のまま維持し、server-local helper / table へは寄せない方針を整理した
+  - broad root shadow test の重複量は小さく、shadow 宣言の違い自体が test の主語になっているため、抽象化を足すより明示性を維持する方が読みやすいと整理した
+  - 再評価トリガーを「shadow variant 増加」「coverage 拡張」「レビュー指摘の連続」「triage 上の主語不足」に限定し、shared spec や extension matrix へ先回りしないことを明文化した
 
 - [x] worksheet broad root family の symbol-shadowed case を extension matrix へ広げる要否を整理する
   - [docs/process/worksheet-broad-root-shadow-extension-matrix-feasibility.md](docs/process/worksheet-broad-root-shadow-extension-matrix-feasibility.md) を追加し、`Worksheets` shadow / `Application` shadow は現時点では server-only negative case のまま維持し、extension matrix へは広げない方針を整理した

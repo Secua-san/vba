@@ -87,3 +87,4 @@
 - broad root family の正本: [explicit-sheet-name-broad-root-feasibility.md](./explicit-sheet-name-broad-root-feasibility.md)
 - cross-family 観測: [shadow-fixture-split-cross-family-observation.md](./shadow-fixture-split-cross-family-observation.md)
 - workbook root family の shared spec 境界: [workbook-root-family-case-table-policy.md](./workbook-root-family-case-table-policy.md)
+- server-only shadow negative の helper 判断: [worksheet-broad-root-shadow-server-helper-feasibility.md](./worksheet-broad-root-shadow-server-helper-feasibility.md)
