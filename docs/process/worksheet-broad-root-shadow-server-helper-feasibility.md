@@ -86,5 +86,6 @@
 ## 関連文書
 
 - extension matrix へ広げない判断: [worksheet-broad-root-shadow-extension-matrix-feasibility.md](./worksheet-broad-root-shadow-extension-matrix-feasibility.md)
+- route coverage の判断: [worksheet-broad-root-shadow-coverage-feasibility.md](./worksheet-broad-root-shadow-coverage-feasibility.md)
 - broad root family の正本: [explicit-sheet-name-broad-root-feasibility.md](./explicit-sheet-name-broad-root-feasibility.md)
 - shared spec 境界: [workbook-root-family-case-table-policy.md](./workbook-root-family-case-table-policy.md)

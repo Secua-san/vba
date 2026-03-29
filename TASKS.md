@@ -2,11 +2,16 @@
 
 ## 進行中
 
-- [ ] worksheet broad root family の shadow negative coverage を direct OLE route 以外へ広げる要否を整理する
-  - 現在の shadow negative は `OLEObjects("CheckBox1").Object` の direct route だけなので、`Shapes("CheckBox1").OLEFormat.Object` や root `.Item("Sheet One")` を同じく server-only で固定すべきかを整理する
-  - helper / table を増やす前に、そもそも broad root shadow の coverage をどこまで持つべきかを切り分ける
+- [ ] worksheet broad root family の server non-target hover / signature negative を shared scope へ広げる要否を整理する
+  - 現在 `worksheetBroadRoot` の non-target hover / signature negative は extension 側中心なので、server 側にも `Sheets` / `ActiveSheet` / numeric / dynamic selector の negative を増やすべきかを整理する
+  - broad root shadow とは別に、server 側の non-target negative coverage の非対称を shared spec へ寄せる意味があるかを切り分ける
 
 ## 完了
+
+- [x] worksheet broad root family の shadow negative coverage を direct OLE route 以外へ広げる要否を整理する
+  - [docs/process/worksheet-broad-root-shadow-coverage-feasibility.md](docs/process/worksheet-broad-root-shadow-coverage-feasibility.md) を追加し、broad root shadow は root identifier の built-in 判定で閉じるため、`Shapes("CheckBox1").OLEFormat.Object` や root `.Item("Sheet One")` を追加しても別分岐を踏まないことを整理した
+  - direct `OLEObjects("CheckBox1").Object` route の 2 本で root gating coverage は十分とし、route coverage は `getWorkbookRootFamilyBuiltinContext()` より後段の分岐が増えた時だけ再評価する方針を明文化した
+  - 次タスクを broad root shadow ではなく、server 側 non-target hover / signature negative の shared scope 要否整理へ切り替えた
 
 - [x] worksheet broad root family の server-only shadow negative を helper / table へ寄せる要否を整理する
   - [docs/process/worksheet-broad-root-shadow-server-helper-feasibility.md](docs/process/worksheet-broad-root-shadow-server-helper-feasibility.md) を追加し、`Worksheets` shadow / `Application` shadow は現時点では 2 本の明示 test のまま維持し、server-local helper / table へは寄せない方針を整理した
