@@ -109,5 +109,5 @@ server 側を extension fixture file 読み込みへ寄せる、または genera
 
 ## 次の見直し候補
 
-1. workbook root family と同種の dedicated shadow fixture 分離が、別 family でも必要になるかを観測する
+1. workbook root family と同種の dedicated shadow fixture 分離が別 family でも必要かは、[shadow-fixture-split-cross-family-observation.md](shadow-fixture-split-cross-family-observation.md) の観測を正本にする
 2. shadow text drift が実際に review コストの主因になった時だけ、file 正本と generator 正本を再比較する
