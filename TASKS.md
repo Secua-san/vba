@@ -2,11 +2,16 @@
 
 ## 進行中
 
-- [ ] worksheet broad root family の server non-target hover / signature negative を shared scope へ広げる要否を整理する
-  - 現在 `worksheetBroadRoot` の non-target hover / signature negative は extension 側中心なので、server 側にも `Sheets` / `ActiveSheet` / numeric / dynamic selector の negative を増やすべきかを整理する
-  - broad root shadow とは別に、server 側の non-target negative coverage の非対称を shared spec へ寄せる意味があるかを切り分ける
+- [ ] worksheet broad root family の extension-only non-target hover / signature negative を shared spec に残す要否を整理する
+  - `worksheetBroadRoot.hover.negative` / `signature.negative` は今回 server scope へ広げない判断になったため、extension-only entry のまま shared spec に置く実益があるかを整理する
+  - `WorksheetBroadRootBuiltIn.bas` の anchor 正本と package-local adapter 境界のどちらが drift 抑止に効くかを切り分ける
 
 ## 完了
+
+- [x] worksheet broad root family の server non-target hover / signature negative を shared scope へ広げる要否を整理する
+  - [docs/process/worksheet-broad-root-server-nontarget-interaction-shared-scope-feasibility.md](docs/process/worksheet-broad-root-server-nontarget-interaction-shared-scope-feasibility.md) を追加し、server 側は non-target completion negative だけ shared 化し、hover / signature の non-target negative は extension E2E の shared entry に留める方針を整理した
+  - server 側では positive hover / signature anchor に対する `snapshot unavailable` / `mismatch` の closed-state coverage を既に固定しているため、non-target interaction negative を足しても得られる保証が小さいことを整理した
+  - 次タスクを「server scope へ広げるか」から、「extension-only interaction negative を shared spec に残すべきか」へ切り替えた
 
 - [x] worksheet broad root family の shadow negative coverage を direct OLE route 以外へ広げる要否を整理する
   - [docs/process/worksheet-broad-root-shadow-coverage-feasibility.md](docs/process/worksheet-broad-root-shadow-coverage-feasibility.md) を追加し、broad root shadow は root identifier の built-in 判定で閉じるため、`Shapes("CheckBox1").OLEFormat.Object` や root `.Item("Sheet One")` を追加しても別分岐を踏まないことを整理した
