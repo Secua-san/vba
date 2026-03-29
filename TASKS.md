@@ -2,11 +2,17 @@
 
 ## 進行中
 
-- [ ] application workbook root family の extension-only completion entry を shared spec に残す境界を整理する
-  - `applicationWorkbookRoot.completion.negative` には extension-only scope entry が残っているため、interaction / semantic と同じ canonical anchor source として shared に残すべきかを整理する
-  - blocked symbol / detail fragment を持つ completion adapter 境界が interaction / semantic と同じ物差しで扱えるかを切り分ける
+- [ ] application workbook root family の extension-only completion negative を server scope へ広げる要否を整理する
+  - `applicationWorkbookRoot.completion.negative` の extension-only 残件は 3 本に閉じたため、server mirror を足して coverage をそろえる価値があるかを整理する
+  - `numeric-selector` / `code-name-selector` の residual slice を server unit test に移すと、matrix の主語が明確になるか、それとも review 負荷だけが増えるかを見極める
 
 ## 完了
+
+- [x] application workbook root family の extension-only completion entry を shared spec に残す境界を整理する
+  - [docs/process/application-workbook-root-extension-only-completion-shared-spec-feasibility.md](docs/process/application-workbook-root-extension-only-completion-shared-spec-feasibility.md) を追加し、`applicationWorkbookRoot.completion.negative` に残る extension-only 3 entry は shared spec の canonical anchor source に残す方針を整理した
+  - `CompletionItem.detail` fragment と blocked label は `packages/extension/test/suite/index.ts` の adapter 層に残し、shared spec へ持ち込まない completion 固有の境界を明文化した
+  - [docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) を更新し、extension-only completion entry でも `anchor` / `reason` / `state` が family canonical source なら shared spec に残してよい共通ルールを補足した
+  - 次タスクを「shared spec に残すか」から、「server mirror を広げる価値があるか」へ切り替えた
 
 - [x] application workbook root family の extension-only interaction / semantic entry を shared spec に残す境界を整理する
   - [docs/process/application-workbook-root-extension-only-interaction-shared-spec-feasibility.md](docs/process/application-workbook-root-extension-only-interaction-shared-spec-feasibility.md) を追加し、`applicationWorkbookRoot` の extension-only `hover` / `signature` / `semantic` entry は `ApplicationWorkbookRootBuiltIn.bas` / `ApplicationWorkbookRootShadowed.bas` の canonical anchor source として shared spec に残す方針を整理した
