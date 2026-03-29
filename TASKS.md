@@ -2,11 +2,16 @@
 
 ## 進行中
 
-- [ ] worksheet broad root family の extension-only non-target hover / signature negative を shared spec に残す要否を整理する
-  - `worksheetBroadRoot.hover.negative` / `signature.negative` は今回 server scope へ広げない判断になったため、extension-only entry のまま shared spec に置く実益があるかを整理する
-  - `WorksheetBroadRootBuiltIn.bas` の anchor 正本と package-local adapter 境界のどちらが drift 抑止に効くかを切り分ける
+- [ ] application workbook root family の extension-only interaction / semantic entry を shared spec に残す境界を整理する
+  - `applicationWorkbookRoot` には `worksheetBroadRoot` より多い extension-only scope entry があるため、family canonical anchor と package-local adapter の境界を同じ物差しで整理する
+  - `hover` / `signature` / `semantic` の extension-only entry を local file へ戻す条件があるか、`scopes` 契約の適用例として shared spec に残すべきかを切り分ける
 
 ## 完了
+
+- [x] worksheet broad root family の extension-only non-target hover / signature negative を shared spec に残す要否を整理する
+  - [docs/process/worksheet-broad-root-extension-only-interaction-shared-spec-feasibility.md](docs/process/worksheet-broad-root-extension-only-interaction-shared-spec-feasibility.md) を追加し、`worksheetBroadRoot.hover.negative` / `signature.negative` は server scope が無くても canonical anchor source として shared spec に残す方針を整理した
+  - [docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) を更新し、`scopes` 配列を持つ shared spec では scope 非対称だけを理由に local file へ戻さず、anchor / reason が family canonical source かどうかで判断する共通ルールを追記した
+  - 次タスクを broad root family から `applicationWorkbookRoot` の extension-only entry 境界整理へ切り替えた
 
 - [x] worksheet broad root family の server non-target hover / signature negative を shared scope へ広げる要否を整理する
   - [docs/process/worksheet-broad-root-server-nontarget-interaction-shared-scope-feasibility.md](docs/process/worksheet-broad-root-server-nontarget-interaction-shared-scope-feasibility.md) を追加し、server 側は non-target completion negative だけ shared 化し、hover / signature の non-target negative は extension E2E の shared entry に留める方針を整理した
