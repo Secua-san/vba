@@ -2,11 +2,16 @@
 
 ## 進行中
 
-- [ ] application workbook root family の extension-only completion negative を server scope へ広げる要否を整理する
-  - `applicationWorkbookRoot.completion.negative` の extension-only 残件は 3 本に閉じたため、server mirror を足して coverage をそろえる価値があるかを整理する
-  - `numeric-selector` / `code-name-selector` の residual slice を server unit test に移すと、matrix の主語が明確になるか、それとも review 負荷だけが増えるかを見極める
+- [ ] application workbook root family の extension-only completion negative を server scope へ広げる最小実装を追加する
+  - `Application.ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.` に `server-application-ole` を追加し、server unit test に direct-route numeric-selector completion negative を足す
+  - `Application.ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.` と `Application.ActiveWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.` に `server-application-shape` を追加し、server unit test の shape completion negative を completion surface でも閉じるように固定する
 
 ## 完了
+
+- [x] application workbook root family の extension-only completion negative を server scope へ広げる要否を整理する
+  - [docs/process/application-workbook-root-completion-server-scope-feasibility.md](docs/process/application-workbook-root-completion-server-scope-feasibility.md) を追加し、extension-only completion negative 3 本は server scope へも広げる価値があると整理した
+  - OLE 1 本・Shape 2 本とも、shared case table の `scopes` 更新と server fixture text への anchor 追加だけで mirror でき、schema や helper 境界を増やさないことを明文化した
+  - 次タスクを判断メモから、shared case table / server unit test の最小実装へ切り替えた
 
 - [x] application workbook root family の extension-only completion entry を shared spec に残す境界を整理する
   - [docs/process/application-workbook-root-extension-only-completion-shared-spec-feasibility.md](docs/process/application-workbook-root-extension-only-completion-shared-spec-feasibility.md) を追加し、`applicationWorkbookRoot.completion.negative` に残る extension-only 3 entry は shared spec の canonical anchor source に残す方針を整理した
