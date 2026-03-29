@@ -2,11 +2,16 @@
 
 ## 進行中
 
-- [ ] application workbook root family の extension-only interaction / semantic entry を shared spec に残す境界を整理する
-  - `applicationWorkbookRoot` には `worksheetBroadRoot` より多い extension-only scope entry があるため、family canonical anchor と package-local adapter の境界を同じ物差しで整理する
-  - `hover` / `signature` / `semantic` の extension-only entry を local file へ戻す条件があるか、`scopes` 契約の適用例として shared spec に残すべきかを切り分ける
+- [ ] application workbook root family の extension-only completion entry を shared spec に残す境界を整理する
+  - `applicationWorkbookRoot.completion.negative` には extension-only scope entry が残っているため、interaction / semantic と同じ canonical anchor source として shared に残すべきかを整理する
+  - blocked symbol / detail fragment を持つ completion adapter 境界が interaction / semantic と同じ物差しで扱えるかを切り分ける
 
 ## 完了
+
+- [x] application workbook root family の extension-only interaction / semantic entry を shared spec に残す境界を整理する
+  - [docs/process/application-workbook-root-extension-only-interaction-shared-spec-feasibility.md](docs/process/application-workbook-root-extension-only-interaction-shared-spec-feasibility.md) を追加し、`applicationWorkbookRoot` の extension-only `hover` / `signature` / `semantic` entry は `ApplicationWorkbookRootBuiltIn.bas` / `ApplicationWorkbookRootShadowed.bas` の canonical anchor source として shared spec に残す方針を整理した
+  - `state` / `reason` / `rootKind` を shared spec 側で持ち、extension 側は wait 条件や semantic assertion shape だけを adapter 層に残しているため、server mirror の有無だけを理由に local file へ戻さないことを明文化した
+  - 次タスクを interaction / semantic から、残っている extension-only `completion` entry 境界整理へ切り替えた
 
 - [x] worksheet broad root family の extension-only non-target hover / signature negative を shared spec に残す要否を整理する
   - [docs/process/worksheet-broad-root-extension-only-interaction-shared-spec-feasibility.md](docs/process/worksheet-broad-root-extension-only-interaction-shared-spec-feasibility.md) を追加し、`worksheetBroadRoot.hover.negative` / `signature.negative` は server scope が無くても canonical anchor source として shared spec に残す方針を整理した
