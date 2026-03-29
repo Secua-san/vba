@@ -90,6 +90,11 @@ shared spec から外すべき候補:
 - canonical anchor ではなく local helper の都合でしか使わない
 - scope 非対称 entry が増えすぎて、family table より local file の方が主語を追いやすい
 
+completion での補足:
+
+- extension-only completion entry でも、`anchor` / `reason` / `state` が family canonical source なら shared spec に残してよい
+- `CompletionItem.detail` fragment や blocked label のような adapter expectation は package-local に残し、shared spec へ持ち込まない
+
 ### 5. shadow / duplicate occurrence は canonical spec に必ず明示する
 
 anchor token ベースへ寄せると、同じ fixture 内で duplicate anchor が生じたときに `occurrenceIndex` 抜けが起きやすい。  
