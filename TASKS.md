@@ -2,7 +2,9 @@
 
 ## 進行中
 
-- なし
+- [ ] worksheet broad root family の symbol-shadowed case を extension matrix へ広げる要否を整理する
+  - `Worksheets` shadow と `Application` shadow を、server-only negative case のまま維持するか、extension host 側の matrix へ広げるかを整理する
+  - broad root family で extension shadow matrix が必要になる場合にだけ、dedicated shadow fixture 分離や `state: "shadowed"` 追加の是非を再評価する
 
 ## 完了
 
@@ -533,9 +535,9 @@
   - [docs/process/workbook-root-shadow-text-source-canonicalization-feasibility.md](docs/process/workbook-root-shadow-text-source-canonicalization-feasibility.md) を追加し、canonical 化対象は full text ではなく shared anchor spec に留める判断を整理した
   - dedicated shadow fixture と server inline shadow text の二重管理は、現時点では drift や review コストの主因ではないと整理し、file 正本 / generator 正本は再評価トリガー発火時のみ比較する方針を固定した
 
-- [ ] workbook root family と同種の dedicated shadow fixture 分離が別 family でも必要かを観測する
-  - workbook root family で使った `state: "shadowed"` + dedicated fixture 分離が、別の built-in family でも再発するかを観測する
-  - 2 family 以上で同種の shadow topology 差分が出た場合にだけ、共通運用ルールや shared spec 側 schema 追加を再整理する
+- [x] workbook root family と同種の dedicated shadow fixture 分離が別 family でも必要かを観測する
+  - [docs/process/shadow-fixture-split-cross-family-observation.md](docs/process/shadow-fixture-split-cross-family-observation.md) を追加し、現時点で第 2 family は無く、dedicated shadow fixture 分離は workbook root family 固有の対処に留まると整理した
+  - `worksheet broad root family` は最も近い候補だが、まだ server-only shadow case であり、extension + server の shared shadow matrix には達していないと整理した
 
 ## メモ
 
