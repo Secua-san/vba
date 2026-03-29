@@ -2,11 +2,16 @@
 
 ## 進行中
 
-- [ ] worksheet broad root family の symbol-shadowed case を extension matrix へ広げる要否を整理する
-  - `Worksheets` shadow と `Application` shadow を、server-only negative case のまま維持するか、extension host 側の matrix へ広げるかを整理する
-  - broad root family で extension shadow matrix が必要になる場合にだけ、dedicated shadow fixture 分離や `state: "shadowed"` 追加の是非を再評価する
+- [ ] worksheet broad root family の server-only shadow negative を helper / table へ寄せる要否を整理する
+  - `Worksheets` shadow と `Application` shadow を単発 test のまま残すか、server 側だけの配列駆動 helper や local table に寄せるかを整理する
+  - shared spec や extension matrix へ上げずに保守性だけ改善する余地があるかを切り分ける
 
 ## 完了
+
+- [x] worksheet broad root family の symbol-shadowed case を extension matrix へ広げる要否を整理する
+  - [docs/process/worksheet-broad-root-shadow-extension-matrix-feasibility.md](docs/process/worksheet-broad-root-shadow-extension-matrix-feasibility.md) を追加し、`Worksheets` shadow / `Application` shadow は現時点では server-only negative case のまま維持し、extension matrix へは広げない方針を整理した
+  - broad root shadow は root identifier の built-in 判定で閉じる conservative negative であり、host 非同期や sidecar lookup の主要リスクではないため、server unit test を最短経路として維持する判断を記録した
+  - `worksheetBroadRoot` shared spec に `state: "shadowed"` を追加せず、extension 側の dedicated shadow fixture も導入しないこと、再評価トリガーを broad root shadow の実不具合 / review drift / variant 増加に限定することを明文化した
 
 - [x] unqualified worksheet broad root の root `.Item("SheetName")` 形式を再評価
   - `packages/server/src/lsp/documentService.ts` の broad root root-selector 解釈を拡張し、`Worksheets.Item("SheetName")` / `Application.Worksheets.Item("SheetName")` を direct call form と同じ sheetName literal として扱えるようにした
@@ -15,8 +20,9 @@
   - `npm run lint`、`npm test`、`npm run package` を通して broad root family と既存の非対象境界が崩れていないことを確認した
 
 - [x] broad root family の重複テスト補助を整理
-  - `packages/server/test/documentService.test.js` に worksheet broad root 専用 fixture / snapshot / token lookup helper を追加し、`matched` / `mismatched` / `unavailable` / shadow / root `.Item` 非対象ケースの重複した setup と query を削減した
+  - `packages/server/test/documentService.test.js` に worksheet broad root 専用 fixture / snapshot / token lookup helper を追加し、`matched` / `mismatched` / `unavailable` / root `.Item` 非対象ケースの重複した setup と query を削減した
   - `packages/extension/test/suite/index.ts` に token 指定の completion / hover / signature helper を追加し、`WorksheetBroadRootBuiltIn.bas` の broad root 行列テストを状態別の配列駆動へ寄せた
+  - shadow case はこの段階では server-only の単発 negative test のまま維持し、shared spec や extension matrix へは上げていない
   - `npm run lint --workspace @vba/server`、`npm run lint --workspace vba-extension`、`npm run test --workspace @vba/server`、`npm run test --workspace vba-extension`、`npm test`、`npm run package` を通して既存 broad root 挙動を維持した
 
 - [x] ドキュメント導線と CodeRabbit 記録の整理
