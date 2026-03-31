@@ -2,11 +2,17 @@
 
 ## 進行中
 
-- [ ] application workbook root family の extension-only interaction / semantic entry を server scope へ広げない判断を再観測する
-  - completion negative の scope 非対称は解消したため、残る `hover` / `signature` / `semantic` の extension-only slice をそのまま shared spec に残す根拠がまだ十分かを見直す
-  - completion 実装後も server mirror を増やさないなら、coverage の主語と review コストの観点で理由を補強する
+- [ ] workbook root family の server mirror 拡張条件を共通 policy として整理する
+  - `worksheetBroadRoot` と `applicationWorkbookRoot` で、completion は server へ広げ、interaction / semantic の一部は extension-only に残した判断がそろってきたため、family 共通の物差しへ要約する
+  - `route-specific gap` を閉じる mirror と、`surface duplication` に留まる mirror をどう見分けるかを、[docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) の補足候補として整理する
 
 ## 完了
+
+- [x] application workbook root family の extension-only interaction / semantic entry を server scope へ広げない判断を再観測する
+  - [docs/process/application-workbook-root-interaction-semantic-server-scope-feasibility.md](docs/process/application-workbook-root-interaction-semantic-server-scope-feasibility.md) を追加し、completion 実装後に残る extension-only `hover` / `signature` / `semantic` slice は、未踏 route ではなく API surface の重複寄りだと整理した
+  - `hover.negative` 2 本、`signature.negative` 3 本、`semantic.negative` の shadowed 2 本について、server 側には completion / semantic / shadowed closed-state の既存 coverage があり、直ちに mirror を増やす説明力が小さいことを文書化した
+  - [docs/process/README.md](docs/process/README.md) に導線を追加し、次タスクを family 個別判断から `server mirror` 共通 policy 整理へ切り替えた
+  - docs-only のため build / lint / test は実行していない
 
 - [x] application workbook root family の extension-only completion negative を server scope へ広げる最小実装を追加する
   - [test-support/workbookRootFamilyCaseTables.cjs](test-support/workbookRootFamilyCaseTables.cjs) の 3 entry に `server-application-ole` / `server-application-shape` を追加し、`applicationWorkbookRoot.completion.negative` の completion residual slice を解消した
