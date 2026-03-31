@@ -2,11 +2,17 @@
 
 ## 進行中
 
-- [ ] workbook root family の server mirror 共通 policy を他 family へ持ち出す前提条件を整理する
-  - 今回追加した [docs/process/workbook-root-family-server-mirror-policy.md](docs/process/workbook-root-family-server-mirror-policy.md) は `workbook root family` 専用の root / selector / route / state taxonomy を前提にしているため、`worksheet/chart control` 系などへ横展開する前に、どの粒度がそろっていれば同じ物差しを使えるかを整理する
-  - `shared spec に残すか` と `server でも mirror するか` を分ける発想は再利用価値があるため、family 固有条件と流用可能な条件の境界を次タスクで見極める
+- [ ] worksheet/chart control 系で shared spec 化の候補 family を切り出す
+  - [docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md](docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md) で整理したとおり、他 family へ server mirror policy を持ち出す前に、まず `worksheet/chart control` 系のどこまでを 1 つの family table とみなせるかを決める必要がある
+  - `OLEObjects(...).Object`、`Shapes(...).OLEFormat.Object`、`Sheet1.ControlCodeName`、broad root / workbook-qualified root / document module root のうち、shared spec 候補をどこで切るのが自然かを次タスクで整理する
 
 ## 完了
+
+- [x] workbook root family の server mirror 共通 policy を他 family へ持ち出す前提条件を整理する
+  - [docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md](docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md) を追加し、他 family へ共通 policy を持ち出す前に必要な `shared case spec`、`canonical anchor source`、root / selector / route / state の vocabulary、軽量な mirror 追加コストといった前提条件を整理した
+  - `worksheet/chart control` 系は最も近い候補だが、現時点では `OLEObjects` / `Shapes` / `Sheet1.ControlCodeName` / sidecar 前提が別論点として積み上がっており、まだ同じ family table の residual slice として比較できないことを文書化した
+  - [docs/process/README.md](docs/process/README.md) に導線を追加し、次タスクを「他 family へ policy を持ち出す条件整理」から「worksheet/chart control 系で shared spec 候補を切り出す整理」へ切り替えた
+  - docs-only のため build / lint / test は実行していない
 
 - [x] workbook root family の server mirror 拡張条件を共通 policy として整理する
   - [docs/process/workbook-root-family-server-mirror-policy.md](docs/process/workbook-root-family-server-mirror-policy.md) を追加し、`route-specific gap` を閉じる mirror と、`surface duplication` に留まる extension-only residual slice を切り分ける共通物差しを正本化した
