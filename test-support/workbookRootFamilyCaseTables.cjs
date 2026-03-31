@@ -382,7 +382,7 @@ const applicationWorkbookRoot = {
         anchor: 'Application.ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.',
         reason: "numeric-selector",
         state: "static",
-        scopes: ["extension"]
+        scopes: ["extension", "server-application-ole"]
       },
       {
         anchor: 'Application.ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.',
@@ -394,7 +394,7 @@ const applicationWorkbookRoot = {
         anchor: 'Application.ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.',
         reason: "code-name-selector",
         state: "static",
-        scopes: ["extension"]
+        scopes: ["extension", "server-application-shape"]
       },
       {
         anchor: 'Application.ThisWorkbook.Worksheets(GetIndex()).OLEObjects("CheckBox1").Object.',
@@ -454,7 +454,7 @@ const applicationWorkbookRoot = {
         anchor: 'Application.ActiveWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.',
         reason: "numeric-selector",
         state: "matched",
-        scopes: ["extension"]
+        scopes: ["extension", "server-application-shape"]
       },
       {
         anchor: 'Application.ActiveWorkbook.Worksheets(GetIndex()).Shapes("CheckBox1").OLEFormat.Object.',
