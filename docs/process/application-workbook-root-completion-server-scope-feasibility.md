@@ -99,7 +99,7 @@ completion は `DocumentService.getCompletionSymbols()` の閉じ方そのもの
 
 ## 推奨方針
 
-### 次段でやること
+### 最小実装の範囲
 
 - `test-support/workbookRootFamilyCaseTables.cjs` の 3 entry に server scope を追加する
 - [packages/server/test/documentService.test.js](../../packages/server/test/documentService.test.js) の inline text に 3 anchor 行を追加する

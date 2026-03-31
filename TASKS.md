@@ -2,11 +2,17 @@
 
 ## 進行中
 
-- [ ] application workbook root family の extension-only completion negative を server scope へ広げる最小実装を追加する
-  - `Application.ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.` に `server-application-ole` を追加し、server unit test に direct-route numeric-selector completion negative を足す
-  - `Application.ThisWorkbook.Worksheets.Item("Sheet1").Shapes("CheckBox1").OLEFormat.Object.` と `Application.ActiveWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.` に `server-application-shape` を追加し、server unit test の shape completion negative を completion surface でも閉じるように固定する
+- [ ] application workbook root family の extension-only interaction / semantic entry を server scope へ広げない判断を再観測する
+  - completion negative の scope 非対称は解消したため、残る `hover` / `signature` / `semantic` の extension-only slice をそのまま shared spec に残す根拠がまだ十分かを見直す
+  - completion 実装後も server mirror を増やさないなら、coverage の主語と review コストの観点で理由を補強する
 
 ## 完了
+
+- [x] application workbook root family の extension-only completion negative を server scope へ広げる最小実装を追加する
+  - [test-support/workbookRootFamilyCaseTables.cjs](test-support/workbookRootFamilyCaseTables.cjs) の 3 entry に `server-application-ole` / `server-application-shape` を追加し、`applicationWorkbookRoot.completion.negative` の completion residual slice を解消した
+  - [packages/server/test/documentService.test.js](packages/server/test/documentService.test.js) の workbook root family inline text に 3 anchor 行を追加し、direct-route numeric-selector OLE と shape の item-route code-name-selector / matched numeric-selector completion negative を server unit test でも閉じるように固定した
+  - `npm run lint` と `npm run package` は成功、`npm test` は core / scripts / server まで成功し、`vba-extension` はこの Codex セッションで Code を使用中のため CLI 実行が弾かれた
+  - 次タスクを completion 実装から、残る interaction / semantic の scope 非対称再観測へ切り替えた
 
 - [x] application workbook root family の extension-only completion negative を server scope へ広げる要否を整理する
   - [docs/process/application-workbook-root-completion-server-scope-feasibility.md](docs/process/application-workbook-root-completion-server-scope-feasibility.md) を追加し、extension-only completion negative 3 本は server scope へも広げる価値があると整理した
