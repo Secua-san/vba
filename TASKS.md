@@ -2,11 +2,17 @@
 
 ## 進行中
 
-- [ ] workbook root family の server mirror 拡張条件を共通 policy として整理する
-  - `worksheetBroadRoot` と `applicationWorkbookRoot` で、completion は server へ広げ、interaction / semantic の一部は extension-only に残した判断がそろってきたため、family 共通の物差しへ要約する
-  - `route-specific gap` を閉じる mirror と、`surface duplication` に留まる mirror をどう見分けるかを、[docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) の補足候補として整理する
+- [ ] workbook root family の server mirror 共通 policy を他 family へ持ち出す前提条件を整理する
+  - 今回追加した [docs/process/workbook-root-family-server-mirror-policy.md](docs/process/workbook-root-family-server-mirror-policy.md) は `workbook root family` 専用の root / selector / route / state taxonomy を前提にしているため、`worksheet/chart control` 系などへ横展開する前に、どの粒度がそろっていれば同じ物差しを使えるかを整理する
+  - `shared spec に残すか` と `server でも mirror するか` を分ける発想は再利用価値があるため、family 固有条件と流用可能な条件の境界を次タスクで見極める
 
 ## 完了
+
+- [x] workbook root family の server mirror 拡張条件を共通 policy として整理する
+  - [docs/process/workbook-root-family-server-mirror-policy.md](docs/process/workbook-root-family-server-mirror-policy.md) を追加し、`route-specific gap` を閉じる mirror と、`surface duplication` に留まる extension-only residual slice を切り分ける共通物差しを正本化した
+  - [docs/process/workbook-root-family-case-table-policy.md](docs/process/workbook-root-family-case-table-policy.md) に `server mirror` 判定の参照節を追加し、shared spec に残す判断と server でも mirror する判断を別軸で扱うことを明記した
+  - [docs/process/README.md](docs/process/README.md) に導線を追加し、次タスクを「workbook root family 内の整理」から「他 family へ持ち出す前提条件の整理」へ切り替えた
+  - docs-only のため build / lint / test は実行していない
 
 - [x] application workbook root family の extension-only interaction / semantic entry を server scope へ広げない判断を再観測する
   - [docs/process/application-workbook-root-interaction-semantic-server-scope-feasibility.md](docs/process/application-workbook-root-interaction-semantic-server-scope-feasibility.md) を追加し、completion 実装後に残る extension-only `hover` / `signature` / `semantic` slice は、未踏 route ではなく API surface の重複寄りだと整理した

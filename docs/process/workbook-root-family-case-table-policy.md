@@ -120,6 +120,19 @@ workbook root family の shadow case は dedicated fixture 分離で duplicate a
 - server inline shadow text と extension dedicated shadow fixture の anchor drift が、shared spec 維持コストの主因になったとき
 - shared spec へ残した local case が review 負荷の主因になり、schema 複雑化のコストを上回ると判断できたとき
 
+### 7. server mirror の判断は route-specific gap と surface duplication を分けて行う
+
+shared spec に残すかと、server に mirror するかは別論点として扱う。  
+workbook root family では、次の共通 policy に従う。
+
+- `route-specific gap`
+  - server 側で同じ root / selector / route family をまだ踏めておらず、completion negative などで failure point を早く止められる
+- `surface duplication`
+  - root / selector gating 自体は server 側で既に閉じており、別 API surface で「同じく閉じる」を重ねる比重が大きい
+
+この判断の正本は [workbook-root-family-server-mirror-policy.md](./workbook-root-family-server-mirror-policy.md) とする。  
+family 個別メモでは、その policy を各 residual slice に適用した結果だけを記録する。
+
 ## やらないこと
 
 - server / extension の helper 関数そのものを 1 つへ統合する
@@ -131,6 +144,7 @@ workbook root family の shadow case は dedicated fixture 分離で duplicate a
 
 1. workbook root family 以外の built-in family へ shared case spec を広げるときも、まず dedicated fixture と anchor topology の整理で吸収できるかを確認する
 2. workbook root family の shadow text source は [workbook-root-shadow-text-source-canonicalization-feasibility.md](workbook-root-shadow-text-source-canonicalization-feasibility.md) の判断を正本とし、drift が review 主因になった場合だけ再判断する
+3. server mirror の物差しを workbook root family 以外へ持ち出す場合は、[workbook-root-family-server-mirror-policy.md](./workbook-root-family-server-mirror-policy.md) の前提になっている root / selector / route / state taxonomy が同じ粒度で整理できるかを先に確認する
 
 ## 受け入れ条件
 
@@ -138,3 +152,4 @@ workbook root family の shadow case は dedicated fixture 分離で duplicate a
 - `CompletionItem.detail` や async wait 条件のような package 固有事情は shared spec に漏れ出さない
 - review 時に「どの anchor を shared 正本で持ち、どの期待値を package-local で持つか」が 1 画面で追える
 - dedicated shadow fixture 分離後も scope override 無しで shared spec を維持できる理由と、再評価トリガーがこの文書だけで説明できる
+- server mirror を増やした case と extension-only に残した case の違いを、`route-specific gap` と `surface duplication` の言葉で説明できる
