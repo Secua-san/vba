@@ -88,8 +88,50 @@ type WorkbookRootFamilyCaseTables = {
   };
 };
 
+type WorksheetControlShapeNamePathScope =
+  | "extension"
+  | "server-worksheet-control-shape-name-path-ole"
+  | "server-worksheet-control-shape-name-path-shape";
+type WorksheetControlShapeNamePathRootKind =
+  | "document-module"
+  | "workbook-qualified-closed"
+  | "workbook-qualified-matched"
+  | "workbook-qualified-static";
+type WorksheetControlShapeNamePathRouteKind = "ole-object" | "shape-oleformat";
+type WorksheetControlShapeNamePathReason =
+  | "chartsheet-root"
+  | "code-name-selector"
+  | "dynamic-selector"
+  | "non-target-root"
+  | "numeric-selector"
+  | "plain-shape";
+type WorksheetControlShapeNamePathFixture =
+  | "packages/extension/test/fixtures/OleObjectBuiltIn.bas"
+  | "packages/extension/test/fixtures/ShapesBuiltIn.bas";
+type WorksheetControlShapeNamePathCaseEntryBase = {
+  anchor: string;
+  fixture: WorksheetControlShapeNamePathFixture;
+  occurrenceIndex?: number;
+  rootKind: WorksheetControlShapeNamePathRootKind;
+  routeKind: WorksheetControlShapeNamePathRouteKind;
+  scopes: readonly WorksheetControlShapeNamePathScope[];
+};
+type WorksheetControlShapeNamePathPositiveCompletionEntry = WorksheetControlShapeNamePathCaseEntryBase;
+type WorksheetControlShapeNamePathNegativeCompletionEntry = WorksheetControlShapeNamePathCaseEntryBase & {
+  reason?: WorksheetControlShapeNamePathReason;
+};
+type WorksheetControlShapeNamePathCaseTables = {
+  worksheetControlShapeNamePath: {
+    completion: {
+      negative: readonly WorksheetControlShapeNamePathNegativeCompletionEntry[];
+      positive: readonly WorksheetControlShapeNamePathPositiveCompletionEntry[];
+    };
+  };
+};
+
 const requireFromHere = createRequire(__filename);
 const workbookRootFamilyCaseTables = loadWorkbookRootFamilyCaseTables();
+const worksheetControlShapeNamePathCaseTables = loadWorksheetControlShapeNamePathCaseTables();
 
 const ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT = {
   identity: {
@@ -796,6 +838,67 @@ export async function run(): Promise<void> {
   assert.equal(thisWorkbookIndexedObjectSelectSuppressed, true);
   assert.equal(activeWorkbookNamedObjectSelectSuppressed, true);
   assert.equal(thisWorkbookCodeNameObjectSelectSuppressed, true);
+
+  const worksheetControlShapeNamePathOlePositiveEntries = getWorksheetControlShapeNamePathCompletionEntries("positive", {
+    fixture: "packages/extension/test/fixtures/OleObjectBuiltIn.bas",
+    scope: "extension",
+    routeKind: "ole-object"
+  });
+  const worksheetControlShapeNamePathOleAlwaysAvailablePositiveEntries =
+    worksheetControlShapeNamePathOlePositiveEntries.filter((entry) => entry.rootKind !== "workbook-qualified-matched");
+  const worksheetControlShapeNamePathOleNegativeEntries = getWorksheetControlShapeNamePathCompletionEntries("negative", {
+    fixture: "packages/extension/test/fixtures/OleObjectBuiltIn.bas",
+    scope: "extension",
+    routeKind: "ole-object"
+  });
+  const worksheetControlShapeNamePathOleClosedEntries = worksheetControlShapeNamePathOleNegativeEntries.filter(
+    (entry) => entry.rootKind === "workbook-qualified-closed"
+  );
+  const worksheetControlShapeNamePathOleReasonEntries = worksheetControlShapeNamePathOleNegativeEntries.filter(
+    (entry) => entry.rootKind !== "workbook-qualified-closed"
+  );
+
+  await assertWorkbookRootCompletionCases(
+    oleObjectBuiltInDocument,
+    mapExtensionWorksheetControlShapeNamePathPositiveCompletionCases(
+      worksheetControlShapeNamePathOleAlwaysAvailablePositiveEntries,
+      (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも control owner へ解決する`
+    )
+  );
+  await assertWorkbookRootClosedCompletionCases(
+    oleObjectBuiltInDocument,
+    mapExtensionWorksheetControlShapeNamePathNoCompletionCases(
+      [...worksheetControlShapeNamePathOleReasonEntries, ...worksheetControlShapeNamePathOleClosedEntries],
+      (entry) =>
+        entry.rootKind === "workbook-qualified-closed"
+          ? `${entry.anchor} は active workbook が閉じている間は control owner に昇格しない`
+          : `${entry.anchor} は ${entry.reason} のため control owner に昇格しない`
+    )
+  );
+
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
+  try {
+    await assertWorkbookRootCompletionCases(
+      oleObjectBuiltInDocument,
+      mapExtensionWorksheetControlShapeNamePathPositiveCompletionCases(
+        worksheetControlShapeNamePathOlePositiveEntries,
+        (entry) =>
+          entry.rootKind === "workbook-qualified-matched"
+            ? `${entry.anchor} は active workbook match 時に control owner へ解決する`
+            : `${entry.anchor} は ${entry.rootKind} root として control owner へ解決する`
+      )
+    );
+    await assertWorkbookRootClosedCompletionCases(
+      oleObjectBuiltInDocument,
+      mapExtensionWorksheetControlShapeNamePathNoCompletionCases(
+        worksheetControlShapeNamePathOleReasonEntries,
+        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも control owner に昇格しない`
+      )
+    );
+  } finally {
+    await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
+  }
+
   const workbookQualifiedRootItemOleStaticCompletionChecks = [
     [
       'ThisWorkbook.Worksheets.Item("Sheet One").OLEObjects("CheckBox1").Object.',
@@ -1490,6 +1593,68 @@ export async function run(): Promise<void> {
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 39, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 40, "Value");
   assertNoDecodedSemanticToken(shapesBuiltInDocument.getText(), decodedShapesTokens, 41, "Value");
+
+  const worksheetControlShapeNamePathShapePositiveEntries = getWorksheetControlShapeNamePathCompletionEntries("positive", {
+    fixture: "packages/extension/test/fixtures/ShapesBuiltIn.bas",
+    scope: "extension",
+    routeKind: "shape-oleformat"
+  });
+  const worksheetControlShapeNamePathShapeAlwaysAvailablePositiveEntries =
+    worksheetControlShapeNamePathShapePositiveEntries.filter((entry) => entry.rootKind !== "workbook-qualified-matched");
+  const worksheetControlShapeNamePathShapeNegativeEntries = getWorksheetControlShapeNamePathCompletionEntries("negative", {
+    fixture: "packages/extension/test/fixtures/ShapesBuiltIn.bas",
+    scope: "extension",
+    routeKind: "shape-oleformat"
+  });
+  const worksheetControlShapeNamePathShapeClosedEntries = worksheetControlShapeNamePathShapeNegativeEntries.filter(
+    (entry) => entry.rootKind === "workbook-qualified-closed"
+  );
+  const worksheetControlShapeNamePathShapeReasonEntries = worksheetControlShapeNamePathShapeNegativeEntries.filter(
+    (entry) => entry.rootKind !== "workbook-qualified-closed"
+  );
+
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
+  await assertWorkbookRootCompletionCases(
+    shapesBuiltInDocument,
+    mapExtensionWorksheetControlShapeNamePathPositiveCompletionCases(
+      worksheetControlShapeNamePathShapeAlwaysAvailablePositiveEntries,
+      (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも control owner へ解決する`
+    )
+  );
+  await assertWorkbookRootClosedCompletionCases(
+    shapesBuiltInDocument,
+    mapExtensionWorksheetControlShapeNamePathNoCompletionCases(
+      [...worksheetControlShapeNamePathShapeReasonEntries, ...worksheetControlShapeNamePathShapeClosedEntries],
+      (entry) =>
+        entry.rootKind === "workbook-qualified-closed"
+          ? `${entry.anchor} は active workbook が閉じている間は control owner に昇格しない`
+          : `${entry.anchor} は ${entry.reason} のため control owner に昇格しない`
+    )
+  );
+
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_AVAILABLE_SNAPSHOT);
+  try {
+    await assertWorkbookRootCompletionCases(
+      shapesBuiltInDocument,
+      mapExtensionWorksheetControlShapeNamePathPositiveCompletionCases(
+        worksheetControlShapeNamePathShapePositiveEntries,
+        (entry) =>
+          entry.rootKind === "workbook-qualified-matched"
+            ? `${entry.anchor} は active workbook match 時に control owner へ解決する`
+            : `${entry.anchor} は ${entry.rootKind} root として control owner へ解決する`
+      )
+    );
+    await assertWorkbookRootClosedCompletionCases(
+      shapesBuiltInDocument,
+      mapExtensionWorksheetControlShapeNamePathNoCompletionCases(
+        worksheetControlShapeNamePathShapeReasonEntries,
+        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも control owner に昇格しない`
+      )
+    );
+  } finally {
+    await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
+  }
+
   const workbookQualifiedRootItemShapeStaticCompletionChecks = [
     [
       'ThisWorkbook.Worksheets.Item("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
@@ -4565,6 +4730,26 @@ function loadWorkbookRootFamilyCaseTables(): WorkbookRootFamilyCaseTables {
   throw new Error("workbook root family shared case spec が見つかりません");
 }
 
+function loadWorksheetControlShapeNamePathCaseTables(): WorksheetControlShapeNamePathCaseTables {
+  let currentDirectory = __dirname;
+
+  for (let depth = 0; depth < 8; depth += 1) {
+    const candidatePath = path.resolve(currentDirectory, "test-support", "worksheetControlShapeNamePathCaseTables.cjs");
+
+    if (existsSync(candidatePath)) {
+      const loaded = requireFromHere(candidatePath) as {
+        worksheetControlShapeNamePathCaseTables: WorksheetControlShapeNamePathCaseTables;
+      };
+
+      return loaded.worksheetControlShapeNamePathCaseTables;
+    }
+
+    currentDirectory = path.resolve(currentDirectory, "..");
+  }
+
+  throw new Error("worksheet control shapeName path shared case spec が見つかりません");
+}
+
 function getSharedWorkbookRootCompletionEntries(
   familyName: keyof WorkbookRootFamilyCaseTables,
   polarity: "positive",
@@ -4627,6 +4812,53 @@ function getSharedWorkbookRootInteractionEntries(
   });
 }
 
+function getWorksheetControlShapeNamePathCompletionEntries(
+  polarity: "positive",
+  options?: {
+    fixture?: WorksheetControlShapeNamePathFixture;
+    rootKind?: WorksheetControlShapeNamePathRootKind;
+    routeKind?: WorksheetControlShapeNamePathRouteKind;
+    scope?: WorksheetControlShapeNamePathScope;
+  }
+): readonly WorksheetControlShapeNamePathPositiveCompletionEntry[];
+function getWorksheetControlShapeNamePathCompletionEntries(
+  polarity: "negative",
+  options?: {
+    fixture?: WorksheetControlShapeNamePathFixture;
+    rootKind?: WorksheetControlShapeNamePathRootKind;
+    routeKind?: WorksheetControlShapeNamePathRouteKind;
+    scope?: WorksheetControlShapeNamePathScope;
+  }
+): readonly WorksheetControlShapeNamePathNegativeCompletionEntry[];
+function getWorksheetControlShapeNamePathCompletionEntries(
+  polarity: "negative" | "positive",
+  options: {
+    fixture?: WorksheetControlShapeNamePathFixture;
+    rootKind?: WorksheetControlShapeNamePathRootKind;
+    routeKind?: WorksheetControlShapeNamePathRouteKind;
+    scope?: WorksheetControlShapeNamePathScope;
+  } = {}
+):
+  | readonly WorksheetControlShapeNamePathNegativeCompletionEntry[]
+  | readonly WorksheetControlShapeNamePathPositiveCompletionEntry[] {
+  const { fixture, rootKind, routeKind, scope } = options;
+  return worksheetControlShapeNamePathCaseTables.worksheetControlShapeNamePath.completion[polarity].filter((entry) => {
+    if (fixture && entry.fixture !== fixture) {
+      return false;
+    }
+    if (rootKind && entry.rootKind !== rootKind) {
+      return false;
+    }
+    if (routeKind && entry.routeKind !== routeKind) {
+      return false;
+    }
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function mapExtensionWorkbookRootPositiveCompletionCases(
   entries: readonly WorkbookRootFamilyPositiveCompletionEntry[],
   messageBuilder: (entry: WorkbookRootFamilyPositiveCompletionEntry) => string
@@ -4677,6 +4909,28 @@ function mapExtensionWorkbookRootNoSemanticCases(
 ): readonly WorkbookRootNoSemanticCase[] {
   assert.ok(entries.length > 0, "workbook root negative semantic shared cases must not be empty");
   return entries.map((entry) => [entry.anchor, entry.identifier, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
+}
+
+function mapExtensionWorksheetControlShapeNamePathPositiveCompletionCases(
+  entries: readonly WorksheetControlShapeNamePathPositiveCompletionEntry[],
+  messageBuilder: (entry: WorksheetControlShapeNamePathPositiveCompletionEntry) => string
+): readonly WorkbookRootCompletionCase[] {
+  assert.ok(entries.length > 0, "worksheet control shapeName path positive completion shared cases must not be empty");
+  return entries.map((entry) => [
+    entry.anchor,
+    "CheckBox property",
+    entry.routeKind === "shape-oleformat" ? "Delete" : "Activate",
+    messageBuilder(entry),
+    entry.occurrenceIndex ?? 0
+  ]);
+}
+
+function mapExtensionWorksheetControlShapeNamePathNoCompletionCases(
+  entries: readonly WorksheetControlShapeNamePathNegativeCompletionEntry[],
+  messageBuilder: (entry: WorksheetControlShapeNamePathNegativeCompletionEntry) => string
+): readonly WorkbookRootClosedCompletionCase[] {
+  assert.ok(entries.length > 0, "worksheet control shapeName path negative completion shared cases must not be empty");
+  return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 
 type WorkbookRootCompletionCase = readonly [string, string, string, string, number?];
