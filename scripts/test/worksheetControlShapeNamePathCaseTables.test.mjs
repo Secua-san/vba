@@ -97,6 +97,18 @@ for (const interactionKind of ["hover", "signature"]) {
       true,
       `all negative worksheet control shapeName path ${interactionKind} entries must declare a reason`
     );
+    assert.equal(
+      negativeEntries.some((entry) => entry.routeKind === "ole-object" && entry.rootKind === "workbook-qualified-closed"),
+      true,
+      `${interactionKind} negative entries must include a closed workbook ole-object case`
+    );
+    assert.equal(
+      negativeEntries.some(
+        (entry) => entry.routeKind === "shape-oleformat" && entry.rootKind === "workbook-qualified-closed"
+      ),
+      true,
+      `${interactionKind} negative entries must include a closed workbook shape-oleformat case`
+    );
 
     assert.deepEqual([...fixtures].sort(), [OLE_FIXTURE, SHAPE_FIXTURE]);
     assert.equal(scopes.has("extension"), true);

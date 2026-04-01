@@ -6850,6 +6850,7 @@ function mapWorksheetControlShapeNamePathNoCompletionCases(entries, messageBuild
 }
 
 function mapWorksheetControlShapeNamePathInteractionCases(entries, messageBuilder) {
+  assert.ok(entries.length > 0, "worksheet control shapeName path interaction shared cases must not be empty");
   return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 

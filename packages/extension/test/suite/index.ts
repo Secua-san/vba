@@ -5030,6 +5030,7 @@ async function runExtensionWorksheetControlShapeNamePathInteractionSharedCases({
   fixture: WorksheetControlShapeNamePathFixture;
   routeKind: WorksheetControlShapeNamePathRouteKind;
 }): Promise<void> {
+  const originalSnapshot = await getActiveWorkbookIdentitySnapshot();
   const positiveHoverEntries = getWorksheetControlShapeNamePathInteractionEntries("hover", "positive", {
     fixture,
     routeKind,
@@ -5132,7 +5133,7 @@ async function runExtensionWorksheetControlShapeNamePathInteractionSharedCases({
       )
     );
   } finally {
-    await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
+    await setActiveWorkbookIdentitySnapshot(originalSnapshot);
   }
 }
 
@@ -5346,6 +5347,14 @@ async function setActiveWorkbookIdentitySnapshot(snapshot: unknown): Promise<voi
   }
 
   throw new Error("active workbook identity snapshot が server へ反映されませんでした");
+}
+
+async function getActiveWorkbookIdentitySnapshot(): Promise<Record<string, unknown> | null> {
+  return (
+    (await vscode.commands.executeCommand<Record<string, unknown> | null>(
+      TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND
+    )) ?? null
+  );
 }
 
 function matchesActiveWorkbookIdentityState(
