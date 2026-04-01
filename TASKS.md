@@ -2,11 +2,20 @@
 
 ## 進行中
 
-- [ ] worksheet control shapeName path の dedicated case spec 抽出方針を整理する
-  - [docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md](docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md) で固定した `rootKind` / `routeKind` / `reason` / `scopes` を前提に、`test-support/worksheetControlShapeNamePathCaseTables.cjs` のような dedicated case spec をどの粒度で切るか整理する。v1 では `matched/closed` を `rootKind` 側に残し、別の `state` 軸は追加しない前提とする
-  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) を route-local execution source のまま使うのか、family 専用 mixed fixture が必要かを次タスクで見極める
+- [ ] worksheet control shapeName path の completion case spec を最小抽出する
+  - [docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md](docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md) で固定した `fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` / `reason` を前提に、`test-support/worksheetControlShapeNamePathCaseTables.cjs` の `worksheetControlShapeNamePath.completion` を最小 PoC として切り出す
+  - 初回は `completion.positive` / `completion.negative` のみを対象にし、`hover` / `signature` / `semantic` は package-local adapter と anchor topology を見ながら後続で段階追加する
+  - 完了条件は、両 `routeKind`、positive の `document-module/static/matched`、negative の各 `reason` と各 route の `workbook-qualified-closed`、両 fixture、`extension` と route ごとの server scope を少なくとも 1 回ずつ含むこととする
+  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) は route-local execution source のまま維持し、family 専用 mixed fixture の要否は抽出後の drift で再評価する
 
 ## 完了
+
+- [x] worksheet control shapeName path の dedicated case spec 抽出方針を整理する
+  - [docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md](docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md) を追加し、dedicated case spec は fixture 単位ではなく family 単位の `test-support/worksheetControlShapeNamePathCaseTables.cjs` を v1 正本とし、entry ごとに `fixture` を持たせる方針を整理した
+  - 初回抽出は `completion` に限定し、v1 common field は `fixture` / `anchor` / `rootKind` / `routeKind` / `scopes`、negative だけ `reason` を持つ構成とし、`state` / `selectorKind` / `fixtureVariant` は追加しない判断を固定した
+  - `fixture` は repo root 基準の相対 path に固定し、次タスクの `completion` 最小 PoC は「1 route だけ」「positive だけ」では未完了とする受け入れ条件を明記した
+  - [docs/process/README.md](docs/process/README.md) に導線を追加し、次タスクを「抽出方針の整理」から `worksheet control shapeName path の completion case spec を最小抽出する` へ切り替えた
+  - docs-only のため build / lint / test は実行していない
 
 - [x] worksheet control shapeName path の vocabulary と canonical anchor source を整理する
   - [docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md](docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md) を追加し、`worksheetControlShapeNamePath` の v1 語彙を `rootKind=document-module/workbook-qualified-static/workbook-qualified-matched/workbook-qualified-closed`、`routeKind=ole-object/shape-oleformat`、negative `reason=numeric-selector/dynamic-selector/code-name-selector/plain-shape/chartsheet-root/non-target-root` に固定した
