@@ -2,11 +2,17 @@
 
 ## 進行中
 
-- [ ] worksheet/chart control 系で shared spec 化の候補 family を切り出す
-  - [docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md](docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md) で整理したとおり、他 family へ server mirror policy を持ち出す前に、まず `worksheet/chart control` 系のどこまでを 1 つの family table とみなせるかを決める必要がある
-  - `OLEObjects(...).Object`、`Shapes(...).OLEFormat.Object`、`Sheet1.ControlCodeName`、broad root / workbook-qualified root / document module root のうち、shared spec 候補をどこで切るのが自然かを次タスクで整理する
+- [ ] worksheet control shapeName path の vocabulary と canonical anchor source を整理する
+  - [docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md](docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md) で切り出した `worksheetControlShapeNamePath` 候補について、`document-module` / `workbook-qualified-static` / `workbook-qualified-matched` / `workbook-qualified-closed` の root kind と `ole-object` / `shape-oleformat` の route kind をどう固定するかを整理する
+  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) のどこを canonical anchor source にするか、あるいは別の shared spec 正本が必要かを次タスクで見極める。broad root の正本は [packages/extension/test/fixtures/WorksheetBroadRootBuiltIn.bas](packages/extension/test/fixtures/WorksheetBroadRootBuiltIn.bas) と [test-support/workbookRootFamilyCaseTables.cjs](test-support/workbookRootFamilyCaseTables.cjs) に残す
 
 ## 完了
+
+- [x] worksheet/chart control 系で shared spec 化の候補 family を切り出す
+  - [docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md](docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md) を追加し、最初の shared spec 候補は `worksheet control shapeName path` に絞り、`OLEObjects("shapeName").Object` と `Shapes("shapeName").OLEFormat.Object` の worksheet path を同じ family table 候補として扱う方針を整理した
+  - broad root は既存の `worksheetBroadRoot` shared spec とその正本 [packages/extension/test/fixtures/WorksheetBroadRootBuiltIn.bas](packages/extension/test/fixtures/WorksheetBroadRootBuiltIn.bas) / [test-support/workbookRootFamilyCaseTables.cjs](test-support/workbookRootFamilyCaseTables.cjs) に残し、`Sheet1.ControlCodeName` は join key が `codeName` なので別 family 候補に切り分け、chartsheet path と generic `OLEObject` / `Shape` / `OLEFormat` surface は初回候補から外す境界を明文化した
+  - [docs/process/README.md](docs/process/README.md) に導線を追加し、次タスクを family 候補の切り出しから `worksheetControlShapeNamePath` の vocabulary / canonical anchor source 整理へ切り替えた
+  - docs-only のため build / lint / test は実行していない
 
 - [x] workbook root family の server mirror 共通 policy を他 family へ持ち出す前提条件を整理する
   - [docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md](docs/process/workbook-root-family-server-mirror-cross-family-preconditions.md) を追加し、他 family へ共通 policy を持ち出す前に必要な `shared case spec`、`canonical anchor source`、root / selector / route / state の vocabulary、軽量な mirror 追加コストといった前提条件を整理した
