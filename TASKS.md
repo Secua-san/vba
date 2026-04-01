@@ -1,11 +1,18 @@
 # TASKS
 
+## 運用ルール
+
+- 通常タスクの進め方と Done の定義は [AGENTS.md](AGENTS.md) の「実装優先ルール」と「Done の定義」を正本とする
+- 進行中タスクを `完了` に移すのは、実コード変更と検証を伴ったときに限る
+- 下記の docs-only 完了履歴は過去の判断記録であり、今後の通常タスクの見本としては使わない
+
 ## 進行中
 
 - [ ] worksheet control shapeName path の completion case spec を最小抽出する
   - [docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md](docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md) で固定した `fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` / `reason` を前提に、`test-support/worksheetControlShapeNamePathCaseTables.cjs` の `worksheetControlShapeNamePath.completion` を最小 PoC として切り出す
   - 初回は `completion.positive` / `completion.negative` のみを対象にし、`hover` / `signature` / `semantic` は package-local adapter と anchor topology を見ながら後続で段階追加する
   - 完了条件は、両 `routeKind`、positive の `document-module/static/matched`、negative の各 `reason` と各 route の `workbook-qualified-closed`、両 fixture、`extension` と route ごとの server scope を少なくとも 1 回ずつ含むこととする
+  - そのうえで少なくとも 1 つ以上の実コード変更と、適切な検証を伴ったときだけ `完了` に移す
   - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) は route-local execution source のまま維持し、family 専用 mixed fixture の要否は抽出後の drift で再評価する
 
 ## 完了
