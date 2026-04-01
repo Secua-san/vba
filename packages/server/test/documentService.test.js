@@ -6044,132 +6044,31 @@ Option Explicit`
 });
 
 test("document service consumes worksheet control shapeName path completion shared cases for the ole-object route", () => {
-  const fixture = "packages/extension/test/fixtures/OleObjectBuiltIn.bas";
-  const scope = "server-worksheet-control-shape-name-path-ole";
-  const { cleanup, service, text, uri } = createWorksheetControlShapeNamePathFixture(fixture);
-  const positiveEntries = requireWorksheetControlShapeNamePathEntries(
-    getWorksheetControlShapeNamePathCompletionEntries("positive", { fixture, scope, text }),
-    "worksheet control shapeName path ole positive completion cases must not be empty"
-  );
-  const alwaysAvailablePositiveEntries = positiveEntries.filter((entry) => entry.rootKind !== "workbook-qualified-matched");
-  const negativeEntries = requireWorksheetControlShapeNamePathEntries(
-    getWorksheetControlShapeNamePathCompletionEntries("negative", { fixture, scope, text }),
-    "worksheet control shapeName path ole negative completion cases must not be empty"
-  );
-  const closedEntries = negativeEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
-  const reasonEntries = negativeEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
-
-  try {
-    assertWorkbookRootCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathPositiveCompletionCases(
-        alwaysAvailablePositiveEntries,
-        (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも control owner へ解決する`
-      )
-    );
-    assertWorkbookRootClosedCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathNoCompletionCases(
-        [...reasonEntries, ...closedEntries],
-        (entry) =>
-          entry.rootKind === "workbook-qualified-closed"
-            ? `${entry.anchor} は active workbook が閉じている間は control owner に昇格しない`
-            : `${entry.anchor} は ${entry.reason} のため control owner に昇格しない`
-      )
-    );
-
-    service.setActiveWorkbookIdentitySnapshot(createMatchedActiveWorkbookIdentitySnapshot());
-
-    assertWorkbookRootCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathPositiveCompletionCases(
-        positiveEntries,
-        (entry) =>
-          entry.rootKind === "workbook-qualified-matched"
-            ? `${entry.anchor} は active workbook match 時に control owner へ解決する`
-            : `${entry.anchor} は ${entry.rootKind} root として control owner へ解決する`
-      )
-    );
-    assertWorkbookRootClosedCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathNoCompletionCases(
-        reasonEntries,
-        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも control owner に昇格しない`
-      )
-    );
-
-    service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
-
-    assertWorkbookRootCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathPositiveCompletionCases(
-        alwaysAvailablePositiveEntries,
-        (entry) => `${entry.anchor} は mismatch snapshot でも ${entry.rootKind} root として control owner へ解決する`
-      )
-    );
-    assertWorkbookRootClosedCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathNoCompletionCases(
-        [...reasonEntries, ...closedEntries],
-        (entry) =>
-          entry.rootKind === "workbook-qualified-closed"
-            ? `${entry.anchor} は mismatch snapshot では control owner に昇格しない`
-            : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも control owner に昇格しない`
-      )
-    );
-
-    service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
-
-    assertWorkbookRootCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathPositiveCompletionCases(
-        alwaysAvailablePositiveEntries,
-        (entry) => `${entry.anchor} は unavailable snapshot でも ${entry.rootKind} root として control owner へ解決する`
-      )
-    );
-    assertWorkbookRootClosedCompletionCases(
-      service,
-      uri,
-      text,
-      mapWorksheetControlShapeNamePathNoCompletionCases(
-        [...reasonEntries, ...closedEntries],
-        (entry) =>
-          entry.rootKind === "workbook-qualified-closed"
-            ? `${entry.anchor} は unavailable snapshot では control owner に昇格しない`
-            : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも control owner に昇格しない`
-      )
-    );
-  } finally {
-    cleanup();
-  }
+  runWorksheetControlShapeNamePathCompletionSharedCases({
+    fixture: "packages/extension/test/fixtures/OleObjectBuiltIn.bas",
+    routeLabel: "ole",
+    scope: "server-worksheet-control-shape-name-path-ole"
+  });
 });
 
 test("document service consumes worksheet control shapeName path completion shared cases for the shape-oleformat route", () => {
-  const fixture = "packages/extension/test/fixtures/ShapesBuiltIn.bas";
-  const scope = "server-worksheet-control-shape-name-path-shape";
+  runWorksheetControlShapeNamePathCompletionSharedCases({
+    fixture: "packages/extension/test/fixtures/ShapesBuiltIn.bas",
+    routeLabel: "shape",
+    scope: "server-worksheet-control-shape-name-path-shape"
+  });
+});
+
+function runWorksheetControlShapeNamePathCompletionSharedCases({ fixture, routeLabel, scope }) {
   const { cleanup, service, text, uri } = createWorksheetControlShapeNamePathFixture(fixture);
   const positiveEntries = requireWorksheetControlShapeNamePathEntries(
     getWorksheetControlShapeNamePathCompletionEntries("positive", { fixture, scope, text }),
-    "worksheet control shapeName path shape positive completion cases must not be empty"
+    `worksheet control shapeName path ${routeLabel} positive completion cases must not be empty`
   );
   const alwaysAvailablePositiveEntries = positiveEntries.filter((entry) => entry.rootKind !== "workbook-qualified-matched");
   const negativeEntries = requireWorksheetControlShapeNamePathEntries(
     getWorksheetControlShapeNamePathCompletionEntries("negative", { fixture, scope, text }),
-    "worksheet control shapeName path shape negative completion cases must not be empty"
+    `worksheet control shapeName path ${routeLabel} negative completion cases must not be empty`
   );
   const closedEntries = negativeEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
   const reasonEntries = negativeEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
@@ -6271,7 +6170,7 @@ test("document service consumes worksheet control shapeName path completion shar
   } finally {
     cleanup();
   }
-});
+}
 
 function assertSemanticToken(text, tokens, lineIndex, identifier, expected, occurrence = 0) {
   const lines = text.split("\n");
@@ -6335,13 +6234,14 @@ function createWorksheetControlShapeNamePathFixture(fixtureRelativePath) {
   const moduleDirectory = path.join(bundleRoot, "modules");
   const sourcePath = path.resolve(__dirname, "..", "..", "..", fixtureRelativePath);
   const moduleName = path.basename(fixtureRelativePath);
-  const uri = pathToFileURL(path.join(moduleDirectory, moduleName)).href;
-  const text = readFileSync(sourcePath, "utf8").replace(/\r\n?/g, "\n");
-  const thisWorkbookUri = pathToFileURL(path.join(bundleRoot, "ThisWorkbook.cls")).href;
-  const sheet1Uri = pathToFileURL(path.join(bundleRoot, "Sheet1.cls")).href;
-  const chart1Uri = pathToFileURL(path.join(bundleRoot, "Chart1.cls")).href;
 
   try {
+    const uri = pathToFileURL(path.join(moduleDirectory, moduleName)).href;
+    const text = readFileSync(sourcePath, "utf8").replace(/\r\n?/g, "\n");
+    const thisWorkbookUri = pathToFileURL(path.join(bundleRoot, "ThisWorkbook.cls")).href;
+    const sheet1Uri = pathToFileURL(path.join(bundleRoot, "Sheet1.cls")).href;
+    const chart1Uri = pathToFileURL(path.join(bundleRoot, "Chart1.cls")).href;
+
     mkdirSync(moduleDirectory, { recursive: true });
     writeDefaultWorksheetBroadRootArtifacts(bundleRoot);
 

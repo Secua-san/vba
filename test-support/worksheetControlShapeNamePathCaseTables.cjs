@@ -93,6 +93,7 @@ const worksheetControlShapeNamePath = {
       {
         fixture: OLE_FIXTURE,
         anchor: 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.',
+        reason: "closed-workbook",
         rootKind: "workbook-qualified-closed",
         routeKind: "ole-object",
         scopes: ["extension", "server-worksheet-control-shape-name-path-ole"]
@@ -132,6 +133,7 @@ const worksheetControlShapeNamePath = {
       {
         fixture: SHAPE_FIXTURE,
         anchor: 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.',
+        reason: "closed-workbook",
         rootKind: "workbook-qualified-closed",
         routeKind: "shape-oleformat",
         scopes: ["extension", "server-worksheet-control-shape-name-path-shape"]

@@ -30,6 +30,7 @@ test("worksheet control shapeName path completion case spec satisfies the v1 min
 
   for (const reason of [
     "chartsheet-root",
+    "closed-workbook",
     "code-name-selector",
     "dynamic-selector",
     "non-target-root",
@@ -38,6 +39,12 @@ test("worksheet control shapeName path completion case spec satisfies the v1 min
   ]) {
     assert.equal(negativeReasons.has(reason), true, `negative reason '${reason}' must exist`);
   }
+
+  assert.equal(
+    negativeEntries.every((entry) => typeof entry.reason === "string" && entry.reason.length > 0),
+    true,
+    "all negative worksheet control shapeName path completion entries must declare a reason"
+  );
 
   assert.equal(
     negativeEntries.some((entry) => entry.routeKind === "ole-object" && entry.rootKind === "workbook-qualified-closed"),

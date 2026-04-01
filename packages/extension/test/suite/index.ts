@@ -100,6 +100,7 @@ type WorksheetControlShapeNamePathRootKind =
 type WorksheetControlShapeNamePathRouteKind = "ole-object" | "shape-oleformat";
 type WorksheetControlShapeNamePathReason =
   | "chartsheet-root"
+  | "closed-workbook"
   | "code-name-selector"
   | "dynamic-selector"
   | "non-target-root"
@@ -858,6 +859,7 @@ export async function run(): Promise<void> {
     (entry) => entry.rootKind !== "workbook-qualified-closed"
   );
 
+  await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
   await assertWorkbookRootCompletionCases(
     oleObjectBuiltInDocument,
     mapExtensionWorksheetControlShapeNamePathPositiveCompletionCases(
