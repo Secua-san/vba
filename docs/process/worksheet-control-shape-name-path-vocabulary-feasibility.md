@@ -5,7 +5,7 @@
 - `worksheetControlShapeNamePath` の v1 語彙は、`rootKind` を `document-module` / `workbook-qualified-static` / `workbook-qualified-matched` / `workbook-qualified-closed`、`routeKind` を `ole-object` / `shape-oleformat` に固定する。
 - 負例の分類軸は `rootKind` に混ぜず、`reason` として `numeric-selector` / `dynamic-selector` / `code-name-selector` / `plain-shape` / `chartsheet-root` / `non-target-root` に切り分ける。
 - `OleObjectBuiltIn.bas` と `ShapesBuiltIn.bas` は route ごとの実行 fixture として残し、family canonical anchor source は将来の専用 case spec に分離する前提で扱う。
-- v1 では `test-support/worksheetControlShapeNamePathCaseTables.cjs` のような repo root 配下の dedicated case spec を最終正本候補とし、単独の `.bas` fixture を family 正本にはしない。
+- v1 では `test-support/worksheetControlShapeNamePathCaseTables.cjs` のような repo root 配下の dedicated case spec を family canonical anchor source の正本とし、単独の `.bas` fixture を family 正本にはしない。
 
 ## 目的
 
@@ -136,9 +136,9 @@
 
 ## canonical anchor source の扱い
 
-### 1. v1 の正本は dedicated case spec を前提にする
+### 1. v1 の正本は dedicated case spec に固定する
 
-最終的な family canonical anchor source 候補:
+v1 family canonical anchor source:
 
 - `test-support/worksheetControlShapeNamePathCaseTables.cjs`
 
@@ -198,7 +198,7 @@ v1 では別の `state` 軸を足さず、`ActiveWorkbook` path の open / close
 
 ## 次段の候補
 
-1. `worksheetControlShapeNamePath` の dedicated case spec をどの粒度で切るか整理する  
+1. `worksheetControlShapeNamePath` の dedicated case spec 抽出方針を整理する  
 2. `test-support/worksheetControlShapeNamePathCaseTables.cjs` を置くときに、fixture path / anchor / scopes をどう最小化するか PoC する  
 3. dedicated mixed fixture が本当に必要かを、case spec 抽出後の drift 量で再評価する  
 
@@ -206,5 +206,6 @@ v1 では別の `state` 軸を足さず、`ActiveWorkbook` path の open / close
 
 - family 候補の切り出し: [worksheet-control-shared-spec-family-candidate-feasibility.md](./worksheet-control-shared-spec-family-candidate-feasibility.md)
 - shared case spec の正本方針: [workbook-root-family-case-table-policy.md](./workbook-root-family-case-table-policy.md)
+- dedicated case spec 抽出方針: [worksheet-control-shape-name-path-case-spec-feasibility.md](./worksheet-control-shape-name-path-case-spec-feasibility.md)
 - `ole-object` route の入口整理: [worksheet-chart-control-entrypoint-feasibility.md](./worksheet-chart-control-entrypoint-feasibility.md)
 - `shape-oleformat` route の入口整理: [worksheet-chart-shapes-root-feasibility.md](./worksheet-chart-shapes-root-feasibility.md), [shape-oleformat-object-promotion-feasibility.md](./shape-oleformat-object-promotion-feasibility.md)
