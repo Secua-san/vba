@@ -2,11 +2,17 @@
 
 ## 進行中
 
-- [ ] worksheet control shapeName path の vocabulary と canonical anchor source を整理する
-  - [docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md](docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md) で切り出した `worksheetControlShapeNamePath` 候補について、`document-module` / `workbook-qualified-static` / `workbook-qualified-matched` / `workbook-qualified-closed` の root kind と `ole-object` / `shape-oleformat` の route kind をどう固定するかを整理する
-  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) のどこを canonical anchor source にするか、あるいは別の shared spec 正本が必要かを次タスクで見極める。broad root の正本は [packages/extension/test/fixtures/WorksheetBroadRootBuiltIn.bas](packages/extension/test/fixtures/WorksheetBroadRootBuiltIn.bas) と [test-support/workbookRootFamilyCaseTables.cjs](test-support/workbookRootFamilyCaseTables.cjs) に残す
+- [ ] worksheet control shapeName path の dedicated case spec 抽出方針を整理する
+  - [docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md](docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md) で固定した `rootKind` / `routeKind` / `reason` / `scopes` を前提に、`test-support/worksheetControlShapeNamePathCaseTables.cjs` のような dedicated case spec をどの粒度で切るか整理する。v1 では `matched/closed` を `rootKind` 側に残し、別の `state` 軸は追加しない前提とする
+  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) を route-local execution source のまま使うのか、family 専用 mixed fixture が必要かを次タスクで見極める
 
 ## 完了
+
+- [x] worksheet control shapeName path の vocabulary と canonical anchor source を整理する
+  - [docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md](docs/process/worksheet-control-shape-name-path-vocabulary-feasibility.md) を追加し、`worksheetControlShapeNamePath` の v1 語彙を `rootKind=document-module/workbook-qualified-static/workbook-qualified-matched/workbook-qualified-closed`、`routeKind=ole-object/shape-oleformat`、negative `reason=numeric-selector/dynamic-selector/code-name-selector/plain-shape/chartsheet-root/non-target-root` に固定した
+  - family canonical anchor source は単独 fixture ではなく、将来の `test-support/worksheetControlShapeNamePathCaseTables.cjs` のような dedicated case spec を前提にし、[OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) は route-local execution source のまま残す方針を整理した
+  - [docs/process/README.md](docs/process/README.md) に導線を追加し、次タスクを vocabulary 固定から dedicated case spec 抽出方針の整理へ切り替えた
+  - docs-only のため build / lint / test は実行していない
 
 - [x] worksheet/chart control 系で shared spec 化の候補 family を切り出す
   - [docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md](docs/process/worksheet-control-shared-spec-family-candidate-feasibility.md) を追加し、最初の shared spec 候補は `worksheet control shapeName path` に絞り、`OLEObjects("shapeName").Object` と `Shapes("shapeName").OLEFormat.Object` の worksheet path を同じ family table 候補として扱う方針を整理した
