@@ -6043,23 +6043,23 @@ Option Explicit`
   }
 });
 
-test("document service consumes worksheet control shapeName path completion shared cases for the ole-object route", () => {
-  runWorksheetControlShapeNamePathCompletionSharedCases({
+test("document service consumes worksheet control shapeName path shared cases for the ole-object route", () => {
+  runWorksheetControlShapeNamePathSharedCases({
     fixture: "packages/extension/test/fixtures/OleObjectBuiltIn.bas",
     routeLabel: "ole",
     scope: "server-worksheet-control-shape-name-path-ole"
   });
 });
 
-test("document service consumes worksheet control shapeName path completion shared cases for the shape-oleformat route", () => {
-  runWorksheetControlShapeNamePathCompletionSharedCases({
+test("document service consumes worksheet control shapeName path shared cases for the shape-oleformat route", () => {
+  runWorksheetControlShapeNamePathSharedCases({
     fixture: "packages/extension/test/fixtures/ShapesBuiltIn.bas",
     routeLabel: "shape",
     scope: "server-worksheet-control-shape-name-path-shape"
   });
 });
 
-function runWorksheetControlShapeNamePathCompletionSharedCases({ fixture, routeLabel, scope }) {
+function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scope }) {
   const { cleanup, service, text, uri } = createWorksheetControlShapeNamePathFixture(fixture);
   const positiveEntries = requireWorksheetControlShapeNamePathEntries(
     getWorksheetControlShapeNamePathCompletionEntries("positive", { fixture, scope, text }),
@@ -6072,6 +6072,32 @@ function runWorksheetControlShapeNamePathCompletionSharedCases({ fixture, routeL
   );
   const closedEntries = negativeEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
   const reasonEntries = negativeEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
+  const positiveHoverEntries = requireWorksheetControlShapeNamePathEntries(
+    getWorksheetControlShapeNamePathInteractionEntries("hover", "positive", { fixture, scope, text }),
+    `worksheet control shapeName path ${routeLabel} positive hover cases must not be empty`
+  );
+  const alwaysAvailablePositiveHoverEntries = positiveHoverEntries.filter(
+    (entry) => entry.rootKind !== "workbook-qualified-matched"
+  );
+  const negativeHoverEntries = requireWorksheetControlShapeNamePathEntries(
+    getWorksheetControlShapeNamePathInteractionEntries("hover", "negative", { fixture, scope, text }),
+    `worksheet control shapeName path ${routeLabel} negative hover cases must not be empty`
+  );
+  const closedHoverEntries = negativeHoverEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
+  const reasonHoverEntries = negativeHoverEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
+  const positiveSignatureEntries = requireWorksheetControlShapeNamePathEntries(
+    getWorksheetControlShapeNamePathInteractionEntries("signature", "positive", { fixture, scope, text }),
+    `worksheet control shapeName path ${routeLabel} positive signature cases must not be empty`
+  );
+  const alwaysAvailablePositiveSignatureEntries = positiveSignatureEntries.filter(
+    (entry) => entry.rootKind !== "workbook-qualified-matched"
+  );
+  const negativeSignatureEntries = requireWorksheetControlShapeNamePathEntries(
+    getWorksheetControlShapeNamePathInteractionEntries("signature", "negative", { fixture, scope, text }),
+    `worksheet control shapeName path ${routeLabel} negative signature cases must not be empty`
+  );
+  const closedSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
+  const reasonSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
 
   try {
     assertWorkbookRootCompletionCases(
@@ -6093,6 +6119,48 @@ function runWorksheetControlShapeNamePathCompletionSharedCases({ fixture, routeL
           entry.rootKind === "workbook-qualified-closed"
             ? `${entry.anchor} は active workbook が閉じている間は control owner に昇格しない`
             : `${entry.anchor} は ${entry.reason} のため control owner に昇格しない`
+      )
+    );
+    assertWorkbookRootHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        alwaysAvailablePositiveHoverEntries,
+        (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも hover が control owner を指す`
+      )
+    );
+    assertWorkbookRootNoHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        [...reasonHoverEntries, ...closedHoverEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は active workbook が閉じている間は hover を解決しない`
+            : `${entry.anchor} は ${entry.reason} のため hover を解決しない`
+      )
+    );
+    assertWorkbookRootSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        alwaysAvailablePositiveSignatureEntries,
+        (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも signature help を解決する`
+      )
+    );
+    assertWorkbookRootNoSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        [...reasonSignatureEntries, ...closedSignatureEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は active workbook が閉じている間は signature help を解決しない`
+            : `${entry.anchor} は ${entry.reason} のため signature help を解決しない`
       )
     );
 
@@ -6119,6 +6187,48 @@ function runWorksheetControlShapeNamePathCompletionSharedCases({ fixture, routeL
         (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも control owner に昇格しない`
       )
     );
+    assertWorkbookRootHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        positiveHoverEntries,
+        (entry) =>
+          entry.rootKind === "workbook-qualified-matched"
+            ? `${entry.anchor} は active workbook match 時に hover が control owner を指す`
+            : `${entry.anchor} は ${entry.rootKind} root として hover が control owner を指す`
+      )
+    );
+    assertWorkbookRootNoHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        reasonHoverEntries,
+        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも hover を解決しない`
+      )
+    );
+    assertWorkbookRootSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        positiveSignatureEntries,
+        (entry) =>
+          entry.rootKind === "workbook-qualified-matched"
+            ? `${entry.anchor} は active workbook match 時に signature help を解決する`
+            : `${entry.anchor} は ${entry.rootKind} root として signature help を解決する`
+      )
+    );
+    assertWorkbookRootNoSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        reasonSignatureEntries,
+        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも signature help を解決しない`
+      )
+    );
 
     service.setActiveWorkbookIdentitySnapshot(createMismatchedActiveWorkbookIdentitySnapshot());
 
@@ -6143,6 +6253,49 @@ function runWorksheetControlShapeNamePathCompletionSharedCases({ fixture, routeL
             : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも control owner に昇格しない`
       )
     );
+    assertWorkbookRootHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        alwaysAvailablePositiveHoverEntries,
+        (entry) => `${entry.anchor} は mismatch snapshot でも ${entry.rootKind} root として hover が control owner を指す`
+      )
+    );
+    assertWorkbookRootNoHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        [...reasonHoverEntries, ...closedHoverEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は mismatch snapshot では hover を解決しない`
+            : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも hover を解決しない`
+      )
+    );
+    assertWorkbookRootSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        alwaysAvailablePositiveSignatureEntries,
+        (entry) =>
+          `${entry.anchor} は mismatch snapshot でも ${entry.rootKind} root として signature help を解決する`
+      )
+    );
+    assertWorkbookRootNoSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        [...reasonSignatureEntries, ...closedSignatureEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は mismatch snapshot では signature help を解決しない`
+            : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも signature help を解決しない`
+      )
+    );
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
@@ -6165,6 +6318,50 @@ function runWorksheetControlShapeNamePathCompletionSharedCases({ fixture, routeL
           entry.rootKind === "workbook-qualified-closed"
             ? `${entry.anchor} は unavailable snapshot では control owner に昇格しない`
             : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも control owner に昇格しない`
+      )
+    );
+    assertWorkbookRootHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        alwaysAvailablePositiveHoverEntries,
+        (entry) =>
+          `${entry.anchor} は unavailable snapshot でも ${entry.rootKind} root として hover が control owner を指す`
+      )
+    );
+    assertWorkbookRootNoHoverCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        [...reasonHoverEntries, ...closedHoverEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は unavailable snapshot では hover を解決しない`
+            : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも hover を解決しない`
+      )
+    );
+    assertWorkbookRootSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        alwaysAvailablePositiveSignatureEntries,
+        (entry) =>
+          `${entry.anchor} は unavailable snapshot でも ${entry.rootKind} root として signature help を解決する`
+      )
+    );
+    assertWorkbookRootNoSignatureCases(
+      service,
+      uri,
+      text,
+      mapWorksheetControlShapeNamePathInteractionCases(
+        [...reasonSignatureEntries, ...closedSignatureEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は unavailable snapshot では signature help を解決しない`
+            : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも signature help を解決しない`
       )
     );
   } finally {
@@ -6611,6 +6808,29 @@ function getWorksheetControlShapeNamePathCompletionEntries(polarity, options = {
   });
 }
 
+function getWorksheetControlShapeNamePathInteractionEntries(interactionKind, polarity, options = {}) {
+  const { fixture, rootKind, routeKind, scope, text } = options;
+  const normalizedText = text?.replace(/\r\n?/g, "\n");
+  return worksheetControlShapeNamePathCaseTables.worksheetControlShapeNamePath[interactionKind][polarity].filter((entry) => {
+    if (fixture && entry.fixture !== fixture) {
+      return false;
+    }
+    if (rootKind && entry.rootKind !== rootKind) {
+      return false;
+    }
+    if (routeKind && entry.routeKind !== routeKind) {
+      return false;
+    }
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    if (normalizedText && !normalizedText.includes(entry.anchor)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function requireWorksheetControlShapeNamePathEntries(entries, message) {
   assert.ok(entries.length > 0, message);
   return entries;
@@ -6627,6 +6847,10 @@ function mapWorksheetControlShapeNamePathPositiveCompletionCases(entries, messag
 
 function mapWorksheetControlShapeNamePathNoCompletionCases(entries, messageBuilder) {
   return entries.map((entry) => [entry.anchor, "Value", messageBuilder(entry)]);
+}
+
+function mapWorksheetControlShapeNamePathInteractionCases(entries, messageBuilder) {
+  return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 
 function getHoverAfterToken(service, uri, text, token, occurrenceIndex = 0) {

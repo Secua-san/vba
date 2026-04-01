@@ -72,6 +72,8 @@ Public Sub Demo()
     Call ActiveWorkbook.Worksheets.Item(1).Shapes("CheckBox1").OLEFormat.Object.Select(
     Debug.Print Chart1.Shapes("CheckBox1").OLEFormat.Object.
     Debug.Print Sheet1.Shapes("PlainShape").OLEFormat.Object.
+    Call Chart1.Shapes("CheckBox1").OLEFormat.Object.Select(
+    Call Sheet1.Shapes("PlainShape").OLEFormat.Object.Select(
 End Sub
 
 Private Function GetIndex() As Long
