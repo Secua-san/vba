@@ -8,14 +8,20 @@
 
 ## 進行中
 
-- [ ] worksheet control shapeName path の completion case spec を最小抽出する
-  - [docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md](docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md) で固定した `fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` / `reason` を前提に、`test-support/worksheetControlShapeNamePathCaseTables.cjs` の `worksheetControlShapeNamePath.completion` を最小 PoC として切り出す
-  - 初回は `completion.positive` / `completion.negative` のみを対象にし、`hover` / `signature` / `semantic` は package-local adapter と anchor topology を見ながら後続で段階追加する
-  - 完了条件は、両 `routeKind`、positive の `document-module/static/matched`、negative の各 `reason` と各 route の `workbook-qualified-closed`、両 fixture、`extension` と route ごとの server scope を少なくとも 1 回ずつ含むこととする
-  - そのうえで少なくとも 1 つ以上の実コード変更と、適切な検証を伴ったときだけ `完了` に移す
-  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) は route-local execution source のまま維持し、family 専用 mixed fixture の要否は抽出後の drift で再評価する
+- [ ] worksheet control shapeName path の hover / signature case spec を最小抽出する
+  - 今回追加した [test-support/worksheetControlShapeNamePathCaseTables.cjs](test-support/worksheetControlShapeNamePathCaseTables.cjs) は `completion` だけを正本化したため、次段では `hover` / `signature` を同じ family table へ段階追加し、`fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` の軸を維持したまま adapter 層へ広げる
+  - 初回は `completion` と同じ 2 fixture を execution source のまま使い、`identifier` や payload assertion は package-local adapter に留める
+  - 完了条件は、少なくとも 1 つ以上の実コード変更と、適切な検証を伴ったうえで `hover` または `signature` のどちらか一方を shared case spec から消費できる状態にすること
 
 ## 完了
+
+- [x] worksheet control shapeName path の completion case spec を最小抽出する
+  - [test-support/worksheetControlShapeNamePathCaseTables.cjs](test-support/worksheetControlShapeNamePathCaseTables.cjs) を追加し、`worksheetControlShapeNamePath.completion` の v1 正本として `fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` と negative 用の `reason` を固定した
+  - [scripts/test/worksheetControlShapeNamePathCaseTables.test.mjs](scripts/test/worksheetControlShapeNamePathCaseTables.test.mjs) を追加し、両 `routeKind`、positive の `document-module/static/matched`、negative の各 `reason`、各 route の `workbook-qualified-closed`、両 fixture、`extension` と route ごとの server scope を自動検証するようにした
+  - [packages/server/test/documentService.test.js](packages/server/test/documentService.test.js) に fixture 読み込みベースの shared completion case 消費テストを追加し、`ole-object` / `shape-oleformat` の両 route で `document-module/static/matched/closed` と負例が server 側でも崩れないことを固定した
+  - [packages/extension/test/suite/index.ts](packages/extension/test/suite/index.ts) に shared completion case 消費 helper と runtime assertion を追加し、既存 fixture の direct path completion を shared spec から参照する形へ広げた
+  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) に completion anchor を最小追加し、`dynamic-selector` と `plain-shape` / `chartsheet-root` の completion 正本を曖昧な prefix 依存にしないようにした
+  - `npm run test:scripts`、`npm run test --workspace @vba/core`、`npm run test --workspace @vba/server`、`npm run lint`、`npm run package` は成功し、`npm run test --workspace vba-extension` は VS Code 実行中のため CLI から起動できず失敗した
 
 - [x] worksheet control shapeName path の dedicated case spec 抽出方針を整理する
   - [docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md](docs/process/worksheet-control-shape-name-path-case-spec-feasibility.md) を追加し、dedicated case spec は fixture 単位ではなく family 単位の `test-support/worksheetControlShapeNamePathCaseTables.cjs` を v1 正本とし、entry ごとに `fixture` を持たせる方針を整理した
