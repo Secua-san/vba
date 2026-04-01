@@ -8,12 +8,20 @@
 
 ## 進行中
 
-- [ ] worksheet control shapeName path の hover / signature case spec を最小抽出する
-  - 今回追加した [test-support/worksheetControlShapeNamePathCaseTables.cjs](test-support/worksheetControlShapeNamePathCaseTables.cjs) は `completion` だけを正本化したため、次段では `hover` / `signature` を同じ family table へ段階追加し、`fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` の軸を維持したまま adapter 層へ広げる
-  - 初回は `completion` と同じ 2 fixture を execution source のまま使い、`identifier` や payload assertion は package-local adapter に留める
-  - 完了条件は、少なくとも 1 つ以上の実コード変更と、適切な検証を伴ったうえで `hover` または `signature` のどちらか一方を shared case spec から消費できる状態にすること
+- [ ] worksheet control shapeName path の semantic case spec を最小抽出する
+  - 今回 `completion` / `hover` / `signature` を family table へ寄せたので、次段では `semantic` も同じ [test-support/worksheetControlShapeNamePathCaseTables.cjs](test-support/worksheetControlShapeNamePathCaseTables.cjs) に段階追加し、`fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` を shared 化する
+  - 初回は既存 2 fixture を execution source のまま使い、token type / modifiers の assertion shape だけを package-local adapter に残す
+  - 完了条件は、少なくとも 1 つ以上の実コード変更と、適切な検証を伴ったうえで `semantic` を shared case spec から消費できる状態にすること
 
 ## 完了
+
+- [x] worksheet control shapeName path の hover / signature case spec を最小抽出する
+  - [test-support/worksheetControlShapeNamePathCaseTables.cjs](test-support/worksheetControlShapeNamePathCaseTables.cjs) に `hover` / `signature` の positive / negative entry を追加し、`completion` と同じ `fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` と negative 用 `reason` を shared 化した
+  - [scripts/test/worksheetControlShapeNamePathCaseTables.test.mjs](scripts/test/worksheetControlShapeNamePathCaseTables.test.mjs) を更新し、`hover` / `signature` でも両 route、positive の `document-module/static/matched`、negative の各 `reason`、両 fixture、`extension` と route ごとの server scope を自動検証するようにした
+  - [packages/server/test/documentService.test.js](packages/server/test/documentService.test.js) を更新し、shared completion runner を `hover` / `signature` まで広げ、`ole-object` / `shape-oleformat` の両 route で state 別の hover / signature help を shared spec から消費するようにした
+  - [packages/extension/test/suite/index.ts](packages/extension/test/suite/index.ts) に shared interaction case 消費 helper を追加し、既存 fixture の hover / signature help assertion を shared spec から参照する形へ寄せた
+  - [packages/extension/test/fixtures/OleObjectBuiltIn.bas](packages/extension/test/fixtures/OleObjectBuiltIn.bas) と [packages/extension/test/fixtures/ShapesBuiltIn.bas](packages/extension/test/fixtures/ShapesBuiltIn.bas) に interaction anchor を最小追加し、`dynamic-selector` / `plain-shape` / `chartsheet-root` / `non-target-root` の interaction 正本を曖昧な prefix 依存にしないようにした
+  - `npx tsc -p packages/extension/tsconfig.test.json`、`npm run test:scripts`、`npm run test --workspace @vba/server`、`npm run lint`、`npm run package` は成功し、`npm run test --workspace vba-extension` はこの desktop session 上で 244 秒タイムアウトした
 
 - [x] worksheet control shapeName path の completion case spec を最小抽出する
   - [test-support/worksheetControlShapeNamePathCaseTables.cjs](test-support/worksheetControlShapeNamePathCaseTables.cjs) を追加し、`worksheetControlShapeNamePath.completion` の v1 正本として `fixture` / `anchor` / `rootKind` / `routeKind` / `scopes` と negative 用の `reason` を固定した

@@ -69,6 +69,11 @@ Public Sub Demo()
     Call ActiveWorkbook.Worksheets.Item("Sheet1").OLEObjects("CheckBox1").Object.Select(
     Call ActiveWorkbook.Worksheets.Item(1).OLEObjects("CheckBox1").Object.Select(
     Debug.Print Sheet1.OLEObjects(i + 1).Object.
+    Debug.Print Sheet1.OLEObjects(i + 1).Object.Value
+    Debug.Print Chart1.OLEObjects("CheckBox1").Object.Value
+    Debug.Print ActiveSheet.OLEObjects("CheckBox1").Object.Value
+    Call Sheet1.OLEObjects(i + 1).Object.Select(
+    Call ActiveSheet.OLEObjects("CheckBox1").Object.Select(
 End Sub
 
 Private Function GetIndex() As Long
