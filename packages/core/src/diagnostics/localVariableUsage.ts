@@ -32,8 +32,10 @@ export function analyzeProcedureLocalUsage(procedure: ProcedureDeclarationNode):
     }
 
     if (statement.kind === "assignmentStatement") {
-      if (statement.targetName && declarations.has(normalizeIdentifier(statement.targetName))) {
-        writtenNames.add(normalizeIdentifier(statement.targetName));
+      const targetName = getAssignmentTargetName(statement.targetText, statement.targetName);
+
+      if (targetName && declarations.has(targetName)) {
+        writtenNames.add(targetName);
       }
 
       collectReads(removeStringAndDateLiterals(statement.expressionText), declarations, readNames);
@@ -124,6 +126,15 @@ function parseAssignment(text: string): { expressionText: string; targetName?: s
     expressionText: rightText.trim(),
     targetName: match?.[1] ? normalizeIdentifier(match[1].replace(/[$%&!#@]$/, "")) : undefined
   };
+}
+
+function getAssignmentTargetName(targetText: string, targetName?: string): string | undefined {
+  if (targetName) {
+    return normalizeIdentifier(targetName);
+  }
+
+  const match = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s*\(.*\))?\s*$/u.exec(targetText);
+  return match?.[1] ? normalizeIdentifier(match[1].replace(/[$%&!#@]$/, "")) : undefined;
 }
 
 function findAssignmentOperatorIndex(text: string): number {

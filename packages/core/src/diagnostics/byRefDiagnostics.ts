@@ -56,12 +56,12 @@ export function collectByRefArgumentDiagnostics(
 
         for (let argumentIndex = 0; argumentIndex < invocation.arguments.length; argumentIndex += 1) {
           const parameter = resolvedCallable.callable.parameters[argumentIndex];
+          const argument = invocation.arguments[argumentIndex];
 
-          if (!parameter || parameter.direction !== "byRef") {
+          if (!parameter || parameter.direction !== "byRef" || !argument || argument.text.trim().length === 0) {
             continue;
           }
 
-          const argument = invocation.arguments[argumentIndex];
           const assignableArgument = resolveAssignableArgument(result, argument);
 
           if (!assignableArgument) {

@@ -186,6 +186,67 @@ End Sub`, { fileName: "StructuredControlBlocks.bas" });
   }
 });
 
+test("parseModule preserves single-character sub-range positions for structured block statements", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    For o = 1 To 10
+    Next x
+    Do While d
+    Loop Until f
+    While w
+    With h
+    On Error GoTo o
+End Sub`, { fileName: "StructuredBlockRanges.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  const forStatement = procedure.body[0];
+  const nextStatement = procedure.body[1];
+  const doStatement = procedure.body[2];
+  const loopStatement = procedure.body[3];
+  const whileStatement = procedure.body[4];
+  const withStatement = procedure.body[5];
+  const onErrorStatement = procedure.body[6];
+
+  assert.equal(forStatement?.kind, "forStatement");
+  if (forStatement?.kind === "forStatement") {
+    assert.equal(forStatement.counterRange.start.character, 8);
+    assert.equal(forStatement.startExpressionRange.start.character, 12);
+    assert.equal(forStatement.endExpressionRange.start.character, 17);
+  }
+
+  assert.equal(nextStatement?.kind, "nextStatement");
+  if (nextStatement?.kind === "nextStatement") {
+    assert.equal(nextStatement.counterRange?.start.character, 9);
+  }
+
+  assert.equal(doStatement?.kind, "doBlockStatement");
+  if (doStatement?.kind === "doBlockStatement") {
+    assert.equal(doStatement.conditionRange?.start.character, 13);
+  }
+
+  assert.equal(loopStatement?.kind, "loopStatement");
+  if (loopStatement?.kind === "loopStatement") {
+    assert.equal(loopStatement.conditionRange?.start.character, 15);
+  }
+
+  assert.equal(whileStatement?.kind, "whileStatement");
+  if (whileStatement?.kind === "whileStatement") {
+    assert.equal(whileStatement.conditionRange.start.character, 10);
+  }
+
+  assert.equal(withStatement?.kind, "withBlockStatement");
+  if (withStatement?.kind === "withBlockStatement") {
+    assert.equal(withStatement.targetRange.start.character, 9);
+  }
+
+  assert.equal(onErrorStatement?.kind, "onErrorStatement");
+  if (onErrorStatement?.kind === "onErrorStatement") {
+    assert.equal(onErrorStatement.targetRange?.start.character, 18);
+  }
+});
+
 test("analyzeModule reports undeclared identifiers and missing PtrSafe", () => {
   const result = analyzeModule(`Option Explicit
 
@@ -377,6 +438,23 @@ End Sub`, { fileName: "ByRefRisks.bas" });
       "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
     ]
   );
+});
+
+test("analyzeModule ignores omitted optional ByRef arguments", () => {
+  const result = analyzeModule(`Attribute VB_Name = "ByRefOptional"
+Option Explicit
+
+Private Sub UpdateCount(Optional count As Variant, ByRef nextCount As Long)
+End Sub
+
+Public Sub Demo()
+    Dim nextCount As Long
+    UpdateCount , nextCount
+End Sub`, { fileName: "ByRefOptional.bas" });
+
+  const byRefDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(byRefDiagnostics.length, 0);
 });
 
 test("analyzeModule keeps block header reads and ByRef checks after structured control statement parsing", () => {
@@ -609,6 +687,44 @@ End Sub`, { fileName: "UnusedLocals.bas" });
     ]
   );
   assert.ok(unusedDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+});
+
+test("analyzeModule keeps nested invocation reads when statements contain parenthesized calls", () => {
+  const result = analyzeModule(`Attribute VB_Name = "NestedInvocationReads"
+Option Explicit
+
+Public Sub Demo()
+    Dim leftValue As String
+    Dim rightValue As String
+    leftValue = "A"
+    rightValue = "B"
+    Debug.Print leftValue & Len(rightValue)
+End Sub`, { fileName: "NestedInvocationReads.bas" });
+
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+  const writeOnlyDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "write-only-variable");
+
+  assert.equal(unusedDiagnostics.length, 0);
+  assert.equal(writeOnlyDiagnostics.length, 0);
+});
+
+test("analyzeModule keeps indexed assignment writes after structured assignment parsing", () => {
+  const result = analyzeModule(`Attribute VB_Name = "IndexedAssignmentWrites"
+Option Explicit
+
+Public Sub Demo()
+    Dim values(1 To 2) As Long
+    values(1) = 42
+End Sub`, { fileName: "IndexedAssignmentWrites.bas" });
+
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+  const writeOnlyDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "write-only-variable");
+
+  assert.equal(unusedDiagnostics.length, 0);
+  assert.deepEqual(
+    writeOnlyDiagnostics.map((diagnostic) => diagnostic.message),
+    ["Write-only local variable 'values'."]
+  );
 });
 
 test("analyzeModule warns on write-only local variables without duplicating unused-variable", () => {

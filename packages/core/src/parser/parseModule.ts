@@ -857,12 +857,23 @@ function parseForStatement(
   const counterText = match[1].trim();
   const startExpressionText = match[2].trim();
   const endExpressionText = match[3].trim();
-  const counterStartCharacter = text.indexOf(match[1]);
-  const startExpressionStartCharacter = text.indexOf(match[2], counterStartCharacter + match[1].length);
-  const endExpressionStartCharacter = text.indexOf(match[3], startExpressionStartCharacter + match[2].length);
+  const counterPrefixLength = /^\s*For\s+/iu.exec(text)?.[0].length ?? 0;
+  const counterStartCharacter = findTrimmedSliceStart(text, match[1], counterPrefixLength);
+  const startExpressionStartCharacter = findTrimmedSliceStart(
+    text,
+    match[2],
+    counterStartCharacter + counterText.length
+  );
+  const endExpressionStartCharacter = findTrimmedSliceStart(
+    text,
+    match[3],
+    startExpressionStartCharacter + startExpressionText.length
+  );
   const stepExpressionText = match[4]?.trim();
   const stepExpressionStartCharacter =
-    stepExpressionText && match[4] ? text.indexOf(match[4], endExpressionStartCharacter + match[3].length) : -1;
+    stepExpressionText && match[4]
+      ? findTrimmedSliceStart(text, match[4], endExpressionStartCharacter + endExpressionText.length)
+      : -1;
   const simpleCounterMatch = /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)$/u.exec(counterText);
 
   if (
@@ -924,7 +935,8 @@ function parseNextStatement(
   }
 
   const counterText = match[1]?.trim();
-  const counterStartCharacter = counterText ? text.indexOf(match[1] ?? "") : -1;
+  const counterPrefixLength = /^\s*Next\s+/iu.exec(text)?.[0].length ?? 0;
+  const counterStartCharacter = counterText && match[1] ? findTrimmedSliceStart(text, match[1], counterPrefixLength) : -1;
   const simpleCounterMatch = counterText ? /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)$/u.exec(counterText) : undefined;
 
   return {
@@ -974,7 +986,8 @@ function parseDoBlockStatement(
   const clauseKind = clauseMatch[1].toLowerCase() as "until" | "while";
   const conditionSlice = clauseMatch[2];
   const conditionText = conditionSlice.trim();
-  const conditionStartCharacter = text.indexOf(conditionSlice);
+  const conditionPrefixLength = /^\s*Do\s+(?:While|Until)\s+/iu.exec(text)?.[0].length ?? 0;
+  const conditionStartCharacter = findTrimmedSliceStart(text, conditionSlice, conditionPrefixLength);
 
   if (conditionText.length === 0 || conditionStartCharacter < 0) {
     return undefined;
@@ -1023,7 +1036,8 @@ function parseLoopStatement(
   const clauseKind = clauseMatch[1].toLowerCase() as "until" | "while";
   const conditionSlice = clauseMatch[2];
   const conditionText = conditionSlice.trim();
-  const conditionStartCharacter = text.indexOf(conditionSlice);
+  const conditionPrefixLength = /^\s*Loop\s+(?:While|Until)\s+/iu.exec(text)?.[0].length ?? 0;
+  const conditionStartCharacter = findTrimmedSliceStart(text, conditionSlice, conditionPrefixLength);
 
   if (conditionText.length === 0 || conditionStartCharacter < 0) {
     return undefined;
@@ -1056,7 +1070,8 @@ function parseWhileStatement(
 
   const conditionSlice = match[1];
   const conditionText = conditionSlice.trim();
-  const conditionStartCharacter = text.indexOf(conditionSlice);
+  const conditionPrefixLength = /^\s*While\s+/iu.exec(text)?.[0].length ?? 0;
+  const conditionStartCharacter = findTrimmedSliceStart(text, conditionSlice, conditionPrefixLength);
 
   if (conditionText.length === 0 || conditionStartCharacter < 0) {
     return undefined;
@@ -1088,7 +1103,8 @@ function parseWithBlockStatement(
 
   const targetSlice = match[1];
   const targetText = targetSlice.trim();
-  const targetStartCharacter = text.indexOf(targetSlice);
+  const targetPrefixLength = /^\s*With\s+/iu.exec(text)?.[0].length ?? 0;
+  const targetStartCharacter = findTrimmedSliceStart(text, targetSlice, targetPrefixLength);
 
   if (targetText.length === 0 || targetStartCharacter < 0) {
     return undefined;
@@ -1131,7 +1147,8 @@ function parseOnErrorStatement(
 
   const targetSlice = gotoMatch[1];
   const targetText = targetSlice.trim();
-  const targetStartCharacter = text.indexOf(targetSlice);
+  const targetPrefixLength = /^\s*On\s+Error\s+GoTo\s+/iu.exec(text)?.[0].length ?? 0;
+  const targetStartCharacter = findTrimmedSliceStart(text, targetSlice, targetPrefixLength);
 
   if (targetText.length === 0 || targetStartCharacter < 0) {
     return undefined;
@@ -1270,9 +1287,16 @@ function parseCallStatement(
     };
   }
 
-  const openParenIndex = text.indexOf("(");
+  const parenthesizedCallMatch = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)\s*$/u.exec(text);
+  const openParenIndex = parenthesizedCallMatch ? text.indexOf("(", /^\s*/u.exec(text)?.[0].length ?? 0) : -1;
   const closeParenIndex = findMatchingCloseParen(text, openParenIndex);
-  const identifier = getIdentifierBeforeOpenParen(text, openParenIndex);
+  const identifier =
+    parenthesizedCallMatch && openParenIndex >= 0
+      ? {
+          startCharacter: /^\s*/u.exec(text)?.[0].length ?? 0,
+          text: parenthesizedCallMatch[1]
+        }
+      : undefined;
 
   if (!identifier || closeParenIndex < 0 || isStatementKeyword(identifier.text)) {
     return undefined;
@@ -1790,6 +1814,16 @@ function skipDateLiteral(text: string, startIndex: number): number {
   }
 
   return text.length - 1;
+}
+
+function findTrimmedSliceStart(text: string, rawSlice: string, searchStartCharacter: number): number {
+  const rawIndex = text.indexOf(rawSlice, searchStartCharacter);
+
+  if (rawIndex < 0) {
+    return -1;
+  }
+
+  return rawIndex + (rawSlice.length - rawSlice.trimStart().length);
 }
 
 function createInlineRange(line: number, startCharacter: number, endCharacter: number): ProcedureStatementNode["range"] {
