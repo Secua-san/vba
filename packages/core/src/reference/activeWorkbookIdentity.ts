@@ -1,4 +1,5 @@
 export const ACTIVE_WORKBOOK_IDENTITY_NOTIFICATION_METHOD = "vba/activeWorkbookIdentity";
+export const ACTIVE_WORKBOOK_IDENTITY_TEST_SET_REQUEST_METHOD = "vba/test/setActiveWorkbookIdentitySnapshot";
 export const ACTIVE_WORKBOOK_IDENTITY_TEST_STATE_REQUEST_METHOD = "vba/test/getActiveWorkbookIdentitySnapshot";
 export const ACTIVE_WORKBOOK_IDENTITY_PROVIDER_KIND = "excel-active-workbook";
 export const ACTIVE_WORKBOOK_IDENTITY_VERSION = 1;

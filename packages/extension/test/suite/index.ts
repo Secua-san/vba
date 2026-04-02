@@ -99,6 +99,7 @@ type WorksheetControlShapeNamePathRootKind =
   | "workbook-qualified-static";
 type WorksheetControlShapeNamePathRouteKind = "ole-object" | "shape-oleformat";
 type WorksheetControlShapeNamePathInteractionKind = "hover" | "signature";
+type WorksheetControlShapeNamePathSemanticTokenKind = "method" | "property";
 type WorksheetControlShapeNamePathReason =
   | "chartsheet-root"
   | "closed-workbook"
@@ -122,6 +123,11 @@ type WorksheetControlShapeNamePathPositiveEntry = WorksheetControlShapeNamePathC
 type WorksheetControlShapeNamePathNegativeEntry = WorksheetControlShapeNamePathCaseEntryBase & {
   reason: WorksheetControlShapeNamePathReason;
 };
+type WorksheetControlShapeNamePathSemanticEntry = WorksheetControlShapeNamePathCaseEntryBase & {
+  identifier: string;
+  reason?: WorksheetControlShapeNamePathReason;
+  tokenKind: WorksheetControlShapeNamePathSemanticTokenKind;
+};
 type WorksheetControlShapeNamePathCaseTables = {
   worksheetControlShapeNamePath: {
     completion: {
@@ -135,6 +141,10 @@ type WorksheetControlShapeNamePathCaseTables = {
     signature: {
       negative: readonly WorksheetControlShapeNamePathNegativeEntry[];
       positive: readonly WorksheetControlShapeNamePathPositiveEntry[];
+    };
+    semantic: {
+      negative: readonly WorksheetControlShapeNamePathSemanticEntry[];
+      positive: readonly WorksheetControlShapeNamePathSemanticEntry[];
     };
   };
 };
@@ -174,6 +184,8 @@ const ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT = {
   state: "unavailable",
   version: 1
 } as const;
+const NEGATIVE_LANGUAGE_FEATURE_RETRY_COUNT = 2;
+const NEGATIVE_LANGUAGE_FEATURE_RETRY_DELAY_MS = 100;
 
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension("tagi0.vba-extension");
@@ -4642,7 +4654,7 @@ async function waitForNoSignatureHelp(
   document: vscode.TextDocument,
   position: vscode.Position
 ): Promise<boolean> {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  for (let attempt = 0; attempt < NEGATIVE_LANGUAGE_FEATURE_RETRY_COUNT; attempt += 1) {
     const signatureHelp = await vscode.commands.executeCommand<vscode.SignatureHelp>(
       "vscode.executeSignatureHelpProvider",
       document.uri,
@@ -4653,7 +4665,7 @@ async function waitForNoSignatureHelp(
       return false;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, NEGATIVE_LANGUAGE_FEATURE_RETRY_DELAY_MS));
   }
 
   return true;
@@ -4708,7 +4720,7 @@ async function waitForHoverAtToken(
 }
 
 async function waitForNoHover(document: vscode.TextDocument, position: vscode.Position): Promise<boolean> {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  for (let attempt = 0; attempt < NEGATIVE_LANGUAGE_FEATURE_RETRY_COUNT; attempt += 1) {
     const hovers = await vscode.commands.executeCommand<readonly vscode.Hover[]>(
       "vscode.executeHoverProvider",
       document.uri,
@@ -4719,7 +4731,7 @@ async function waitForNoHover(document: vscode.TextDocument, position: vscode.Po
       return false;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, NEGATIVE_LANGUAGE_FEATURE_RETRY_DELAY_MS));
   }
 
   return true;
@@ -4930,6 +4942,51 @@ function getWorksheetControlShapeNamePathInteractionEntries(
   });
 }
 
+function getWorksheetControlShapeNamePathSemanticEntries(
+  polarity: "positive",
+  options?: {
+    fixture?: WorksheetControlShapeNamePathFixture;
+    rootKind?: WorksheetControlShapeNamePathRootKind;
+    routeKind?: WorksheetControlShapeNamePathRouteKind;
+    scope?: WorksheetControlShapeNamePathScope;
+  }
+): readonly WorksheetControlShapeNamePathSemanticEntry[];
+function getWorksheetControlShapeNamePathSemanticEntries(
+  polarity: "negative",
+  options?: {
+    fixture?: WorksheetControlShapeNamePathFixture;
+    rootKind?: WorksheetControlShapeNamePathRootKind;
+    routeKind?: WorksheetControlShapeNamePathRouteKind;
+    scope?: WorksheetControlShapeNamePathScope;
+  }
+): readonly WorksheetControlShapeNamePathSemanticEntry[];
+function getWorksheetControlShapeNamePathSemanticEntries(
+  polarity: "negative" | "positive",
+  options: {
+    fixture?: WorksheetControlShapeNamePathFixture;
+    rootKind?: WorksheetControlShapeNamePathRootKind;
+    routeKind?: WorksheetControlShapeNamePathRouteKind;
+    scope?: WorksheetControlShapeNamePathScope;
+  } = {}
+): readonly WorksheetControlShapeNamePathSemanticEntry[] {
+  const { fixture, rootKind, routeKind, scope } = options;
+  return worksheetControlShapeNamePathCaseTables.worksheetControlShapeNamePath.semantic[polarity].filter((entry) => {
+    if (fixture && entry.fixture !== fixture) {
+      return false;
+    }
+    if (rootKind && entry.rootKind !== rootKind) {
+      return false;
+    }
+    if (routeKind && entry.routeKind !== routeKind) {
+      return false;
+    }
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function mapExtensionWorkbookRootPositiveCompletionCases(
   entries: readonly WorkbookRootFamilyPositiveCompletionEntry[],
   messageBuilder: (entry: WorkbookRootFamilyPositiveCompletionEntry) => string
@@ -5014,6 +5071,28 @@ function mapExtensionWorksheetControlShapeNamePathInteractionCases<
   return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 
+function mapExtensionWorksheetControlShapeNamePathSemanticCases(
+  entries: readonly WorksheetControlShapeNamePathSemanticEntry[],
+  messageBuilder: (entry: WorksheetControlShapeNamePathSemanticEntry) => string
+): readonly WorkbookRootSemanticCase[] {
+  assert.ok(entries.length > 0, "worksheet control shapeName path semantic shared cases must not be empty");
+  return entries.map((entry) => [
+    entry.anchor,
+    entry.identifier,
+    { modifiers: [], type: entry.tokenKind === "method" ? "function" : "variable" },
+    messageBuilder(entry),
+    entry.occurrenceIndex ?? 0
+  ]);
+}
+
+function mapExtensionWorksheetControlShapeNamePathNoSemanticCases(
+  entries: readonly WorksheetControlShapeNamePathSemanticEntry[],
+  messageBuilder: (entry: WorksheetControlShapeNamePathSemanticEntry) => string
+): readonly WorkbookRootNoSemanticCase[] {
+  assert.ok(entries.length > 0, "worksheet control shapeName path negative semantic shared cases must not be empty");
+  return entries.map((entry) => [entry.anchor, entry.identifier, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
+}
+
 type WorkbookRootCompletionCase = readonly [string, string, string, string, number?];
 type WorkbookRootClosedCompletionCase = readonly [string, string, number?];
 type WorkbookRootHoverCase = readonly [string, string, number?];
@@ -5030,7 +5109,7 @@ async function runExtensionWorksheetControlShapeNamePathInteractionSharedCases({
   fixture: WorksheetControlShapeNamePathFixture;
   routeKind: WorksheetControlShapeNamePathRouteKind;
 }): Promise<void> {
-  const originalSnapshot = await getActiveWorkbookIdentitySnapshot();
+  const originalSnapshot = createRestorableActiveWorkbookIdentitySnapshot(await getActiveWorkbookIdentitySnapshot());
   const positiveHoverEntries = getWorksheetControlShapeNamePathInteractionEntries("hover", "positive", {
     fixture,
     routeKind,
@@ -5059,6 +5138,23 @@ async function runExtensionWorksheetControlShapeNamePathInteractionSharedCases({
   });
   const closedSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
   const reasonSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
+  const positiveSemanticEntries = getWorksheetControlShapeNamePathSemanticEntries("positive", {
+    fixture,
+    routeKind,
+    scope: "extension"
+  });
+  const alwaysAvailablePositiveSemanticEntries = positiveSemanticEntries.filter(
+    (entry) => entry.rootKind !== "workbook-qualified-matched"
+  );
+  const negativeSemanticEntries = getWorksheetControlShapeNamePathSemanticEntries("negative", {
+    fixture,
+    routeKind,
+    scope: "extension"
+  });
+  const closedSemanticEntries = negativeSemanticEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
+  const reasonSemanticEntries = negativeSemanticEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
+  const legend = await waitForSemanticTokensLegend(document, (value) => value.tokenTypes.includes("variable") && value.tokenTypes.includes("function"));
+  const text = document.getText();
 
   await setActiveWorkbookIdentitySnapshot(ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT);
   await assertWorkbookRootHoverCases(
@@ -5093,6 +5189,33 @@ async function runExtensionWorksheetControlShapeNamePathInteractionSharedCases({
         entry.rootKind === "workbook-qualified-closed"
           ? `${entry.anchor} は active workbook が閉じている間は signature help を解決しない`
           : `${entry.anchor} は ${entry.reason} のため signature help を解決しない`
+    )
+  );
+  let decodedTokens = await waitForSemanticTokensByCases(
+    document,
+    legend,
+    text,
+    mapExtensionWorksheetControlShapeNamePathSemanticCases(
+      alwaysAvailablePositiveSemanticEntries,
+      (entry) =>
+        entry.rootKind === "workbook-qualified-matched"
+          ? `${entry.anchor} は snapshot なしでは semantic token を出さない`
+          : `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも semantic token を出す`
+    ),
+    mapExtensionWorksheetControlShapeNamePathNoSemanticCases(
+      [...reasonSemanticEntries, ...closedSemanticEntries],
+      (entry) =>
+        entry.rootKind === "workbook-qualified-closed"
+          ? `${entry.anchor} は active workbook が閉じている間は semantic token を出さない`
+          : `${entry.anchor} は ${entry.reason} のため semantic token を出さない`
+    )
+  );
+  assertWorkbookRootSemanticCases(
+    text,
+    decodedTokens,
+    mapExtensionWorksheetControlShapeNamePathSemanticCases(
+      alwaysAvailablePositiveSemanticEntries,
+      (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも semantic token を出す`
     )
   );
 
@@ -5130,6 +5253,30 @@ async function runExtensionWorksheetControlShapeNamePathInteractionSharedCases({
       mapExtensionWorksheetControlShapeNamePathInteractionCases(
         reasonSignatureEntries,
         (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも signature help を解決しない`
+      )
+    );
+    decodedTokens = await waitForSemanticTokensByCases(
+      document,
+      legend,
+      text,
+      mapExtensionWorksheetControlShapeNamePathSemanticCases(
+        positiveSemanticEntries,
+        (entry) =>
+          entry.rootKind === "workbook-qualified-matched"
+            ? `${entry.anchor} は active workbook match 時に semantic token を出す`
+            : `${entry.anchor} は ${entry.rootKind} root として semantic token を出す`
+      ),
+      mapExtensionWorksheetControlShapeNamePathNoSemanticCases(
+        reasonSemanticEntries,
+        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも semantic token を出さない`
+      )
+    );
+    assertWorkbookRootNoSemanticCases(
+      text,
+      decodedTokens,
+      mapExtensionWorksheetControlShapeNamePathNoSemanticCases(
+        reasonSemanticEntries,
+        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも semantic token を出さない`
       )
     );
   } finally {
@@ -5295,6 +5442,44 @@ async function waitForSemanticTokens(
   return new vscode.SemanticTokens(new Uint32Array());
 }
 
+async function waitForSemanticTokensByCases(
+  document: vscode.TextDocument,
+  legend: vscode.SemanticTokensLegend,
+  text: string,
+  positiveCases: readonly WorkbookRootSemanticCase[],
+  noCases: readonly WorkbookRootNoSemanticCase[]
+): Promise<Array<{ endCharacter: number; line: number; modifiers: string[]; startCharacter: number; type: string }>> {
+  let latestTokenCount = 0;
+  let latestFailureMessage = "semantic token の安定待機が開始されませんでした。";
+
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const tokens =
+      (await vscode.commands.executeCommand<vscode.SemanticTokens>("vscode.provideDocumentSemanticTokens", document.uri)) ??
+      new vscode.SemanticTokens(new Uint32Array());
+    const decodedTokens = decodeSemanticTokens(tokens, legend);
+
+    latestTokenCount = tokens.data.length;
+    try {
+      assertWorkbookRootSemanticCases(text, decodedTokens, positiveCases);
+      assertWorkbookRootNoSemanticCases(text, decodedTokens, noCases);
+      return decodedTokens;
+    } catch (error) {
+      latestFailureMessage = error instanceof Error ? error.message : String(error);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  assert.fail(
+    [
+      "waitForSemanticTokensByCases が対象 anchor の semantic 状態に到達しませんでした。",
+      `document=${document.uri.fsPath}`,
+      `latestTokenCount=${latestTokenCount}`,
+      `lastFailure=${latestFailureMessage}`
+    ].join(" ")
+  );
+}
+
 async function waitForNoSemanticTokensByCases(
   document: vscode.TextDocument,
   legend: vscode.SemanticTokensLegend,
@@ -5332,12 +5517,36 @@ async function waitForNoSemanticTokensByCases(
 }
 
 async function setActiveWorkbookIdentitySnapshot(snapshot: unknown): Promise<void> {
-  await vscode.commands.executeCommand(TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND, snapshot);
+  let lastSetError: unknown;
+  let lastObservedState: Record<string, unknown> | null | undefined;
 
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    const observedState = await vscode.commands.executeCommand<Record<string, unknown> | null>(
-      TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND
-    );
+    try {
+      await vscode.commands.executeCommand(TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND, snapshot);
+      lastSetError = undefined;
+      break;
+    } catch (error) {
+      lastSetError = error;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  if (lastSetError) {
+    throw lastSetError instanceof Error ? lastSetError : new Error(String(lastSetError));
+  }
+
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    let observedState: Record<string, unknown> | null | undefined;
+
+    try {
+      observedState = await vscode.commands.executeCommand<Record<string, unknown> | null>(
+        TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND
+      );
+    } catch {
+      observedState = undefined;
+    }
+
+    lastObservedState = observedState;
 
     if (matchesActiveWorkbookIdentityState(observedState, snapshot)) {
       return;
@@ -5346,7 +5555,9 @@ async function setActiveWorkbookIdentitySnapshot(snapshot: unknown): Promise<voi
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  throw new Error("active workbook identity snapshot が server へ反映されませんでした");
+  throw new Error(
+    `active workbook identity snapshot が server へ反映されませんでした expected=${JSON.stringify(snapshot)} observed=${JSON.stringify(lastObservedState)}`
+  );
 }
 
 async function getActiveWorkbookIdentitySnapshot(): Promise<Record<string, unknown> | null> {
@@ -5355,6 +5566,109 @@ async function getActiveWorkbookIdentitySnapshot(): Promise<Record<string, unkno
       TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND
     )) ?? null
   );
+}
+
+function createRestorableActiveWorkbookIdentitySnapshot(
+  state: Record<string, unknown> | null | undefined
+): Record<string, unknown> {
+  if (!state) {
+    return { ...ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT };
+  }
+
+  const observedAt =
+    typeof state.observedAt === "string" ? state.observedAt : ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT.observedAt;
+
+  switch (typeof state.state === "string" ? state.state : undefined) {
+    case "available": {
+      const workbook = state.workbook;
+
+      if (
+        workbook &&
+        typeof workbook === "object" &&
+        typeof (workbook as { fullName?: unknown }).fullName === "string" &&
+        typeof (workbook as { isAddin?: unknown }).isAddin === "boolean" &&
+        typeof (workbook as { name?: unknown }).name === "string" &&
+        typeof (workbook as { path?: unknown }).path === "string"
+      ) {
+        return {
+          identity: {
+            fullName: (workbook as { fullName: string }).fullName,
+            isAddin: (workbook as { isAddin: boolean }).isAddin,
+            name: (workbook as { name: string }).name,
+            path: (workbook as { path: string }).path
+          },
+          observedAt,
+          providerKind: "excel-active-workbook",
+          state: "available",
+          version: 1
+        };
+      }
+
+      break;
+    }
+    case "unavailable":
+      if (typeof state.reason === "string") {
+        return {
+          observedAt,
+          providerKind: "excel-active-workbook",
+          reason: state.reason,
+          state: "unavailable",
+          version: 1
+        };
+      }
+      break;
+    case "protected-view":
+      if (state.protectedView && typeof state.protectedView === "object") {
+        return {
+          observedAt,
+          protectedView: {
+            ...(typeof (state.protectedView as { sourceName?: unknown }).sourceName === "string"
+              ? { sourceName: (state.protectedView as { sourceName: string }).sourceName }
+              : {}),
+            ...(typeof (state.protectedView as { sourcePath?: unknown }).sourcePath === "string"
+              ? { sourcePath: (state.protectedView as { sourcePath: string }).sourcePath }
+              : {})
+          },
+          providerKind: "excel-active-workbook",
+          state: "protected-view",
+          version: 1
+        };
+      }
+      break;
+    case "unsupported": {
+      const workbook = state.workbook;
+
+      if (
+        workbook &&
+        typeof workbook === "object" &&
+        typeof (workbook as { fullName?: unknown }).fullName === "string" &&
+        typeof (workbook as { isAddin?: unknown }).isAddin === "boolean" &&
+        typeof (workbook as { name?: unknown }).name === "string" &&
+        typeof (workbook as { path?: unknown }).path === "string" &&
+        typeof state.reason === "string"
+      ) {
+        return {
+          identity: {
+            fullName: (workbook as { fullName: string }).fullName,
+            isAddin: (workbook as { isAddin: boolean }).isAddin,
+            name: (workbook as { name: string }).name,
+            path: (workbook as { path: string }).path
+          },
+          observedAt,
+          providerKind: "excel-active-workbook",
+          reason: state.reason,
+          state: "unsupported",
+          version: 1
+        };
+      }
+
+      break;
+    }
+    default:
+      break;
+  }
+
+  return { ...ACTIVE_WORKBOOK_UNAVAILABLE_SNAPSHOT };
 }
 
 function matchesActiveWorkbookIdentityState(

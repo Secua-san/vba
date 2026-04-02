@@ -116,3 +116,70 @@ for (const interactionKind of ["hover", "signature"]) {
     assert.equal(scopes.has(SERVER_SHAPE_SCOPE), true);
   });
 }
+
+test("worksheet control shapeName path semantic case spec satisfies the v1 minimum coverage", () => {
+  const positiveEntries = worksheetControlShapeNamePathCaseTables.worksheetControlShapeNamePath.semantic.positive;
+  const negativeEntries = worksheetControlShapeNamePathCaseTables.worksheetControlShapeNamePath.semantic.negative;
+
+  const positiveRouteKinds = new Set(positiveEntries.map((entry) => entry.routeKind));
+  const positiveRootKinds = new Set(positiveEntries.map((entry) => entry.rootKind));
+  const positiveTokenKinds = new Set(positiveEntries.map((entry) => entry.tokenKind));
+  const negativeRouteKinds = new Set(negativeEntries.map((entry) => entry.routeKind));
+  const negativeReasons = new Set(negativeEntries.map((entry) => entry.reason));
+  const negativeTokenKinds = new Set(negativeEntries.map((entry) => entry.tokenKind));
+  const fixtures = new Set([...positiveEntries, ...negativeEntries].map((entry) => entry.fixture));
+  const scopes = new Set([...positiveEntries, ...negativeEntries].flatMap((entry) => entry.scopes));
+
+  assert.deepEqual([...positiveRouteKinds].sort(), ["ole-object", "shape-oleformat"]);
+  assert.equal(positiveRootKinds.has("document-module"), true);
+  assert.equal(positiveRootKinds.has("workbook-qualified-static"), true);
+  assert.equal(positiveRootKinds.has("workbook-qualified-matched"), true);
+  assert.deepEqual([...positiveTokenKinds].sort(), ["method", "property"]);
+  assert.equal(negativeRouteKinds.has("ole-object"), true);
+  assert.equal(negativeRouteKinds.has("shape-oleformat"), true);
+  assert.deepEqual([...negativeTokenKinds].sort(), ["method", "property"]);
+
+  for (const reason of [
+    "chartsheet-root",
+    "closed-workbook",
+    "code-name-selector",
+    "dynamic-selector",
+    "non-target-root",
+    "numeric-selector",
+    "plain-shape"
+  ]) {
+    assert.equal(negativeReasons.has(reason), true, `semantic negative reason '${reason}' must exist`);
+  }
+
+  assert.equal(
+    negativeEntries.every(
+      (entry) =>
+        typeof entry.reason === "string" &&
+        entry.reason.length > 0 &&
+        typeof entry.identifier === "string" &&
+        entry.identifier.length > 0
+    ),
+    true,
+    "all negative worksheet control shapeName path semantic entries must declare reason and identifier"
+  );
+  assert.equal(
+    positiveEntries.every((entry) => typeof entry.identifier === "string" && entry.identifier.length > 0),
+    true,
+    "all positive worksheet control shapeName path semantic entries must declare an identifier"
+  );
+  assert.equal(
+    negativeEntries.some((entry) => entry.routeKind === "ole-object" && entry.rootKind === "workbook-qualified-closed"),
+    true
+  );
+  assert.equal(
+    negativeEntries.some(
+      (entry) => entry.routeKind === "shape-oleformat" && entry.rootKind === "workbook-qualified-closed"
+    ),
+    true
+  );
+
+  assert.deepEqual([...fixtures].sort(), [OLE_FIXTURE, SHAPE_FIXTURE]);
+  assert.equal(scopes.has("extension"), true);
+  assert.equal(scopes.has(SERVER_OLE_SCOPE), true);
+  assert.equal(scopes.has(SERVER_SHAPE_SCOPE), true);
+});

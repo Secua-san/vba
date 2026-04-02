@@ -411,6 +411,330 @@ const worksheetControlShapeNamePath = {
         scopes: ["extension", "server-worksheet-control-shape-name-path-shape"]
       }
     ]
+  },
+  semantic: {
+    positive: [
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'Sheet1.OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        rootKind: "document-module",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'Sheet1.OLEObjects("CheckBox1").Object.Select(',
+        identifier: "Select",
+        rootKind: "document-module",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        rootKind: "workbook-qualified-static",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+        identifier: "Select",
+        rootKind: "workbook-qualified-static",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        rootKind: "workbook-qualified-matched",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+        identifier: "Select",
+        rootKind: "workbook-qualified-matched",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'Sheet1.Shapes("CheckBox1").OLEFormat.Object.Value',
+        identifier: "Value",
+        rootKind: "document-module",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'Sheet1.Shapes("CheckBox1").OLEFormat.Object.Select(',
+        identifier: "Select",
+        rootKind: "document-module",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+        identifier: "Value",
+        rootKind: "workbook-qualified-static",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        identifier: "Select",
+        rootKind: "workbook-qualified-static",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+        identifier: "Value",
+        rootKind: "workbook-qualified-matched",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        identifier: "Select",
+        rootKind: "workbook-qualified-matched",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      }
+    ],
+    negative: [
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'Sheet1.OLEObjects(i + 1).Object.Value',
+        identifier: "Value",
+        reason: "dynamic-selector",
+        rootKind: "document-module",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'Sheet1.OLEObjects(i + 1).Object.Select(',
+        identifier: "Select",
+        reason: "dynamic-selector",
+        rootKind: "document-module",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'Chart1.OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        reason: "chartsheet-root",
+        rootKind: "document-module",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ActiveSheet.OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        reason: "non-target-root",
+        rootKind: "document-module",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ActiveSheet.OLEObjects("CheckBox1").Object.Select(',
+        identifier: "Select",
+        reason: "non-target-root",
+        rootKind: "document-module",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        reason: "numeric-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets(1).OLEObjects("CheckBox1").Object.Select(',
+        identifier: "Select",
+        reason: "numeric-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        reason: "code-name-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet1").OLEObjects("CheckBox1").Object.Select(',
+        identifier: "Select",
+        reason: "code-name-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Value',
+        identifier: "Value",
+        reason: "closed-workbook",
+        rootKind: "workbook-qualified-closed",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "property"
+      },
+      {
+        fixture: OLE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").OLEObjects("CheckBox1").Object.Select(',
+        identifier: "Select",
+        reason: "closed-workbook",
+        rootKind: "workbook-qualified-closed",
+        routeKind: "ole-object",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-ole"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'Chart1.Shapes("CheckBox1").OLEFormat.Object.Value',
+        identifier: "Value",
+        reason: "chartsheet-root",
+        rootKind: "document-module",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'Chart1.Shapes("CheckBox1").OLEFormat.Object.Select(',
+        identifier: "Select",
+        reason: "chartsheet-root",
+        rootKind: "document-module",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'Sheet1.Shapes("PlainShape").OLEFormat.Object.Value',
+        identifier: "Value",
+        reason: "plain-shape",
+        rootKind: "document-module",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'Sheet1.Shapes("PlainShape").OLEFormat.Object.Select(',
+        identifier: "Select",
+        reason: "plain-shape",
+        rootKind: "document-module",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.Value',
+        identifier: "Value",
+        reason: "numeric-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets(1).Shapes("CheckBox1").OLEFormat.Object.Select(',
+        identifier: "Select",
+        reason: "numeric-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Value',
+        identifier: "Value",
+        reason: "code-name-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ThisWorkbook.Worksheets("Sheet1").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        identifier: "Select",
+        reason: "code-name-selector",
+        rootKind: "workbook-qualified-static",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Value',
+        identifier: "Value",
+        reason: "closed-workbook",
+        rootKind: "workbook-qualified-closed",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "property"
+      },
+      {
+        fixture: SHAPE_FIXTURE,
+        anchor: 'ActiveWorkbook.Worksheets("Sheet One").Shapes("CheckBox1").OLEFormat.Object.Select(',
+        identifier: "Select",
+        reason: "closed-workbook",
+        rootKind: "workbook-qualified-closed",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"],
+        tokenKind: "method"
+      }
+    ]
   }
 };
 
