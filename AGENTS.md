@@ -78,7 +78,8 @@
 ## 運用メモ
 - 実装前に、[docs/README.md](docs/README.md) から対象機能に対応する要件書または ADR を確認する
 - コミットや PR を扱う前に、[docs/process/README.md](docs/process/README.md) から必要な運用ドキュメントだけを確認する
-- 通常タスクまたはユーザーが明示した docs-only タスクを完了したら、`skills/auto-commit-pr/SKILL.md` を既定で参照し、停止条件や禁止領域に当たらない限り、対象差分だけを適切なブランチへ分離して commit / PR / merge まで進める
+- 通常タスクまたはユーザーが明示した docs-only タスクを完了したら、`skills/auto-commit-pr/SKILL.md` を既定で参照し、停止条件や禁止領域に当たらない限り、対象差分だけを適切なブランチへ分離して commit / PR 作成まで進める
+- `skills/auto-commit-pr/SKILL.md` を使うときも、PR 作成前に `diff-reviewer` 役割で自己レビューを完了し、PR 作成後は `docs/process/coderabbit-review.md` の正本ルールに従って review 完了と必要な再確認が終わるまで merge しない
 - `skills/auto-commit-pr/SKILL.md` を使うときも、未関連差分は含めず、品質ゲート結果と停止理由を省略しない
 - 整理系 skill は実装前に起動せず、必要最小限の差分にだけ使う
 - 整理系 skill の実行要否に迷う場合だけ `skill-gatekeeper` を使い、迷ったまま整理へ進まない
