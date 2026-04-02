@@ -56,11 +56,11 @@ export function collectDuplicateDefinitionDiagnostics(parseResult: ParseResult):
     }
 
     for (const statement of member.body) {
-      if (statement.declaredVariables) {
+      if (statement.kind === "declarationStatement") {
         procedureDefinitions.push(...statement.declaredVariables.map(toDefinitionEntry));
       }
 
-      if (statement.declaredConstants) {
+      if (statement.kind === "constStatement") {
         procedureDefinitions.push(...statement.declaredConstants.map((constant) => ({
           name: constant.name,
           range: constant.range

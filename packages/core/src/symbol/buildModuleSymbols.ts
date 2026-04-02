@@ -143,7 +143,7 @@ function buildProcedureScope(procedure: ProcedureDeclarationNode): ProcedureScop
   }
 
   for (const statement of procedure.body) {
-    if (statement.declaredVariables) {
+    if (statement.kind === "declarationStatement") {
       for (const variable of statement.declaredVariables) {
         symbols.push({
           isArray: variable.arraySuffix,
@@ -158,7 +158,7 @@ function buildProcedureScope(procedure: ProcedureDeclarationNode): ProcedureScop
       }
     }
 
-    if (statement.declaredConstants) {
+    if (statement.kind === "constStatement") {
       for (const constant of statement.declaredConstants) {
         symbols.push({
           kind: "constant",
