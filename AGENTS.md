@@ -54,7 +54,7 @@
 - 解析は手書きパーサで実装し、`lexer -> parser -> AST -> symbol resolution -> type inference -> diagnostics/completion` を基本パイプラインとする
 - `Declare PtrSafe`、`LongPtr`、`#If VBA7 Then` などの条件付きコンパイルを優先して扱う
 - 重要な設計判断は `docs/adr/` に記録する
-- タスク管理は `TASKS.md` と `TASKLOG.md` を分けて行い、`TASKS.md` には直近の状況、次に行うタスク、重要事項だけを残し、詳細な完了履歴や長い補足は `TASKLOG.md` に集約する
+- タスク管理は `PLAN.md`、`TASKS.md`、`TASKLOG.md` を分けて行い、`PLAN.md` にはフェーズ進捗とロードマップ、`TASKS.md` には直近の状況、次に行うタスク、重要事項だけを残し、詳細な完了履歴や長い補足は `TASKLOG.md` に集約する
 - `README`、`docs/README.md`、`docs/process/README.md` などのよく読まれる入口文書には要点と導線だけを置き、長い履歴やログを直接持ち込まない
 - PR 作成前のサブエージェント自己レビューは `diff-reviewer` 役割（既定実体は `reviewer`）を使う
 
@@ -68,6 +68,7 @@
 - `.github/`: PR テンプレートと自動化設定
 
 ## 必要に応じて読むドキュメント
+- フェーズ進捗と次の実装候補: [PLAN.md](PLAN.md)
 - docs 全体の入口と読み順: [docs/README.md](docs/README.md)
 - プロダクト要件とマイルストーン: [docs/requirements/000-overview.md](docs/requirements/000-overview.md)
 - ADR の入口: [docs/adr/README.md](docs/adr/README.md)
@@ -76,6 +77,8 @@
 - PR テンプレート: [.github/pull_request_template.md](.github/pull_request_template.md)
 
 ## 運用メモ
+- 新規タスクを開始するときは、まず [PLAN.md](PLAN.md) を確認して現在位置と優先ロードマップを把握し、その後に [`TASKS.md`](TASKS.md) で直近の主タスクと次タスクを確認する
+- ユーザーが新規タスクの文脈で `next` とだけ指示した場合は、[PLAN.md](PLAN.md) と [`TASKS.md`](TASKS.md) を参照し、未完了の中で優先度が最も高い次タスクへ進む指示として扱う
 - 実装前に、[docs/README.md](docs/README.md) から対象機能に対応する要件書または ADR を確認する
 - コミットや PR を扱う前に、[docs/process/README.md](docs/process/README.md) から必要な運用ドキュメントだけを確認する
 - 通常タスクまたはユーザーが明示した docs-only タスクを完了したら、`skills/auto-commit-pr/SKILL.md` を既定で参照し、停止条件や禁止領域に当たらない限り、対象差分だけを適切なブランチへ分離して commit / PR 作成まで進める
@@ -83,7 +86,7 @@
 - `skills/auto-commit-pr/SKILL.md` を使うときも、未関連差分は含めず、品質ゲート結果と停止理由を省略しない
 - 整理系 skill は実装前に起動せず、必要最小限の差分にだけ使う
 - 整理系 skill の実行要否に迷う場合だけ `skill-gatekeeper` を使い、迷ったまま整理へ進まない
-- `TASKS.md` は直近参照用に短く保ち、詳細な完了履歴、docs-only の判断記録、長い補足は `TASKLOG.md` へ移す
+- `PLAN.md` はフェーズ進捗と再開時ロードマップの入口として保ち、`TASKS.md` は直近参照用に短く保ち、詳細な完了履歴、docs-only の判断記録、長い補足は `TASKLOG.md` へ移す
 - `TASKS.md` を更新するときは、整理や方針メモ単独ではなく、実コード変更と検証を伴う作業だけを通常タスクの完了へ移す
 - 外部 MCP サーバー呼び出しは共通の retry / rate-limit 層を必ず通し、`429` 検知、`Retry-After` 優先、未指定時の指数バックオフ + ジッター、呼び出し間隔制御、同一問い合わせの重複抑止、対象 MCP 名を含む retry / wait / 最終失敗理由ログを実装する
 - 同じ論点を繰り返し検討して進まない場合は、`docs/process/sub-agent-escalation.md` に従ってサブエージェントへ切り替える
