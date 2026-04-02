@@ -25,13 +25,30 @@ export function analyzeProcedureLocalUsage(procedure: ProcedureDeclarationNode):
   }
 
   for (const statement of procedure.body) {
-    if (statement.declaredVariables) {
+    if (statement.kind === "declarationStatement") {
       for (const variable of statement.declaredVariables) {
         addDeclaration(declarations, "variable", variable.name, variable.range);
       }
     }
 
-    if (statement.kind !== "executableStatement") {
+    if (statement.kind === "assignmentStatement") {
+      if (statement.targetName && declarations.has(normalizeIdentifier(statement.targetName))) {
+        writtenNames.add(normalizeIdentifier(statement.targetName));
+      }
+
+      collectReads(removeStringAndDateLiterals(statement.expressionText), declarations, readNames);
+      continue;
+    }
+
+    if (statement.kind === "callStatement") {
+      for (const argument of statement.arguments) {
+        collectReads(removeStringAndDateLiterals(argument.text), declarations, readNames);
+      }
+
+      continue;
+    }
+
+    if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
       continue;
     }
 

@@ -43,14 +43,11 @@ export function collectByRefArgumentDiagnostics(
     }
 
     for (const statement of member.body) {
-      if (statement.kind !== "executableStatement" || statement.range.start.line !== statement.range.end.line) {
+      if (statement.range.start.line !== statement.range.end.line) {
         continue;
       }
 
-      const originalLine = result.source.normalizedLines[statement.range.start.line] ?? statement.text;
-      const { code } = splitCodeAndComment(originalLine);
-
-      for (const invocation of collectInvocations(code, statement.range.start.line)) {
+      for (const invocation of collectStatementInvocations(result, statement)) {
         const resolvedCallable = resolveCallableAtPosition(invocation.nameRange.start);
 
         if (!resolvedCallable || invocation.arguments.some((argument) => usesNamedArgument(argument.text))) {
@@ -98,6 +95,32 @@ export function collectByRefArgumentDiagnostics(
   }
 
   return diagnostics;
+}
+
+function collectStatementInvocations(
+  result: AnalysisResult,
+  statement: ProcedureDeclarationNode["body"][number]
+): Invocation[] {
+  if (statement.kind === "callStatement") {
+    return [
+      {
+        arguments: statement.arguments.map((argument) => ({
+          range: argument.range,
+          text: argument.text
+        })),
+        name: statement.name,
+        nameRange: statement.nameRange
+      }
+    ];
+  }
+
+  if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
+    return [];
+  }
+
+  const originalLine = result.source.normalizedLines[statement.range.start.line] ?? statement.text;
+  const { code } = splitCodeAndComment(originalLine);
+  return collectInvocations(code, statement.range.start.line);
 }
 
 function findLocalCallable(result: AnalysisResult, position: LinePosition): ResolvedCallable | undefined {

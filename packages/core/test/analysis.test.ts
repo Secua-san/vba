@@ -39,6 +39,153 @@ End Sub`, { fileName: "Broken.bas" });
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "syntax-error"));
 });
 
+test("parseModule structures simple assignment and call statements in procedure bodies", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    Set holder = CreateObject("Scripting.Dictionary")
+    Call UpdateCount(holder.Count)
+    UpdateCount holder.Count
+    Debug.Print holder.Count
+End Sub`, { fileName: "StructuredStatements.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const callKeywordStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const bareCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[2] : undefined;
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  assert.ok(assignmentStatement?.kind === "assignmentStatement");
+  assert.equal(assignmentStatement.assignmentKind, "set");
+  assert.equal(assignmentStatement.targetText, "holder");
+  assert.equal(assignmentStatement.expressionText, 'CreateObject("Scripting.Dictionary")');
+  assert.ok(callKeywordStatement?.kind === "callStatement");
+  assert.equal(callKeywordStatement.callStyle, "call");
+  assert.equal(callKeywordStatement.name, "UpdateCount");
+  assert.deepEqual(callKeywordStatement.arguments.map((argument) => argument.text), ["holder.Count"]);
+  assert.ok(bareCallStatement?.kind === "callStatement");
+  assert.equal(bareCallStatement.callStyle, "bare");
+  assert.equal(bareCallStatement.name, "UpdateCount");
+  assert.equal(procedure.body[3]?.kind, "executableStatement");
+});
+
+test("parseModule structures block If, Select Case, For, and For Each statements in procedure bodies", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    If ready Then
+    ElseIf fallback Then
+    Else
+    End If
+    Select Case value
+        Case 0
+        Case Else
+    End Select
+    For index = 1 To limit Step 2
+    Next index
+    For Each item In items
+    Next item
+End Sub`, { fileName: "StructuredBlocks.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  const ifStatement = procedure.body[0];
+  const elseIfStatement = procedure.body[1];
+  const elseStatement = procedure.body[2];
+  const endIfStatement = procedure.body[3];
+  const selectStatement = procedure.body[4];
+  const caseValueStatement = procedure.body[5];
+  const caseElseStatement = procedure.body[6];
+  const endSelectStatement = procedure.body[7];
+  const forStatement = procedure.body[8];
+  const nextIndexStatement = procedure.body[9];
+  const forEachStatement = procedure.body[10];
+  const nextItemStatement = procedure.body[11];
+
+  assert.equal(ifStatement?.kind, "ifBlockStatement");
+  assert.equal(ifStatement && ifStatement.kind === "ifBlockStatement" ? ifStatement.conditionText : "", "ready");
+  assert.equal(elseIfStatement?.kind, "elseIfClauseStatement");
+  assert.equal(
+    elseIfStatement && elseIfStatement.kind === "elseIfClauseStatement" ? elseIfStatement.conditionText : "",
+    "fallback"
+  );
+  assert.equal(elseStatement?.kind, "elseClauseStatement");
+  assert.equal(endIfStatement?.kind, "endIfStatement");
+  assert.equal(selectStatement?.kind, "selectCaseStatement");
+  assert.equal(selectStatement && selectStatement.kind === "selectCaseStatement" ? selectStatement.expressionText : "", "value");
+  assert.equal(caseValueStatement?.kind, "caseClauseStatement");
+  assert.equal(
+    caseValueStatement && caseValueStatement.kind === "caseClauseStatement" ? caseValueStatement.conditionText : "",
+    "0"
+  );
+  assert.equal(caseElseStatement?.kind, "caseClauseStatement");
+  assert.equal(caseElseStatement && caseElseStatement.kind === "caseClauseStatement" ? caseElseStatement.caseKind : "", "else");
+  assert.equal(endSelectStatement?.kind, "endSelectStatement");
+  assert.equal(forStatement?.kind, "forStatement");
+  assert.equal(forStatement && forStatement.kind === "forStatement" ? forStatement.counterText : "", "index");
+  assert.equal(forStatement && forStatement.kind === "forStatement" ? forStatement.startExpressionText : "", "1");
+  assert.equal(forStatement && forStatement.kind === "forStatement" ? forStatement.endExpressionText : "", "limit");
+  assert.equal(forStatement && forStatement.kind === "forStatement" ? forStatement.stepExpressionText : "", "2");
+  assert.equal(nextIndexStatement?.kind, "nextStatement");
+  assert.equal(nextIndexStatement && nextIndexStatement.kind === "nextStatement" ? nextIndexStatement.counterText : "", "index");
+  assert.equal(forEachStatement?.kind, "forEachStatement");
+  assert.equal(forEachStatement && forEachStatement.kind === "forEachStatement" ? forEachStatement.itemText : "", "item");
+  assert.equal(
+    forEachStatement && forEachStatement.kind === "forEachStatement" ? forEachStatement.collectionText : "",
+    "items"
+  );
+  assert.equal(nextItemStatement?.kind, "nextStatement");
+  assert.equal(nextItemStatement && nextItemStatement.kind === "nextStatement" ? nextItemStatement.counterText : "", "item");
+});
+
+test("parseModule structures Do, While, With, and On Error statements in procedure bodies", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    Do While keepRunning
+    Loop Until finished
+    While ready
+    Wend
+    With Application
+    End With
+    On Error Resume Next
+    On Error GoTo Handler
+Handler:
+End Sub`, { fileName: "StructuredControlBlocks.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  const doStatement = procedure.body[0];
+  const loopStatement = procedure.body[1];
+  const whileStatement = procedure.body[2];
+  const wendStatement = procedure.body[3];
+  const withStatement = procedure.body[4];
+  const endWithStatement = procedure.body[5];
+  const onErrorResumeStatement = procedure.body[6];
+  const onErrorGotoStatement = procedure.body[7];
+
+  assert.equal(doStatement?.kind, "doBlockStatement");
+  assert.equal(doStatement && doStatement.kind === "doBlockStatement" ? doStatement.clauseKind : "", "while");
+  assert.equal(doStatement && doStatement.kind === "doBlockStatement" ? doStatement.conditionText : "", "keepRunning");
+  assert.equal(loopStatement?.kind, "loopStatement");
+  assert.equal(loopStatement && loopStatement.kind === "loopStatement" ? loopStatement.clauseKind : "", "until");
+  assert.equal(loopStatement && loopStatement.kind === "loopStatement" ? loopStatement.conditionText : "", "finished");
+  assert.equal(whileStatement?.kind, "whileStatement");
+  assert.equal(whileStatement && whileStatement.kind === "whileStatement" ? whileStatement.conditionText : "", "ready");
+  assert.equal(wendStatement?.kind, "wendStatement");
+  assert.equal(withStatement?.kind, "withBlockStatement");
+  assert.equal(withStatement && withStatement.kind === "withBlockStatement" ? withStatement.targetText : "", "Application");
+  assert.equal(endWithStatement?.kind, "endWithStatement");
+  assert.equal(onErrorResumeStatement?.kind, "onErrorStatement");
+  if (onErrorResumeStatement?.kind === "onErrorStatement") {
+    assert.equal(onErrorResumeStatement.actionKind, "resumeNext");
+  }
+  assert.equal(onErrorGotoStatement?.kind, "onErrorStatement");
+  if (onErrorGotoStatement?.kind === "onErrorStatement") {
+    assert.equal(onErrorGotoStatement.actionKind, "goto");
+    assert.equal(onErrorGotoStatement.targetText, "Handler");
+  }
+});
+
 test("analyzeModule reports undeclared identifiers and missing PtrSafe", () => {
   const result = analyzeModule(`Option Explicit
 
@@ -230,6 +377,72 @@ End Sub`, { fileName: "ByRefRisks.bas" });
       "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
     ]
   );
+});
+
+test("analyzeModule keeps block header reads and ByRef checks after structured control statement parsing", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredControlDiagnostics"
+Option Explicit
+
+Private Function AcceptCount(ByRef count As Long) As Boolean
+    AcceptCount = True
+End Function
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim fallback As Boolean
+    Dim count As Long
+    Dim item As Variant
+    Dim items As Collection
+    Set items = New Collection
+
+    If AcceptCount(count + 1) Then
+        ready = True
+    ElseIf fallback Then
+        ready = False
+    End If
+
+    For Each item In items
+        Debug.Print ready, item
+    Next item
+  End Sub`, { fileName: "StructuredControlDiagnostics.bas" });
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+  const byRefDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.deepEqual(
+    unusedDiagnostics.map((diagnostic) => diagnostic.message),
+    ["Unused local declaration 'count'."]
+  );
+  assert.equal(byRefDiagnostics.length, 1);
+  assert.equal(
+    byRefDiagnostics[0]?.message,
+    "ByRef parameter 'count' in AcceptCount receives an expression. Introduce a temporary variable before the call."
+  );
+});
+
+test("analyzeModule keeps Do, While, and With header reads after structured control statement parsing", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredLoopReads"
+Option Explicit
+
+Public Sub Demo()
+    Dim keepRunning As Boolean
+    Dim finished As Boolean
+    Dim ready As Boolean
+    Dim holder As Collection
+    Set holder = New Collection
+
+    Do While keepRunning
+    Loop Until finished
+
+    While ready
+    Wend
+
+    With holder
+        Debug.Print .Count
+    End With
+End Sub`, { fileName: "StructuredLoopReads.bas" });
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+
+  assert.equal(unusedDiagnostics.length, 0);
 });
 
 test("analyzeModule warns when object assignments omit Set", () => {
