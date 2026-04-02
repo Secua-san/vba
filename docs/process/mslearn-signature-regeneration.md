@@ -34,7 +34,8 @@
 | `packages/server/test/documentService.test.js` | server 回帰 | signature / hover / completion を固定するとき |
 | `packages/extension/test/fixtures/BuiltInMemberSignature.bas` | extension fixture | 呼び出し例を追加するとき |
 | `packages/extension/test/suite/index.ts` | extension UI 回帰 | VS Code 側の期待値を固定するとき |
-| `TASKS.md` | 進捗管理 | 作業開始、完了、次候補の更新 |
+| `TASKS.md` | 日常参照用の進捗要点 | 作業開始、完了、次候補、重要事項の更新 |
+| `TASKLOG.md` | 詳細な履歴ログ | docs-only の判断記録や長い補足を残すとき |
 
 ## 標準手順
 
@@ -90,7 +91,8 @@
 
 ### 9. 運用文書を更新する
 
-- `TASKS.md` に作業内容を反映する
+- `TASKS.md` に作業要点を反映する
+- 長い判断メモや docs-only の履歴が必要な場合だけ `TASKLOG.md` に追記する
 - Learn と実利用の判断差がある場合は PR 本文へ理由を残す
 
 ## 判断原則
