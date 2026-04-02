@@ -45,6 +45,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(fileWatcher);
   context.subscriptions.push(client);
   await client.start();
+  await (client as LanguageClient & { onReady?: () => Promise<void> }).onReady?.();
 
   if (context.extensionMode === vscode.ExtensionMode.Test) {
     context.subscriptions.push(
@@ -62,7 +63,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           throw new Error("language client is not ready");
         }
 
-        return client.sendRequest(ACTIVE_WORKBOOK_IDENTITY_TEST_STATE_REQUEST_METHOD);
+        for (let attempt = 0; attempt < 30; attempt += 1) {
+          try {
+            return await client.sendRequest(ACTIVE_WORKBOOK_IDENTITY_TEST_STATE_REQUEST_METHOD);
+          } catch {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+        }
+
+        return null;
       })
     );
   }

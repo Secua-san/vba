@@ -6098,6 +6098,19 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
   );
   const closedSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
   const reasonSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
+  const positiveSemanticEntries = requireWorksheetControlShapeNamePathEntries(
+    getWorksheetControlShapeNamePathSemanticEntries("positive", { fixture, scope, text }),
+    `worksheet control shapeName path ${routeLabel} positive semantic cases must not be empty`
+  );
+  const alwaysAvailablePositiveSemanticEntries = positiveSemanticEntries.filter(
+    (entry) => entry.rootKind !== "workbook-qualified-matched"
+  );
+  const negativeSemanticEntries = requireWorksheetControlShapeNamePathEntries(
+    getWorksheetControlShapeNamePathSemanticEntries("negative", { fixture, scope, text }),
+    `worksheet control shapeName path ${routeLabel} negative semantic cases must not be empty`
+  );
+  const closedSemanticEntries = negativeSemanticEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
+  const reasonSemanticEntries = negativeSemanticEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
 
   try {
     assertWorkbookRootCompletionCases(
@@ -6161,6 +6174,25 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
           entry.rootKind === "workbook-qualified-closed"
             ? `${entry.anchor} は active workbook が閉じている間は signature help を解決しない`
             : `${entry.anchor} は ${entry.reason} のため signature help を解決しない`
+      )
+    );
+    assertWorkbookRootSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathSemanticCases(
+        alwaysAvailablePositiveSemanticEntries,
+        (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも semantic token を出す`
+      )
+    );
+    assertWorkbookRootNoSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathNoSemanticCases(
+        [...reasonSemanticEntries, ...closedSemanticEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は active workbook が閉じている間は semantic token を出さない`
+            : `${entry.anchor} は ${entry.reason} のため semantic token を出さない`
       )
     );
 
@@ -6227,6 +6259,25 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
       mapWorksheetControlShapeNamePathInteractionCases(
         reasonSignatureEntries,
         (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも signature help を解決しない`
+      )
+    );
+    assertWorkbookRootSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathSemanticCases(
+        positiveSemanticEntries,
+        (entry) =>
+          entry.rootKind === "workbook-qualified-matched"
+            ? `${entry.anchor} は active workbook match 時に semantic token を出す`
+            : `${entry.anchor} は ${entry.rootKind} root として semantic token を出す`
+      )
+    );
+    assertWorkbookRootNoSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathNoSemanticCases(
+        reasonSemanticEntries,
+        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも semantic token を出さない`
       )
     );
 
@@ -6296,6 +6347,25 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
             : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも signature help を解決しない`
       )
     );
+    assertWorkbookRootSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathSemanticCases(
+        alwaysAvailablePositiveSemanticEntries,
+        (entry) => `${entry.anchor} は mismatch snapshot でも ${entry.rootKind} root として semantic token を出す`
+      )
+    );
+    assertWorkbookRootNoSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathNoSemanticCases(
+        [...reasonSemanticEntries, ...closedSemanticEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は mismatch snapshot では semantic token を出さない`
+            : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも semantic token を出さない`
+      )
+    );
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
@@ -6362,6 +6432,25 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
           entry.rootKind === "workbook-qualified-closed"
             ? `${entry.anchor} は unavailable snapshot では signature help を解決しない`
             : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも signature help を解決しない`
+      )
+    );
+    assertWorkbookRootSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathSemanticCases(
+        alwaysAvailablePositiveSemanticEntries,
+        (entry) => `${entry.anchor} は unavailable snapshot でも ${entry.rootKind} root として semantic token を出す`
+      )
+    );
+    assertWorkbookRootNoSemanticCases(
+      text,
+      service.getSemanticTokens(uri),
+      mapWorksheetControlShapeNamePathNoSemanticCases(
+        [...reasonSemanticEntries, ...closedSemanticEntries],
+        (entry) =>
+          entry.rootKind === "workbook-qualified-closed"
+            ? `${entry.anchor} は unavailable snapshot では semantic token を出さない`
+            : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも semantic token を出さない`
       )
     );
   } finally {
@@ -6831,6 +6920,29 @@ function getWorksheetControlShapeNamePathInteractionEntries(interactionKind, pol
   });
 }
 
+function getWorksheetControlShapeNamePathSemanticEntries(polarity, options = {}) {
+  const { fixture, rootKind, routeKind, scope, text } = options;
+  const normalizedText = text?.replace(/\r\n?/g, "\n");
+  return worksheetControlShapeNamePathCaseTables.worksheetControlShapeNamePath.semantic[polarity].filter((entry) => {
+    if (fixture && entry.fixture !== fixture) {
+      return false;
+    }
+    if (rootKind && entry.rootKind !== rootKind) {
+      return false;
+    }
+    if (routeKind && entry.routeKind !== routeKind) {
+      return false;
+    }
+    if (scope && !entry.scopes.includes(scope)) {
+      return false;
+    }
+    if (normalizedText && !normalizedText.includes(entry.anchor)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function requireWorksheetControlShapeNamePathEntries(entries, message) {
   assert.ok(entries.length > 0, message);
   return entries;
@@ -6852,6 +6964,22 @@ function mapWorksheetControlShapeNamePathNoCompletionCases(entries, messageBuild
 function mapWorksheetControlShapeNamePathInteractionCases(entries, messageBuilder) {
   assert.ok(entries.length > 0, "worksheet control shapeName path interaction shared cases must not be empty");
   return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
+}
+
+function mapWorksheetControlShapeNamePathSemanticCases(entries, messageBuilder) {
+  assert.ok(entries.length > 0, "worksheet control shapeName path semantic shared cases must not be empty");
+  return entries.map((entry) => [
+    entry.anchor,
+    entry.identifier,
+    { modifiers: [], type: entry.tokenKind === "method" ? "function" : "variable" },
+    messageBuilder(entry),
+    entry.occurrenceIndex ?? 0
+  ]);
+}
+
+function mapWorksheetControlShapeNamePathNoSemanticCases(entries, messageBuilder) {
+  assert.ok(entries.length > 0, "worksheet control shapeName path negative semantic shared cases must not be empty");
+  return entries.map((entry) => [entry.anchor, entry.identifier, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 
 function getHoverAfterToken(service, uri, text, token, occurrenceIndex = 0) {

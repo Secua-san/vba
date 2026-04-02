@@ -1348,7 +1348,11 @@ function collectSemanticTokensForState(
   const getDocumentState = (uri: string): DocumentState | undefined => documentStates.get(uri);
   const declarationResolutions = [
     ...state.analysis.symbols.moduleSymbols.map((symbol) => createResolution(state, symbol, state.uri)),
-    ...state.analysis.symbols.procedureScopes.flatMap((scope) => scope.symbols.map((symbol) => createResolution(state, symbol, state.uri)))
+    ...state.analysis.symbols.procedureScopes.flatMap((scope) =>
+      scope.symbols
+        .filter((symbol) => !isProcedureReturnValueDeclarationSymbol(scope, symbol))
+        .map((symbol) => createResolution(state, symbol, state.uri))
+    )
   ];
   const lines = state.text.replace(/\r\n?/g, "\n").split("\n");
 
@@ -1624,15 +1628,67 @@ function addSemanticToken(
   range: SourceRange,
   token: SemanticTokenShape
 ): void {
-  const key = `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}:${token.type}:${token.modifiers.join(".")}`;
+  const key = `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}`;
+  const nextToken: SemanticTokenEntry = {
+    modifiers: [...token.modifiers],
+    range,
+    type: token.type
+  };
+  const currentToken = tokens.get(key);
 
-  if (!tokens.has(key)) {
-    tokens.set(key, {
-      modifiers: token.modifiers,
-      range,
-      type: token.type
-    });
+  if (!currentToken) {
+    tokens.set(key, nextToken);
+    return;
   }
+
+  if (currentToken.type === nextToken.type) {
+    tokens.set(key, {
+      modifiers: mergeSemanticTokenModifiers(currentToken.modifiers, nextToken.modifiers),
+      range,
+      type: currentToken.type
+    });
+    return;
+  }
+
+  if (compareSemanticTokenPriority(nextToken, currentToken) < 0) {
+    tokens.set(key, nextToken);
+  }
+}
+
+function mergeSemanticTokenModifiers(
+  left: readonly SemanticTokenModifierName[],
+  right: readonly SemanticTokenModifierName[]
+): SemanticTokenModifierName[] {
+  return [...new Set([...left, ...right])];
+}
+
+function compareSemanticTokenPriority(left: SemanticTokenEntry, right: SemanticTokenEntry): number {
+  return (
+    getSemanticTokenTypePriority(left.type) - getSemanticTokenTypePriority(right.type) ||
+    getSemanticTokenModifierPriority(left.modifiers) - getSemanticTokenModifierPriority(right.modifiers)
+  );
+}
+
+function getSemanticTokenTypePriority(type: SemanticTokenTypeName): number {
+  switch (type) {
+    case "function":
+      return 0;
+    case "type":
+      return 1;
+    case "parameter":
+      return 2;
+    case "enumMember":
+      return 3;
+    case "variable":
+      return 4;
+    case "keyword":
+    default:
+      return 5;
+  }
+}
+
+function getSemanticTokenModifierPriority(modifiers: readonly SemanticTokenModifierName[]): number {
+  return modifiers.includes("declaration") ? 0 : 1;
 }
 
 function addUniqueModifier(
@@ -3110,6 +3166,16 @@ function isSameSymbol(left: SymbolInfo, right: SymbolInfo): boolean {
 
 function isSameResolution(left: WorkspaceSymbolResolution, right: WorkspaceSymbolResolution): boolean {
   return left.uri === right.uri && isSameSymbol(left.symbol, right.symbol);
+}
+
+function isProcedureReturnValueDeclarationSymbol(scope: LocalProcedureScope, symbol: SymbolInfo): boolean {
+  return (
+    scope.procedure.procedureKind !== "Sub" &&
+    symbol.scope === "procedure" &&
+    symbol.kind === "variable" &&
+    symbol.normalizedName === normalizeIdentifier(scope.procedure.name) &&
+    rangesEqual(symbol.selectionRange, scope.procedure.headerRange)
+  );
 }
 
 function comparePositions(left: LinePosition, right: LinePosition): number {
