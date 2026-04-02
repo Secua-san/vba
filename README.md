@@ -5,6 +5,8 @@ Monorepo for a VS Code extension focused on Excel VBA editing support.
 ## Documentation
 
 - [Documentation Guide](./docs/README.md)
+- [Task Summary](./TASKS.md)
+- [Task Log](./TASKLOG.md)
 - [Process Guide](./docs/process/README.md)
 - [Requirements Overview](./docs/requirements/000-overview.md)
 

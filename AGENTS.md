@@ -12,6 +12,21 @@
 - 大規模変更は段階的な PR に分割する
 - 探索や判断が空転したら、サブエージェントへ論点を絞って意見を求める
 
+## 整理系 skill の扱い
+- 整理系作業は親エージェントの自由行動ではなく、repo-local skill として扱う
+- `.codex/skills/doc-minimum-update` と `.codex/skills/lightweight-review` の無条件自動実行を禁止する
+- 整理系 skill を明示指示なしで使ってよいのは、実装後であるか同一タスク内で実装完了が確実で、対象が実装差分に直接関係し、変更が必要最小限で、実行しないと説明不足・使用方法不整合・手順不整合・レビュー困難のいずれかが出る場合に限る
+- 整理系 skill を実行しても、主成果物は常にコード変更とし、skill の実行だけで完了してはならない
+- 実行要否は親エージェントが判断してよく、迷う場合だけ `skill-gatekeeper` 役割へ確認する
+- 判断に迷う場合は実行しない。整理より実装を優先する
+
+## 親エージェントと subagent の責務
+- 親エージェントが常に実装責任を持ち、タスクの主目的をコード実装として定義する
+- subagent は調査、整理系 skill の実行可否判定、実装差分の簡易確認にだけ使う
+- subagent へ実装の代行、方針文書の主導、大規模な整理作業を委譲しない
+- 調査結果や判定結果を受けたら、親エージェントが自らコード変更、検証、必要最小限の追記まで進める
+- 役割の詳細と既定実体は [docs/process/sub-agent-escalation.md](docs/process/sub-agent-escalation.md) を正本とする
+
 ## 実装優先ルール
 - 通常のプロダクトタスクでは、原則として次の順で進める
   1. 変更対象コードと影響範囲を特定する
@@ -39,8 +54,9 @@
 - 解析は手書きパーサで実装し、`lexer -> parser -> AST -> symbol resolution -> type inference -> diagnostics/completion` を基本パイプラインとする
 - `Declare PtrSafe`、`LongPtr`、`#If VBA7 Then` などの条件付きコンパイルを優先して扱う
 - 重要な設計判断は `docs/adr/` に記録する
-- タスク管理を `TASKS.md` で行い、進捗に合わせ随時更新する
-- PR 作成前のサブエージェント自己レビューは `reviewer` を既定とする
+- タスク管理は `TASKS.md` と `TASKLOG.md` を分けて行い、`TASKS.md` には直近の状況、次に行うタスク、重要事項だけを残し、詳細な完了履歴や長い補足は `TASKLOG.md` に集約する
+- `README`、`docs/README.md`、`docs/process/README.md` などのよく読まれる入口文書には要点と導線だけを置き、長い履歴やログを直接持ち込まない
+- PR 作成前のサブエージェント自己レビューは `diff-reviewer` 役割（既定実体は `reviewer`）を使う
 
 ## リポジトリ構成
 - `packages/extension/`: VS Code 拡張本体
@@ -48,6 +64,7 @@
 - `packages/core/`: 解析コア
 - `resources/vbac/`: 同梱する `vbac.wsf`
 - `docs/adr/`: ADR
+- `.codex/skills/`: repo-local の整理系 / 完了判定 skill
 - `.github/`: PR テンプレートと自動化設定
 
 ## 必要に応じて読むドキュメント
@@ -55,11 +72,15 @@
 - プロダクト要件とマイルストーン: [docs/requirements/000-overview.md](docs/requirements/000-overview.md)
 - ADR の入口: [docs/adr/README.md](docs/adr/README.md)
 - 運用ドキュメントの入口: [docs/process/README.md](docs/process/README.md)
+- 整理系 skill / 完了判定 skill の入口: [.codex/skills/README.md](.codex/skills/README.md)
 - PR テンプレート: [.github/pull_request_template.md](.github/pull_request_template.md)
 
 ## 運用メモ
 - 実装前に、[docs/README.md](docs/README.md) から対象機能に対応する要件書または ADR を確認する
 - コミットや PR を扱う前に、[docs/process/README.md](docs/process/README.md) から必要な運用ドキュメントだけを確認する
+- 整理系 skill は実装前に起動せず、必要最小限の差分にだけ使う
+- 整理系 skill の実行要否に迷う場合だけ `skill-gatekeeper` を使い、迷ったまま整理へ進まない
+- `TASKS.md` は直近参照用に短く保ち、詳細な完了履歴、docs-only の判断記録、長い補足は `TASKLOG.md` へ移す
 - `TASKS.md` を更新するときは、整理や方針メモ単独ではなく、実コード変更と検証を伴う作業だけを通常タスクの完了へ移す
 - 外部 MCP サーバー呼び出しは共通の retry / rate-limit 層を必ず通し、`429` 検知、`Retry-After` 優先、未指定時の指数バックオフ + ジッター、呼び出し間隔制御、同一問い合わせの重複抑止、対象 MCP 名を含む retry / wait / 最終失敗理由ログを実装する
 - 同じ論点を繰り返し検討して進まない場合は、`docs/process/sub-agent-escalation.md` に従ってサブエージェントへ切り替える

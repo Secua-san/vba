@@ -13,6 +13,7 @@
 | 自動コミット / 自動 PR 判断 | [automation-policy.md](automation-policy.md) |
 | Microsoft Learn 由来データの再生成 | [mslearn-signature-regeneration.md](mslearn-signature-regeneration.md) |
 | 判断が空転した | [sub-agent-escalation.md](sub-agent-escalation.md) |
+| 実装後の最小文書更新 / 軽量レビュー / 完了判定 | [../../.codex/skills/README.md](../../.codex/skills/README.md) |
 
 ## 機能別メモ
 
@@ -27,10 +28,12 @@
 - まずコア文書を 1 つ開き、必要になった機能別メモだけを追加で開く。
 - 機能別メモは、その論点専用の制約整理であり、リポジトリ全体の運用ルールではない。
 - 通常タスクの進め方と Done の定義は [../../AGENTS.md](../../AGENTS.md) を正本とし、機能別メモの整理や追加は実装を進めるための補助に留める。
+- 整理系 skill は実装後に必要最小限の場合だけ参照し、迷う場合は起動しない。
+- `TASKS.md` は直近の状況と次タスクの参照用、[`TASKLOG.md`](../../TASKLOG.md) は完了履歴と docs-only 判断記録の参照用として分ける。
 - `docs/process/coderabbit-review-logs/` は記録専用で、通常の参照導線には入れない。
 
 ## 更新ルール
 
 - 共通ルールを変えるときはコア文書を更新する。
 - 特定機能の制約整理を変えるときは対応する機能別メモか ADR を更新する。
-- 作業進捗は [`TASKS.md`](../../TASKS.md) に残す。
+- 作業進捗の要点は [`TASKS.md`](../../TASKS.md) に残し、詳細な完了履歴や長い補足は [`TASKLOG.md`](../../TASKLOG.md) に移す。
