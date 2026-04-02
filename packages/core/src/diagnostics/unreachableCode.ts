@@ -41,11 +41,11 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
       unreachableState = undefined;
     }
 
-    if (unreachableState && clearsUnreachableState(controlText, unreachableState)) {
+    if (unreachableState && clearsUnreachableState(statement, controlText, unreachableState)) {
       unreachableState = undefined;
     }
 
-    if (unreachableState && shouldReportUnreachableStatement(controlText)) {
+    if (unreachableState && shouldReportUnreachableStatement(statement, controlText)) {
       diagnostics.push({
         code: "unreachable-code",
         message: `Unreachable code after ${unreachableState.reason}.`,
@@ -61,85 +61,95 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
       };
     }
 
-    applyBlockTransition(controlText, blockStack);
+    applyBlockTransition(statement, controlText, blockStack);
   }
 
   return diagnostics;
 }
 
-function applyBlockTransition(text: string, blockStack: BlockKind[]): void {
-  if (isIfBlockStart(text)) {
+function applyBlockTransition(statement: ProcedureDeclarationNode["body"][number], text: string, blockStack: BlockKind[]): void {
+  if (statement.kind === "ifBlockStatement" || isIfBlockStart(text)) {
     blockStack.push("if");
     return;
   }
 
-  if (/^Select\s+Case\b/i.test(text)) {
+  if (statement.kind === "selectCaseStatement" || /^Select\s+Case\b/i.test(text)) {
     blockStack.push("select");
     return;
   }
 
-  if (/^For\b/i.test(text)) {
+  if (statement.kind === "forStatement" || statement.kind === "forEachStatement" || /^For\b/i.test(text)) {
     blockStack.push("for");
     return;
   }
 
-  if (/^Do\b/i.test(text)) {
+  if (statement.kind === "doBlockStatement" || /^Do\b/i.test(text)) {
     blockStack.push("do");
     return;
   }
 
-  if (/^While\b/i.test(text)) {
+  if (statement.kind === "whileStatement" || /^While\b/i.test(text)) {
     blockStack.push("while");
     return;
   }
 
-  if (/^With\b/i.test(text)) {
+  if (statement.kind === "withBlockStatement" || /^With\b/i.test(text)) {
     blockStack.push("with");
     return;
   }
 
-  if (/^End\s+If\b/i.test(text)) {
+  if (statement.kind === "endIfStatement" || /^End\s+If\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "if");
     return;
   }
 
-  if (/^End\s+Select\b/i.test(text)) {
+  if (statement.kind === "endSelectStatement" || /^End\s+Select\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "select");
     return;
   }
 
-  if (/^Next\b/i.test(text)) {
+  if (statement.kind === "nextStatement" || /^Next\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "for");
     return;
   }
 
-  if (/^Loop\b/i.test(text)) {
+  if (statement.kind === "loopStatement" || /^Loop\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "do");
     return;
   }
 
-  if (/^Wend\b/i.test(text)) {
+  if (statement.kind === "wendStatement" || /^Wend\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "while");
     return;
   }
 
-  if (/^End\s+With\b/i.test(text)) {
+  if (statement.kind === "endWithStatement" || /^End\s+With\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "with");
   }
 }
 
-function clearsUnreachableState(text: string, unreachableState: UnreachableState): boolean {
+function clearsUnreachableState(
+  statement: ProcedureDeclarationNode["body"][number],
+  text: string,
+  unreachableState: UnreachableState
+): boolean {
   switch (unreachableState.barrierKind) {
     case "if":
-      return /^Else(?:If\b|$)/i.test(text) || /^End\s+If\b/i.test(text);
+      return (
+        statement.kind === "elseIfClauseStatement" ||
+        statement.kind === "elseClauseStatement" ||
+        statement.kind === "endIfStatement" ||
+        /^Else(?:If\b|$)/i.test(text) ||
+        /^End\s+If\b/i.test(text)
+      );
     case "select":
-      return /^Case\b/i.test(text) || /^End\s+Select\b/i.test(text);
+      return statement.kind === "caseClauseStatement" || statement.kind === "endSelectStatement" || /^Case\b/i.test(text) || /^End\s+Select\b/i.test(text);
     case "for":
-      return /^Next\b/i.test(text);
+      return statement.kind === "nextStatement" || /^Next\b/i.test(text);
     case "do":
-      return /^Loop\b/i.test(text);
+      return statement.kind === "loopStatement" || /^Loop\b/i.test(text);
     case "while":
-      return /^Wend\b/i.test(text);
+      return statement.kind === "wendStatement" || /^Wend\b/i.test(text);
     default:
       return false;
   }
@@ -195,12 +205,21 @@ function popLastBlockOfKind(blockStack: BlockKind[], blockKind: BlockKind): void
   }
 }
 
-function shouldReportUnreachableStatement(text: string): boolean {
+function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["body"][number], text: string): boolean {
   if (text.length === 0) {
     return false;
   }
 
   return !(
+    statement.kind === "elseIfClauseStatement" ||
+    statement.kind === "elseClauseStatement" ||
+    statement.kind === "caseClauseStatement" ||
+    statement.kind === "endIfStatement" ||
+    statement.kind === "endSelectStatement" ||
+    statement.kind === "nextStatement" ||
+    statement.kind === "loopStatement" ||
+    statement.kind === "wendStatement" ||
+    statement.kind === "endWithStatement" ||
     /^Else(?:If\b|$)/i.test(text) ||
     /^Case\b/i.test(text) ||
     /^End\s+If\b/i.test(text) ||

@@ -474,6 +474,17 @@ function parseProcedureStatement(
   logicalLine: { codeText: string; endLine: number; startLine: number }
 ): ProcedureStatementNode | undefined {
   const trimmedText = logicalLine.codeText.trim();
+  const statementRange = createMappedRange(
+    source,
+    logicalLine.startLine,
+    0,
+    logicalLine.endLine,
+    source.normalizedLines[logicalLine.endLine]?.length ?? 0
+  );
+  const inlineCharacterOffset =
+    logicalLine.startLine === logicalLine.endLine
+      ? source.normalizedLines[logicalLine.startLine]?.length - (source.normalizedLines[logicalLine.startLine]?.trimStart().length ?? 0)
+      : 0;
 
   if (trimmedText.length === 0) {
     return undefined;
@@ -499,10 +510,814 @@ function parseProcedureStatement(
     };
   }
 
+  const structuredBlockStatement = parseStructuredBlockStatement(trimmedText, statementRange, inlineCharacterOffset);
+
+  if (structuredBlockStatement) {
+    return structuredBlockStatement;
+  }
+
+  const assignmentStatement = parseAssignmentStatement(trimmedText, statementRange, inlineCharacterOffset);
+
+  if (assignmentStatement) {
+    return assignmentStatement;
+  }
+
+  const callStatement = parseCallStatement(trimmedText, statementRange, inlineCharacterOffset);
+
+  if (callStatement) {
+    return callStatement;
+  }
+
   return {
     kind: "executableStatement",
-    range: createMappedRange(source, logicalLine.startLine, 0, logicalLine.endLine, source.normalizedLines[logicalLine.endLine]?.length ?? 0),
+    range: statementRange,
     text: trimmedText
+  };
+}
+
+function parseStructuredBlockStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const ifBlockStatement = parseIfBlockStatement(text, statementRange, inlineCharacterOffset);
+
+  if (ifBlockStatement) {
+    return ifBlockStatement;
+  }
+
+  const elseIfClauseStatement = parseElseIfClauseStatement(text, statementRange, inlineCharacterOffset);
+
+  if (elseIfClauseStatement) {
+    return elseIfClauseStatement;
+  }
+
+  if (/^Else\s*$/iu.test(text)) {
+    return {
+      kind: "elseClauseStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  if (/^End\s+If\s*$/iu.test(text)) {
+    return {
+      kind: "endIfStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const selectCaseStatement = parseSelectCaseStatement(text, statementRange, inlineCharacterOffset);
+
+  if (selectCaseStatement) {
+    return selectCaseStatement;
+  }
+
+  const caseClauseStatement = parseCaseClauseStatement(text, statementRange, inlineCharacterOffset);
+
+  if (caseClauseStatement) {
+    return caseClauseStatement;
+  }
+
+  if (/^End\s+Select\s*$/iu.test(text)) {
+    return {
+      kind: "endSelectStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const forEachStatement = parseForEachStatement(text, statementRange, inlineCharacterOffset);
+
+  if (forEachStatement) {
+    return forEachStatement;
+  }
+
+  const forStatement = parseForStatement(text, statementRange, inlineCharacterOffset);
+
+  if (forStatement) {
+    return forStatement;
+  }
+
+  const nextStatement = parseNextStatement(text, statementRange, inlineCharacterOffset);
+
+  if (nextStatement) {
+    return nextStatement;
+  }
+
+  const doBlockStatement = parseDoBlockStatement(text, statementRange, inlineCharacterOffset);
+
+  if (doBlockStatement) {
+    return doBlockStatement;
+  }
+
+  const loopStatement = parseLoopStatement(text, statementRange, inlineCharacterOffset);
+
+  if (loopStatement) {
+    return loopStatement;
+  }
+
+  const whileStatement = parseWhileStatement(text, statementRange, inlineCharacterOffset);
+
+  if (whileStatement) {
+    return whileStatement;
+  }
+
+  if (/^Wend\s*$/iu.test(text)) {
+    return {
+      kind: "wendStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const withBlockStatement = parseWithBlockStatement(text, statementRange, inlineCharacterOffset);
+
+  if (withBlockStatement) {
+    return withBlockStatement;
+  }
+
+  if (/^End\s+With\s*$/iu.test(text)) {
+    return {
+      kind: "endWithStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const onErrorStatement = parseOnErrorStatement(text, statementRange, inlineCharacterOffset);
+
+  if (onErrorStatement) {
+    return onErrorStatement;
+  }
+
+  return undefined;
+}
+
+function parseIfBlockStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  if (!isIfBlockStart(text)) {
+    return undefined;
+  }
+
+  const prefixLength = /^\s*If\s+/iu.exec(text)?.[0].length ?? 0;
+  const suffixLength = /\s+Then\s*$/iu.exec(text)?.[0].length ?? 0;
+  const conditionText = text.slice(prefixLength, text.length - suffixLength).trim();
+  const leadingWhitespace = text.slice(prefixLength, text.length - suffixLength).length - text.slice(prefixLength, text.length - suffixLength).trimStart().length;
+  const conditionStartCharacter = prefixLength + leadingWhitespace;
+
+  if (conditionText.length === 0) {
+    return undefined;
+  }
+
+  return {
+    conditionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + conditionStartCharacter,
+      inlineCharacterOffset + conditionStartCharacter + conditionText.length
+    ),
+    conditionText,
+    kind: "ifBlockStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseElseIfClauseStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  if (!/^ElseIf\b.*\bThen\s*$/iu.test(text) || /:/.test(text)) {
+    return undefined;
+  }
+
+  const prefixLength = /^\s*ElseIf\s+/iu.exec(text)?.[0].length ?? 0;
+  const suffixLength = /\s+Then\s*$/iu.exec(text)?.[0].length ?? 0;
+  const conditionSlice = text.slice(prefixLength, text.length - suffixLength);
+  const conditionText = conditionSlice.trim();
+  const leadingWhitespace = conditionSlice.length - conditionSlice.trimStart().length;
+  const conditionStartCharacter = prefixLength + leadingWhitespace;
+
+  if (conditionText.length === 0) {
+    return undefined;
+  }
+
+  return {
+    conditionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + conditionStartCharacter,
+      inlineCharacterOffset + conditionStartCharacter + conditionText.length
+    ),
+    conditionText,
+    kind: "elseIfClauseStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseSelectCaseStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const prefixLength = /^\s*Select\s+Case\s+/iu.exec(text)?.[0].length;
+
+  if (!prefixLength) {
+    return undefined;
+  }
+
+  const expressionSlice = text.slice(prefixLength);
+  const expressionText = expressionSlice.trim();
+  const leadingWhitespace = expressionSlice.length - expressionSlice.trimStart().length;
+  const expressionStartCharacter = prefixLength + leadingWhitespace;
+
+  if (expressionText.length === 0) {
+    return undefined;
+  }
+
+  return {
+    expressionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + expressionStartCharacter,
+      inlineCharacterOffset + expressionStartCharacter + expressionText.length
+    ),
+    expressionText,
+    kind: "selectCaseStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseCaseClauseStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const prefixLength = /^\s*Case\s+/iu.exec(text)?.[0].length;
+
+  if (!prefixLength) {
+    return undefined;
+  }
+
+  const conditionSlice = text.slice(prefixLength);
+  const conditionText = conditionSlice.trim();
+
+  if (conditionText.length === 0) {
+    return undefined;
+  }
+
+  if (/^Else$/iu.test(conditionText)) {
+    return {
+      caseKind: "else",
+      kind: "caseClauseStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const leadingWhitespace = conditionSlice.length - conditionSlice.trimStart().length;
+  const conditionStartCharacter = prefixLength + leadingWhitespace;
+
+  return {
+    caseKind: "value",
+    conditionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + conditionStartCharacter,
+      inlineCharacterOffset + conditionStartCharacter + conditionText.length
+    ),
+    conditionText,
+    kind: "caseClauseStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseForEachStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const match = /^\s*For\s+Each\s+(.+?)\s+In\s+(.+)\s*$/iu.exec(text);
+
+  if (!match?.[1] || !match[2]) {
+    return undefined;
+  }
+
+  const itemPrefixLength = /^\s*For\s+Each\s+/iu.exec(text)?.[0].length ?? 0;
+  const itemSlice = match[1];
+  const itemText = itemSlice.trim();
+  const itemLeadingWhitespace = itemSlice.length - itemSlice.trimStart().length;
+  const itemStartCharacter = itemPrefixLength + itemLeadingWhitespace;
+  const collectionPrefixLength = text.indexOf(match[2], itemStartCharacter + itemText.length);
+  const collectionText = match[2].trim();
+  const collectionLeadingWhitespace = match[2].length - match[2].trimStart().length;
+  const collectionStartCharacter = collectionPrefixLength + collectionLeadingWhitespace;
+  const simpleItemMatch = /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)$/u.exec(itemText);
+
+  if (itemText.length === 0 || collectionText.length === 0 || collectionPrefixLength < 0) {
+    return undefined;
+  }
+
+  return {
+    collectionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + collectionStartCharacter,
+      inlineCharacterOffset + collectionStartCharacter + collectionText.length
+    ),
+    collectionText,
+    itemName: simpleItemMatch?.[1]?.replace(/[$%&!#@]$/, ""),
+    itemRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + itemStartCharacter,
+      inlineCharacterOffset + itemStartCharacter + itemText.length
+    ),
+    itemText,
+    kind: "forEachStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseForStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const match = /^\s*For\s+(.+?)\s*=\s*(.+?)\s+To\s+(.+?)(?:\s+Step\s+(.+?))?\s*$/iu.exec(text);
+
+  if (!match?.[1] || !match[2] || !match[3] || /^Each$/iu.test(match[1].trim())) {
+    return undefined;
+  }
+
+  const counterText = match[1].trim();
+  const startExpressionText = match[2].trim();
+  const endExpressionText = match[3].trim();
+  const counterPrefixLength = /^\s*For\s+/iu.exec(text)?.[0].length ?? 0;
+  const counterStartCharacter = findTrimmedSliceStart(text, match[1], counterPrefixLength);
+  const startExpressionStartCharacter = findTrimmedSliceStart(
+    text,
+    match[2],
+    counterStartCharacter + counterText.length
+  );
+  const endExpressionStartCharacter = findTrimmedSliceStart(
+    text,
+    match[3],
+    startExpressionStartCharacter + startExpressionText.length
+  );
+  const stepExpressionText = match[4]?.trim();
+  const stepExpressionStartCharacter =
+    stepExpressionText && match[4]
+      ? findTrimmedSliceStart(text, match[4], endExpressionStartCharacter + endExpressionText.length)
+      : -1;
+  const simpleCounterMatch = /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)$/u.exec(counterText);
+
+  if (
+    counterText.length === 0 ||
+    startExpressionText.length === 0 ||
+    endExpressionText.length === 0 ||
+    counterStartCharacter < 0 ||
+    startExpressionStartCharacter < 0 ||
+    endExpressionStartCharacter < 0
+  ) {
+    return undefined;
+  }
+
+  return {
+    counterName: simpleCounterMatch?.[1]?.replace(/[$%&!#@]$/, ""),
+    counterRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + counterStartCharacter,
+      inlineCharacterOffset + counterStartCharacter + counterText.length
+    ),
+    counterText,
+    endExpressionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + endExpressionStartCharacter,
+      inlineCharacterOffset + endExpressionStartCharacter + endExpressionText.length
+    ),
+    endExpressionText,
+    kind: "forStatement",
+    range: statementRange,
+    startExpressionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + startExpressionStartCharacter,
+      inlineCharacterOffset + startExpressionStartCharacter + startExpressionText.length
+    ),
+    startExpressionText,
+    ...(stepExpressionText && stepExpressionStartCharacter >= 0
+      ? {
+          stepExpressionRange: createInlineOrStatementRange(
+            statementRange,
+            inlineCharacterOffset + stepExpressionStartCharacter,
+            inlineCharacterOffset + stepExpressionStartCharacter + stepExpressionText.length
+          ),
+          stepExpressionText
+        }
+      : {}),
+    text
+  };
+}
+
+function parseNextStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const match = /^\s*Next(?:\s+(.+?))?\s*$/iu.exec(text);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const counterText = match[1]?.trim();
+  const counterPrefixLength = /^\s*Next\s+/iu.exec(text)?.[0].length ?? 0;
+  const counterStartCharacter = counterText && match[1] ? findTrimmedSliceStart(text, match[1], counterPrefixLength) : -1;
+  const simpleCounterMatch = counterText ? /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)$/u.exec(counterText) : undefined;
+
+  return {
+    ...(simpleCounterMatch?.[1] ? { counterName: simpleCounterMatch[1].replace(/[$%&!#@]$/, "") } : {}),
+    ...(counterText
+      ? {
+          counterRange: createInlineOrStatementRange(
+            statementRange,
+            inlineCharacterOffset + counterStartCharacter,
+            inlineCharacterOffset + counterStartCharacter + counterText.length
+          ),
+          counterText
+        }
+      : {}),
+    kind: "nextStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseDoBlockStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  if (!/^\s*Do\b/iu.test(text)) {
+    return undefined;
+  }
+
+  const bareDoMatch = /^\s*Do\s*$/iu.exec(text);
+
+  if (bareDoMatch) {
+    return {
+      clauseKind: "none",
+      kind: "doBlockStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const clauseMatch = /^\s*Do\s+(While|Until)\s+(.+?)\s*$/iu.exec(text);
+
+  if (!clauseMatch?.[1] || !clauseMatch[2]) {
+    return undefined;
+  }
+
+  const clauseKind = clauseMatch[1].toLowerCase() as "until" | "while";
+  const conditionSlice = clauseMatch[2];
+  const conditionText = conditionSlice.trim();
+  const conditionPrefixLength = /^\s*Do\s+(?:While|Until)\s+/iu.exec(text)?.[0].length ?? 0;
+  const conditionStartCharacter = findTrimmedSliceStart(text, conditionSlice, conditionPrefixLength);
+
+  if (conditionText.length === 0 || conditionStartCharacter < 0) {
+    return undefined;
+  }
+
+  return {
+    clauseKind,
+    conditionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + conditionStartCharacter,
+      inlineCharacterOffset + conditionStartCharacter + conditionText.length
+    ),
+    conditionText,
+    kind: "doBlockStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseLoopStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  if (!/^\s*Loop\b/iu.test(text)) {
+    return undefined;
+  }
+
+  const bareLoopMatch = /^\s*Loop\s*$/iu.exec(text);
+
+  if (bareLoopMatch) {
+    return {
+      clauseKind: "none",
+      kind: "loopStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const clauseMatch = /^\s*Loop\s+(While|Until)\s+(.+?)\s*$/iu.exec(text);
+
+  if (!clauseMatch?.[1] || !clauseMatch[2]) {
+    return undefined;
+  }
+
+  const clauseKind = clauseMatch[1].toLowerCase() as "until" | "while";
+  const conditionSlice = clauseMatch[2];
+  const conditionText = conditionSlice.trim();
+  const conditionPrefixLength = /^\s*Loop\s+(?:While|Until)\s+/iu.exec(text)?.[0].length ?? 0;
+  const conditionStartCharacter = findTrimmedSliceStart(text, conditionSlice, conditionPrefixLength);
+
+  if (conditionText.length === 0 || conditionStartCharacter < 0) {
+    return undefined;
+  }
+
+  return {
+    clauseKind,
+    conditionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + conditionStartCharacter,
+      inlineCharacterOffset + conditionStartCharacter + conditionText.length
+    ),
+    conditionText,
+    kind: "loopStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseWhileStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const match = /^\s*While\s+(.+?)\s*$/iu.exec(text);
+
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const conditionSlice = match[1];
+  const conditionText = conditionSlice.trim();
+  const conditionPrefixLength = /^\s*While\s+/iu.exec(text)?.[0].length ?? 0;
+  const conditionStartCharacter = findTrimmedSliceStart(text, conditionSlice, conditionPrefixLength);
+
+  if (conditionText.length === 0 || conditionStartCharacter < 0) {
+    return undefined;
+  }
+
+  return {
+    conditionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + conditionStartCharacter,
+      inlineCharacterOffset + conditionStartCharacter + conditionText.length
+    ),
+    conditionText,
+    kind: "whileStatement",
+    range: statementRange,
+    text
+  };
+}
+
+function parseWithBlockStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const match = /^\s*With\s+(.+?)\s*$/iu.exec(text);
+
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const targetSlice = match[1];
+  const targetText = targetSlice.trim();
+  const targetPrefixLength = /^\s*With\s+/iu.exec(text)?.[0].length ?? 0;
+  const targetStartCharacter = findTrimmedSliceStart(text, targetSlice, targetPrefixLength);
+
+  if (targetText.length === 0 || targetStartCharacter < 0) {
+    return undefined;
+  }
+
+  return {
+    kind: "withBlockStatement",
+    range: statementRange,
+    targetRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + targetStartCharacter,
+      inlineCharacterOffset + targetStartCharacter + targetText.length
+    ),
+    targetText,
+    text
+  };
+}
+
+function parseOnErrorStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const resumeNextMatch = /^\s*On\s+Error\s+Resume\s+Next\s*$/iu.exec(text);
+
+  if (resumeNextMatch) {
+    return {
+      actionKind: "resumeNext",
+      kind: "onErrorStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const gotoMatch = /^\s*On\s+Error\s+GoTo\s+(.+?)\s*$/iu.exec(text);
+
+  if (!gotoMatch?.[1]) {
+    return undefined;
+  }
+
+  const targetSlice = gotoMatch[1];
+  const targetText = targetSlice.trim();
+  const targetPrefixLength = /^\s*On\s+Error\s+GoTo\s+/iu.exec(text)?.[0].length ?? 0;
+  const targetStartCharacter = findTrimmedSliceStart(text, targetSlice, targetPrefixLength);
+
+  if (targetText.length === 0 || targetStartCharacter < 0) {
+    return undefined;
+  }
+
+  return {
+    actionKind: "goto",
+    kind: "onErrorStatement",
+    range: statementRange,
+    targetRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + targetStartCharacter,
+      inlineCharacterOffset + targetStartCharacter + targetText.length
+    ),
+    targetText,
+    text
+  };
+}
+
+function parseAssignmentStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const equalsIndex = findAssignmentOperatorIndex(text);
+
+  if (equalsIndex < 0) {
+    return undefined;
+  }
+
+  const leftText = text.slice(0, equalsIndex);
+  const rightText = text.slice(equalsIndex + 1);
+  const prefixMatch = /^\s*(Set|Let)\s+/iu.exec(leftText);
+  const targetText = leftText.slice(prefixMatch?.[0].length ?? 0).trim();
+
+  if (
+    targetText.length === 0 ||
+    containsWhitespaceOutsideGrouping(targetText) ||
+    /^(?:Call|Case|Do|ElseIf|If|Loop|Next|Select|While|With)\b/iu.test(targetText)
+  ) {
+    return undefined;
+  }
+
+  const expressionText = rightText.trim();
+
+  if (expressionText.length === 0) {
+    return undefined;
+  }
+
+  const targetStartCharacter = (prefixMatch?.[0].length ?? 0) + leftText.slice(prefixMatch?.[0].length ?? 0).search(/\S/u);
+  const expressionStartCharacter = equalsIndex + 1 + (rightText.length - rightText.trimStart().length);
+  const simpleTargetMatch = /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)$/u.exec(targetText);
+
+  return {
+    assignmentKind: prefixMatch?.[1] ? prefixMatch[1].toLowerCase() as "let" | "set" : "implicit",
+    expressionRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + expressionStartCharacter,
+      inlineCharacterOffset + expressionStartCharacter + expressionText.length
+    ),
+    expressionText,
+    kind: "assignmentStatement",
+    range: statementRange,
+    targetName: simpleTargetMatch?.[1]?.replace(/[$%&!#@]$/, ""),
+    targetRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + targetStartCharacter,
+      inlineCharacterOffset + targetStartCharacter + targetText.length
+    ),
+    targetText,
+    text
+  };
+}
+
+function parseCallStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  if (statementRange.start.line !== statementRange.end.line || findAssignmentOperatorIndex(text) >= 0) {
+    return undefined;
+  }
+
+  const explicitCallMatch = /^\s*Call\s+([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)\s*$/iu.exec(text);
+
+  if (explicitCallMatch?.[1]) {
+    const callPrefixLength = /^\s*Call\s+/iu.exec(text)?.[0].length ?? 0;
+    const openParenIndex = text.indexOf("(", callPrefixLength);
+    const closeParenIndex = findMatchingCloseParen(text, openParenIndex);
+
+    if (openParenIndex >= 0 && closeParenIndex >= 0) {
+      return {
+        arguments: splitInvocationArguments(
+          text.slice(openParenIndex + 1, closeParenIndex),
+          statementRange.start.line,
+          inlineCharacterOffset + openParenIndex + 1
+        ),
+        callStyle: "call",
+        kind: "callStatement",
+        name: explicitCallMatch[1],
+        nameRange: createInlineRange(
+          statementRange.start.line,
+          inlineCharacterOffset + callPrefixLength,
+          inlineCharacterOffset + callPrefixLength + explicitCallMatch[1].length
+        ),
+        range: statementRange,
+        text
+      };
+    }
+  }
+
+  const bareCallMatch = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s+(.*\S))?\s*$/u.exec(text);
+
+  if (bareCallMatch?.[1] && bareCallMatch[2] && !isStatementKeyword(bareCallMatch[1])) {
+    const leadingWhitespace = /^\s*/u.exec(text)?.[0].length ?? 0;
+    const nameStartCharacter = leadingWhitespace;
+    const separatorLength = /\s+/u.exec(text.slice(nameStartCharacter + bareCallMatch[1].length))?.[0].length ?? 0;
+    const argumentsStartCharacter = nameStartCharacter + bareCallMatch[1].length + separatorLength;
+
+    return {
+      arguments: splitInvocationArguments(
+        bareCallMatch[2],
+        statementRange.start.line,
+        inlineCharacterOffset + argumentsStartCharacter
+      ),
+      callStyle: "bare",
+      kind: "callStatement",
+      name: bareCallMatch[1],
+      nameRange: createInlineRange(
+        statementRange.start.line,
+        inlineCharacterOffset + nameStartCharacter,
+        inlineCharacterOffset + nameStartCharacter + bareCallMatch[1].length
+      ),
+      range: statementRange,
+      text
+    };
+  }
+
+  const parenthesizedCallMatch = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)\s*$/u.exec(text);
+  const openParenIndex = parenthesizedCallMatch ? text.indexOf("(", /^\s*/u.exec(text)?.[0].length ?? 0) : -1;
+  const closeParenIndex = findMatchingCloseParen(text, openParenIndex);
+  const identifier =
+    parenthesizedCallMatch && openParenIndex >= 0
+      ? {
+          startCharacter: /^\s*/u.exec(text)?.[0].length ?? 0,
+          text: parenthesizedCallMatch[1]
+        }
+      : undefined;
+
+  if (!identifier || closeParenIndex < 0 || isStatementKeyword(identifier.text)) {
+    return undefined;
+  }
+
+  return {
+    arguments: splitInvocationArguments(
+      text.slice(openParenIndex + 1, closeParenIndex),
+      statementRange.start.line,
+      inlineCharacterOffset + openParenIndex + 1
+    ),
+    callStyle: "parenthesized",
+    kind: "callStatement",
+    name: identifier.text,
+    nameRange: createInlineRange(
+      statementRange.start.line,
+      inlineCharacterOffset + identifier.startCharacter,
+      inlineCharacterOffset + identifier.startCharacter + identifier.text.length
+    ),
+    range: statementRange,
+    text
   };
 }
 
@@ -519,6 +1334,92 @@ function parseProcedureVariableDeclaration(
     range: createMappedRange(source, logicalLine.startLine, 0, logicalLine.endLine, source.normalizedLines[logicalLine.endLine]?.length ?? 0),
     text: logicalLine.codeText
   };
+}
+
+function containsWhitespaceOutsideGrouping(text: string): boolean {
+  let depth = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === "\"") {
+      index = skipStringLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "#") {
+      index = skipDateLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "(") {
+      depth += 1;
+      continue;
+    }
+
+    if (currentCharacter === ")") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    if (depth === 0 && /\s/u.test(currentCharacter)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function splitInvocationArguments(text: string, line: number, baseCharacter: number): Array<{ range: ProcedureStatementNode["range"]; text: string }> {
+  const argumentsWithRanges: Array<{ range: ProcedureStatementNode["range"]; text: string }> = [];
+  let startIndex = 0;
+  let depth = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === "\"") {
+      index = skipStringLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "#") {
+      index = skipDateLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "(") {
+      depth += 1;
+      continue;
+    }
+
+    if (currentCharacter === ")") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    if (currentCharacter === "," && depth === 0) {
+      pushArgument(startIndex, index);
+      startIndex = index + 1;
+    }
+  }
+
+  pushArgument(startIndex, text.length);
+  return argumentsWithRanges;
+
+  function pushArgument(start: number, end: number): void {
+    const rawText = text.slice(start, end);
+    const trimmedText = rawText.trim();
+    const leadingWhitespace = rawText.length - rawText.trimStart().length;
+    const trailingWhitespace = rawText.length - rawText.trimEnd().length;
+    const startCharacter = baseCharacter + start + leadingWhitespace;
+    const endCharacter = baseCharacter + end - trailingWhitespace;
+
+    argumentsWithRanges.push({
+      range: createInlineRange(line, startCharacter, endCharacter),
+      text: trimmedText
+    });
+  }
 }
 
 function parseTypeDeclaration(
@@ -662,62 +1563,72 @@ function validateProcedureBlocks(source: SourceDocument, procedure: ProcedureDec
       continue;
     }
 
-    if (isIfBlockStart(trimmedText)) {
+    if (statement.kind === "ifBlockStatement") {
       blockStack.push({ kind: "if", statement });
       continue;
     }
 
-    if (/^Select\s+Case\b/i.test(trimmedText)) {
+    if (statement.kind === "elseIfClauseStatement" || statement.kind === "elseClauseStatement") {
+      requireCurrentBlock("if", statement, diagnostics);
+      continue;
+    }
+
+    if (statement.kind === "selectCaseStatement") {
       blockStack.push({ kind: "select", statement });
       continue;
     }
 
-    if (/^For\b/i.test(trimmedText)) {
+    if (statement.kind === "caseClauseStatement") {
+      requireCurrentBlock("select", statement, diagnostics);
+      continue;
+    }
+
+    if (statement.kind === "forStatement" || statement.kind === "forEachStatement") {
       blockStack.push({ kind: "for", statement });
       continue;
     }
 
-    if (/^Do\b/i.test(trimmedText)) {
+    if (statement.kind === "doBlockStatement") {
       blockStack.push({ kind: "do", statement });
       continue;
     }
 
-    if (/^While\b/i.test(trimmedText)) {
+    if (statement.kind === "whileStatement") {
       blockStack.push({ kind: "while", statement });
       continue;
     }
 
-    if (/^With\b/i.test(trimmedText)) {
+    if (statement.kind === "withBlockStatement") {
       blockStack.push({ kind: "with", statement });
       continue;
     }
 
-    if (/^End\s+If\b/i.test(trimmedText)) {
+    if (statement.kind === "endIfStatement") {
       popBlock("if", statement, diagnostics);
       continue;
     }
 
-    if (/^End\s+Select\b/i.test(trimmedText)) {
+    if (statement.kind === "endSelectStatement") {
       popBlock("select", statement, diagnostics);
       continue;
     }
 
-    if (/^Next\b/i.test(trimmedText)) {
+    if (statement.kind === "nextStatement") {
       popBlock("for", statement, diagnostics);
       continue;
     }
 
-    if (/^Loop\b/i.test(trimmedText)) {
+    if (statement.kind === "loopStatement") {
       popBlock("do", statement, diagnostics);
       continue;
     }
 
-    if (/^Wend\b/i.test(trimmedText)) {
+    if (statement.kind === "wendStatement") {
       popBlock("while", statement, diagnostics);
       continue;
     }
 
-    if (/^End\s+With\b/i.test(trimmedText)) {
+    if (statement.kind === "endWithStatement") {
       popBlock("with", statement, diagnostics);
       continue;
     }
@@ -748,8 +1659,192 @@ function validateProcedureBlocks(source: SourceDocument, procedure: ProcedureDec
       }
     }
   }
+
+  function requireCurrentBlock(expectedKind: string, statement: ProcedureStatementNode, sink: Diagnostic[]): void {
+    const lastBlock = blockStack[blockStack.length - 1];
+
+    if (!lastBlock || lastBlock.kind !== expectedKind) {
+      sink.push({
+        code: "syntax-error",
+        message: `Unexpected block clause in ${procedure.name}.`,
+        range: statement.range,
+        severity: "error"
+      });
+    }
+  }
 }
 
 function isIfBlockStart(text: string): boolean {
   return /^If\b.*\bThen\s*$/i.test(text) && !/:/.test(text);
+}
+
+function findAssignmentOperatorIndex(text: string): number {
+  let depth = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === "\"") {
+      index = skipStringLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "#") {
+      index = skipDateLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "(") {
+      depth += 1;
+      continue;
+    }
+
+    if (currentCharacter === ")") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    if (
+      currentCharacter === "=" &&
+      depth === 0 &&
+      text[index - 1] !== "<" &&
+      text[index - 1] !== ">" &&
+      text[index + 1] !== ">"
+    ) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function isStatementKeyword(text: string): boolean {
+  return /^(?:Call|Case|Do|Else|ElseIf|End|For|If|Loop|Next|On|Select|While|With)\b/iu.test(text);
+}
+
+function getIdentifierBeforeOpenParen(text: string, openParenIndex: number): { startCharacter: number; text: string } | undefined {
+  if (openParenIndex <= 0) {
+    return undefined;
+  }
+
+  let identifierEnd = openParenIndex;
+
+  while (identifierEnd > 0 && /\s/u.test(text[identifierEnd - 1] ?? "")) {
+    identifierEnd -= 1;
+  }
+
+  let identifierStart = identifierEnd;
+
+  while (identifierStart > 0 && /[A-Za-z0-9_!$%&@#]/u.test(text[identifierStart - 1] ?? "")) {
+    identifierStart -= 1;
+  }
+
+  const identifierText = text.slice(identifierStart, identifierEnd);
+
+  return /^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(identifierText)
+    ? { startCharacter: identifierStart, text: identifierText }
+    : undefined;
+}
+
+function findMatchingCloseParen(text: string, openParenIndex: number): number {
+  if (openParenIndex < 0 || text[openParenIndex] !== "(") {
+    return -1;
+  }
+
+  let depth = 0;
+
+  for (let index = openParenIndex; index < text.length; index += 1) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === "\"") {
+      index = skipStringLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "#") {
+      index = skipDateLiteral(text, index);
+      continue;
+    }
+
+    if (currentCharacter === "(") {
+      depth += 1;
+      continue;
+    }
+
+    if (currentCharacter === ")") {
+      depth -= 1;
+
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function skipStringLiteral(text: string, startIndex: number): number {
+  let index = startIndex + 1;
+
+  while (index < text.length) {
+    if (text[index] === "\"" && text[index + 1] === "\"") {
+      index += 2;
+      continue;
+    }
+
+    if (text[index] === "\"") {
+      return index;
+    }
+
+    index += 1;
+  }
+
+  return text.length - 1;
+}
+
+function skipDateLiteral(text: string, startIndex: number): number {
+  let index = startIndex + 1;
+
+  while (index < text.length) {
+    if (text[index] === "#") {
+      return index;
+    }
+
+    index += 1;
+  }
+
+  return text.length - 1;
+}
+
+function findTrimmedSliceStart(text: string, rawSlice: string, searchStartCharacter: number): number {
+  const rawIndex = text.indexOf(rawSlice, searchStartCharacter);
+
+  if (rawIndex < 0) {
+    return -1;
+  }
+
+  return rawIndex + (rawSlice.length - rawSlice.trimStart().length);
+}
+
+function createInlineRange(line: number, startCharacter: number, endCharacter: number): ProcedureStatementNode["range"] {
+  return {
+    end: {
+      character: endCharacter,
+      line
+    },
+    start: {
+      character: startCharacter,
+      line
+    }
+  };
+}
+
+function createInlineOrStatementRange(
+  statementRange: ProcedureStatementNode["range"],
+  startCharacter: number,
+  endCharacter: number
+): ProcedureStatementNode["range"] {
+  return statementRange.start.line === statementRange.end.line
+    ? createInlineRange(statementRange.start.line, startCharacter, endCharacter)
+    : statementRange;
 }

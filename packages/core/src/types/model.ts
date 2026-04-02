@@ -156,13 +156,217 @@ export interface DeclareStatementNode {
   text: string;
 }
 
-export interface ProcedureStatementNode {
-  declaredConstants?: ConstDeclarationNode[];
-  declaredVariables?: VariableDeclaratorNode[];
-  kind: "constStatement" | "declarationStatement" | "executableStatement";
+export interface ConstStatementNode {
+  declaredConstants: ConstDeclarationNode[];
+  kind: "constStatement";
   range: SourceRange;
   text: string;
 }
+
+export interface DeclarationStatementNode {
+  declaredVariables: VariableDeclaratorNode[];
+  kind: "declarationStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface AssignmentStatementNode {
+  assignmentKind: "implicit" | "let" | "set";
+  expressionRange: SourceRange;
+  expressionText: string;
+  kind: "assignmentStatement";
+  range: SourceRange;
+  targetName?: string;
+  targetRange: SourceRange;
+  targetText: string;
+  text: string;
+}
+
+export interface InvocationArgumentNode {
+  range: SourceRange;
+  text: string;
+}
+
+export interface CallStatementNode {
+  arguments: InvocationArgumentNode[];
+  callStyle: "bare" | "call" | "parenthesized";
+  kind: "callStatement";
+  name: string;
+  nameRange: SourceRange;
+  range: SourceRange;
+  text: string;
+}
+
+export interface IfBlockStatementNode {
+  conditionRange: SourceRange;
+  conditionText: string;
+  kind: "ifBlockStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface ElseIfClauseStatementNode {
+  conditionRange: SourceRange;
+  conditionText: string;
+  kind: "elseIfClauseStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface ElseClauseStatementNode {
+  kind: "elseClauseStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface EndIfStatementNode {
+  kind: "endIfStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface SelectCaseStatementNode {
+  expressionRange: SourceRange;
+  expressionText: string;
+  kind: "selectCaseStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface CaseClauseStatementNode {
+  caseKind: "else" | "value";
+  conditionRange?: SourceRange;
+  conditionText?: string;
+  kind: "caseClauseStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface EndSelectStatementNode {
+  kind: "endSelectStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface ForStatementNode {
+  counterName?: string;
+  counterRange: SourceRange;
+  counterText: string;
+  endExpressionRange: SourceRange;
+  endExpressionText: string;
+  kind: "forStatement";
+  range: SourceRange;
+  startExpressionRange: SourceRange;
+  startExpressionText: string;
+  stepExpressionRange?: SourceRange;
+  stepExpressionText?: string;
+  text: string;
+}
+
+export interface ForEachStatementNode {
+  collectionRange: SourceRange;
+  collectionText: string;
+  itemName?: string;
+  itemRange: SourceRange;
+  itemText: string;
+  kind: "forEachStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface NextStatementNode {
+  counterName?: string;
+  counterRange?: SourceRange;
+  counterText?: string;
+  kind: "nextStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface DoBlockStatementNode {
+  clauseKind: "none" | "until" | "while";
+  conditionRange?: SourceRange;
+  conditionText?: string;
+  kind: "doBlockStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface LoopStatementNode {
+  clauseKind: "none" | "until" | "while";
+  conditionRange?: SourceRange;
+  conditionText?: string;
+  kind: "loopStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface WhileStatementNode {
+  conditionRange: SourceRange;
+  conditionText: string;
+  kind: "whileStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface WendStatementNode {
+  kind: "wendStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface WithBlockStatementNode {
+  targetRange: SourceRange;
+  targetText: string;
+  kind: "withBlockStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface EndWithStatementNode {
+  kind: "endWithStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface OnErrorStatementNode {
+  actionKind: "goto" | "resumeNext";
+  kind: "onErrorStatement";
+  range: SourceRange;
+  targetRange?: SourceRange;
+  targetText?: string;
+  text: string;
+}
+
+export interface ExecutableStatementNode {
+  kind: "executableStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export type ProcedureStatementNode =
+  | AssignmentStatementNode
+  | CaseClauseStatementNode
+  | CallStatementNode
+  | ConstStatementNode
+  | DeclarationStatementNode
+  | DoBlockStatementNode
+  | EndWithStatementNode
+  | ElseClauseStatementNode
+  | ElseIfClauseStatementNode
+  | EndIfStatementNode
+  | EndSelectStatementNode
+  | ExecutableStatementNode
+  | ForEachStatementNode
+  | ForStatementNode
+  | IfBlockStatementNode
+  | LoopStatementNode
+  | NextStatementNode
+  | OnErrorStatementNode
+  | SelectCaseStatementNode
+  | WhileStatementNode
+  | WendStatementNode
+  | WithBlockStatementNode;
 
 export interface ProcedureDeclarationNode {
   body: ProcedureStatementNode[];

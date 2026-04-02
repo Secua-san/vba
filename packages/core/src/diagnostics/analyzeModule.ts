@@ -163,7 +163,7 @@ function collectUndeclaredVariableDiagnostics(parseResult: ParseResult, symbolTa
     }
 
     for (const statement of member.body) {
-      if (statement.kind !== "executableStatement") {
+      if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
         continue;
       }
 

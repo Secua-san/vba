@@ -41,13 +41,24 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
     }
 
     for (const statement of member.body) {
-      if (statement.kind !== "executableStatement") {
+      const assignment =
+        statement.kind === "assignmentStatement"
+          ? {
+              expressionRange: statement.expressionRange,
+              expressionText: statement.expressionText,
+              isSet: statement.assignmentKind === "set",
+              targetName: statement.targetName,
+              targetRange: statement.targetRange
+            }
+          : statement.kind === "executableStatement"
+            ? parseSimpleAssignment(statement.text, statement.range)
+            : undefined;
+
+      if (!assignment) {
         continue;
       }
 
-      const assignment = parseSimpleAssignment(statement.text, statement.range);
-
-      if (!assignment) {
+      if (!assignment.targetName) {
         continue;
       }
 
