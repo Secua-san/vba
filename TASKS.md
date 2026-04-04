@@ -14,24 +14,25 @@
 ## 重要事項
 
 - 現在の主タスクは `ProcedureStatementNode` の block statement structured AST 拡張
-- `assignment` / `call` の first slice は完了済みで、次は block statement 群を node kind 化する段階
+- `assignment` / `call` の first slice と、主要 block statement / block validation の first slice は完了済みで、次は downstream の raw text 依存を減らす段階
 - 過去の完了履歴や docs-only 更新の経緯は [`TASKLOG.md`](TASKLOG.md) を参照する
 
 ## 進行中
 
 - [ ] ProcedureStatementNode の block statement structured AST を広げる
-  - `If` / `Select Case` / `For` / `For Each` / `Do` / `While` / `With` / `On Error` を text 判定ではなく node kind で持てるようにする
-  - block validation の stack 判定を raw text regex から AST kind ベースへ移し、`range` / `text` は formatter / diagnostics / navigation 互換のため維持する
+  - 主要 block statement は node kind 化済みなので、`range` / `text` 互換を維持したまま downstream の diagnostics / references / formatter を AST kind ベースへ寄せる
+  - block validation の first slice は AST kind ベースへ移行済みなので、残る raw text 依存を局所的に削る
   - 既存 diagnostics、references / rename、semantic token、formatter の回帰を崩さないことを完了条件にする
 
 ## 次に行うタスク
 
-- `If` / `Select Case` / `For` / `For Each` の structured node 追加を先に入れる
-- `Do` / `While` / `With` / `On Error` を続けて node kind 化する
-- block validation を AST kind ベースへ移したうえで core / server 回帰を確認する
+- structured statement を使う diagnostics / symbol 連携の次 slice を進める
+- `formatModuleIndentation.ts`、references / rename / semantic token に残る block text 判定を段階的に AST kind ベースへ寄せる
+- core / server / extension の回帰を維持しながら structured AST 利用箇所を増やす
 
 ## 直近の更新
 
 - [運用] `TASKS.md` を参照用サマリ、[`TASKLOG.md`](TASKLOG.md) を履歴ログに分離した
 - [完了] extension host の active workbook identity snapshot と shared semantic test の安定化を完了した
 - [完了] `ProcedureStatementNode` の `assignment` / `call` structured AST first slice を導入した
+- [完了] `unreachable-code` diagnostics の block boundary 判定を structured statement metadata へ寄せた

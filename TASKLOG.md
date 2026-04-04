@@ -9,6 +9,12 @@
 
 ## 完了ログ
 
+- [x] `unreachable-code` diagnostics の block boundary 判定を structured statement metadata へ寄せる
+  - `packages/core/src/diagnostics/unreachableCode.ts` で block stack 更新、boundary 抑止、unreachable state 解除に使う block boundary 判定を 1 つの metadata へ寄せ、structured statement kind を主経路、raw text regex を executable fallback に限定した
+  - `packages/core/test/analysis.test.ts` と `packages/server/test/documentService.test.js` に、literal colon を含む structured `ElseIf` 境界で unreachable warning が clause 自体へ漏れない回帰を追加した
+  - `PLAN.md` と `TASKS.md` の次タスクを、block node 追加から downstream の raw text 依存削減へ最小更新した
+  - `npm run test` と `npm run lint` が成功した
+
 - [x] `TASKS.md` と `TASKLOG.md` の役割分離を導入する
   - `TASKS.md` を直近の状況、次に行うタスク、重要事項だけを残す日常参照用サマリへ整理した
   - `TASKLOG.md` を新設し、既存の完了履歴と docs-only の判断記録をこちらへ分離した

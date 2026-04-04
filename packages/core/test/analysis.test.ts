@@ -1214,6 +1214,30 @@ End Sub`, { fileName: "StructuredUnreachableControlBoundaries.bas" });
   );
 });
 
+test("analyzeModule keeps structured ElseIf boundaries quiet after unreachable exits", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredElseIfUnreachableBoundaries"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim fallback As Boolean
+    Dim marker As Long
+
+    If ready Then
+        Exit Sub
+        marker = 1
+    ElseIf Format$(Now, "hh:mm") = "12:34" And fallback Then
+        marker = 2
+    End If
+
+    marker = 3
+End Sub`, { fileName: "StructuredElseIfUnreachableBoundaries.bas" });
+
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.deepEqual(unreachableDiagnostics.map((diagnostic) => diagnostic.message), ["Unreachable code after Exit Sub."]);
+});
+
 test("analyzeModule warns on unused local variables and parameters", () => {
   const result = analyzeModule(`Attribute VB_Name = "UnusedLocals"
 Option Explicit
