@@ -4444,6 +4444,7 @@ Option Explicit`
   const workbookHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ThisWorkbook.Save"));
   const chartHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print Chart1.ChartA"));
   const hasSpillHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ActiveCell.HasSpi"));
+  const savedAsArrayHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ActiveCell.SavedAsArr"));
   const spillParentHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ActiveCell.SpillPar"));
 
   assert.equal(worksheetSignature?.activeParameter, 1);
@@ -4610,6 +4611,8 @@ Option Explicit`
   assert.equal(chartHover?.contents.includes("excel.chart.chartarea"), true);
   assert.equal(hasSpillHover?.contents.includes("Range.HasSpill"), true);
   assert.equal(hasSpillHover?.contents.includes("excel.range.hasspill"), true);
+  assert.equal(savedAsArrayHover?.contents.includes("Range.SavedAsArray"), true);
+  assert.equal(savedAsArrayHover?.contents.includes("excel.range.savedasarray"), true);
   assert.equal(spillParentHover?.contents.includes("Range.SpillParent"), true);
   assert.equal(spillParentHover?.contents.includes("excel.range.spillparent"), true);
 });
