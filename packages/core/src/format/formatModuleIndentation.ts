@@ -1,5 +1,7 @@
 import { buildLogicalLines, hasStatementSeparatorColon, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { createSourceDocument } from "../types/helpers";
+import { parseModule } from "../parser/parseModule";
+import type { ModuleMemberNode, ProcedureStatementNode } from "../types/model";
 
 type BlockKind = "case" | "directiveIf" | "do" | "enum" | "for" | "if" | "procedure" | "select" | "type" | "while" | "with";
 type LineKind =
@@ -65,11 +67,12 @@ export function formatModuleIndentation(text: string, options: FormatModuleInden
   const normalizedCodeText = normalizeBlockLayout(source.normalizedLines.join(lineEnding));
   const declarationAlignedText = normalizeDeclarationAlignment(normalizedCodeText);
   const formattingSource = createSourceDocument(declarationAlignedText, { fileName: options.fileName });
+  const structuredLineKinds = buildStructuredLineKindMap(declarationAlignedText, options.fileName);
   const formattedLines = [...formattingSource.normalizedLines];
   const stack: BlockKind[] = [];
 
   for (const logicalLine of buildLogicalLines(formattingSource)) {
-    const kind = classifyLineKind(logicalLine.codeText.trim());
+    const kind = structuredLineKinds.get(logicalLine.startLine) ?? classifyLineKind(logicalLine.codeText.trim());
     applyPreIndentation(kind, stack);
 
     const baseIndentLevel = getBaseIndentLevel(kind, stack);
@@ -100,6 +103,81 @@ export function formatModuleIndentation(text: string, options: FormatModuleInden
   const formattedText = nextLines.join(lineEnding);
 
   return formattedText === text ? text : formattedText;
+}
+
+function buildStructuredLineKindMap(text: string, fileName?: string): Map<number, LineKind> {
+  const result = parseModule(text, { fileName });
+  const lineKinds = new Map<number, LineKind>();
+
+  for (const member of result.module.members) {
+    addStructuredMemberLineKinds(lineKinds, member);
+  }
+
+  return lineKinds;
+}
+
+function addStructuredMemberLineKinds(lineKinds: Map<number, LineKind>, member: ModuleMemberNode): void {
+  switch (member.kind) {
+    case "enumDeclaration":
+      lineKinds.set(member.range.start.line, "enumStart");
+      lineKinds.set(member.range.end.line, "endEnum");
+      break;
+    case "procedureDeclaration":
+      lineKinds.set(member.headerRange.start.line, "procedureHeader");
+      lineKinds.set(member.range.end.line, "procedureTerminator");
+
+      for (const statement of member.body) {
+        const lineKind = getStructuredProcedureLineKind(statement);
+
+        if (lineKind) {
+          lineKinds.set(statement.range.start.line, lineKind);
+        }
+      }
+      break;
+    case "typeDeclaration":
+      lineKinds.set(member.range.start.line, "typeStart");
+      lineKinds.set(member.range.end.line, "endType");
+      break;
+    default:
+      break;
+  }
+}
+
+function getStructuredProcedureLineKind(statement: ProcedureStatementNode): LineKind | undefined {
+  switch (statement.kind) {
+    case "caseClauseStatement":
+      return "caseBranch";
+    case "doBlockStatement":
+      return "doStart";
+    case "elseClauseStatement":
+    case "elseIfClauseStatement":
+      return "elseBranch";
+    case "endIfStatement":
+      return "endIf";
+    case "endSelectStatement":
+      return "endSelect";
+    case "endWithStatement":
+      return "endWith";
+    case "forEachStatement":
+    case "forStatement":
+      return "forStart";
+    case "ifBlockStatement":
+      return "ifStart";
+    case "loopStatement":
+      return "loop";
+    case "nextStatement":
+      return "next";
+    case "selectCaseStatement":
+      return "selectStart";
+    case "whileStatement":
+      return "whileStart";
+    case "wendStatement":
+      return "wend";
+    case "withBlockStatement":
+      return "withStart";
+    default:
+      return undefined;
+  }
 }
 
 function classifyLineKind(trimmedCode: string): LineKind {

@@ -1596,6 +1596,33 @@ End Sub`
   );
 });
 
+test("formatModuleIndentation keeps labeled block headers aligned with structured block bodies", () => {
+  const formatted = formatModuleIndentation(`Attribute VB_Name = "LabeledBlockFormatting"
+Option Explicit
+
+Public Sub Demo()
+Label1: If True Then
+Debug.Print "ready"
+Else
+Debug.Print "fallback"
+End If
+End Sub`, { fileName: "LabeledBlockFormatting.bas", indentSize: 4, insertSpaces: true });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "LabeledBlockFormatting"
+Option Explicit
+
+Public Sub Demo()
+    Label1: If True Then
+        Debug.Print "ready"
+    Else
+        Debug.Print "fallback"
+    End If
+End Sub`
+  );
+});
+
 test("formatModuleIndentation aligns declaration blocks conservatively", () => {
   const formatted = formatModuleIndentation(`Attribute VB_Name = "DeclarationAlignment"
 Option Explicit
