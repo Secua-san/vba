@@ -4861,6 +4861,43 @@ End Sub`
   );
 });
 
+test("document service formats labeled block headers through the shared core formatter", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/LabeledBlockFormatting.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "LabeledBlockFormatting"
+Option Explicit
+
+Public Sub Demo()
+Label1: If True Then
+Debug.Print "ready"
+Else
+Debug.Print "fallback"
+End If
+End Sub`
+  );
+
+  const formatted = service.formatDocument(uri, { insertSpaces: true, tabSize: 4 });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "LabeledBlockFormatting"
+Option Explicit
+
+Public Sub Demo()
+    Label1: If True Then
+        Debug.Print "ready"
+    Else
+        Debug.Print "fallback"
+    End If
+End Sub`
+  );
+});
+
 test("document service aligns declaration blocks through the shared core formatter", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/DeclarationAlignment.bas";
