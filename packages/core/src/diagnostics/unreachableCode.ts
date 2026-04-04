@@ -6,6 +6,7 @@ type BarrierKind = "do" | "for" | "if" | "procedure" | "select" | "while";
 
 interface UnreachableState {
   barrierKind: BarrierKind;
+  barrierIndex?: number;
   reason: string;
 }
 
@@ -48,7 +49,7 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
       unreachableState = undefined;
     }
 
-    if (unreachableState && clearsUnreachableState(statement, controlText, unreachableState)) {
+    if (unreachableState && clearsUnreachableState(statement, controlText, blockStack, unreachableState)) {
       unreachableState = undefined;
     }
 
@@ -62,8 +63,10 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
     }
 
     if (isUnconditionalProcedureExit(controlText, procedure.procedureKind)) {
+      const barrierKind = getBarrierKind(blockStack);
       unreachableState = {
-        barrierKind: getBarrierKind(blockStack),
+        barrierIndex: getBarrierIndex(blockStack, barrierKind),
+        barrierKind,
         reason: normalizeTerminationReason(controlText)
       };
     }
@@ -91,9 +94,16 @@ function applyBlockTransition(statement: ProcedureDeclarationNode["body"][number
 function clearsUnreachableState(
   statement: ProcedureDeclarationNode["body"][number],
   text: string,
+  blockStack: BlockKind[],
   unreachableState: UnreachableState
 ): boolean {
-  return getStatementBoundaryKind(statement, text) === unreachableState.barrierKind;
+  const boundaryKind = getStatementBoundaryKind(statement, text);
+
+  if (!boundaryKind || boundaryKind !== unreachableState.barrierKind) {
+    return false;
+  }
+
+  return getBarrierIndex(blockStack, boundaryKind) === unreachableState.barrierIndex;
 }
 
 function getBarrierKind(blockStack: BlockKind[]): BarrierKind {
@@ -106,6 +116,15 @@ function getBarrierKind(blockStack: BlockKind[]): BarrierKind {
   }
 
   return "procedure";
+}
+
+function getBarrierIndex(blockStack: BlockKind[], barrierKind: BlockKind | BarrierKind): number | undefined {
+  if (barrierKind === "procedure") {
+    return undefined;
+  }
+
+  const barrierIndex = blockStack.lastIndexOf(barrierKind);
+  return barrierIndex >= 0 ? barrierIndex : undefined;
 }
 
 function hasLeadingLabel(text: string): boolean {

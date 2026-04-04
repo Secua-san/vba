@@ -1233,9 +1233,70 @@ Public Sub Demo()
     marker = 3
 End Sub`, { fileName: "StructuredElseIfUnreachableBoundaries.bas" });
 
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+  const unreachableStatement =
+    procedure && procedure.kind === "procedureDeclaration"
+      ? procedure.body.find(
+          (statement) =>
+            statement.kind === "assignmentStatement" &&
+            statement.targetText === "marker" &&
+            statement.expressionText === "1"
+        )
+      : undefined;
+
+  assert.ok(unreachableStatement?.kind === "assignmentStatement");
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: diagnostic.range.start
+    })),
+    [
+      {
+        message: "Unreachable code after Exit Sub.",
+        start: unreachableStatement.range.start
+      }
+    ]
+  );
+});
+
+test("analyzeModule keeps outer unreachable state across nested inner If boundaries", () => {
+  const result = analyzeModule(`Attribute VB_Name = "NestedStructuredIfUnreachableBoundaries"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim innerReady As Boolean
+    Dim marker As Long
+
+    If ready Then
+        Exit Sub
+        If innerReady Then
+        End If
+        marker = 1
+    Else
+        marker = 2
+    End If
+End Sub`, { fileName: "NestedStructuredIfUnreachableBoundaries.bas" });
+
   const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
 
-  assert.deepEqual(unreachableDiagnostics.map((diagnostic) => diagnostic.message), ["Unreachable code after Exit Sub."]);
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Unreachable code after Exit Sub.",
+        start: "10:0"
+      },
+      {
+        message: "Unreachable code after Exit Sub.",
+        start: "12:0"
+      }
+    ]
+  );
 });
 
 test("analyzeModule warns on unused local variables and parameters", () => {
