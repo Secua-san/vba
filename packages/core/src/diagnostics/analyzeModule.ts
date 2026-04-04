@@ -4,6 +4,7 @@ import { collectDuplicateDefinitionDiagnostics } from "./duplicateDefinitions";
 import { collectUnreachableCodeDiagnostics } from "./unreachableCode";
 import { collectUnusedVariableDiagnostics } from "./unusedVariables";
 import { collectWriteOnlyVariableDiagnostics } from "./writeOnlyVariables";
+import { getProcedureStatementReferenceSegments } from "./procedureStatementReferences";
 import { parseModule } from "../parser/parseModule";
 import { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { inferModuleTypes } from "../inference/inferModuleTypes";
@@ -170,52 +171,71 @@ function collectUndeclaredVariableDiagnostics(parseResult: ParseResult, symbolTa
       const accessibleNames = new Set(
         getAccessibleSymbolsAtLine(symbolTable, statement.range.start.line).map((symbol) => symbol.normalizedName)
       );
-      const { code } = splitCodeAndComment(statement.text);
-      const scrubbedText = removeStringAndDateLiterals(code);
+      const referenceSegments = getProcedureStatementReferenceSegments(statement);
 
-      for (const match of scrubbedText.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
-        const rawIdentifier = match[0];
-        const normalizedIdentifier = normalizeIdentifier(rawIdentifier);
-        const startIndex = match.index ?? 0;
-        const previousCharacter = scrubbedText[startIndex - 1] ?? "";
-        const nextCharacter = scrubbedText[startIndex + rawIdentifier.length] ?? "";
-
-        if (previousCharacter === "." || previousCharacter === ":") {
-          continue;
+      if (referenceSegments !== undefined) {
+        for (const referenceSegment of referenceSegments) {
+          collectUndeclaredIdentifiersFromText(referenceSegment.text, referenceSegment.range, accessibleNames, diagnostics);
         }
 
-        if (isReservedOrBuiltinIdentifier(normalizedIdentifier)) {
-          continue;
-        }
-
-        if (accessibleNames.has(normalizedIdentifier)) {
-          continue;
-        }
-
-        if (nextCharacter === ":" && startIndex === 0) {
-          continue;
-        }
-
-        diagnostics.push({
-          code: "undeclared-variable",
-          message: `Undeclared identifier '${rawIdentifier.replace(/[$%&!#@]$/, "")}'.`,
-          range: {
-            start: {
-              character: statement.range.start.character + startIndex,
-              line: statement.range.start.line
-            },
-            end: {
-              character: statement.range.start.character + startIndex + rawIdentifier.length,
-              line: statement.range.start.line
-            }
-          },
-          severity: "error"
-        });
+        continue;
       }
+
+      const { code } = splitCodeAndComment(statement.text);
+      collectUndeclaredIdentifiersFromText(code, statement.range, accessibleNames, diagnostics);
     }
   }
 
   return diagnostics;
+}
+
+function collectUndeclaredIdentifiersFromText(
+  text: string,
+  range: Diagnostic["range"],
+  accessibleNames: Set<string>,
+  diagnostics: Diagnostic[]
+): void {
+  const scrubbedText = removeStringAndDateLiterals(text);
+
+  for (const match of scrubbedText.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+    const rawIdentifier = match[0];
+    const normalizedIdentifier = normalizeIdentifier(rawIdentifier);
+    const startIndex = match.index ?? 0;
+    const previousCharacter = scrubbedText[startIndex - 1] ?? "";
+    const nextCharacter = scrubbedText[startIndex + rawIdentifier.length] ?? "";
+
+    if (previousCharacter === "." || previousCharacter === ":") {
+      continue;
+    }
+
+    if (isReservedOrBuiltinIdentifier(normalizedIdentifier)) {
+      continue;
+    }
+
+    if (accessibleNames.has(normalizedIdentifier)) {
+      continue;
+    }
+
+    if (nextCharacter === ":" && startIndex === 0) {
+      continue;
+    }
+
+    diagnostics.push({
+      code: "undeclared-variable",
+      message: `Undeclared identifier '${rawIdentifier.replace(/[$%&!#@]$/, "")}'.`,
+      range: {
+        start: {
+          character: range.start.character + startIndex,
+          line: range.start.line
+        },
+        end: {
+          character: range.start.character + startIndex + rawIdentifier.length,
+          line: range.start.line
+        }
+      },
+      severity: "error"
+    });
+  }
 }
 
 function isPositionWithinRange(position: LinePosition, range: SymbolInfo["selectionRange"]): boolean {

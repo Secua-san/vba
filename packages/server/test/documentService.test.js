@@ -4860,6 +4860,51 @@ End Sub`
   );
 });
 
+test("document service resolves structured control header references within one procedure", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/StructuredReferences.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "StructuredReferences"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim limit As Long
+    Dim index As Long
+    ready = True
+    limit = 2
+
+    If ready Then
+        Debug.Print ready
+    End If
+
+    For index = 1 To limit
+    Next index
+End Sub`
+  );
+
+  const readyReferences = service.getReferences(uri, { character: 8, line: 4 }, true);
+  const limitReferences = service.getReferences(uri, { character: 8, line: 5 }, true);
+  const indexReferences = service.getReferences(uri, { character: 8, line: 6 }, true);
+
+  assert.deepEqual(
+    readyReferences.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:4:8`, `${uri}:7:4`, `${uri}:10:7`, `${uri}:11:20`]
+  );
+  assert.deepEqual(
+    limitReferences.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:5:8`, `${uri}:8:4`, `${uri}:14:21`]
+  );
+  assert.deepEqual(
+    indexReferences.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:6:8`, `${uri}:14:8`, `${uri}:15:9`]
+  );
+});
+
 test("document service prepares safe local rename edits within one procedure", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/RenameLocal.bas";

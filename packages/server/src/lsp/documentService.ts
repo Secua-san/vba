@@ -17,6 +17,7 @@ import {
   getBuiltinMemberCompletionItems,
   getBuiltinMemberReferenceItem,
   getBuiltinReferenceItem,
+  getProcedureStatementReferenceSegments,
   getCompletionSymbols,
   getDocumentOutline,
   getSupportedWorksheetControlMetadataOwners,
@@ -1135,6 +1136,7 @@ interface WorkspaceIndex {
 
 type LocalProcedureScope = DocumentState["analysis"]["symbols"]["procedureScopes"][number];
 type CallableMember = Extract<AnalysisResult["module"]["members"][number], { kind: "declareStatement" | "procedureDeclaration" }>;
+type ProcedureStatement = Extract<AnalysisResult["module"]["members"][number], { kind: "procedureDeclaration" }>["body"][number];
 type SemanticTokenShape = Pick<SemanticTokenEntry, "modifiers" | "type">;
 
 interface MemberAccessPathSegment {
@@ -1532,6 +1534,16 @@ function collectReferencesForState(
         continue;
       }
 
+      const structuredReferenceUnits = getStructuredReferenceUnits(statement);
+
+      if (structuredReferenceUnits && structuredReferenceUnits.every((unit) => unit.range.start.line === unit.range.end.line)) {
+        for (const unit of structuredReferenceUnits) {
+          references.push(...collectResolvedReferencesInSegment(state.uri, target, resolveDefinition, unit.text, unit.range));
+        }
+
+        continue;
+      }
+
       for (let lineIndex = statement.range.start.line; lineIndex <= statement.range.end.line; lineIndex += 1) {
         const line = lines[lineIndex];
 
@@ -1575,6 +1587,80 @@ function collectReferencesForState(
           }
         }
       }
+    }
+  }
+
+  return references;
+}
+
+function getStructuredReferenceUnits(statement: ProcedureStatement): Array<{ range: SourceRange; text: string }> | undefined {
+  if (statement.kind === "callStatement") {
+    return [
+      {
+        range: statement.nameRange,
+        text: statement.name
+      },
+      ...statement.arguments.map((argument) => ({
+        range: argument.range,
+        text: argument.text
+      }))
+    ];
+  }
+
+  const segments = getProcedureStatementReferenceSegments(statement);
+  return segments ? segments.map((segment) => ({ range: segment.range, text: segment.text })) : undefined;
+}
+
+function collectResolvedReferencesInSegment(
+  uri: string,
+  target: WorkspaceSymbolResolution,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  text: string,
+  range: SourceRange
+): WorkspaceReference[] {
+  if (range.start.line !== range.end.line) {
+    return [];
+  }
+
+  const references: WorkspaceReference[] = [];
+  const scrubbed = removeStringAndDateLiterals(text);
+
+  for (const match of scrubbed.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+    const identifier = match[0];
+    const normalizedIdentifier = normalizeIdentifier(identifier);
+    const startIndex = match.index ?? 0;
+    const previousCharacter = scrubbed[startIndex - 1] ?? "";
+    const nextCharacter = scrubbed[startIndex + identifier.length] ?? "";
+
+    if (normalizedIdentifier !== target.symbol.normalizedName) {
+      continue;
+    }
+
+    if (previousCharacter === ".") {
+      continue;
+    }
+
+    if (nextCharacter === ":" && startIndex === 0) {
+      continue;
+    }
+
+    const referenceRange = {
+      start: {
+        character: range.start.character + startIndex,
+        line: range.start.line
+      },
+      end: {
+        character: range.start.character + startIndex + identifier.length,
+        line: range.start.line
+      }
+    };
+    const resolution = resolveDefinition(uri, referenceRange.start);
+
+    if (resolution && isSameResolution(resolution, target)) {
+      references.push({
+        range: referenceRange,
+        uri
+      });
     }
   }
 

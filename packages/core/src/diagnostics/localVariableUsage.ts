@@ -1,6 +1,7 @@
 import { removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { normalizeIdentifier } from "../types/helpers";
 import type { Diagnostic, ProcedureDeclarationNode } from "../types/model";
+import { getProcedureStatementReferenceSegments } from "./procedureStatementReferences";
 
 export interface LocalDeclarationEntry {
   declarationKind: "parameter" | "variable";
@@ -31,20 +32,21 @@ export function analyzeProcedureLocalUsage(procedure: ProcedureDeclarationNode):
       }
     }
 
-    if (statement.kind === "assignmentStatement") {
-      const targetName = getAssignmentTargetName(statement.targetText, statement.targetName);
+    const referenceSegments = getProcedureStatementReferenceSegments(statement);
 
-      if (targetName && declarations.has(targetName)) {
-        writtenNames.add(targetName);
-      }
+    if (referenceSegments !== undefined) {
+      for (const referenceSegment of referenceSegments) {
+        if (referenceSegment.role !== "write") {
+          collectReads(removeStringAndDateLiterals(referenceSegment.text), declarations, readNames);
+        }
 
-      collectReads(removeStringAndDateLiterals(statement.expressionText), declarations, readNames);
-      continue;
-    }
+        if (referenceSegment.role !== "read" && referenceSegment.identifierName) {
+          const normalizedName = normalizeIdentifier(referenceSegment.identifierName);
 
-    if (statement.kind === "callStatement") {
-      for (const argument of statement.arguments) {
-        collectReads(removeStringAndDateLiterals(argument.text), declarations, readNames);
+          if (declarations.has(normalizedName)) {
+            writtenNames.add(normalizedName);
+          }
+        }
       }
 
       continue;
@@ -126,15 +128,6 @@ function parseAssignment(text: string): { expressionText: string; targetName?: s
     expressionText: rightText.trim(),
     targetName: match?.[1] ? normalizeIdentifier(match[1].replace(/[$%&!#@]$/, "")) : undefined
   };
-}
-
-function getAssignmentTargetName(targetText: string, targetName?: string): string | undefined {
-  if (targetName) {
-    return normalizeIdentifier(targetName);
-  }
-
-  const match = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s*\(.*\))?\s*$/u.exec(targetText);
-  return match?.[1] ? normalizeIdentifier(match[1].replace(/[$%&!#@]$/, "")) : undefined;
 }
 
 function findAssignmentOperatorIndex(text: string): number {

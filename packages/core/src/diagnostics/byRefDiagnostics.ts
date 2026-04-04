@@ -3,6 +3,7 @@ import { getSymbolTypeName, areTypesCompatible } from "../inference/inferModuleT
 import { splitCodeAndComment } from "../parser/text";
 import { getAccessibleSymbolsAtLine } from "../symbol/buildModuleSymbols";
 import { normalizeIdentifier } from "../types/helpers";
+import { getProcedureStatementReferenceSegments } from "./procedureStatementReferences";
 import type {
   AnalysisResult,
   DeclareStatementNode,
@@ -118,6 +119,14 @@ function collectStatementInvocations(
     return [];
   }
 
+  const structuredReferenceSegments = getProcedureStatementReferenceSegments(statement);
+
+  if (structuredReferenceSegments !== undefined) {
+    return structuredReferenceSegments
+      .filter((segment) => segment.role === "read" && segment.range.start.line === segment.range.end.line)
+      .flatMap((segment) => collectInvocations(segment.text, segment.range.start.line, segment.range.start.character));
+  }
+
   const originalLine = result.source.normalizedLines[statement.range.start.line] ?? statement.text;
   const { code } = splitCodeAndComment(originalLine);
   return collectInvocations(code, statement.range.start.line);
@@ -225,11 +234,11 @@ function resolveArgumentSymbol(result: AnalysisResult, position: LinePosition): 
   );
 }
 
-function collectInvocations(text: string, line: number): Invocation[] {
+function collectInvocations(text: string, line: number, baseCharacter = 0): Invocation[] {
   const invocations = [
-    ...collectCallKeywordInvocations(text, line),
-    ...collectBareInvocations(text, line),
-    ...collectParenthesizedInvocations(text, line)
+    ...collectCallKeywordInvocations(text, line, baseCharacter),
+    ...collectBareInvocations(text, line, baseCharacter),
+    ...collectParenthesizedInvocations(text, line, baseCharacter)
   ];
   const uniqueInvocations = new Map<string, Invocation>();
 
@@ -244,7 +253,7 @@ function collectInvocations(text: string, line: number): Invocation[] {
   return [...uniqueInvocations.values()];
 }
 
-function collectCallKeywordInvocations(text: string, line: number): Invocation[] {
+function collectCallKeywordInvocations(text: string, line: number, baseCharacter = 0): Invocation[] {
   const match = /^\s*Call\s+([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)\s*$/iu.exec(text);
 
   if (!match?.[1]) {
@@ -262,14 +271,14 @@ function collectCallKeywordInvocations(text: string, line: number): Invocation[]
 
   return [
     {
-      arguments: splitArgumentsWithRanges(text.slice(openParenIndex + 1, closeParenIndex), line, openParenIndex + 1),
+      arguments: splitArgumentsWithRanges(text.slice(openParenIndex + 1, closeParenIndex), line, baseCharacter + openParenIndex + 1),
       name: match[1],
-      nameRange: createInlineRange(line, nameStartCharacter, nameStartCharacter + match[1].length)
+      nameRange: createInlineRange(line, baseCharacter + nameStartCharacter, baseCharacter + nameStartCharacter + match[1].length)
     }
   ];
 }
 
-function collectBareInvocations(text: string, line: number): Invocation[] {
+function collectBareInvocations(text: string, line: number, baseCharacter = 0): Invocation[] {
   if (findAssignmentOperatorIndex(text) >= 0) {
     return [];
   }
@@ -290,14 +299,14 @@ function collectBareInvocations(text: string, line: number): Invocation[] {
 
   return [
     {
-      arguments: splitArgumentsWithRanges(match[2], line, argumentsStartCharacter),
+      arguments: splitArgumentsWithRanges(match[2], line, baseCharacter + argumentsStartCharacter),
       name: match[1],
-      nameRange: createInlineRange(line, nameStartCharacter, nameStartCharacter + match[1].length)
+      nameRange: createInlineRange(line, baseCharacter + nameStartCharacter, baseCharacter + nameStartCharacter + match[1].length)
     }
   ];
 }
 
-function collectParenthesizedInvocations(text: string, line: number): Invocation[] {
+function collectParenthesizedInvocations(text: string, line: number, baseCharacter = 0): Invocation[] {
   const invocations: Invocation[] = [];
   let index = 0;
 
@@ -328,9 +337,13 @@ function collectParenthesizedInvocations(text: string, line: number): Invocation
     }
 
     invocations.push({
-      arguments: splitArgumentsWithRanges(text.slice(index + 1, closeParenIndex), line, index + 1),
+      arguments: splitArgumentsWithRanges(text.slice(index + 1, closeParenIndex), line, baseCharacter + index + 1),
       name: identifier.text,
-      nameRange: createInlineRange(line, identifier.startCharacter, identifier.startCharacter + identifier.text.length)
+      nameRange: createInlineRange(
+        line,
+        baseCharacter + identifier.startCharacter,
+        baseCharacter + identifier.startCharacter + identifier.text.length
+      )
     });
     index += 1;
   }
