@@ -6059,6 +6059,96 @@ End Sub`
   );
 });
 
+test("document service keeps structured ElseIf boundaries quiet after unreachable exits", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/StructuredElseIfUnreachableBoundaries.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "StructuredElseIfUnreachableBoundaries"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim fallback As Boolean
+    Dim marker As Long
+
+    If ready Then
+        Exit Sub
+        marker = 1
+    ElseIf Format$(Now, "hh:mm") = "12:34" And fallback Then
+        marker = 2
+    End If
+
+    marker = 3
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Unreachable code after Exit Sub.",
+        start: "10:0"
+      }
+    ]
+  );
+});
+
+test("document service keeps outer unreachable state across nested inner If boundaries", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/NestedStructuredIfUnreachableBoundaries.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "NestedStructuredIfUnreachableBoundaries"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim innerReady As Boolean
+    Dim marker As Long
+
+    If ready Then
+        Exit Sub
+        If innerReady Then
+        End If
+        marker = 1
+    Else
+        marker = 2
+    End If
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Unreachable code after Exit Sub.",
+        start: "10:0"
+      },
+      {
+        message: "Unreachable code after Exit Sub.",
+        start: "12:0"
+      }
+    ]
+  );
+});
+
 test("document service exposes unused-variable diagnostics for locals and parameters", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/UnusedLocals.bas";
