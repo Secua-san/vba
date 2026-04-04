@@ -1,4 +1,4 @@
-import { buildLogicalLines, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
+import { buildLogicalLines, hasStatementSeparatorColon, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { createSourceDocument } from "../types/helpers";
 
 type BlockKind = "case" | "directiveIf" | "do" | "enum" | "for" | "if" | "procedure" | "select" | "type" | "while" | "with";
@@ -127,7 +127,7 @@ function classifyLineKind(trimmedCode: string): LineKind {
     return "procedureTerminator";
   }
 
-  if (/^If\b.*\bThen\s*$/i.test(trimmedCode) && !/:/.test(trimmedCode)) {
+  if (/^If\b.*\bThen\s*$/i.test(trimmedCode) && !hasStatementSeparatorColon(trimmedCode)) {
     return "ifStart";
   }
 

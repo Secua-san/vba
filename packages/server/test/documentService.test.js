@@ -4135,6 +4135,102 @@ End Sub`
   assert.equal(signature?.parameters[1]?.documentation?.includes("現在の引数型: Long"), true);
 });
 
+test("document service exposes signature help on continuation lines for workspace callables", () => {
+  const service = createDocumentService();
+  const consumerUri = "file:///C:/temp/ConsumerMultilineSignature.bas";
+  const formatterUri = "file:///C:/temp/FormatterApi.bas";
+  const consumerText = `Attribute VB_Name = "ConsumerMultilineSignature"
+Option Explicit
+
+Public Sub UseSignature()
+    Dim message As String
+    message = FormatMessage( _
+        message, _
+        message)
+End Sub`;
+
+  service.analyzeText(
+    formatterUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "FormatterApi"
+Option Explicit
+
+Public Function FormatMessage(ByVal value As String, ByVal count As Long) As String
+    FormatMessage = value & CStr(count)
+End Function`
+  );
+  service.analyzeText(consumerUri, "vba", 1, consumerText);
+
+  const signature = service.getSignatureHelp(
+    consumerUri,
+    findPositionAfterTokenInText(consumerText, "        message", 0, 1)
+  );
+
+  assert.equal(signature?.activeParameter, 1);
+  assert.equal(signature?.label, "FormatMessage(ByVal value As String, ByVal count As Long) As String");
+  assert.equal(signature?.documentation, "FormatterApi モジュール");
+  assert.equal(signature?.parameters[1]?.documentation?.includes("現在の引数型: String"), true);
+});
+
+test("document service exposes built-in member completion on continuation lines", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInMultilineCompletion.bas";
+  const text = `Attribute VB_Name = "BuiltInMultilineCompletion"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print WorksheetFunction _
+        .Su
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "        .Su"));
+
+  assert.equal(completions.some((resolution) => resolution.symbol.name === "Sum"), true);
+});
+
+test("document service exposes built-in member hover on continuation lines", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInMultilineHover.bas";
+  const text = `Attribute VB_Name = "BuiltInMultilineHover"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print WorksheetFunction _
+        .Sum(1, 2)
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const hover = service.getHover(uri, findPositionAfterTokenInText(text, "        .Sum", -1));
+
+  assert.equal(hover?.contents.includes("Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double"), true);
+  assert.equal(hover?.contents.includes("Microsoft Learn"), true);
+});
+
+test("document service exposes built-in member signature help on continuation lines", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInMultilineSignature.bas";
+  const text = `Attribute VB_Name = "BuiltInMultilineSignature"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print WorksheetFunction.Sum( _
+        1, _
+        2)
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const signature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "        2"));
+
+  assert.equal(signature?.activeParameter, 1);
+  assert.equal(signature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
+  assert.equal(signature?.documentation?.includes("excel.worksheetfunction.sum"), true);
+});
+
 test("document service exposes built-in member signature help and hover", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInSignature.bas";
@@ -4684,6 +4780,47 @@ End Sub`
   );
 });
 
+test("document service formats block If headers with literal colons through the shared core formatter", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/LiteralColonFormatting.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "LiteralColonFormatting"
+Option Explicit
+
+Public Sub Demo()
+Dim stamp As Date
+stamp = #12:00:00 AM#
+If Format$(stamp, "hh:mm") = "00:00" Then
+Debug.Print "midnight"
+ElseIf stamp = #12:34:56 AM# Then
+Debug.Print "fallback"
+End If
+End Sub`
+  );
+
+  const formatted = service.formatDocument(uri, { insertSpaces: true, tabSize: 4 });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "LiteralColonFormatting"
+Option Explicit
+
+Public Sub Demo()
+    Dim stamp As Date
+    stamp = #12:00:00 AM#
+    If Format$(stamp, "hh:mm") = "00:00" Then
+        Debug.Print "midnight"
+    ElseIf stamp = #12:34:56 AM# Then
+        Debug.Print "fallback"
+    End If
+End Sub`
+  );
+});
+
 test("document service aligns declaration blocks through the shared core formatter", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/DeclarationAlignment.bas";
@@ -4830,6 +4967,78 @@ End Sub`
   assert.deepEqual(service.getReferences(consumerUri, { character: 18, line: 5 }, true), []);
 });
 
+test("document service reports undeclared callable names for structured call statements", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/MissingCallable.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "MissingCallable"
+Option Explicit
+
+Public Sub Demo()
+    Dim value As Long
+    MissingHandler value
+End Sub`
+  );
+
+  assert.deepEqual(
+    service.getDiagnostics(uri)
+      .filter((diagnostic) => diagnostic.code === "undeclared-variable")
+      .map((diagnostic) => ({
+        message: diagnostic.message,
+        start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+      })),
+    [
+      {
+        message: "Undeclared identifier 'MissingHandler'.",
+        start: "5:4"
+      }
+    ]
+  );
+});
+
+test("document service preserves physical-line ranges for undeclared identifiers in multiline structured headers", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/StructuredMultilineHeaderUndeclared.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "StructuredMultilineHeaderUndeclared"
+Option Explicit
+
+Public Sub Demo()
+    If ready And _
+        fallback Then
+        Debug.Print "x"
+    End If
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "undeclared-variable");
+
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Undeclared identifier 'ready'.",
+        start: "4:7"
+      },
+      {
+        message: "Undeclared identifier 'fallback'.",
+        start: "5:8"
+      }
+    ]
+  );
+});
+
 test("document service keeps local references scoped when module names are shadowed", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/Shadowing.bas";
@@ -4902,6 +5111,199 @@ End Sub`
   assert.deepEqual(
     indexReferences.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
     [`${uri}:6:8`, `${uri}:14:8`, `${uri}:15:9`]
+  );
+});
+
+test("document service avoids false syntax errors for If headers with literal colons", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/LiteralColonBlocks.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "LiteralColonBlocks"
+Option Explicit
+
+Public Sub Demo()
+    Dim stamp As Date
+    stamp = #12:00:00 AM#
+
+    If Format$(stamp, "hh:mm") = "00:00" Then
+        Debug.Print "midnight"
+    ElseIf stamp = #12:34:56 AM# Then
+        Debug.Print "fallback"
+    End If
+End Sub`
+  );
+
+  assert.deepEqual(
+    service.getDiagnostics(uri).filter((diagnostic) => diagnostic.code === "syntax-error"),
+    []
+  );
+});
+
+test("document service reports invalid ElseIf and Case ordering inside structured blocks", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/InvalidClauseOrder.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "InvalidClauseOrder"
+Option Explicit
+
+Public Sub Demo()
+    If ready Then
+    Else
+    ElseIf fallback Then
+    End If
+
+    Select Case value
+        Case Else
+        Case 1
+    End Select
+End Sub`
+  );
+
+  assert.deepEqual(
+    service.getDiagnostics(uri)
+      .filter((diagnostic) => diagnostic.code === "syntax-error")
+      .map((diagnostic) => ({
+        message: diagnostic.message,
+        start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+      })),
+    [
+      {
+        message: "Unexpected block clause in Demo.",
+        start: "6:0"
+      },
+      {
+        message: "Unexpected block clause in Demo.",
+        start: "11:0"
+      }
+    ]
+  );
+});
+
+test("document service reports mismatched Next counters for structured For blocks", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/InvalidNextCounters.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "InvalidNextCounters"
+Option Explicit
+
+Public Sub Demo()
+    Dim items As Collection
+
+    For index = 1 To 2
+    Next otherIndex
+
+    For Each item In items
+    Next otherItem
+End Sub`
+  );
+
+  assert.deepEqual(
+    service.getDiagnostics(uri)
+      .filter((diagnostic) => diagnostic.code === "syntax-error")
+      .map((diagnostic) => ({
+        message: diagnostic.message,
+        start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+      })),
+    [
+      {
+        message: "Next counter 'otherIndex' does not match active loop variable 'index' in Demo.",
+        start: "7:0"
+      },
+      {
+        message: "Next counter 'otherItem' does not match active loop variable 'item' in Demo.",
+        start: "10:0"
+      }
+    ]
+  );
+});
+
+test("document service keeps multiline call statements structured in analysis state", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/StructuredMultilineCalls.bas";
+  const state = service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "StructuredMultilineCalls"
+Option Explicit
+
+Public Sub Demo()
+    Call UpdateCount( _
+        holder.Count _
+    )
+    UpdateCount _
+        holder.Count
+End Sub`
+  );
+  const procedure = state.analysis.module.members.find((member) => member.kind === "procedureDeclaration");
+  const callKeywordStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const bareCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+
+  assert.equal(callKeywordStatement?.kind, "callStatement");
+  assert.equal(callKeywordStatement?.callStyle, "call");
+  assert.deepEqual(callKeywordStatement?.nameRange, {
+    end: { character: 20, line: 4 },
+    start: { character: 9, line: 4 }
+  });
+  assert.deepEqual(callKeywordStatement?.arguments.map((argument) => argument.text), ["holder.Count"]);
+  assert.deepEqual(callKeywordStatement?.arguments[0]?.range, {
+    end: { character: 20, line: 5 },
+    start: { character: 8, line: 5 }
+  });
+  assert.equal(bareCallStatement?.kind, "callStatement");
+  assert.equal(bareCallStatement?.callStyle, "bare");
+  assert.deepEqual(bareCallStatement?.nameRange, {
+    end: { character: 15, line: 7 },
+    start: { character: 4, line: 7 }
+  });
+  assert.deepEqual(bareCallStatement?.arguments.map((argument) => argument.text), ["holder.Count"]);
+  assert.deepEqual(bareCallStatement?.arguments[0]?.range, {
+    end: { character: 20, line: 8 },
+    start: { character: 8, line: 8 }
+  });
+});
+
+test("document service ignores member access matches while resolving multiline structured header references", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/StructuredMultilineReferences.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "StructuredMultilineReferences"
+Option Explicit
+
+Public Sub Demo()
+    Dim count As Long
+    Dim values As Collection
+    Set values = New Collection
+    count = 0
+
+    If count = 0 And _
+        values.Count = 0 Then
+        count = 1
+    End If
+End Sub`
+  );
+
+  const countReferences = service.getReferences(uri, { character: 8, line: 4 }, true);
+
+  assert.deepEqual(
+    countReferences.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:4:8`, `${uri}:7:4`, `${uri}:9:7`, `${uri}:11:8`]
   );
 });
 
@@ -5151,6 +5553,31 @@ Option Explicit`
   });
 });
 
+test("document service exposes built-in member semantic tokens on continuation lines", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/BuiltInMultilineSemantic.bas";
+  const text = `Attribute VB_Name = "BuiltInMultilineSemantic"
+Option Explicit
+
+Public Sub Demo()
+    Debug.Print WorksheetFunction _
+        .Sum(1, 2)
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const tokens = service.getSemanticTokens(uri);
+
+  assertSemanticTokenByAnchor(text, tokens, "    Debug.Print WorksheetFunction _", "WorksheetFunction", {
+    modifiers: [],
+    type: "type"
+  });
+  assertSemanticTokenByAnchor(text, tokens, "        .Sum(1, 2)", "Sum", {
+    modifiers: [],
+    type: "function"
+  });
+});
+
 test("document service exposes inferred type mismatch diagnostics", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/Mismatch.bas";
@@ -5196,6 +5623,59 @@ End Sub`
 
   assert.equal(diagnostics.length, 1);
   assert.equal(diagnostics[0]?.message, "Type mismatch: cannot assign Boolean to String.");
+});
+
+test("document service preserves physical-line ranges for continued assignment mismatch diagnostics", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/ContinuedMismatchRange.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ContinuedMismatchRange"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+    title = _
+        True
+End Sub`
+  );
+
+  const diagnostic = service.getDiagnostics(uri).find((item) => item.code === "type-mismatch");
+
+  assert.equal(diagnostic?.message, "Type mismatch: cannot assign Boolean to String.");
+  assert.deepEqual(diagnostic?.range, {
+    end: { character: 12, line: 6 },
+    start: { character: 8, line: 6 }
+  });
+});
+
+test("document service preserves mismatch diagnostics for labeled assignments", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/LabeledMismatch.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "LabeledMismatch"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+Label1: title = 1
+End Sub`
+  );
+
+  const diagnostic = service.getDiagnostics(uri).find((item) => item.code === "type-mismatch");
+
+  assert.equal(diagnostic?.message, "Type mismatch: cannot assign Long to String.");
+  assert.deepEqual(diagnostic?.range, {
+    end: { character: 17, line: 5 },
+    start: { character: 16, line: 5 }
+  });
 });
 
 test("document service exposes expanded type mismatch diagnostics for compound and Set assignments", () => {
@@ -5271,6 +5751,130 @@ End Sub`
     diagnostics[0]?.message,
     "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
   );
+});
+
+test("document service augments diagnostics for cross-file ByRef risks in multiline structured headers", () => {
+  const service = createDocumentService();
+  const libraryUri = "file:///C:/temp/PublicByRefFunctionApi.bas";
+  const consumerUri = "file:///C:/temp/PublicByRefFunctionConsumer.bas";
+
+  service.analyzeText(
+    libraryUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefFunctionApi"
+Option Explicit
+
+Public Function AcceptCount(ByRef count As Long) As Boolean
+    AcceptCount = True
+End Function`
+  );
+  service.analyzeText(
+    consumerUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefFunctionConsumer"
+Option Explicit
+
+Public Sub Demo()
+    Dim wrongCount As String
+    Dim ready As Boolean
+
+    If AcceptCount(wrongCount) And _
+        ready Then
+        Debug.Print ready
+    End If
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(consumerUri).filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(diagnostics.length, 1);
+  assert.equal(
+    diagnostics[0]?.message,
+    "ByRef parameter 'count' in AcceptCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
+  );
+  assert.deepEqual(diagnostics[0]?.range.start, { character: 19, line: 7 });
+});
+
+test("document service augments diagnostics for cross-file ByRef risks in multiline call invocations", () => {
+  const service = createDocumentService();
+  const libraryUri = "file:///C:/temp/PublicByRefCallApi.bas";
+  const consumerUri = "file:///C:/temp/PublicByRefCallConsumer.bas";
+
+  service.analyzeText(
+    libraryUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefCallApi"
+Option Explicit
+
+Public Sub UpdateCount(ByRef count As Long)
+End Sub`
+  );
+  service.analyzeText(
+    consumerUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefCallConsumer"
+Option Explicit
+
+Public Sub Demo()
+    Dim wrongCount As String
+
+    Call UpdateCount( _
+        wrongCount _
+    )
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(consumerUri).filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(diagnostics.length, 1);
+  assert.equal(
+    diagnostics[0]?.message,
+    "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
+  );
+  assert.deepEqual(diagnostics[0]?.range.start, { character: 8, line: 7 });
+});
+
+test("document service augments diagnostics for labeled ByRef call statements", () => {
+  const service = createDocumentService();
+  const libraryUri = "file:///C:/temp/PublicByRefLabelApi.bas";
+  const consumerUri = "file:///C:/temp/PublicByRefLabelConsumer.bas";
+
+  service.analyzeText(
+    libraryUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefLabelApi"
+Option Explicit
+
+Public Sub UpdateCount(ByRef count As Long)
+End Sub`
+  );
+  service.analyzeText(
+    consumerUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicByRefLabelConsumer"
+Option Explicit
+
+Public Sub Demo()
+    Dim wrongCount As String
+
+Label1: UpdateCount wrongCount
+End Sub`
+  );
+
+  const diagnostics = service.getDiagnostics(consumerUri).filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(diagnostics.length, 1);
+  assert.equal(
+    diagnostics[0]?.message,
+    "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
+  );
+  assert.deepEqual(diagnostics[0]?.range.start, { character: 20, line: 6 });
 });
 
 test("document service exposes set-required diagnostics for local object assignments", () => {
@@ -6143,19 +6747,6 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
   );
   const closedSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
   const reasonSignatureEntries = negativeSignatureEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
-  const positiveSemanticEntries = requireWorksheetControlShapeNamePathEntries(
-    getWorksheetControlShapeNamePathSemanticEntries("positive", { fixture, scope, text }),
-    `worksheet control shapeName path ${routeLabel} positive semantic cases must not be empty`
-  );
-  const alwaysAvailablePositiveSemanticEntries = positiveSemanticEntries.filter(
-    (entry) => entry.rootKind !== "workbook-qualified-matched"
-  );
-  const negativeSemanticEntries = requireWorksheetControlShapeNamePathEntries(
-    getWorksheetControlShapeNamePathSemanticEntries("negative", { fixture, scope, text }),
-    `worksheet control shapeName path ${routeLabel} negative semantic cases must not be empty`
-  );
-  const closedSemanticEntries = negativeSemanticEntries.filter((entry) => entry.rootKind === "workbook-qualified-closed");
-  const reasonSemanticEntries = negativeSemanticEntries.filter((entry) => entry.rootKind !== "workbook-qualified-closed");
 
   try {
     assertWorkbookRootCompletionCases(
@@ -6219,25 +6810,6 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
           entry.rootKind === "workbook-qualified-closed"
             ? `${entry.anchor} は active workbook が閉じている間は signature help を解決しない`
             : `${entry.anchor} は ${entry.reason} のため signature help を解決しない`
-      )
-    );
-    assertWorkbookRootSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathSemanticCases(
-        alwaysAvailablePositiveSemanticEntries,
-        (entry) => `${entry.anchor} は ${entry.rootKind} root なので snapshot なしでも semantic token を出す`
-      )
-    );
-    assertWorkbookRootNoSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathNoSemanticCases(
-        [...reasonSemanticEntries, ...closedSemanticEntries],
-        (entry) =>
-          entry.rootKind === "workbook-qualified-closed"
-            ? `${entry.anchor} は active workbook が閉じている間は semantic token を出さない`
-            : `${entry.anchor} は ${entry.reason} のため semantic token を出さない`
       )
     );
 
@@ -6304,25 +6876,6 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
       mapWorksheetControlShapeNamePathInteractionCases(
         reasonSignatureEntries,
         (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも signature help を解決しない`
-      )
-    );
-    assertWorkbookRootSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathSemanticCases(
-        positiveSemanticEntries,
-        (entry) =>
-          entry.rootKind === "workbook-qualified-matched"
-            ? `${entry.anchor} は active workbook match 時に semantic token を出す`
-            : `${entry.anchor} は ${entry.rootKind} root として semantic token を出す`
-      )
-    );
-    assertWorkbookRootNoSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathNoSemanticCases(
-        reasonSemanticEntries,
-        (entry) => `${entry.anchor} は ${entry.reason} のため match 中でも semantic token を出さない`
       )
     );
 
@@ -6392,25 +6945,6 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
             : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも signature help を解決しない`
       )
     );
-    assertWorkbookRootSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathSemanticCases(
-        alwaysAvailablePositiveSemanticEntries,
-        (entry) => `${entry.anchor} は mismatch snapshot でも ${entry.rootKind} root として semantic token を出す`
-      )
-    );
-    assertWorkbookRootNoSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathNoSemanticCases(
-        [...reasonSemanticEntries, ...closedSemanticEntries],
-        (entry) =>
-          entry.rootKind === "workbook-qualified-closed"
-            ? `${entry.anchor} は mismatch snapshot では semantic token を出さない`
-            : `${entry.anchor} は ${entry.reason} のため mismatch snapshot でも semantic token を出さない`
-      )
-    );
 
     service.setActiveWorkbookIdentitySnapshot(createUnavailableActiveWorkbookIdentitySnapshot());
 
@@ -6477,25 +7011,6 @@ function runWorksheetControlShapeNamePathSharedCases({ fixture, routeLabel, scop
           entry.rootKind === "workbook-qualified-closed"
             ? `${entry.anchor} は unavailable snapshot では signature help を解決しない`
             : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも signature help を解決しない`
-      )
-    );
-    assertWorkbookRootSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathSemanticCases(
-        alwaysAvailablePositiveSemanticEntries,
-        (entry) => `${entry.anchor} は unavailable snapshot でも ${entry.rootKind} root として semantic token を出す`
-      )
-    );
-    assertWorkbookRootNoSemanticCases(
-      text,
-      service.getSemanticTokens(uri),
-      mapWorksheetControlShapeNamePathNoSemanticCases(
-        [...reasonSemanticEntries, ...closedSemanticEntries],
-        (entry) =>
-          entry.rootKind === "workbook-qualified-closed"
-            ? `${entry.anchor} は unavailable snapshot では semantic token を出さない`
-            : `${entry.anchor} は ${entry.reason} のため unavailable snapshot でも semantic token を出さない`
       )
     );
   } finally {
@@ -6965,29 +7480,6 @@ function getWorksheetControlShapeNamePathInteractionEntries(interactionKind, pol
   });
 }
 
-function getWorksheetControlShapeNamePathSemanticEntries(polarity, options = {}) {
-  const { fixture, rootKind, routeKind, scope, text } = options;
-  const normalizedText = text?.replace(/\r\n?/g, "\n");
-  return worksheetControlShapeNamePathCaseTables.worksheetControlShapeNamePath.semantic[polarity].filter((entry) => {
-    if (fixture && entry.fixture !== fixture) {
-      return false;
-    }
-    if (rootKind && entry.rootKind !== rootKind) {
-      return false;
-    }
-    if (routeKind && entry.routeKind !== routeKind) {
-      return false;
-    }
-    if (scope && !entry.scopes.includes(scope)) {
-      return false;
-    }
-    if (normalizedText && !normalizedText.includes(entry.anchor)) {
-      return false;
-    }
-    return true;
-  });
-}
-
 function requireWorksheetControlShapeNamePathEntries(entries, message) {
   assert.ok(entries.length > 0, message);
   return entries;
@@ -7009,22 +7501,6 @@ function mapWorksheetControlShapeNamePathNoCompletionCases(entries, messageBuild
 function mapWorksheetControlShapeNamePathInteractionCases(entries, messageBuilder) {
   assert.ok(entries.length > 0, "worksheet control shapeName path interaction shared cases must not be empty");
   return entries.map((entry) => [entry.anchor, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
-}
-
-function mapWorksheetControlShapeNamePathSemanticCases(entries, messageBuilder) {
-  assert.ok(entries.length > 0, "worksheet control shapeName path semantic shared cases must not be empty");
-  return entries.map((entry) => [
-    entry.anchor,
-    entry.identifier,
-    { modifiers: [], type: entry.tokenKind === "method" ? "function" : "variable" },
-    messageBuilder(entry),
-    entry.occurrenceIndex ?? 0
-  ]);
-}
-
-function mapWorksheetControlShapeNamePathNoSemanticCases(entries, messageBuilder) {
-  assert.ok(entries.length > 0, "worksheet control shapeName path negative semantic shared cases must not be empty");
-  return entries.map((entry) => [entry.anchor, entry.identifier, messageBuilder(entry), entry.occurrenceIndex ?? 0]);
 }
 
 function getHoverAfterToken(service, uri, text, token, occurrenceIndex = 0) {

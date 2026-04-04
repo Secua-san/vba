@@ -942,7 +942,6 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
       if (completionContext.isMemberAccess) {
         const memberOwnerName = resolveConfirmedBuiltinMemberOwner(
           state,
-          position.line,
           completionContext,
           resolveDefinition,
           getDocumentState,
@@ -1041,7 +1040,6 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
 
       const builtinMember = resolveBuiltinCallableMember(
         uri,
-        position.line,
         callContext,
         resolveDefinition,
         getDocumentState,
@@ -1049,13 +1047,10 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
       );
 
       if (builtinMember) {
-        return createBuiltinSignatureHint(state.analysis, uri, position.line, callContext, builtinMember, resolveDefinition);
+        return createBuiltinSignatureHint(state.analysis, uri, callContext, builtinMember, resolveDefinition);
       }
 
-      const target = resolveDefinition(uri, {
-        character: callContext.identifierStartCharacter,
-        line: position.line
-      });
+      const target = resolveDefinition(uri, callContext.identifierPosition);
 
       if (target && isCallableSymbol(target.symbol)) {
         const targetState = documentStates.get(target.uri);
@@ -1070,7 +1065,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
           return undefined;
         }
 
-        return createSignatureHint(state.analysis, uri, target, callable, position.line, callContext, resolveDefinition);
+        return createSignatureHint(state.analysis, uri, target, callable, callContext, resolveDefinition);
       }
 
       return undefined;
@@ -1136,7 +1131,6 @@ interface WorkspaceIndex {
 
 type LocalProcedureScope = DocumentState["analysis"]["symbols"]["procedureScopes"][number];
 type CallableMember = Extract<AnalysisResult["module"]["members"][number], { kind: "declareStatement" | "procedureDeclaration" }>;
-type ProcedureStatement = Extract<AnalysisResult["module"]["members"][number], { kind: "procedureDeclaration" }>["body"][number];
 type SemanticTokenShape = Pick<SemanticTokenEntry, "modifiers" | "type">;
 
 interface MemberAccessPathSegment {
@@ -1150,17 +1144,17 @@ interface CallContext {
   activeParameter: number;
   callPath: string[];
   callPathSegments?: MemberAccessPathSegment[];
-  callPathStartCharacter: number;
-  currentArgumentStartCharacter: number;
+  callPathStartPosition: LinePosition;
+  currentArgumentPositions: Array<LinePosition | undefined>;
   currentArgumentText: string;
-  identifierStartCharacter: number;
+  identifierPosition: LinePosition;
 }
 
 interface CompletionContext {
   isMemberAccess: boolean;
   memberPath: string[];
   memberPathSegments?: MemberAccessPathSegment[];
-  memberPathStartCharacter?: number;
+  memberPathStartPosition?: LinePosition;
   prefix: string;
 }
 
@@ -1350,11 +1344,7 @@ function collectSemanticTokensForState(
   const getDocumentState = (uri: string): DocumentState | undefined => documentStates.get(uri);
   const declarationResolutions = [
     ...state.analysis.symbols.moduleSymbols.map((symbol) => createResolution(state, symbol, state.uri)),
-    ...state.analysis.symbols.procedureScopes.flatMap((scope) =>
-      scope.symbols
-        .filter((symbol) => !isProcedureReturnValueDeclarationSymbol(scope, symbol))
-        .map((symbol) => createResolution(state, symbol, state.uri))
-    )
+    ...state.analysis.symbols.procedureScopes.flatMap((scope) => scope.symbols.map((symbol) => createResolution(state, symbol, state.uri)))
   ];
   const lines = state.text.replace(/\r\n?/g, "\n").split("\n");
 
@@ -1400,9 +1390,9 @@ function collectSemanticTokensForState(
 
       if (previousCharacter === ".") {
         const memberTokenShape = mapBuiltinMemberSemanticToken(
+          state.text,
           state.uri,
           lineIndex,
-          code,
           startCharacter,
           identifier,
           resolveDefinition,
@@ -1558,9 +1548,14 @@ function collectReferencesForState(
           const identifier = match[0];
           const normalizedIdentifier = normalizeIdentifier(identifier);
           const startIndex = match.index ?? 0;
+          const previousCharacter = scrubbed[startIndex - 1] ?? "";
           const nextCharacter = scrubbed[startIndex + identifier.length] ?? "";
 
           if (normalizedIdentifier !== target.symbol.normalizedName) {
+            continue;
+          }
+
+          if (previousCharacter === ".") {
             continue;
           }
 
@@ -1593,7 +1588,9 @@ function collectReferencesForState(
   return references;
 }
 
-function getStructuredReferenceUnits(statement: ProcedureStatement): Array<{ range: SourceRange; text: string }> | undefined {
+function getStructuredReferenceUnits(
+  statement: ProcedureDeclarationNode["body"][number]
+): Array<{ range: SourceRange; text: string }> | undefined {
   if (statement.kind === "callStatement") {
     return [
       {
@@ -1714,67 +1711,15 @@ function addSemanticToken(
   range: SourceRange,
   token: SemanticTokenShape
 ): void {
-  const key = `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}`;
-  const nextToken: SemanticTokenEntry = {
-    modifiers: [...token.modifiers],
-    range,
-    type: token.type
-  };
-  const currentToken = tokens.get(key);
+  const key = `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}:${token.type}:${token.modifiers.join(".")}`;
 
-  if (!currentToken) {
-    tokens.set(key, nextToken);
-    return;
-  }
-
-  if (currentToken.type === nextToken.type) {
+  if (!tokens.has(key)) {
     tokens.set(key, {
-      modifiers: mergeSemanticTokenModifiers(currentToken.modifiers, nextToken.modifiers),
+      modifiers: token.modifiers,
       range,
-      type: currentToken.type
+      type: token.type
     });
-    return;
   }
-
-  if (compareSemanticTokenPriority(nextToken, currentToken) < 0) {
-    tokens.set(key, nextToken);
-  }
-}
-
-function mergeSemanticTokenModifiers(
-  left: readonly SemanticTokenModifierName[],
-  right: readonly SemanticTokenModifierName[]
-): SemanticTokenModifierName[] {
-  return [...new Set([...left, ...right])];
-}
-
-function compareSemanticTokenPriority(left: SemanticTokenEntry, right: SemanticTokenEntry): number {
-  return (
-    getSemanticTokenTypePriority(left.type) - getSemanticTokenTypePriority(right.type) ||
-    getSemanticTokenModifierPriority(left.modifiers) - getSemanticTokenModifierPriority(right.modifiers)
-  );
-}
-
-function getSemanticTokenTypePriority(type: SemanticTokenTypeName): number {
-  switch (type) {
-    case "function":
-      return 0;
-    case "type":
-      return 1;
-    case "parameter":
-      return 2;
-    case "enumMember":
-      return 3;
-    case "variable":
-      return 4;
-    case "keyword":
-    default:
-      return 5;
-  }
-}
-
-function getSemanticTokenModifierPriority(modifiers: readonly SemanticTokenModifierName[]): number {
-  return modifiers.includes("declaration") ? 0 : 1;
 }
 
 function addUniqueModifier(
@@ -1835,16 +1780,20 @@ function getIdentifierRangeAtPosition(text: string, position: LinePosition): Sou
 }
 
 function getCompletionContext(text: string, position: LinePosition): CompletionContext {
-  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line] ?? "";
-  const { code } = splitCodeAndComment(line.slice(0, position.character));
+  const flattenedPrefix = buildFlattenedContinuationPrefix(text, position);
+  const code = flattenedPrefix?.code ?? "";
   const memberAccess = parseTrailingMemberAccess(code);
+  const memberPathStartPosition =
+    memberAccess && flattenedPrefix
+      ? getMappedFlattenedPosition(flattenedPrefix.positions, memberAccess.memberPathStartCharacter)
+      : undefined;
 
-  if (memberAccess) {
+  if (memberAccess && memberPathStartPosition) {
     return {
       isMemberAccess: true,
       memberPath: memberAccess.memberPath,
       memberPathSegments: memberAccess.memberPathSegments,
-      memberPathStartCharacter: memberAccess.memberPathStartCharacter,
+      memberPathStartPosition,
       prefix: memberAccess.prefix
     };
   }
@@ -1852,14 +1801,13 @@ function getCompletionContext(text: string, position: LinePosition): CompletionC
   return {
     isMemberAccess: false,
     memberPath: [],
-    memberPathStartCharacter: undefined,
+    memberPathStartPosition: undefined,
     prefix: getTrailingIdentifier(code)
   };
 }
 
 function resolveConfirmedBuiltinMemberOwner(
   state: DocumentState,
-  line: number,
   completionContext: CompletionContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
@@ -1868,17 +1816,17 @@ function resolveConfirmedBuiltinMemberOwner(
   if (
     !completionContext.isMemberAccess ||
     completionContext.memberPath.length === 0 ||
-    completionContext.memberPathStartCharacter === undefined
+    !completionContext.memberPathStartPosition
   ) {
     return undefined;
   }
 
   return resolveBuiltinMemberOwnerForPath(
     state.uri,
-    line,
+    completionContext.memberPathStartPosition.line,
     completionContext.memberPath,
     completionContext.memberPathSegments,
-    completionContext.memberPathStartCharacter,
+    completionContext.memberPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
     getWorksheetControlMetadataState
@@ -1931,7 +1879,6 @@ function filterCompletionsByPrefix(
 
 function resolveBuiltinCallableMember(
   uri: string,
-  line: number,
   callContext: CallContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
@@ -1943,10 +1890,10 @@ function resolveBuiltinCallableMember(
 
   const ownerName = resolveBuiltinMemberOwnerForPath(
     uri,
-    line,
+    callContext.callPathStartPosition.line,
     callContext.callPath.slice(0, -1),
     callContext.callPathSegments?.slice(0, -1),
-    callContext.callPathStartCharacter,
+    callContext.callPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
     getWorksheetControlMetadataState
@@ -1969,11 +1916,10 @@ function createSignatureHint(
   sourceUri: string,
   target: WorkspaceSymbolResolution,
   callable: CallableMember,
-  line: number,
   callContext: CallContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
 ): SignatureHint {
-  const currentArgumentTypeName = getCurrentArgumentTypeName(analysis, sourceUri, line, callContext, resolveDefinition);
+  const currentArgumentTypeName = getCurrentArgumentTypeName(analysis, sourceUri, callContext, resolveDefinition);
   const activeParameter =
     callable.parameters.length === 0 ? undefined : Math.min(callContext.activeParameter, callable.parameters.length - 1);
 
@@ -1992,13 +1938,12 @@ function createSignatureHint(
 function createBuiltinSignatureHint(
   analysis: AnalysisResult,
   sourceUri: string,
-  line: number,
   callContext: CallContext,
   memberReference: BuiltinMemberReferenceItem,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
 ): SignatureHint {
   const signature = memberReference.signature;
-  const currentArgumentTypeName = getCurrentArgumentTypeName(analysis, sourceUri, line, callContext, resolveDefinition);
+  const currentArgumentTypeName = getCurrentArgumentTypeName(analysis, sourceUri, callContext, resolveDefinition);
   const activeParameter =
     !signature || signature.parameters.length === 0 ? undefined : Math.min(callContext.activeParameter, signature.parameters.length - 1);
 
@@ -2059,12 +2004,22 @@ function resolveBuiltinMemberAtPosition(
     return undefined;
   }
 
-  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line] ?? "";
-  const { code } = splitCodeAndComment(line.slice(0, range.end.character));
+  const flattenedPrefix = buildFlattenedContinuationPrefix(text, range.end);
+
+  if (!flattenedPrefix) {
+    return undefined;
+  }
+
+  const { code } = flattenedPrefix;
   const memberAccess = parseTrailingMemberAccess(code);
+  const memberPathStartPosition = memberAccess
+    ? getMappedFlattenedPosition(flattenedPrefix.positions, memberAccess.memberPathStartCharacter)
+    : undefined;
+  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line] ?? "";
 
   if (
     !memberAccess ||
+    !memberPathStartPosition ||
     normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(line.slice(range.start.character, range.end.character))
   ) {
     return undefined;
@@ -2072,10 +2027,10 @@ function resolveBuiltinMemberAtPosition(
 
   const ownerName = resolveBuiltinMemberOwnerForPath(
     uri,
-    position.line,
+    memberPathStartPosition.line,
     memberAccess.memberPath,
     memberAccess.memberPathSegments,
-    memberAccess.memberPathStartCharacter,
+    memberPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
     getWorksheetControlMetadataState
@@ -2755,7 +2710,6 @@ function normalizeDocumentBaseGuid(value: string | undefined): string {
 function getCurrentArgumentTypeName(
   analysis: AnalysisResult,
   uri: string,
-  line: number,
   callContext: CallContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined
 ): string | undefined {
@@ -2765,33 +2719,35 @@ function getCurrentArgumentTypeName(
     return undefined;
   }
 
-  const inferredTypeName = inferExpressionTypeAtLine(analysis, line, expressionText);
+  const expressionOffset = callContext.currentArgumentText.length - callContext.currentArgumentText.trimStart().length;
+  const expressionPosition = getMappedFlattenedPosition(callContext.currentArgumentPositions, expressionOffset);
+  const inferredTypeName = inferExpressionTypeAtLine(
+    analysis,
+    expressionPosition?.line ?? callContext.identifierPosition.line,
+    expressionText
+  );
 
   if (inferredTypeName) {
     return inferredTypeName;
   }
 
-  const expressionOffset = callContext.currentArgumentText.length - callContext.currentArgumentText.trimStart().length;
   const simpleReferenceMatch = /^([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s*\(.*\))?$/iu.exec(expressionText);
 
-  if (!simpleReferenceMatch?.[1]) {
+  if (!simpleReferenceMatch?.[1] || !expressionPosition) {
     return undefined;
   }
 
-  return resolveDefinition(uri, {
-    character: callContext.currentArgumentStartCharacter + expressionOffset,
-    line
-  })?.typeName;
+  return resolveDefinition(uri, expressionPosition)?.typeName;
 }
 
 function getCallContext(text: string, position: LinePosition): CallContext | undefined {
-  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line];
+  const flattenedPrefix = buildFlattenedContinuationPrefix(text, position);
 
-  if (line === undefined) {
+  if (!flattenedPrefix) {
     return undefined;
   }
 
-  const { code } = splitCodeAndComment(line.slice(0, position.character));
+  const { code, positions } = flattenedPrefix;
   const frames: Array<{
     callPath?: string[];
     callPathSegments?: MemberAccessPathSegment[];
@@ -2857,6 +2813,16 @@ function getCallContext(text: string, position: LinePosition): CallContext | und
     return undefined;
   }
 
+  const identifierPosition = getMappedFlattenedPosition(positions, currentFrame.identifierStartCharacter);
+  const callPathStartPosition = getMappedFlattenedPosition(
+    positions,
+    currentFrame.callPathStartCharacter ?? currentFrame.identifierStartCharacter
+  );
+
+  if (!identifierPosition || !callPathStartPosition) {
+    return undefined;
+  }
+
   return {
     activeParameter: currentFrame.commaCount,
     callPath: currentFrame.callPath ?? [currentFrame.identifier],
@@ -2869,11 +2835,85 @@ function getCallContext(text: string, position: LinePosition): CallContext | und
           text: currentFrame.identifier
         }
       ],
-    callPathStartCharacter: currentFrame.callPathStartCharacter ?? currentFrame.identifierStartCharacter,
-    currentArgumentStartCharacter: currentFrame.lastCommaIndex + 1,
+    callPathStartPosition,
+    currentArgumentPositions: positions.slice(currentFrame.lastCommaIndex + 1),
     currentArgumentText: code.slice(currentFrame.lastCommaIndex + 1),
-    identifierStartCharacter: currentFrame.identifierStartCharacter
+    identifierPosition
   };
+}
+
+function buildFlattenedContinuationPrefix(
+  text: string,
+  position: LinePosition
+): { code: string; positions: Array<LinePosition | undefined> } | undefined {
+  const normalizedLines = text.replace(/\r\n?/g, "\n").split("\n");
+  const currentLine = normalizedLines[position.line];
+
+  if (currentLine === undefined) {
+    return undefined;
+  }
+
+  let startLine = position.line;
+
+  while (startLine > 0) {
+    const { code } = splitCodeAndComment(normalizedLines[startLine - 1] ?? "");
+
+    if (!/\s+_\s*$/.test(code)) {
+      break;
+    }
+
+    startLine -= 1;
+  }
+
+  let flattenedCode = "";
+  let hasOutput = false;
+  const positions: Array<LinePosition | undefined> = [];
+
+  for (let lineIndex = startLine; lineIndex <= position.line; lineIndex += 1) {
+    const lineText = normalizedLines[lineIndex] ?? "";
+    const lineSlice = lineIndex === position.line ? lineText.slice(0, position.character) : lineText;
+    const { code } = splitCodeAndComment(lineSlice);
+    const continued = /\s+_\s*$/.test(code);
+    const codeWithoutContinuation = continued ? code.replace(/\s+_\s*$/, "") : code;
+    const trimmedCode = codeWithoutContinuation.trimEnd();
+    const leadingTrimLength = hasOutput ? trimmedCode.length - trimmedCode.trimStart().length : 0;
+    const emittedText = hasOutput ? trimmedCode.trimStart() : trimmedCode;
+
+    if (hasOutput) {
+      flattenedCode += " ";
+      positions.push(undefined);
+    }
+
+    for (let index = 0; index < emittedText.length; index += 1) {
+      flattenedCode += emittedText[index];
+      positions.push({
+        character: leadingTrimLength + index,
+        line: lineIndex
+      });
+    }
+
+    hasOutput = true;
+  }
+
+  return {
+    code: flattenedCode,
+    positions
+  };
+}
+
+function getMappedFlattenedPosition(
+  positions: Array<LinePosition | undefined>,
+  startIndex: number
+): LinePosition | undefined {
+  for (let index = Math.max(0, startIndex); index < positions.length; index += 1) {
+    const position = positions[index];
+
+    if (position) {
+      return position;
+    }
+  }
+
+  return undefined;
 }
 
 function findCallableMember(analysis: AnalysisResult, symbol: SymbolInfo): CallableMember | undefined {
@@ -3254,16 +3294,6 @@ function isSameResolution(left: WorkspaceSymbolResolution, right: WorkspaceSymbo
   return left.uri === right.uri && isSameSymbol(left.symbol, right.symbol);
 }
 
-function isProcedureReturnValueDeclarationSymbol(scope: LocalProcedureScope, symbol: SymbolInfo): boolean {
-  return (
-    scope.procedure.procedureKind !== "Sub" &&
-    symbol.scope === "procedure" &&
-    symbol.kind === "variable" &&
-    symbol.normalizedName === normalizeIdentifier(scope.procedure.name) &&
-    rangesEqual(symbol.selectionRange, scope.procedure.headerRange)
-  );
-}
-
 function comparePositions(left: LinePosition, right: LinePosition): number {
   if (left.line !== right.line) {
     return left.line - right.line;
@@ -3338,20 +3368,27 @@ function mapBuiltinSemanticToken(identifier: string): SemanticTokenShape | undef
 }
 
 function mapBuiltinMemberSemanticToken(
+  text: string,
   uri: string,
   line: number,
-  lineText: string,
   startCharacter: number,
   identifier: string,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
   getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
 ): SemanticTokenShape | undefined {
-  const memberAccess = parseTrailingMemberAccess(lineText.slice(0, startCharacter + identifier.length));
+  const flattenedPrefix = buildFlattenedContinuationPrefix(text, {
+    character: startCharacter + identifier.length,
+    line
+  });
+  const memberAccess = flattenedPrefix ? parseTrailingMemberAccess(flattenedPrefix.code) : undefined;
+  const memberPathStartPosition = memberAccess && flattenedPrefix
+    ? getMappedFlattenedPosition(flattenedPrefix.positions, memberAccess.memberPathStartCharacter)
+    : undefined;
 
   if (
     !memberAccess ||
-    memberAccess.memberPathStartCharacter === undefined ||
+    !memberPathStartPosition ||
     normalizeIdentifier(memberAccess.prefix) !== normalizeIdentifier(identifier)
   ) {
     return undefined;
@@ -3359,10 +3396,10 @@ function mapBuiltinMemberSemanticToken(
 
   const ownerName = resolveBuiltinMemberOwnerForPath(
     uri,
-    line,
+    memberPathStartPosition.line,
     memberAccess.memberPath,
     memberAccess.memberPathSegments,
-    memberAccess.memberPathStartCharacter,
+    memberPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
     getWorksheetControlMetadataState
