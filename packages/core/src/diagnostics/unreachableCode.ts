@@ -68,62 +68,78 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
 }
 
 function applyBlockTransition(statement: ProcedureDeclarationNode["body"][number], text: string, blockStack: BlockKind[]): void {
-  if (statement.kind === "ifBlockStatement" || isIfBlockStart(text)) {
+  const structuredTransition = getStructuredBlockTransition(statement);
+
+  if (structuredTransition?.push) {
+    blockStack.push(structuredTransition.push);
+    return;
+  }
+
+  if (structuredTransition?.pop) {
+    popLastBlockOfKind(blockStack, structuredTransition.pop);
+    return;
+  }
+
+  if (statement.kind !== "executableStatement") {
+    return;
+  }
+
+  if (isIfBlockStart(text)) {
     blockStack.push("if");
     return;
   }
 
-  if (statement.kind === "selectCaseStatement" || /^Select\s+Case\b/i.test(text)) {
+  if (/^Select\s+Case\b/i.test(text)) {
     blockStack.push("select");
     return;
   }
 
-  if (statement.kind === "forStatement" || statement.kind === "forEachStatement" || /^For\b/i.test(text)) {
+  if (/^For\b/i.test(text)) {
     blockStack.push("for");
     return;
   }
 
-  if (statement.kind === "doBlockStatement" || /^Do\b/i.test(text)) {
+  if (/^Do\b/i.test(text)) {
     blockStack.push("do");
     return;
   }
 
-  if (statement.kind === "whileStatement" || /^While\b/i.test(text)) {
+  if (/^While\b/i.test(text)) {
     blockStack.push("while");
     return;
   }
 
-  if (statement.kind === "withBlockStatement" || /^With\b/i.test(text)) {
+  if (/^With\b/i.test(text)) {
     blockStack.push("with");
     return;
   }
 
-  if (statement.kind === "endIfStatement" || /^End\s+If\b/i.test(text)) {
+  if (/^End\s+If\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "if");
     return;
   }
 
-  if (statement.kind === "endSelectStatement" || /^End\s+Select\b/i.test(text)) {
+  if (/^End\s+Select\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "select");
     return;
   }
 
-  if (statement.kind === "nextStatement" || /^Next\b/i.test(text)) {
+  if (/^Next\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "for");
     return;
   }
 
-  if (statement.kind === "loopStatement" || /^Loop\b/i.test(text)) {
+  if (/^Loop\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "do");
     return;
   }
 
-  if (statement.kind === "wendStatement" || /^Wend\b/i.test(text)) {
+  if (/^Wend\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "while");
     return;
   }
 
-  if (statement.kind === "endWithStatement" || /^End\s+With\b/i.test(text)) {
+  if (/^End\s+With\b/i.test(text)) {
     popLastBlockOfKind(blockStack, "with");
   }
 }
@@ -135,21 +151,27 @@ function clearsUnreachableState(
 ): boolean {
   switch (unreachableState.barrierKind) {
     case "if":
-      return (
+      if (
         statement.kind === "elseIfClauseStatement" ||
         statement.kind === "elseClauseStatement" ||
-        statement.kind === "endIfStatement" ||
-        /^Else(?:If\b|$)/i.test(text) ||
-        /^End\s+If\b/i.test(text)
-      );
+        statement.kind === "endIfStatement"
+      ) {
+        return true;
+      }
+
+      return statement.kind === "executableStatement" && (/^Else(?:If\b|$)/i.test(text) || /^End\s+If\b/i.test(text));
     case "select":
-      return statement.kind === "caseClauseStatement" || statement.kind === "endSelectStatement" || /^Case\b/i.test(text) || /^End\s+Select\b/i.test(text);
+      if (statement.kind === "caseClauseStatement" || statement.kind === "endSelectStatement") {
+        return true;
+      }
+
+      return statement.kind === "executableStatement" && (/^Case\b/i.test(text) || /^End\s+Select\b/i.test(text));
     case "for":
-      return statement.kind === "nextStatement" || /^Next\b/i.test(text);
+      return statement.kind === "nextStatement" || (statement.kind === "executableStatement" && /^Next\b/i.test(text));
     case "do":
-      return statement.kind === "loopStatement" || /^Loop\b/i.test(text);
+      return statement.kind === "loopStatement" || (statement.kind === "executableStatement" && /^Loop\b/i.test(text));
     case "while":
-      return statement.kind === "wendStatement" || /^Wend\b/i.test(text);
+      return statement.kind === "wendStatement" || (statement.kind === "executableStatement" && /^Wend\b/i.test(text));
     default:
       return false;
   }
@@ -210,7 +232,7 @@ function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["b
     return false;
   }
 
-  return !(
+  const structuredBoundary =
     statement.kind === "elseIfClauseStatement" ||
     statement.kind === "elseClauseStatement" ||
     statement.kind === "caseClauseStatement" ||
@@ -219,7 +241,17 @@ function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["b
     statement.kind === "nextStatement" ||
     statement.kind === "loopStatement" ||
     statement.kind === "wendStatement" ||
-    statement.kind === "endWithStatement" ||
+    statement.kind === "endWithStatement";
+
+  if (structuredBoundary) {
+    return false;
+  }
+
+  if (statement.kind !== "executableStatement") {
+    return true;
+  }
+
+  return !(
     /^Else(?:If\b|$)/i.test(text) ||
     /^Case\b/i.test(text) ||
     /^End\s+If\b/i.test(text) ||
@@ -229,6 +261,40 @@ function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["b
     /^Wend\b/i.test(text) ||
     /^End\s+With\b/i.test(text)
   );
+}
+
+function getStructuredBlockTransition(
+  statement: ProcedureDeclarationNode["body"][number]
+): { pop?: BlockKind; push?: BlockKind } | undefined {
+  switch (statement.kind) {
+    case "ifBlockStatement":
+      return { push: "if" };
+    case "selectCaseStatement":
+      return { push: "select" };
+    case "forStatement":
+    case "forEachStatement":
+      return { push: "for" };
+    case "doBlockStatement":
+      return { push: "do" };
+    case "whileStatement":
+      return { push: "while" };
+    case "withBlockStatement":
+      return { push: "with" };
+    case "endIfStatement":
+      return { pop: "if" };
+    case "endSelectStatement":
+      return { pop: "select" };
+    case "nextStatement":
+      return { pop: "for" };
+    case "loopStatement":
+      return { pop: "do" };
+    case "wendStatement":
+      return { pop: "while" };
+    case "endWithStatement":
+      return { pop: "with" };
+    default:
+      return undefined;
+  }
 }
 
 function stripLeadingLabel(text: string): string {

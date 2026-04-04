@@ -497,6 +497,30 @@ Public Sub Demo()
   );
 });
 
+test("analyzeModule keeps ByRef checks in structured For headers after AST-based invocation scanning", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredForByRef"
+Option Explicit
+
+Private Function ReadLimit(ByRef count As Long) As Long
+    ReadLimit = count
+End Function
+
+Public Sub Demo()
+    Dim count As Long
+    Dim index As Long
+
+    For index = 1 To ReadLimit(count + 1)
+    Next index
+End Sub`, { fileName: "StructuredForByRef.bas" });
+  const byRefDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(byRefDiagnostics.length, 1);
+  assert.equal(
+    byRefDiagnostics[0]?.message,
+    "ByRef parameter 'count' in ReadLimit receives an expression. Introduce a temporary variable before the call."
+  );
+});
+
 test("analyzeModule keeps Do, While, and With header reads after structured control statement parsing", () => {
   const result = analyzeModule(`Attribute VB_Name = "StructuredLoopReads"
 Option Explicit
@@ -521,6 +545,57 @@ End Sub`, { fileName: "StructuredLoopReads.bas" });
   const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
 
   assert.equal(unusedDiagnostics.length, 0);
+});
+
+test("analyzeModule reports undeclared identifiers in structured control headers", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredHeaderUndeclared"
+Option Explicit
+
+Public Sub Demo()
+    Dim index As Long
+    Dim item As Variant
+
+    If ready Then
+    ElseIf fallback Then
+    End If
+
+    Select Case selector
+        Case caseValue
+    End Select
+
+    For index = 1 To limit Step stepSize
+    Next index
+
+    For Each item In items
+    Next item
+
+    Do While keepGoing
+    Loop Until finished
+
+    While active
+    Wend
+
+    With holder
+    End With
+End Sub`, { fileName: "StructuredHeaderUndeclared.bas" });
+  const undeclaredDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "undeclared-variable");
+
+  assert.deepEqual(
+    undeclaredDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Undeclared identifier 'ready'.",
+      "Undeclared identifier 'fallback'.",
+      "Undeclared identifier 'selector'.",
+      "Undeclared identifier 'caseValue'.",
+      "Undeclared identifier 'limit'.",
+      "Undeclared identifier 'stepSize'.",
+      "Undeclared identifier 'items'.",
+      "Undeclared identifier 'keepGoing'.",
+      "Undeclared identifier 'finished'.",
+      "Undeclared identifier 'active'.",
+      "Undeclared identifier 'holder'."
+    ]
+  );
 });
 
 test("analyzeModule warns when object assignments omit Set", () => {
@@ -661,6 +736,40 @@ End Sub`, { fileName: "Unreachable.bas" });
     ]
   );
   assert.ok(unreachableDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+});
+
+test("analyzeModule clears unreachable state at structured Case and Next boundaries", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredUnreachableBoundaries"
+Option Explicit
+
+Public Sub Demo()
+    Dim value As Long
+    Dim index As Long
+
+    Select Case value
+        Case 0
+            Exit Sub
+            value = 1
+        Case Else
+            value = 2
+    End Select
+
+    For index = 1 To 2
+        End
+        index = index + 1
+    Next index
+End Sub`, { fileName: "StructuredUnreachableBoundaries.bas" });
+
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(unreachableDiagnostics.length, 2);
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Unreachable code after Exit Sub.",
+      "Unreachable code after End."
+    ]
+  );
 });
 
 test("analyzeModule warns on unused local variables and parameters", () => {

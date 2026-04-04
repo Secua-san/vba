@@ -1,6 +1,7 @@
 export { analyzeModule, findDefinition, getCompletionSymbols, getDocumentOutline } from "./diagnostics/analyzeModule";
 export { collectByRefArgumentDiagnostics } from "./diagnostics/byRefDiagnostics";
 export type { ResolvedCallable } from "./diagnostics/byRefDiagnostics";
+export { getProcedureStatementReferenceSegments } from "./diagnostics/procedureStatementReferences";
 export { formatModuleIndentation } from "./format/formatModuleIndentation";
 export type { FormatModuleIndentationOptions } from "./format/formatModuleIndentation";
 export { areTypesCompatible, getSymbolTypeName, inferExpressionTypeAtLine, inferModuleTypes } from "./inference/inferModuleTypes";
