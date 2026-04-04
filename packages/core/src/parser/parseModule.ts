@@ -14,6 +14,7 @@ import {
   OptionStatementNode,
   ParameterNode,
   ParseResult,
+  LinePosition,
   ProcedureDeclarationNode,
   ProcedureKind,
   ProcedureStatementNode,
@@ -24,7 +25,7 @@ import {
   VariableDeclarationNode,
   VariableDeclaratorNode
 } from "../types/model";
-import { buildLogicalLines, splitCommaAware } from "./text";
+import { buildLogicalLines, hasStatementSeparatorColon, splitCodeAndComment, splitCommaAware } from "./text";
 
 export function parseModule(text: string, options: AnalyzeModuleOptions = {}): ParseResult {
   const source = createSourceDocument(text, options);
@@ -473,7 +474,6 @@ function parseProcedureStatement(
   source: SourceDocument,
   logicalLine: { codeText: string; endLine: number; startLine: number }
 ): ProcedureStatementNode | undefined {
-  const trimmedText = logicalLine.codeText.trim();
   const statementRange = createMappedRange(
     source,
     logicalLine.startLine,
@@ -481,51 +481,86 @@ function parseProcedureStatement(
     logicalLine.endLine,
     source.normalizedLines[logicalLine.endLine]?.length ?? 0
   );
-  const inlineCharacterOffset =
-    logicalLine.startLine === logicalLine.endLine
-      ? source.normalizedLines[logicalLine.startLine]?.length - (source.normalizedLines[logicalLine.startLine]?.trimStart().length ?? 0)
-      : 0;
+  const statementText = createProcedureStatementText(source, logicalLine, statementRange);
+  const trimmedText = statementText.text;
+  const inlineCharacterOffset = statementText.inlineCharacterOffset;
+  const leadingLabel = parseLeadingLabel(trimmedText);
+  const parsedText = leadingLabel?.statementText ?? trimmedText;
+  const parsedLogicalLine = leadingLabel ? { ...logicalLine, codeText: parsedText } : logicalLine;
+  const parsedInlineCharacterOffset = inlineCharacterOffset + (leadingLabel?.statementStartCharacter ?? 0);
+  const createParsedRange = leadingLabel
+    ? (startCharacter: number, endCharacter: number) =>
+        statementText.createRange(
+          leadingLabel.statementStartCharacter + startCharacter,
+          leadingLabel.statementStartCharacter + endCharacter
+        )
+    : statementText.createRange;
 
-  if (trimmedText.length === 0) {
+  if (parsedText.length === 0) {
     return undefined;
   }
 
-  if (/^Const\b/i.test(trimmedText)) {
-    const constant = parseConstDeclaration(source, logicalLine);
+  if (/^Const\b/i.test(parsedText)) {
+    const constant = parseConstDeclaration(source, parsedLogicalLine);
     return {
       declaredConstants: [constant],
       kind: "constStatement",
-      range: constant.range,
+      range: statementRange,
       text: trimmedText
     };
   }
 
-  if (/^(?:Dim|Static)\b/i.test(trimmedText)) {
-    const declaration = parseProcedureVariableDeclaration(source, logicalLine);
+  if (/^(?:Dim|Static)\b/i.test(parsedText)) {
+    const declaration = parseProcedureVariableDeclaration(source, parsedLogicalLine);
     return {
       declaredVariables: declaration.declarators,
       kind: "declarationStatement",
-      range: declaration.range,
+      range: statementRange,
       text: trimmedText
     };
   }
 
-  const structuredBlockStatement = parseStructuredBlockStatement(trimmedText, statementRange, inlineCharacterOffset);
+  const structuredBlockStatement = parseStructuredBlockStatement(parsedText, statementRange, parsedInlineCharacterOffset);
 
   if (structuredBlockStatement) {
-    return structuredBlockStatement;
+    return structuredBlockStatement.text === trimmedText
+      ? structuredBlockStatement
+      : {
+          ...structuredBlockStatement,
+          text: trimmedText
+        };
   }
 
-  const assignmentStatement = parseAssignmentStatement(trimmedText, statementRange, inlineCharacterOffset);
+  const assignmentStatement = parseAssignmentStatement(
+    parsedText,
+    statementRange,
+    parsedInlineCharacterOffset,
+    createParsedRange
+  );
 
   if (assignmentStatement) {
-    return assignmentStatement;
+    return assignmentStatement.text === trimmedText
+      ? assignmentStatement
+      : {
+          ...assignmentStatement,
+          text: trimmedText
+        };
   }
 
-  const callStatement = parseCallStatement(trimmedText, statementRange, inlineCharacterOffset);
+  const callStatement = parseCallStatement(
+    parsedText,
+    statementRange,
+    parsedInlineCharacterOffset,
+    createParsedRange
+  );
 
   if (callStatement) {
-    return callStatement;
+    return callStatement.text === trimmedText
+      ? callStatement
+      : {
+          ...callStatement,
+          text: trimmedText
+        };
   }
 
   return {
@@ -692,7 +727,7 @@ function parseElseIfClauseStatement(
   statementRange: ProcedureStatementNode["range"],
   inlineCharacterOffset = 0
 ): ProcedureStatementNode | undefined {
-  if (!/^ElseIf\b.*\bThen\s*$/iu.test(text) || /:/.test(text)) {
+  if (!/^ElseIf\b.*\bThen\s*$/iu.test(text) || hasStatementSeparatorColon(text)) {
     return undefined;
   }
 
@@ -1171,13 +1206,23 @@ function parseOnErrorStatement(
 function parseAssignmentStatement(
   text: string,
   statementRange: ProcedureStatementNode["range"],
-  inlineCharacterOffset = 0
+  inlineCharacterOffset = 0,
+  createSegmentRange?: (startCharacter: number, endCharacter: number) => ProcedureStatementNode["range"]
 ): ProcedureStatementNode | undefined {
   const equalsIndex = findAssignmentOperatorIndex(text);
 
   if (equalsIndex < 0) {
     return undefined;
   }
+
+  const createRange =
+    createSegmentRange ??
+    ((startCharacter: number, endCharacter: number) =>
+      createInlineRange(
+        statementRange.start.line,
+        inlineCharacterOffset + startCharacter,
+        inlineCharacterOffset + endCharacter
+      ));
 
   const leftText = text.slice(0, equalsIndex);
   const rightText = text.slice(equalsIndex + 1);
@@ -1204,20 +1249,12 @@ function parseAssignmentStatement(
 
   return {
     assignmentKind: prefixMatch?.[1] ? prefixMatch[1].toLowerCase() as "let" | "set" : "implicit",
-    expressionRange: createInlineOrStatementRange(
-      statementRange,
-      inlineCharacterOffset + expressionStartCharacter,
-      inlineCharacterOffset + expressionStartCharacter + expressionText.length
-    ),
+    expressionRange: createRange(expressionStartCharacter, expressionStartCharacter + expressionText.length),
     expressionText,
     kind: "assignmentStatement",
     range: statementRange,
     targetName: simpleTargetMatch?.[1]?.replace(/[$%&!#@]$/, ""),
-    targetRange: createInlineOrStatementRange(
-      statementRange,
-      inlineCharacterOffset + targetStartCharacter,
-      inlineCharacterOffset + targetStartCharacter + targetText.length
-    ),
+    targetRange: createRange(targetStartCharacter, targetStartCharacter + targetText.length),
     targetText,
     text
   };
@@ -1226,11 +1263,21 @@ function parseAssignmentStatement(
 function parseCallStatement(
   text: string,
   statementRange: ProcedureStatementNode["range"],
-  inlineCharacterOffset = 0
+  inlineCharacterOffset = 0,
+  createSegmentRange?: (startCharacter: number, endCharacter: number) => ProcedureStatementNode["range"]
 ): ProcedureStatementNode | undefined {
-  if (statementRange.start.line !== statementRange.end.line || findAssignmentOperatorIndex(text) >= 0) {
+  if (findAssignmentOperatorIndex(text) >= 0) {
     return undefined;
   }
+
+  const createRange =
+    createSegmentRange ??
+    ((startCharacter: number, endCharacter: number) =>
+      createInlineRange(
+        statementRange.start.line,
+        inlineCharacterOffset + startCharacter,
+        inlineCharacterOffset + endCharacter
+      ));
 
   const explicitCallMatch = /^\s*Call\s+([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)\s*$/iu.exec(text);
 
@@ -1243,17 +1290,13 @@ function parseCallStatement(
       return {
         arguments: splitInvocationArguments(
           text.slice(openParenIndex + 1, closeParenIndex),
-          statementRange.start.line,
-          inlineCharacterOffset + openParenIndex + 1
+          createRange,
+          openParenIndex + 1
         ),
         callStyle: "call",
         kind: "callStatement",
         name: explicitCallMatch[1],
-        nameRange: createInlineRange(
-          statementRange.start.line,
-          inlineCharacterOffset + callPrefixLength,
-          inlineCharacterOffset + callPrefixLength + explicitCallMatch[1].length
-        ),
+        nameRange: createRange(callPrefixLength, callPrefixLength + explicitCallMatch[1].length),
         range: statementRange,
         text
       };
@@ -1271,17 +1314,13 @@ function parseCallStatement(
     return {
       arguments: splitInvocationArguments(
         bareCallMatch[2],
-        statementRange.start.line,
-        inlineCharacterOffset + argumentsStartCharacter
+        createRange,
+        argumentsStartCharacter
       ),
       callStyle: "bare",
       kind: "callStatement",
       name: bareCallMatch[1],
-      nameRange: createInlineRange(
-        statementRange.start.line,
-        inlineCharacterOffset + nameStartCharacter,
-        inlineCharacterOffset + nameStartCharacter + bareCallMatch[1].length
-      ),
+      nameRange: createRange(nameStartCharacter, nameStartCharacter + bareCallMatch[1].length),
       range: statementRange,
       text
     };
@@ -1305,17 +1344,13 @@ function parseCallStatement(
   return {
     arguments: splitInvocationArguments(
       text.slice(openParenIndex + 1, closeParenIndex),
-      statementRange.start.line,
-      inlineCharacterOffset + openParenIndex + 1
+      createRange,
+      openParenIndex + 1
     ),
     callStyle: "parenthesized",
     kind: "callStatement",
     name: identifier.text,
-    nameRange: createInlineRange(
-      statementRange.start.line,
-      inlineCharacterOffset + identifier.startCharacter,
-      inlineCharacterOffset + identifier.startCharacter + identifier.text.length
-    ),
+    nameRange: createRange(identifier.startCharacter, identifier.startCharacter + identifier.text.length),
     range: statementRange,
     text
   };
@@ -1370,7 +1405,11 @@ function containsWhitespaceOutsideGrouping(text: string): boolean {
   return false;
 }
 
-function splitInvocationArguments(text: string, line: number, baseCharacter: number): Array<{ range: ProcedureStatementNode["range"]; text: string }> {
+function splitInvocationArguments(
+  text: string,
+  createRange: (startCharacter: number, endCharacter: number) => ProcedureStatementNode["range"],
+  baseCharacter: number
+): Array<{ range: ProcedureStatementNode["range"]; text: string }> {
   const argumentsWithRanges: Array<{ range: ProcedureStatementNode["range"]; text: string }> = [];
   let startIndex = 0;
   let depth = 0;
@@ -1416,10 +1455,139 @@ function splitInvocationArguments(text: string, line: number, baseCharacter: num
     const endCharacter = baseCharacter + end - trailingWhitespace;
 
     argumentsWithRanges.push({
-      range: createInlineRange(line, startCharacter, endCharacter),
+      range: createRange(startCharacter, endCharacter),
       text: trimmedText
     });
   }
+}
+
+function createProcedureStatementText(
+  source: SourceDocument,
+  logicalLine: { codeText: string; endLine: number; startLine: number },
+  statementRange: ProcedureStatementNode["range"]
+): {
+  createRange: (startCharacter: number, endCharacter: number) => ProcedureStatementNode["range"];
+  inlineCharacterOffset: number;
+  text: string;
+} {
+  if (logicalLine.startLine === logicalLine.endLine) {
+    const lineText = source.normalizedLines[logicalLine.startLine] ?? "";
+    const inlineCharacterOffset = lineText.length - lineText.trimStart().length;
+
+    return {
+      createRange: (startCharacter: number, endCharacter: number) =>
+        createInlineRange(
+          statementRange.start.line,
+          inlineCharacterOffset + startCharacter,
+          inlineCharacterOffset + endCharacter
+        ),
+      inlineCharacterOffset,
+      text: logicalLine.codeText.trim()
+    };
+  }
+
+  const flattened = flattenProcedureStatementText(source, logicalLine);
+
+  return {
+    createRange: (startCharacter: number, endCharacter: number) =>
+      mapFlattenedProcedureStatementRange(flattened.positions, startCharacter, endCharacter, statementRange),
+    inlineCharacterOffset: 0,
+    text: flattened.text
+  };
+}
+
+function flattenProcedureStatementText(
+  source: SourceDocument,
+  logicalLine: { endLine: number; startLine: number }
+): { positions: Array<LinePosition | undefined>; text: string } {
+  let flattenedText = "";
+  let hasOutput = false;
+  const positions: Array<LinePosition | undefined> = [];
+
+  for (let lineIndex = logicalLine.startLine; lineIndex <= logicalLine.endLine; lineIndex += 1) {
+    const rawLine = source.normalizedLines[lineIndex];
+
+    if (rawLine === undefined) {
+      continue;
+    }
+
+    const { code } = splitCodeAndComment(rawLine);
+    const continued = /\s+_\s*$/.test(code);
+    const codeWithoutContinuation = continued ? code.replace(/\s+_\s*$/, "") : code;
+    const trimmedCode = codeWithoutContinuation.trimEnd();
+    const leadingTrimLength = hasOutput ? trimmedCode.length - trimmedCode.trimStart().length : 0;
+    const emittedText = hasOutput ? trimmedCode.trimStart() : trimmedCode;
+    const mappedLine = source.lineMap[lineIndex] ?? lineIndex;
+
+    if (hasOutput) {
+      flattenedText += " ";
+      positions.push(undefined);
+    }
+
+    for (let index = 0; index < emittedText.length; index += 1) {
+      flattenedText += emittedText[index];
+      positions.push({
+        character: leadingTrimLength + index,
+        line: mappedLine
+      });
+    }
+
+    hasOutput = true;
+  }
+
+  const trimmedStartIndex = flattenedText.search(/\S/u);
+
+  if (trimmedStartIndex < 0) {
+    return {
+      positions: [],
+      text: ""
+    };
+  }
+
+  const trimmedEndIndex = flattenedText.trimEnd().length;
+
+  return {
+    positions: positions.slice(trimmedStartIndex, trimmedEndIndex),
+    text: flattenedText.slice(trimmedStartIndex, trimmedEndIndex)
+  };
+}
+
+function mapFlattenedProcedureStatementRange(
+  positions: Array<LinePosition | undefined>,
+  startCharacter: number,
+  endCharacter: number,
+  fallbackRange: ProcedureStatementNode["range"]
+): ProcedureStatementNode["range"] {
+  const mappedPositions = positions.slice(startCharacter, Math.max(endCharacter, startCharacter + 1))
+    .filter((position): position is LinePosition => Boolean(position));
+  const startPosition = mappedPositions[0];
+  const endPosition = mappedPositions[mappedPositions.length - 1];
+
+  if (!startPosition || !endPosition) {
+    return fallbackRange;
+  }
+
+  return {
+    end: {
+      character: endPosition.character + (endCharacter > startCharacter ? 1 : 0),
+      line: endPosition.line
+    },
+    start: startPosition
+  };
+}
+
+function parseLeadingLabel(text: string): { statementStartCharacter: number; statementText: string } | undefined {
+  const match = /^(?:[A-Za-z_][A-Za-z0-9_]*|\d+):\s*/u.exec(text);
+  const statementText = match ? text.slice(match[0].length).trimStart() : "";
+
+  if (!match || statementText.length === 0) {
+    return undefined;
+  }
+
+  return {
+    statementStartCharacter: match[0].length,
+    statementText
+  };
 }
 
 function parseTypeDeclaration(
@@ -1554,7 +1722,11 @@ function isProcedureTerminator(text: string, procedureKind: ProcedureKind): bool
 }
 
 function validateProcedureBlocks(source: SourceDocument, procedure: ProcedureDeclarationNode, diagnostics: Diagnostic[]): void {
-  const blockStack: Array<{ kind: string; statement: ProcedureStatementNode }> = [];
+  const blockStack: Array<
+    | { kind: "do" | "for" | "while" | "with"; statement: ProcedureStatementNode }
+    | { hasElseClause: boolean; kind: "if"; statement: ProcedureStatementNode }
+    | { hasCaseElseClause: boolean; kind: "select"; statement: ProcedureStatementNode }
+  > = [];
 
   for (const statement of procedure.body) {
     const trimmedText = statement.text.trim();
@@ -1564,22 +1736,44 @@ function validateProcedureBlocks(source: SourceDocument, procedure: ProcedureDec
     }
 
     if (statement.kind === "ifBlockStatement") {
-      blockStack.push({ kind: "if", statement });
+      blockStack.push({ hasElseClause: false, kind: "if", statement });
       continue;
     }
 
     if (statement.kind === "elseIfClauseStatement" || statement.kind === "elseClauseStatement") {
-      requireCurrentBlock("if", statement, diagnostics);
+      const currentIfBlock = requireCurrentBlock("if", statement, diagnostics);
+
+      if (currentIfBlock?.kind === "if") {
+        if (currentIfBlock.hasElseClause) {
+          pushUnexpectedBlockClauseDiagnostic(statement, diagnostics);
+        } else if (statement.kind === "elseClauseStatement") {
+          currentIfBlock.hasElseClause = true;
+        }
+      }
+
       continue;
     }
 
     if (statement.kind === "selectCaseStatement") {
-      blockStack.push({ kind: "select", statement });
+      blockStack.push({ hasCaseElseClause: false, kind: "select", statement });
       continue;
     }
 
     if (statement.kind === "caseClauseStatement") {
-      requireCurrentBlock("select", statement, diagnostics);
+      const currentSelectBlock = requireCurrentBlock("select", statement, diagnostics);
+
+      if (currentSelectBlock?.kind === "select") {
+        if (statement.caseKind === "else") {
+          if (currentSelectBlock.hasCaseElseClause) {
+            pushUnexpectedBlockClauseDiagnostic(statement, diagnostics);
+          } else {
+            currentSelectBlock.hasCaseElseClause = true;
+          }
+        } else if (currentSelectBlock.hasCaseElseClause) {
+          pushUnexpectedBlockClauseDiagnostic(statement, diagnostics);
+        }
+      }
+
       continue;
     }
 
@@ -1657,25 +1851,57 @@ function validateProcedureBlocks(source: SourceDocument, procedure: ProcedureDec
       if (lastBlock) {
         blockStack.push(lastBlock);
       }
+      return;
+    }
+
+    if (expectedKind === "for" && statement.kind === "nextStatement") {
+      const activeCounterName = getForBlockCounterName(lastBlock.statement);
+
+      if (activeCounterName && statement.counterName && normalizeIdentifier(activeCounterName) !== normalizeIdentifier(statement.counterName)) {
+        sink.push({
+          code: "syntax-error",
+          message: `Next counter '${statement.counterText}' does not match active loop variable '${activeCounterName}' in ${procedure.name}.`,
+          range: statement.range,
+          severity: "error"
+        });
+      }
     }
   }
 
-  function requireCurrentBlock(expectedKind: string, statement: ProcedureStatementNode, sink: Diagnostic[]): void {
+  function requireCurrentBlock(expectedKind: string, statement: ProcedureStatementNode, sink: Diagnostic[]) {
     const lastBlock = blockStack[blockStack.length - 1];
 
     if (!lastBlock || lastBlock.kind !== expectedKind) {
-      sink.push({
-        code: "syntax-error",
-        message: `Unexpected block clause in ${procedure.name}.`,
-        range: statement.range,
-        severity: "error"
-      });
+      pushUnexpectedBlockClauseDiagnostic(statement, sink);
+      return undefined;
+    }
+
+    return lastBlock;
+  }
+
+  function pushUnexpectedBlockClauseDiagnostic(statement: ProcedureStatementNode, sink: Diagnostic[]): void {
+    sink.push({
+      code: "syntax-error",
+      message: `Unexpected block clause in ${procedure.name}.`,
+      range: statement.range,
+      severity: "error"
+    });
+  }
+
+  function getForBlockCounterName(statement: ProcedureStatementNode): string | undefined {
+    switch (statement.kind) {
+      case "forStatement":
+        return statement.counterName;
+      case "forEachStatement":
+        return statement.itemName;
+      default:
+        return undefined;
     }
   }
 }
 
 function isIfBlockStart(text: string): boolean {
-  return /^If\b.*\bThen\s*$/i.test(text) && !/:/.test(text);
+  return /^If\b.*\bThen\s*$/i.test(text) && !hasStatementSeparatorColon(text);
 }
 
 function findAssignmentOperatorIndex(text: string): number {

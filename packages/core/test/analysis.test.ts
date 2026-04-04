@@ -39,6 +39,98 @@ End Sub`, { fileName: "Broken.bas" });
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "syntax-error"));
 });
 
+test("parseModule reports invalid ElseIf and Case ordering inside structured blocks", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    If ready Then
+    Else
+    ElseIf fallback Then
+    End If
+
+    Select Case value
+        Case Else
+        Case 1
+    End Select
+End Sub`, { fileName: "InvalidClauseOrder.bas" });
+
+  assert.deepEqual(
+    result.diagnostics
+      .filter((diagnostic) => diagnostic.code === "syntax-error")
+      .map((diagnostic) => ({
+        message: diagnostic.message,
+        start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+      })),
+    [
+      {
+        message: "Unexpected block clause in Demo.",
+        start: "5:0"
+      },
+      {
+        message: "Unexpected block clause in Demo.",
+        start: "10:0"
+      }
+    ]
+  );
+});
+
+test("parseModule reports mismatched Next counters for structured For blocks", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    Dim items As Collection
+
+    For index = 1 To 2
+    Next otherIndex
+
+    For Each item In items
+    Next otherItem
+End Sub`, { fileName: "InvalidNextCounters.bas" });
+
+  assert.deepEqual(
+    result.diagnostics
+      .filter((diagnostic) => diagnostic.code === "syntax-error")
+      .map((diagnostic) => ({
+        message: diagnostic.message,
+        start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+      })),
+    [
+      {
+        message: "Next counter 'otherIndex' does not match active loop variable 'index' in Demo.",
+        start: "6:0"
+      },
+      {
+        message: "Next counter 'otherItem' does not match active loop variable 'item' in Demo.",
+        start: "9:0"
+      }
+    ]
+  );
+});
+
+test("parseModule keeps labeled procedure declarations structured for Const and Dim statements", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+Label1: Const localValue As Long = 1
+Label2: Dim totalCount As Long
+End Sub`, { fileName: "LabeledDeclarations.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const constStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const declarationStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  assert.equal(constStatement?.kind, "constStatement");
+  assert.deepEqual(
+    constStatement?.declaredConstants.map((constant) => constant.name),
+    ["localValue"]
+  );
+  assert.equal(declarationStatement?.kind, "declarationStatement");
+  assert.deepEqual(
+    declarationStatement?.declaredVariables.map((variable) => variable.name),
+    ["totalCount"]
+  );
+});
+
 test("parseModule structures simple assignment and call statements in procedure bodies", () => {
   const result = parseModule(`Option Explicit
 
@@ -66,6 +158,99 @@ End Sub`, { fileName: "StructuredStatements.bas" });
   assert.equal(bareCallStatement.callStyle, "bare");
   assert.equal(bareCallStatement.name, "UpdateCount");
   assert.equal(procedure.body[3]?.kind, "executableStatement");
+});
+
+test("parseModule structures call statements that span multiple physical lines", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    Call UpdateCount( _
+        holder.Count _
+    )
+    UpdateCount _
+        holder.Count
+End Sub`, { fileName: "StructuredMultilineCalls.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const callKeywordStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const bareCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  assert.ok(callKeywordStatement?.kind === "callStatement");
+  assert.equal(callKeywordStatement.callStyle, "call");
+  assert.equal(callKeywordStatement.name, "UpdateCount");
+  assert.deepEqual(callKeywordStatement.nameRange, {
+    end: { character: 20, line: 3 },
+    start: { character: 9, line: 3 }
+  });
+  assert.deepEqual(callKeywordStatement.arguments.map((argument) => argument.text), ["holder.Count"]);
+  assert.deepEqual(callKeywordStatement.arguments[0]?.range, {
+    end: { character: 20, line: 4 },
+    start: { character: 8, line: 4 }
+  });
+  assert.ok(bareCallStatement?.kind === "callStatement");
+  assert.equal(bareCallStatement.callStyle, "bare");
+  assert.equal(bareCallStatement.name, "UpdateCount");
+  assert.deepEqual(bareCallStatement.nameRange, {
+    end: { character: 15, line: 6 },
+    start: { character: 4, line: 6 }
+  });
+  assert.deepEqual(bareCallStatement.arguments.map((argument) => argument.text), ["holder.Count"]);
+  assert.deepEqual(bareCallStatement.arguments[0]?.range, {
+    end: { character: 20, line: 7 },
+    start: { character: 8, line: 7 }
+  });
+});
+
+test("parseModule preserves physical-line ranges for multiline assignment statements", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    title = _
+        True
+End Sub`, { fileName: "StructuredMultilineAssignment.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  assert.equal(assignmentStatement?.kind, "assignmentStatement");
+  assert.equal(assignmentStatement?.targetText, "title");
+  assert.equal(assignmentStatement?.expressionText, "True");
+  assert.deepEqual(assignmentStatement?.targetRange, {
+    end: { character: 9, line: 3 },
+    start: { character: 4, line: 3 }
+  });
+  assert.deepEqual(assignmentStatement?.expressionRange, {
+    end: { character: 12, line: 4 },
+    start: { character: 8, line: 4 }
+  });
+});
+
+test("parseModule structures labeled assignment and call statements in procedure bodies", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+Label1: title = 1
+Label2: UpdateCount title
+End Sub`, { fileName: "StructuredLabeledStatements.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const callStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  assert.equal(assignmentStatement?.kind, "assignmentStatement");
+  assert.equal(assignmentStatement?.text, "Label1: title = 1");
+  assert.equal(assignmentStatement?.targetText, "title");
+  assert.deepEqual(assignmentStatement?.targetRange, {
+    end: { character: 13, line: 3 },
+    start: { character: 8, line: 3 }
+  });
+  assert.equal(callStatement?.kind, "callStatement");
+  assert.equal(callStatement?.text, "Label2: UpdateCount title");
+  assert.equal(callStatement?.name, "UpdateCount");
+  assert.deepEqual(callStatement?.nameRange, {
+    end: { character: 19, line: 4 },
+    start: { character: 8, line: 4 }
+  });
 });
 
 test("parseModule structures block If, Select Case, For, and For Each statements in procedure bodies", () => {
@@ -135,6 +320,33 @@ End Sub`, { fileName: "StructuredBlocks.bas" });
   );
   assert.equal(nextItemStatement?.kind, "nextStatement");
   assert.equal(nextItemStatement && nextItemStatement.kind === "nextStatement" ? nextItemStatement.counterText : "", "item");
+});
+
+test("parseModule keeps block If and ElseIf statements structured when literals contain colons", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    If Format$(Now, "hh:mm") = "00:00" Then
+    ElseIf stamp = #12:34:56 AM# Then
+    End If
+End Sub`, { fileName: "StructuredLiteralColonBlocks.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const ifStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const elseIfStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const endIfStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[2] : undefined;
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  assert.equal(ifStatement?.kind, "ifBlockStatement");
+  assert.equal(
+    ifStatement && ifStatement.kind === "ifBlockStatement" ? ifStatement.conditionText : "",
+    'Format$(Now, "hh:mm") = "00:00"'
+  );
+  assert.equal(elseIfStatement?.kind, "elseIfClauseStatement");
+  assert.equal(
+    elseIfStatement && elseIfStatement.kind === "elseIfClauseStatement" ? elseIfStatement.conditionText : "",
+    "stamp = #12:34:56 AM#"
+  );
+  assert.equal(endIfStatement?.kind, "endIfStatement");
 });
 
 test("parseModule structures Do, While, With, and On Error statements in procedure bodies", () => {
@@ -274,6 +486,31 @@ End Sub`, { fileName: "BuiltInReferences.bas" });
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "undeclared-variable"), false);
 });
 
+test("analyzeModule reports undeclared callable names for structured call statements", () => {
+  const result = analyzeModule(`Attribute VB_Name = "MissingCallable"
+Option Explicit
+
+Public Sub Demo()
+    Dim value As Long
+    MissingHandler value
+End Sub`, { fileName: "MissingCallable.bas" });
+
+  assert.deepEqual(
+    result.diagnostics
+      .filter((diagnostic) => diagnostic.code === "undeclared-variable")
+      .map((diagnostic) => ({
+        message: diagnostic.message,
+        start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+      })),
+    [
+      {
+        message: "Undeclared identifier 'MissingHandler'.",
+        start: "5:4"
+      }
+    ]
+  );
+});
+
 test("analyzeModule skips frm designer text and exposes navigation symbols", () => {
   const result = analyzeModule(`VERSION 5.00
 Begin VB.Form UserForm1
@@ -376,6 +613,43 @@ End Sub`, { fileName: "ContinuedMismatch.bas" });
 
   assert.equal(mismatchDiagnostics.length, 1);
   assert.equal(mismatchDiagnostics[0]?.message, "Type mismatch: cannot assign Boolean to String.");
+});
+
+test("analyzeModule reports type mismatches on the physical expression line for continued assignments", () => {
+  const result = analyzeModule(`Attribute VB_Name = "ContinuedMismatchRange"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+    title = _
+        True
+End Sub`, { fileName: "ContinuedMismatchRange.bas" });
+
+  const mismatchDiagnostic = result.diagnostics.find((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(mismatchDiagnostic?.message, "Type mismatch: cannot assign Boolean to String.");
+  assert.deepEqual(mismatchDiagnostic?.range, {
+    end: { character: 12, line: 6 },
+    start: { character: 8, line: 6 }
+  });
+});
+
+test("analyzeModule reports type mismatches for labeled assignments", () => {
+  const result = analyzeModule(`Attribute VB_Name = "LabeledMismatch"
+Option Explicit
+
+Public Sub Demo()
+    Dim title As String
+Label1: title = 1
+End Sub`, { fileName: "LabeledMismatch.bas" });
+
+  const mismatchDiagnostic = result.diagnostics.find((diagnostic) => diagnostic.code === "type-mismatch");
+
+  assert.equal(mismatchDiagnostic?.message, "Type mismatch: cannot assign Long to String.");
+  assert.deepEqual(mismatchDiagnostic?.range, {
+    end: { character: 17, line: 5 },
+    start: { character: 16, line: 5 }
+  });
 });
 
 test("analyzeModule expands type mismatch diagnostics for compound expressions and Set assignments", () => {
@@ -497,6 +771,27 @@ Public Sub Demo()
   );
 });
 
+test("analyzeModule avoids false block syntax errors when If headers contain literal colons", () => {
+  const result = analyzeModule(`Attribute VB_Name = "LiteralColonBlocks"
+Option Explicit
+
+Public Sub Demo()
+    Dim stamp As Date
+    stamp = #12:00:00 AM#
+
+    If Format$(stamp, "hh:mm") = "00:00" Then
+        Debug.Print "midnight"
+    ElseIf stamp = #12:34:56 AM# Then
+        Debug.Print "fallback"
+    End If
+End Sub`, { fileName: "LiteralColonBlocks.bas" });
+
+  assert.deepEqual(
+    result.diagnostics.filter((diagnostic) => diagnostic.code === "syntax-error"),
+    []
+  );
+});
+
 test("analyzeModule keeps ByRef checks in structured For headers after AST-based invocation scanning", () => {
   const result = analyzeModule(`Attribute VB_Name = "StructuredForByRef"
 Option Explicit
@@ -518,6 +813,76 @@ End Sub`, { fileName: "StructuredForByRef.bas" });
   assert.equal(
     byRefDiagnostics[0]?.message,
     "ByRef parameter 'count' in ReadLimit receives an expression. Introduce a temporary variable before the call."
+  );
+});
+
+test("analyzeModule keeps ByRef checks in multiline structured If headers when invocation stays on one line", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredMultilineIfByRef"
+Option Explicit
+
+Private Function AcceptCount(ByRef count As Long) As Boolean
+    AcceptCount = True
+End Function
+
+Public Sub Demo()
+    Dim count As Long
+    Dim ready As Boolean
+
+    If AcceptCount(count + 1) And _
+        ready Then
+        Debug.Print ready
+    End If
+End Sub`, { fileName: "StructuredMultilineIfByRef.bas" });
+  const byRefDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(byRefDiagnostics.length, 1);
+  assert.equal(
+    byRefDiagnostics[0]?.message,
+    "ByRef parameter 'count' in AcceptCount receives an expression. Introduce a temporary variable before the call."
+  );
+});
+
+test("analyzeModule keeps ByRef checks when call invocations span multiple physical lines", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredMultilineCallByRef"
+Option Explicit
+
+Private Sub UpdateCount(ByRef count As Long)
+End Sub
+
+Public Sub Demo()
+    Dim count As Long
+
+    Call UpdateCount( _
+        count + 1 _
+    )
+End Sub`, { fileName: "StructuredMultilineCallByRef.bas" });
+  const byRefDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(byRefDiagnostics.length, 1);
+  assert.equal(
+    byRefDiagnostics[0]?.message,
+    "ByRef parameter 'count' in UpdateCount receives an expression. Introduce a temporary variable before the call."
+  );
+});
+
+test("analyzeModule keeps ByRef checks for labeled call statements", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredLabeledCallByRef"
+Option Explicit
+
+Private Sub UpdateCount(ByRef count As Long)
+End Sub
+
+Public Sub Demo()
+    Dim wrongCount As String
+
+Label1: UpdateCount wrongCount
+End Sub`, { fileName: "StructuredLabeledCallByRef.bas" });
+  const byRefDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("byref-"));
+
+  assert.equal(byRefDiagnostics.length, 1);
+  assert.equal(
+    byRefDiagnostics[0]?.message,
+    "ByRef parameter 'count' in UpdateCount expects Long but receives String. VBA may raise a ByRef argument type mismatch."
   );
 });
 
@@ -594,6 +959,36 @@ End Sub`, { fileName: "StructuredHeaderUndeclared.bas" });
       "Undeclared identifier 'finished'.",
       "Undeclared identifier 'active'.",
       "Undeclared identifier 'holder'."
+    ]
+  );
+});
+
+test("analyzeModule reports undeclared identifiers on the physical line inside multiline structured headers", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredMultilineHeaderUndeclared"
+Option Explicit
+
+Public Sub Demo()
+    If ready And _
+        fallback Then
+        Debug.Print "x"
+    End If
+End Sub`, { fileName: "StructuredMultilineHeaderUndeclared.bas" });
+  const undeclaredDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "undeclared-variable");
+
+  assert.deepEqual(
+    undeclaredDiagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Undeclared identifier 'ready'.",
+        start: "4:7"
+      },
+      {
+        message: "Undeclared identifier 'fallback'.",
+        start: "5:8"
+      }
     ]
   );
 });
@@ -767,6 +1162,53 @@ End Sub`, { fileName: "StructuredUnreachableBoundaries.bas" });
     unreachableDiagnostics.map((diagnostic) => diagnostic.message),
     [
       "Unreachable code after Exit Sub.",
+      "Unreachable code after End."
+    ]
+  );
+});
+
+test("analyzeModule uses structured Else, Loop, Wend, and End With boundaries for unreachable code", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredUnreachableControlBoundaries"
+Option Explicit
+
+Public Sub Demo()
+    Dim ready As Boolean
+    Dim keepRunning As Boolean
+    Dim marker As Long
+
+    If ready Then
+        Exit Sub
+        marker = 1
+    Else
+        marker = 2
+    End If
+
+    Do While keepRunning
+        End
+        marker = 3
+    Loop
+
+    While ready
+        End
+        marker = 4
+    Wend
+
+    With Application
+        End
+    End With
+
+    marker = 5
+End Sub`, { fileName: "StructuredUnreachableControlBoundaries.bas" });
+
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(unreachableDiagnostics.length, 4);
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Unreachable code after Exit Sub.",
+      "Unreachable code after End.",
+      "Unreachable code after End.",
       "Unreachable code after End."
     ]
   );
@@ -1034,6 +1476,37 @@ Public Sub Demo()
     #Else
         value = value - 1
     #End If
+End Sub`
+  );
+});
+
+test("formatModuleIndentation keeps block If headers with literal colons aligned as blocks", () => {
+  const formatted = formatModuleIndentation(`Attribute VB_Name = "LiteralColonFormatting"
+Option Explicit
+
+Public Sub Demo()
+Dim stamp As Date
+stamp = #12:00:00 AM#
+If Format$(stamp, "hh:mm") = "00:00" Then
+Debug.Print "midnight"
+ElseIf stamp = #12:34:56 AM# Then
+Debug.Print "fallback"
+End If
+End Sub`, { fileName: "LiteralColonFormatting.bas", indentSize: 4, insertSpaces: true });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "LiteralColonFormatting"
+Option Explicit
+
+Public Sub Demo()
+    Dim stamp As Date
+    stamp = #12:00:00 AM#
+    If Format$(stamp, "hh:mm") = "00:00" Then
+        Debug.Print "midnight"
+    ElseIf stamp = #12:34:56 AM# Then
+        Debug.Print "fallback"
+    End If
 End Sub`
   );
 });

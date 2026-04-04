@@ -1,4 +1,5 @@
 import type { Diagnostic, ParseResult, ProcedureDeclarationNode, ProcedureKind } from "../types/model";
+import { hasStatementSeparatorColon } from "../parser/text";
 
 type BlockKind = "do" | "for" | "if" | "select" | "while" | "with";
 type BarrierKind = "do" | "for" | "if" | "procedure" | "select" | "while";
@@ -68,79 +69,16 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
 }
 
 function applyBlockTransition(statement: ProcedureDeclarationNode["body"][number], text: string, blockStack: BlockKind[]): void {
-  const structuredTransition = getStructuredBlockTransition(statement);
+  const transition = getStatementBlockTransition(statement, text);
 
-  if (structuredTransition?.push) {
-    blockStack.push(structuredTransition.push);
+  if (transition?.push) {
+    blockStack.push(transition.push);
     return;
   }
 
-  if (structuredTransition?.pop) {
-    popLastBlockOfKind(blockStack, structuredTransition.pop);
+  if (transition?.pop) {
+    popLastBlockOfKind(blockStack, transition.pop);
     return;
-  }
-
-  if (statement.kind !== "executableStatement") {
-    return;
-  }
-
-  if (isIfBlockStart(text)) {
-    blockStack.push("if");
-    return;
-  }
-
-  if (/^Select\s+Case\b/i.test(text)) {
-    blockStack.push("select");
-    return;
-  }
-
-  if (/^For\b/i.test(text)) {
-    blockStack.push("for");
-    return;
-  }
-
-  if (/^Do\b/i.test(text)) {
-    blockStack.push("do");
-    return;
-  }
-
-  if (/^While\b/i.test(text)) {
-    blockStack.push("while");
-    return;
-  }
-
-  if (/^With\b/i.test(text)) {
-    blockStack.push("with");
-    return;
-  }
-
-  if (/^End\s+If\b/i.test(text)) {
-    popLastBlockOfKind(blockStack, "if");
-    return;
-  }
-
-  if (/^End\s+Select\b/i.test(text)) {
-    popLastBlockOfKind(blockStack, "select");
-    return;
-  }
-
-  if (/^Next\b/i.test(text)) {
-    popLastBlockOfKind(blockStack, "for");
-    return;
-  }
-
-  if (/^Loop\b/i.test(text)) {
-    popLastBlockOfKind(blockStack, "do");
-    return;
-  }
-
-  if (/^Wend\b/i.test(text)) {
-    popLastBlockOfKind(blockStack, "while");
-    return;
-  }
-
-  if (/^End\s+With\b/i.test(text)) {
-    popLastBlockOfKind(blockStack, "with");
   }
 }
 
@@ -151,27 +89,15 @@ function clearsUnreachableState(
 ): boolean {
   switch (unreachableState.barrierKind) {
     case "if":
-      if (
-        statement.kind === "elseIfClauseStatement" ||
-        statement.kind === "elseClauseStatement" ||
-        statement.kind === "endIfStatement"
-      ) {
-        return true;
-      }
-
-      return statement.kind === "executableStatement" && (/^Else(?:If\b|$)/i.test(text) || /^End\s+If\b/i.test(text));
+      return isIfBoundaryStatement(statement, text);
     case "select":
-      if (statement.kind === "caseClauseStatement" || statement.kind === "endSelectStatement") {
-        return true;
-      }
-
-      return statement.kind === "executableStatement" && (/^Case\b/i.test(text) || /^End\s+Select\b/i.test(text));
+      return isSelectBoundaryStatement(statement, text);
     case "for":
-      return statement.kind === "nextStatement" || (statement.kind === "executableStatement" && /^Next\b/i.test(text));
+      return isForBoundaryStatement(statement, text);
     case "do":
-      return statement.kind === "loopStatement" || (statement.kind === "executableStatement" && /^Loop\b/i.test(text));
+      return isDoBoundaryStatement(statement, text);
     case "while":
-      return statement.kind === "wendStatement" || (statement.kind === "executableStatement" && /^Wend\b/i.test(text));
+      return isWhileBoundaryStatement(statement, text);
     default:
       return false;
   }
@@ -194,7 +120,7 @@ function hasLeadingLabel(text: string): boolean {
 }
 
 function isIfBlockStart(text: string): boolean {
-  return !/^ElseIf\b/i.test(text) && /^If\b.*\bThen\s*$/i.test(text) && !/:/.test(text);
+  return !/^ElseIf\b/i.test(text) && /^If\b.*\bThen\s*$/i.test(text) && !hasStatementSeparatorColon(text);
 }
 
 function isUnconditionalProcedureExit(text: string, procedureKind: ProcedureKind): boolean {
@@ -232,18 +158,7 @@ function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["b
     return false;
   }
 
-  const structuredBoundary =
-    statement.kind === "elseIfClauseStatement" ||
-    statement.kind === "elseClauseStatement" ||
-    statement.kind === "caseClauseStatement" ||
-    statement.kind === "endIfStatement" ||
-    statement.kind === "endSelectStatement" ||
-    statement.kind === "nextStatement" ||
-    statement.kind === "loopStatement" ||
-    statement.kind === "wendStatement" ||
-    statement.kind === "endWithStatement";
-
-  if (structuredBoundary) {
+  if (isStructuredBoundaryStatement(statement)) {
     return false;
   }
 
@@ -251,16 +166,14 @@ function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["b
     return true;
   }
 
-  return !(
-    /^Else(?:If\b|$)/i.test(text) ||
-    /^Case\b/i.test(text) ||
-    /^End\s+If\b/i.test(text) ||
-    /^End\s+Select\b/i.test(text) ||
-    /^Next\b/i.test(text) ||
-    /^Loop\b/i.test(text) ||
-    /^Wend\b/i.test(text) ||
-    /^End\s+With\b/i.test(text)
-  );
+  return !isExecutableBoundaryStatement(text);
+}
+
+function getStatementBlockTransition(
+  statement: ProcedureDeclarationNode["body"][number],
+  text: string
+): { pop?: BlockKind; push?: BlockKind } | undefined {
+  return getStructuredBlockTransition(statement) ?? getExecutableBlockTransition(statement, text);
 }
 
 function getStructuredBlockTransition(
@@ -295,6 +208,143 @@ function getStructuredBlockTransition(
     default:
       return undefined;
   }
+}
+
+function getExecutableBlockTransition(
+  statement: ProcedureDeclarationNode["body"][number],
+  text: string
+): { pop?: BlockKind; push?: BlockKind } | undefined {
+  if (statement.kind !== "executableStatement") {
+    return undefined;
+  }
+
+  if (isIfBlockStart(text)) {
+    return { push: "if" };
+  }
+
+  if (/^Select\s+Case\b/i.test(text)) {
+    return { push: "select" };
+  }
+
+  if (/^For\b/i.test(text)) {
+    return { push: "for" };
+  }
+
+  if (/^Do\b/i.test(text)) {
+    return { push: "do" };
+  }
+
+  if (/^While\b/i.test(text)) {
+    return { push: "while" };
+  }
+
+  if (/^With\b/i.test(text)) {
+    return { push: "with" };
+  }
+
+  if (/^End\s+If\b/i.test(text)) {
+    return { pop: "if" };
+  }
+
+  if (/^End\s+Select\b/i.test(text)) {
+    return { pop: "select" };
+  }
+
+  if (/^Next\b/i.test(text)) {
+    return { pop: "for" };
+  }
+
+  if (/^Loop\b/i.test(text)) {
+    return { pop: "do" };
+  }
+
+  if (/^Wend\b/i.test(text)) {
+    return { pop: "while" };
+  }
+
+  if (/^End\s+With\b/i.test(text)) {
+    return { pop: "with" };
+  }
+
+  return undefined;
+}
+
+function isStructuredBoundaryStatement(statement: ProcedureDeclarationNode["body"][number]): boolean {
+  return (
+    statement.kind === "elseIfClauseStatement" ||
+    statement.kind === "elseClauseStatement" ||
+    statement.kind === "caseClauseStatement" ||
+    statement.kind === "endIfStatement" ||
+    statement.kind === "endSelectStatement" ||
+    statement.kind === "nextStatement" ||
+    statement.kind === "loopStatement" ||
+    statement.kind === "wendStatement" ||
+    statement.kind === "endWithStatement"
+  );
+}
+
+function isExecutableBoundaryStatement(text: string): boolean {
+  return (
+    isExecutableIfBoundary(text) ||
+    isExecutableSelectBoundary(text) ||
+    isExecutableForBoundary(text) ||
+    isExecutableDoBoundary(text) ||
+    isExecutableWhileBoundary(text) ||
+    isExecutableWithBoundary(text)
+  );
+}
+
+function isIfBoundaryStatement(statement: ProcedureDeclarationNode["body"][number], text: string): boolean {
+  return (
+    statement.kind === "elseIfClauseStatement" ||
+    statement.kind === "elseClauseStatement" ||
+    statement.kind === "endIfStatement" ||
+    (statement.kind === "executableStatement" && isExecutableIfBoundary(text))
+  );
+}
+
+function isSelectBoundaryStatement(statement: ProcedureDeclarationNode["body"][number], text: string): boolean {
+  return (
+    statement.kind === "caseClauseStatement" ||
+    statement.kind === "endSelectStatement" ||
+    (statement.kind === "executableStatement" && isExecutableSelectBoundary(text))
+  );
+}
+
+function isForBoundaryStatement(statement: ProcedureDeclarationNode["body"][number], text: string): boolean {
+  return statement.kind === "nextStatement" || (statement.kind === "executableStatement" && isExecutableForBoundary(text));
+}
+
+function isDoBoundaryStatement(statement: ProcedureDeclarationNode["body"][number], text: string): boolean {
+  return statement.kind === "loopStatement" || (statement.kind === "executableStatement" && isExecutableDoBoundary(text));
+}
+
+function isWhileBoundaryStatement(statement: ProcedureDeclarationNode["body"][number], text: string): boolean {
+  return statement.kind === "wendStatement" || (statement.kind === "executableStatement" && isExecutableWhileBoundary(text));
+}
+
+function isExecutableIfBoundary(text: string): boolean {
+  return /^Else(?:If\b|$)/i.test(text) || /^End\s+If\b/i.test(text);
+}
+
+function isExecutableSelectBoundary(text: string): boolean {
+  return /^Case\b/i.test(text) || /^End\s+Select\b/i.test(text);
+}
+
+function isExecutableForBoundary(text: string): boolean {
+  return /^Next\b/i.test(text);
+}
+
+function isExecutableDoBoundary(text: string): boolean {
+  return /^Loop\b/i.test(text);
+}
+
+function isExecutableWhileBoundary(text: string): boolean {
+  return /^Wend\b/i.test(text);
+}
+
+function isExecutableWithBoundary(text: string): boolean {
+  return /^End\s+With\b/i.test(text);
 }
 
 function stripLeadingLabel(text: string): string {

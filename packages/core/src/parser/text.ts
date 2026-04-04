@@ -186,6 +186,11 @@ export function splitCodeAndComment(line: string): { code: string; comment?: str
   return { code: line };
 }
 
+export function hasStatementSeparatorColon(text: string): boolean {
+  const { code } = splitCodeAndComment(text);
+  return removeStringAndDateLiterals(code).includes(":");
+}
+
 export function splitCommaAware(text: string): string[] {
   const values: string[] = [];
   let buffer = "";

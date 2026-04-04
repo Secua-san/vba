@@ -44,10 +44,6 @@ export function collectByRefArgumentDiagnostics(
     }
 
     for (const statement of member.body) {
-      if (statement.range.start.line !== statement.range.end.line) {
-        continue;
-      }
-
       for (const invocation of collectStatementInvocations(result, statement)) {
         const resolvedCallable = resolveCallableAtPosition(invocation.nameRange.start);
 
@@ -123,13 +119,88 @@ function collectStatementInvocations(
 
   if (structuredReferenceSegments !== undefined) {
     return structuredReferenceSegments
-      .filter((segment) => segment.role === "read" && segment.range.start.line === segment.range.end.line)
-      .flatMap((segment) => collectInvocations(segment.text, segment.range.start.line, segment.range.start.character));
+      .filter((segment) => segment.role === "read")
+      .flatMap((segment) => collectInvocationsInSourceRange(result, segment.range));
   }
 
-  const originalLine = result.source.normalizedLines[statement.range.start.line] ?? statement.text;
-  const { code } = splitCodeAndComment(originalLine);
-  return collectInvocations(code, statement.range.start.line);
+  return collectInvocationsInSourceRange(result, statement.range);
+}
+
+function collectInvocationsInSourceRange(result: AnalysisResult, range: SourceRange): Invocation[] {
+  const flattenedRange = flattenCodeRange(result, range);
+
+  return collectInvocations(flattenedRange.text, 0, 0).map((invocation) => ({
+    arguments: invocation.arguments.map((argument) => ({
+      range: mapFlattenedRange(flattenedRange.positions, argument.range),
+      text: argument.text
+    })),
+    name: invocation.name,
+    nameRange: mapFlattenedRange(flattenedRange.positions, invocation.nameRange)
+  }));
+}
+
+function flattenCodeRange(
+  result: AnalysisResult,
+  range: SourceRange
+): { positions: Array<LinePosition | undefined>; text: string } {
+  let text = "";
+  const positions: Array<LinePosition | undefined> = [];
+  let hasOutput = false;
+
+  for (let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex += 1) {
+    const originalLine = result.source.normalizedLines[lineIndex];
+
+    if (originalLine === undefined) {
+      continue;
+    }
+
+    const sliceStartCharacter = lineIndex === range.start.line ? range.start.character : 0;
+    const sliceEndCharacter = lineIndex === range.end.line ? range.end.character : originalLine.length;
+    const lineSlice = originalLine.slice(sliceStartCharacter, sliceEndCharacter);
+    const { code } = splitCodeAndComment(lineSlice);
+    const continued = isLineContinuation(code);
+    const codeWithoutContinuation = continued ? code.replace(/\s+_\s*$/, "") : code;
+    const trimmedCode = codeWithoutContinuation.trimEnd();
+    const leadingTrimLength = hasOutput ? trimmedCode.length - trimmedCode.trimStart().length : 0;
+    const emittedText = hasOutput ? trimmedCode.trimStart() : trimmedCode;
+
+    if (hasOutput) {
+      text += " ";
+      positions.push(undefined);
+    }
+
+    for (let index = 0; index < emittedText.length; index += 1) {
+      text += emittedText[index];
+      positions.push({
+        character: sliceStartCharacter + leadingTrimLength + index,
+        line: lineIndex
+      });
+    }
+
+    hasOutput = true;
+  }
+
+  return { positions, text };
+}
+
+function mapFlattenedRange(
+  positions: Array<LinePosition | undefined>,
+  range: SourceRange
+): SourceRange {
+  const startPosition = positions[range.start.character];
+  const endPosition = positions[Math.max(range.end.character - 1, range.start.character)];
+
+  if (!startPosition || !endPosition) {
+    return range;
+  }
+
+  return {
+    start: startPosition,
+    end: {
+      character: endPosition.character + 1,
+      line: endPosition.line
+    }
+  };
 }
 
 function findLocalCallable(result: AnalysisResult, position: LinePosition): ResolvedCallable | undefined {
@@ -584,6 +655,10 @@ function skipStringLiteral(text: string, startIndex: number): number {
   }
 
   return index;
+}
+
+function isLineContinuation(code: string): boolean {
+  return /\s+_\s*$/.test(code);
 }
 
 function usesNamedArgument(argumentText: string): boolean {
