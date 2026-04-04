@@ -352,6 +352,16 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInMemberCompletionDocument, "Application.ActiveCell."),
     (items) => items.some((item) => getCompletionItemLabel(item) === "Address")
   );
+  const activeCellMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Debug.Print ActiveCell."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "HasSpill")
+  );
+  const activeCellSpillParentMemberCompletionItems = await waitForCompletions(
+    builtInMemberCompletionDocument,
+    findPositionAfterToken(builtInMemberCompletionDocument, "Debug.Print ActiveCell.SpillParent."),
+    (items) => items.some((item) => getCompletionItemLabel(item) === "Address")
+  );
   const worksheetFunctionPropertyCompletion = applicationMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "WorksheetFunction"
   );
@@ -398,6 +408,18 @@ export async function run(): Promise<void> {
     (item) => getCompletionItemLabel(item) === "Count"
   );
   const applicationActiveCellAddressCompletion = applicationActiveCellMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "Address"
+  );
+  const activeCellHasSpillCompletion = activeCellMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "HasSpill"
+  );
+  const activeCellSavedAsArrayCompletion = activeCellMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "SavedAsArray"
+  );
+  const activeCellSpillParentCompletion = activeCellMemberCompletionItems.find(
+    (item) => getCompletionItemLabel(item) === "SpillParent"
+  );
+  const activeCellSpillParentAddressCompletion = activeCellSpillParentMemberCompletionItems.find(
     (item) => getCompletionItemLabel(item) === "Address"
   );
 
@@ -454,6 +476,10 @@ export async function run(): Promise<void> {
     "function-based Worksheets selector should stay on the Worksheets collection"
   );
   assert.ok(applicationActiveCellAddressCompletion?.detail?.includes("Excel Range"));
+  assert.ok(activeCellHasSpillCompletion?.detail?.includes("Excel Range property"));
+  assert.ok(activeCellSavedAsArrayCompletion?.detail?.includes("Excel Range property"));
+  assert.ok(activeCellSpillParentCompletion?.detail?.includes("Excel Range property"));
+  assert.ok(activeCellSpillParentAddressCompletion?.detail?.includes("Excel Range"));
 
   const oleObjectBuiltInDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "OleObjectBuiltIn.bas"));
   await vscode.window.showTextDocument(oleObjectBuiltInDocument);
@@ -3395,6 +3421,11 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "Cells.AddressLocal("),
     (help) => help.signatures.length > 0
   );
+  const builtInSpillParentAddressSignatureHelp = await waitForSignatureHelp(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "ActiveCell.SpillParent.Address("),
+    (help) => help.signatures.length > 0
+  );
   const builtInWorksheetEvaluateSignatureHelp = await waitForSignatureHelp(
     builtInSignatureDocument,
     findPositionAfterToken(builtInSignatureDocument, "Worksheets(1).Evaluate("),
@@ -3499,9 +3530,27 @@ export async function run(): Promise<void> {
     findPositionAfterToken(builtInSignatureDocument, "Debug.Print Chart1.ChartA"),
     (hovers) => hovers.length > 0
   );
+  const builtInHasSpillHover = await waitForHover(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Debug.Print ActiveCell.HasSpi"),
+    (hovers) => hovers.length > 0
+  );
+  const builtInSavedAsArrayHover = await waitForHover(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Debug.Print ActiveCell.SavedAsArra"),
+    (hovers) => hovers.length > 0
+  );
+  const builtInSpillParentHover = await waitForHover(
+    builtInSignatureDocument,
+    findPositionAfterToken(builtInSignatureDocument, "Debug.Print ActiveCell.SpillPar"),
+    (hovers) => hovers.length > 0
+  );
   const builtInHoverText = getHoverContentsText(builtInHover[0]);
   const builtInWorkbookHoverText = getHoverContentsText(builtInWorkbookHover[0]);
   const builtInChartHoverText = getHoverContentsText(builtInChartHover[0]);
+  const builtInHasSpillHoverText = getHoverContentsText(builtInHasSpillHover[0]);
+  const builtInSavedAsArrayHoverText = getHoverContentsText(builtInSavedAsArrayHover[0]);
+  const builtInSpillParentHoverText = getHoverContentsText(builtInSpillParentHover[0]);
 
   assert.equal(
     builtInSignatureHelp.signatures[0]?.label,
@@ -3844,6 +3893,22 @@ export async function run(): Promise<void> {
     "built-in AddressLocal RelativeTo argument should be optional"
   );
   assert.equal(
+    builtInSpillParentAddressSignatureHelp.signatures[0]?.label,
+    "Address(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String",
+    "built-in member signature should resolve through ActiveCell.SpillParent"
+  );
+  assert.equal(
+    builtInSpillParentAddressSignatureHelp.signatures[0]?.parameters.length,
+    5,
+    "ActiveCell.SpillParent.Address should preserve Range.Address parameter metadata"
+  );
+  assert.ok(
+    getSignatureDocumentation(
+      builtInSpillParentAddressSignatureHelp.signatures[0]?.parameters[2]?.documentation
+    ).includes("想定型: XlReferenceStyle"),
+    "ActiveCell.SpillParent.Address should keep reference style type metadata"
+  );
+  assert.equal(
     builtInWorksheetEvaluateSignatureHelp.signatures[0]?.label,
     "Evaluate(Name) As Variant",
     "built-in member signature should be available for Worksheets(1).Evaluate"
@@ -4091,6 +4156,30 @@ export async function run(): Promise<void> {
   assert.ok(
     builtInChartHoverText.includes("excel.chart.chartarea"),
     "Chart1 hover should include the Chart.ChartArea Learn URL"
+  );
+  assert.ok(
+    builtInHasSpillHoverText.includes("Range.HasSpill"),
+    "ActiveCell.HasSpill hover should resolve through Range members"
+  );
+  assert.ok(
+    builtInHasSpillHoverText.includes("excel.range.hasspill"),
+    "ActiveCell.HasSpill hover should include the Range.HasSpill Learn URL"
+  );
+  assert.ok(
+    builtInSavedAsArrayHoverText.includes("Range.SavedAsArray"),
+    "ActiveCell.SavedAsArray hover should resolve through Range members"
+  );
+  assert.ok(
+    builtInSavedAsArrayHoverText.includes("excel.range.savedasarray"),
+    "ActiveCell.SavedAsArray hover should include the Range.SavedAsArray Learn URL"
+  );
+  assert.ok(
+    builtInSpillParentHoverText.includes("Range.SpillParent"),
+    "ActiveCell.SpillParent hover should resolve through Range members"
+  );
+  assert.ok(
+    builtInSpillParentHoverText.includes("excel.range.spillparent"),
+    "ActiveCell.SpillParent hover should include the Range.SpillParent Learn URL"
   );
 
   const renameDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "RenameLocal.bas"));

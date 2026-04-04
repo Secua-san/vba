@@ -95,6 +95,8 @@ Public Sub Demo()
     Debug.Print ActiveWorkbook.Worksheets(1).
     Debug.Print ActiveWorkbook.Worksheets(GetIndex()).
     Debug.Print Application.ActiveCell.
+    Debug.Print ActiveCell.
+    Debug.Print ActiveCell.SpillParent.
 End Sub
 
 Private Function GetIndex() As Long
@@ -169,6 +171,11 @@ Option Explicit`
     uri,
     findPositionAfterTokenInText(text, "Application.ActiveCell.")
   );
+  const activeCellMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Debug.Print ActiveCell."));
+  const activeCellSpillParentMembers = service.getCompletionSymbols(
+    uri,
+    findPositionAfterTokenInText(text, "Debug.Print ActiveCell.SpillParent.")
+  );
 
   const worksheetFunctionProperty = applicationMembers.find((resolution) => resolution.symbol.name === "WorksheetFunction");
   const activeCellProperty = applicationMembers.find((resolution) => resolution.symbol.name === "ActiveCell");
@@ -198,6 +205,12 @@ Option Explicit`
     (resolution) => resolution.symbol.name === "Count"
   );
   const applicationActiveCellAddress = applicationActiveCellMembers.find((resolution) => resolution.symbol.name === "Address");
+  const activeCellHasSpill = activeCellMembers.find((resolution) => resolution.symbol.name === "HasSpill");
+  const activeCellSavedAsArray = activeCellMembers.find((resolution) => resolution.symbol.name === "SavedAsArray");
+  const activeCellSpillParent = activeCellMembers.find((resolution) => resolution.symbol.name === "SpillParent");
+  const activeCellSpillParentAddress = activeCellSpillParentMembers.find(
+    (resolution) => resolution.symbol.name === "Address"
+  );
 
   assert.equal(worksheetFunctionProperty?.isBuiltIn, true);
   assert.equal(worksheetFunctionProperty?.moduleName, "Excel Application property");
@@ -230,6 +243,14 @@ Option Explicit`
   assert.equal(chainedIndexedWorksheetFunctionCount?.moduleName, "Excel Worksheets property");
   assert.equal(chainedIndexedWorksheetFunctionMembers.some((resolution) => resolution.symbol.name === "ExportAsFixedFormat"), false);
   assert.equal(applicationActiveCellAddress?.documentation?.includes("excel.range.address"), true);
+  assert.equal(activeCellHasSpill?.moduleName, "Excel Range property");
+  assert.equal(activeCellHasSpill?.documentation?.includes("excel.range.hasspill"), true);
+  assert.equal(activeCellSavedAsArray?.moduleName, "Excel Range property");
+  assert.equal(activeCellSavedAsArray?.documentation?.includes("excel.range.savedasarray"), true);
+  assert.equal(activeCellSpillParent?.moduleName, "Excel Range property");
+  assert.equal(activeCellSpillParent?.typeName, "Range");
+  assert.equal(activeCellSpillParent?.documentation?.includes("excel.range.spillparent"), true);
+  assert.equal(activeCellSpillParentAddress?.documentation?.includes("excel.range.address"), true);
 });
 
 test("document service exposes DialogSheet common callable members through DialogSheets roots", () => {
@@ -4270,6 +4291,9 @@ Public Sub Demo()
     Debug.Print ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Application.ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Cells.AddressLocal(False, False)
+    Debug.Print ActiveCell.HasSpill
+    Debug.Print ActiveCell.SavedAsArray
+    Debug.Print ActiveCell.SpillParent.Address(False, False)
     Debug.Print ActiveWorkbook.Worksheets.Count
     Debug.Print Worksheets(1).Evaluate("A1")
     Debug.Print Worksheets("A(1)").Evaluate("A1")
@@ -4369,6 +4393,10 @@ Option Explicit`
     findPositionAfterTokenInText(text, "Application.ActiveCell.Address(")
   );
   const addressLocalSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Cells.AddressLocal("));
+  const spillParentAddressSignature = service.getSignatureHelp(
+    uri,
+    findPositionAfterTokenInText(text, "ActiveCell.SpillParent.Address(")
+  );
   const worksheetEvaluateSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "Worksheets(1).Evaluate("));
   const worksheetStringEvaluateSignature = service.getSignatureHelp(
     uri,
@@ -4415,6 +4443,8 @@ Option Explicit`
   const hover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print Application.Calcu"));
   const workbookHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ThisWorkbook.Save"));
   const chartHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print Chart1.ChartA"));
+  const hasSpillHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ActiveCell.HasSpi"));
+  const spillParentHover = service.getHover(uri, findPositionAfterTokenInText(text, "Debug.Print ActiveCell.SpillPar"));
 
   assert.equal(worksheetSignature?.activeParameter, 1);
   assert.equal(worksheetSignature?.label, "Sum(Arg1, Arg2, Arg3, ..., Arg30) As Double");
@@ -4503,6 +4533,9 @@ Option Explicit`
   assert.equal(addressLocalSignature?.parameters.length, 5);
   assert.equal(addressLocalSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
   assert.equal(addressLocalSignature?.parameters[4]?.documentation?.includes("省略可能"), true);
+  assert.equal(spillParentAddressSignature?.label, "Address(RowAbsolute, ColumnAbsolute, ReferenceStyle, External, RelativeTo) As String");
+  assert.equal(spillParentAddressSignature?.parameters.length, 5);
+  assert.equal(spillParentAddressSignature?.parameters[2]?.documentation?.includes("想定型: XlReferenceStyle"), true);
   assert.equal(worksheetEvaluateSignature?.label, "Evaluate(Name) As Variant");
   assert.equal(worksheetEvaluateSignature?.parameters.length, 1);
   assert.equal(worksheetEvaluateSignature?.parameters[0]?.documentation?.includes("必須引数"), true);
@@ -4575,6 +4608,10 @@ Option Explicit`
   assert.equal(workbookHover?.contents.includes("excel.workbook.saveas"), true);
   assert.equal(chartHover?.contents.includes("Chart.ChartArea"), true);
   assert.equal(chartHover?.contents.includes("excel.chart.chartarea"), true);
+  assert.equal(hasSpillHover?.contents.includes("Range.HasSpill"), true);
+  assert.equal(hasSpillHover?.contents.includes("excel.range.hasspill"), true);
+  assert.equal(spillParentHover?.contents.includes("Range.SpillParent"), true);
+  assert.equal(spillParentHover?.contents.includes("excel.range.spillparent"), true);
 });
 
 test("document service prioritizes built-in member signature help over workspace callable collisions", () => {

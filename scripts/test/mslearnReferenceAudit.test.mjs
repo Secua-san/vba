@@ -179,6 +179,28 @@ test("未掲載監視対象は owner 単位の watch list で管理される", a
   }
 });
 
+test("Range spill 補助 property は learn URL と型情報を保持する", async () => {
+  const data = await loadReferenceData();
+  const hasSpillMember = getMember(data, "Range", "HasSpill");
+  const savedAsArrayMember = getMember(data, "Range", "SavedAsArray");
+  const spillParentMember = getMember(data, "Range", "SpillParent");
+
+  assert.ok(hasSpillMember, "Range.HasSpill member が必要です");
+  assert.equal(hasSpillMember.learnUrl, "https://learn.microsoft.com/en-us/office/vba/api/excel.range.hasspill");
+  assert.equal(hasSpillMember.typeName, "Variant");
+  assert.equal(hasSpillMember.signature, undefined);
+
+  assert.ok(savedAsArrayMember, "Range.SavedAsArray member が必要です");
+  assert.equal(savedAsArrayMember.learnUrl, "https://learn.microsoft.com/en-us/office/vba/api/excel.range.savedasarray");
+  assert.equal(savedAsArrayMember.typeName, "Variant");
+  assert.equal(savedAsArrayMember.signature, undefined);
+
+  assert.ok(spillParentMember, "Range.SpillParent member が必要です");
+  assert.equal(spillParentMember.learnUrl, "https://learn.microsoft.com/en-us/office/vba/api/excel.range.spillparent");
+  assert.equal(spillParentMember.typeName, "Range");
+  assert.equal(spillParentMember.signature, undefined);
+});
+
 test("未掲載監視対象は allow list と重複しない", () => {
   for (const [ownerName, memberNamesToWatch] of signatureMissingMemberWatchList) {
     const normalizedAllowListedMembers = new Set(

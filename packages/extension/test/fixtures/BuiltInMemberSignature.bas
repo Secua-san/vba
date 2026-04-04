@@ -32,6 +32,9 @@ Public Sub Demo()
     Debug.Print ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Application.ActiveCell.Address(False, False, xlA1, False)
     Debug.Print Cells.AddressLocal(False, False)
+    Debug.Print ActiveCell.HasSpill
+    Debug.Print ActiveCell.SavedAsArray
+    Debug.Print ActiveCell.SpillParent.Address(False, False)
     Debug.Print ActiveWorkbook.Worksheets.Count
     Debug.Print Worksheets(1).Evaluate("A1")
     Debug.Print Worksheets("A(1)").Evaluate("A1")
