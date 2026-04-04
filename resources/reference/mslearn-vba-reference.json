@@ -19151,6 +19151,12 @@
                   "tocHref": "excel.range.hasformula"
                 },
                 {
+                  "name": "HasSpill",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.hasspill",
+                  "summary": "Returns True when every cell in the range belongs to a spilled range, False when none do, and Null otherwise.",
+                  "typeName": "Variant"
+                },
+                {
                   "name": "HasRichDataType",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.hasrichdatatype",
                   "tocHref": "excel.range.hasrichdatatype"
@@ -19366,6 +19372,12 @@
                   "tocHref": "excel.range.rows"
                 },
                 {
+                  "name": "SavedAsArray",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.savedasarray",
+                  "summary": "Returns True when every cell in the range would be saved as an array formula, False when none would be, and Null otherwise.",
+                  "typeName": "Variant"
+                },
+                {
                   "name": "ServerActions",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.serveractions",
                   "tocHref": "excel.range.serveractions"
@@ -19389,6 +19401,12 @@
                   "name": "SparklineGroups",
                   "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.sparklinegroups",
                   "tocHref": "excel.range.sparklinegroups"
+                },
+                {
+                  "name": "SpillParent",
+                  "learnUrl": "https://learn.microsoft.com/en-us/office/vba/api/excel.range.spillparent",
+                  "summary": "Returns the formula cell that originated the spill for a spilled cell.",
+                  "typeName": "Range"
                 },
                 {
                   "name": "Style",

@@ -19,6 +19,8 @@ Public Sub Demo()
     Debug.Print ActiveWorkbook.Worksheets(1).
     Debug.Print ActiveWorkbook.Worksheets(GetIndex()).
     Debug.Print Application.ActiveCell.
+    Debug.Print ActiveCell.
+    Debug.Print ActiveCell.SpillParent.
 End Sub
 
 Private Function GetIndex() As Long

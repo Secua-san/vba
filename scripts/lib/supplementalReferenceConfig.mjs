@@ -167,6 +167,30 @@ export const supplementalOwnerMembers = [
     ownerName: "Workbook",
     sectionName: "Properties",
   },
+  {
+    members: [
+      {
+        learnUrl: "https://learn.microsoft.com/en-us/office/vba/api/excel.range.hasspill",
+        name: "HasSpill",
+        summary: "Returns True when every cell in the range belongs to a spilled range, False when none do, and Null otherwise.",
+        typeName: "Variant",
+      },
+      {
+        learnUrl: "https://learn.microsoft.com/en-us/office/vba/api/excel.range.savedasarray",
+        name: "SavedAsArray",
+        summary: "Returns True when every cell in the range would be saved as an array formula, False when none would be, and Null otherwise.",
+        typeName: "Variant",
+      },
+      {
+        learnUrl: "https://learn.microsoft.com/en-us/office/vba/api/excel.range.spillparent",
+        name: "SpillParent",
+        summary: "Returns the formula cell that originated the spill for a spilled cell.",
+        typeName: "Range",
+      },
+    ],
+    ownerName: "Range",
+    sectionName: "Properties",
+  },
 ];
 
 export const supplementalOwnerMemberOverrides = [
