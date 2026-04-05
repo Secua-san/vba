@@ -1347,6 +1347,8 @@ function collectSemanticTokensForState(
     ...state.analysis.symbols.procedureScopes.flatMap((scope) => scope.symbols.map((symbol) => createResolution(state, symbol, state.uri)))
   ];
   const lines = state.text.replace(/\r\n?/g, "\n").split("\n");
+  const structuredSemanticUnits = getStructuredSemanticUnits(state.analysis.module.members);
+  const structuredSemanticCoverage = buildStructuredSemanticCoverageMap(structuredSemanticUnits);
 
   for (const resolution of declarationResolutions) {
     const tokenShape = mapSemanticToken(resolution.symbol);
@@ -1360,6 +1362,18 @@ function collectSemanticTokensForState(
       modifiers: addUniqueModifier(tokenShape.modifiers, "declaration"),
       type: tokenShape.type
     });
+  }
+
+  for (const unit of structuredSemanticUnits) {
+    collectSemanticTokensInSegment(
+      tokens,
+      state,
+      resolveDefinition,
+      getDocumentState,
+      getWorksheetControlMetadataState,
+      unit.text,
+      unit.range
+    );
   }
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
@@ -1388,51 +1402,21 @@ function collectSemanticTokensForState(
         }
       };
 
-      if (previousCharacter === ".") {
-        const memberTokenShape = mapBuiltinMemberSemanticToken(
-          state.text,
-          state.uri,
-          lineIndex,
-          startCharacter,
-          identifier,
-          resolveDefinition,
-          getDocumentState,
-          getWorksheetControlMetadataState
-        );
-
-        if (memberTokenShape) {
-          addSemanticToken(tokens, range, memberTokenShape);
-        }
-
+      if (isRangeWithinStructuredSemanticCoverage(range, structuredSemanticCoverage)) {
         continue;
       }
 
-      const resolution = resolveDefinition(state.uri, range.start);
-      const documentModuleOwnerName = resolution ? getDocumentModuleBuiltinOwnerName(resolution, identifier, getDocumentState) : undefined;
-      const builtinAliasTokenShape =
-        documentModuleOwnerName === "Workbook"
-          ? mapBuiltinSemanticToken("ThisWorkbook")
-          : undefined;
-      const tokenShape = builtinAliasTokenShape
-        ? builtinAliasTokenShape
-        : resolution
-          ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
-          : mapBuiltinSemanticToken(identifier);
-
-      if (!tokenShape) {
-        continue;
-      }
-
-      const declarationRange = resolution && !builtinAliasTokenShape
-        ? getDeclarationRange(documentStates.get(resolution.uri), resolution, resolveDefinition)
-        : undefined;
-      const isDeclaration =
-        resolution && declarationRange ? resolution.uri === state.uri && rangesEqual(range, declarationRange) : false;
-
-      addSemanticToken(tokens, range, {
-        modifiers: isDeclaration ? addUniqueModifier(tokenShape.modifiers, "declaration") : tokenShape.modifiers,
-        type: tokenShape.type
-      });
+      addSemanticTokenForIdentifier(
+        tokens,
+        state,
+        range,
+        identifier,
+        previousCharacter,
+        nextCharacter,
+        resolveDefinition,
+        getDocumentState,
+        getWorksheetControlMetadataState
+      );
     }
   }
 
@@ -1663,6 +1647,177 @@ function collectResolvedReferencesInSegment(
   }
 
   return references;
+}
+
+function getStructuredSemanticUnits(
+  members: readonly ModuleMemberNode[]
+): Array<{ range: SourceRange; text: string }> {
+  const units: Array<{ range: SourceRange; text: string }> = [];
+
+  for (const member of members) {
+    if (member.kind !== "procedureDeclaration") {
+      continue;
+    }
+
+    for (const statement of member.body) {
+      if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
+        continue;
+      }
+
+      const structuredUnits = getStructuredReferenceUnits(statement);
+
+      if (structuredUnits) {
+        units.push(...structuredUnits);
+      }
+    }
+  }
+
+  return units;
+}
+
+function collectSemanticTokensInSegment(
+  tokens: Map<string, SemanticTokenEntry>,
+  state: DocumentState,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  text: string,
+  range: SourceRange
+): void {
+  const flattenedRange = buildFlattenedCodeRange(state.text, range, text);
+
+  if (!flattenedRange) {
+    return;
+  }
+
+  const scrubbed = removeStringAndDateLiterals(flattenedRange.code);
+
+  for (const match of scrubbed.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+    const identifier = match[0];
+    const startIndex = match.index ?? 0;
+    const previousCharacter = scrubbed[startIndex - 1] ?? "";
+    const nextCharacter = scrubbed[startIndex + identifier.length] ?? "";
+    const mappedRange = mapFlattenedCharacterSpan(flattenedRange.positions, startIndex, startIndex + identifier.length);
+
+    if (!mappedRange) {
+      continue;
+    }
+
+    addSemanticTokenForIdentifier(
+      tokens,
+      state,
+      mappedRange,
+      identifier,
+      previousCharacter,
+      nextCharacter,
+      resolveDefinition,
+      getDocumentState,
+      getWorksheetControlMetadataState
+    );
+  }
+}
+
+function addSemanticTokenForIdentifier(
+  tokens: Map<string, SemanticTokenEntry>,
+  state: DocumentState,
+  range: SourceRange,
+  identifier: string,
+  previousCharacter: string,
+  nextCharacter: string,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+): void {
+  if (nextCharacter === ":" && range.start.character === 0) {
+    return;
+  }
+
+  if (previousCharacter === ".") {
+    const memberTokenShape = mapBuiltinMemberSemanticToken(
+      state.text,
+      state.uri,
+      range.start.line,
+      range.start.character,
+      identifier,
+      resolveDefinition,
+      getDocumentState,
+      getWorksheetControlMetadataState
+    );
+
+    if (memberTokenShape) {
+      addSemanticToken(tokens, range, memberTokenShape);
+    }
+
+    return;
+  }
+
+  const resolution = resolveDefinition(state.uri, range.start);
+  const documentModuleOwnerName = resolution ? getDocumentModuleBuiltinOwnerName(resolution, identifier, getDocumentState) : undefined;
+  const builtinAliasTokenShape =
+    documentModuleOwnerName === "Workbook"
+      ? mapBuiltinSemanticToken("ThisWorkbook")
+      : undefined;
+  const tokenShape = builtinAliasTokenShape
+    ? builtinAliasTokenShape
+    : resolution
+      ? mapSemanticToken(resolution.symbol, resolution.semanticType, resolution.semanticModifiers)
+      : mapBuiltinSemanticToken(identifier);
+
+  if (!tokenShape) {
+    return;
+  }
+
+  const declarationRange = resolution && !builtinAliasTokenShape
+    ? getDeclarationRange(getDocumentState(resolution.uri), resolution, resolveDefinition)
+    : undefined;
+  const isDeclaration =
+    resolution && declarationRange ? resolution.uri === state.uri && rangesEqual(range, declarationRange) : false;
+
+  addSemanticToken(tokens, range, {
+    modifiers: isDeclaration ? addUniqueModifier(tokenShape.modifiers, "declaration") : tokenShape.modifiers,
+    type: tokenShape.type
+  });
+}
+
+function buildStructuredSemanticCoverageMap(
+  units: ReadonlyArray<{ range: SourceRange }>
+): Map<number, SourceRange[]> {
+  const coverage = new Map<number, SourceRange[]>();
+
+  for (const unit of units) {
+    for (let lineIndex = unit.range.start.line; lineIndex <= unit.range.end.line; lineIndex += 1) {
+      const lineCoverage = coverage.get(lineIndex);
+
+      if (lineCoverage) {
+        lineCoverage.push(unit.range);
+      } else {
+        coverage.set(lineIndex, [unit.range]);
+      }
+    }
+  }
+
+  return coverage;
+}
+
+function isRangeWithinStructuredSemanticCoverage(
+  range: SourceRange,
+  coverage: ReadonlyMap<number, SourceRange[]>
+): boolean {
+  const lineCoverage = coverage.get(range.start.line);
+
+  if (!lineCoverage) {
+    return false;
+  }
+
+  return lineCoverage.some((candidate) => isRangeWithinRange(range, candidate));
+}
+
+function isRangeWithinRange(range: SourceRange, candidate: SourceRange): boolean {
+  if (comparePositions(range.start, candidate.start) < 0 || comparePositions(range.end, candidate.end) > 0) {
+    return false;
+  }
+
+  return true;
 }
 
 function buildFlattenedCodeRange(
