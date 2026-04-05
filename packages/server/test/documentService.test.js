@@ -5694,6 +5694,79 @@ End Sub`;
   });
 });
 
+test("document service keeps semantic tokens across multiline structured headers", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/SemanticStructuredMultiline.bas";
+  const text = `Attribute VB_Name = "SemanticStructuredMultiline"
+Option Explicit
+
+Public Sub Demo()
+    Dim totalCount As Long
+    totalCount = 1
+
+    If totalCount = 1 And _
+        totalCount < 3 Then
+        Debug.Print totalCount
+    End If
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const tokens = service.getSemanticTokens(uri);
+
+  assertSemanticTokenByAnchor(text, tokens, "    Dim totalCount As Long", "totalCount", {
+    modifiers: ["declaration"],
+    type: "variable"
+  });
+  assertSemanticTokenByAnchor(text, tokens, "    totalCount = 1", "totalCount", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticTokenByAnchor(text, tokens, "    If totalCount = 1 And _", "totalCount", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticTokenByAnchor(text, tokens, "        totalCount < 3 Then", "totalCount", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticTokenByAnchor(text, tokens, "        Debug.Print totalCount", "totalCount", {
+    modifiers: [],
+    type: "variable"
+  });
+});
+
+test("document service exposes built-in member semantic tokens in multiline structured headers", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/SemanticStructuredBuiltInMultiline.bas";
+  const text = `Attribute VB_Name = "SemanticStructuredBuiltInMultiline"
+Option Explicit
+
+Public Sub Demo()
+    If Application _
+        .ActiveCell.Address(RowAbsolute:=True) <> "" Then
+        Debug.Print "ready"
+    End If
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const tokens = service.getSemanticTokens(uri);
+
+  assertSemanticTokenByAnchor(text, tokens, "    If Application _", "Application", {
+    modifiers: [],
+    type: "type"
+  });
+  assertSemanticTokenByAnchor(text, tokens, "        .ActiveCell.Address(RowAbsolute:=True) <> \"\" Then", "ActiveCell", {
+    modifiers: [],
+    type: "variable"
+  });
+  assertSemanticTokenByAnchor(text, tokens, "        .ActiveCell.Address(RowAbsolute:=True) <> \"\" Then", "Address", {
+    modifiers: [],
+    type: "variable"
+  });
+});
+
 test("document service exposes inferred type mismatch diagnostics", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/Mismatch.bas";
