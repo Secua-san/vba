@@ -459,6 +459,61 @@ End Sub`, { fileName: "StructuredBlockRanges.bas" });
   }
 });
 
+test("parseModule structures GoTo, GoSub, and Resume statements in procedure bodies", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    GoTo Handler
+    GoSub RetryPoint
+    Resume
+    Resume Next
+    Resume Handler
+Handler:
+RetryPoint:
+End Sub`, { fileName: "StructuredLabelTargets.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+
+  assert.ok(procedure && procedure.kind === "procedureDeclaration");
+  const goToStatement = procedure.body[0];
+  const goSubStatement = procedure.body[1];
+  const resumeStatement = procedure.body[2];
+  const resumeNextStatement = procedure.body[3];
+  const resumeTargetStatement = procedure.body[4];
+
+  assert.equal(goToStatement?.kind, "goToStatement");
+  if (goToStatement?.kind === "goToStatement") {
+    assert.equal(goToStatement.actionKind, "goTo");
+    assert.equal(goToStatement.targetText, "Handler");
+    assert.equal(goToStatement.targetRange.start.character, 9);
+  }
+
+  assert.equal(goSubStatement?.kind, "goToStatement");
+  if (goSubStatement?.kind === "goToStatement") {
+    assert.equal(goSubStatement.actionKind, "goSub");
+    assert.equal(goSubStatement.targetText, "RetryPoint");
+    assert.equal(goSubStatement.targetRange.start.character, 10);
+  }
+
+  assert.equal(resumeStatement?.kind, "resumeStatement");
+  if (resumeStatement?.kind === "resumeStatement") {
+    assert.equal(resumeStatement.actionKind, "implicit");
+    assert.equal(resumeStatement.targetRange, undefined);
+  }
+
+  assert.equal(resumeNextStatement?.kind, "resumeStatement");
+  if (resumeNextStatement?.kind === "resumeStatement") {
+    assert.equal(resumeNextStatement.actionKind, "next");
+    assert.equal(resumeNextStatement.targetRange, undefined);
+  }
+
+  assert.equal(resumeTargetStatement?.kind, "resumeStatement");
+  if (resumeTargetStatement?.kind === "resumeStatement") {
+    assert.equal(resumeTargetStatement.actionKind, "target");
+    assert.equal(resumeTargetStatement.targetText, "Handler");
+    assert.equal(resumeTargetStatement.targetRange?.start.character, 11);
+  }
+});
+
 test("analyzeModule reports undeclared identifiers and missing PtrSafe", () => {
   const result = analyzeModule(`Option Explicit
 
@@ -471,6 +526,24 @@ End Sub`, { fileName: "Demo.bas" });
 
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "declare-missing-ptrsafe"));
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "undeclared-variable"));
+});
+
+test("analyzeModule ignores label targets in GoTo, GoSub, Resume, and On Error statements", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredLabelTargets"
+Option Explicit
+
+Public Sub Demo()
+    On Error GoTo Handler
+    GoTo Handler
+    GoSub RetryPoint
+    Resume Next
+    Resume Handler
+Handler:
+RetryPoint:
+End Sub`, { fileName: "StructuredLabelTargets.bas" });
+  const undeclaredDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "undeclared-variable");
+
+  assert.deepEqual(undeclaredDiagnostics, []);
 });
 
 test("analyzeModule suppresses undeclared diagnostics for reserved and built-in reference data", () => {

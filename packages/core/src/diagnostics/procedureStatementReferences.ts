@@ -146,7 +146,9 @@ export function getProcedureStatementReferenceSegments(
     case "endIfStatement":
     case "endSelectStatement":
     case "endWithStatement":
+    case "goToStatement":
     case "onErrorStatement":
+    case "resumeStatement":
     case "wendStatement":
       return [];
     case "executableStatement":
