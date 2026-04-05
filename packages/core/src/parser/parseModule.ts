@@ -687,6 +687,18 @@ function parseStructuredBlockStatement(
     return onErrorStatement;
   }
 
+  const goToStatement = parseGoToStatement(text, statementRange, inlineCharacterOffset);
+
+  if (goToStatement) {
+    return goToStatement;
+  }
+
+  const resumeStatement = parseResumeStatement(text, statementRange, inlineCharacterOffset);
+
+  if (resumeStatement) {
+    return resumeStatement;
+  }
+
   return undefined;
 }
 
@@ -1192,6 +1204,92 @@ function parseOnErrorStatement(
   return {
     actionKind: "goto",
     kind: "onErrorStatement",
+    range: statementRange,
+    targetRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + targetStartCharacter,
+      inlineCharacterOffset + targetStartCharacter + targetText.length
+    ),
+    targetText,
+    text
+  };
+}
+
+function parseGoToStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  const match = /^\s*(GoTo|GoSub)\s+(.+?)\s*$/iu.exec(text);
+
+  if (!match?.[1] || !match[2]) {
+    return undefined;
+  }
+
+  const targetSlice = match[2];
+  const targetText = targetSlice.trim();
+  const targetPrefixLength = /^\s*(?:GoTo|GoSub)\s+/iu.exec(text)?.[0].length ?? 0;
+  const targetStartCharacter = findTrimmedSliceStart(text, targetSlice, targetPrefixLength);
+
+  if (targetText.length === 0 || targetStartCharacter < 0) {
+    return undefined;
+  }
+
+  return {
+    actionKind: /^GoSub$/iu.test(match[1]) ? "goSub" : "goTo",
+    kind: "goToStatement",
+    range: statementRange,
+    targetRange: createInlineOrStatementRange(
+      statementRange,
+      inlineCharacterOffset + targetStartCharacter,
+      inlineCharacterOffset + targetStartCharacter + targetText.length
+    ),
+    targetText,
+    text
+  };
+}
+
+function parseResumeStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"],
+  inlineCharacterOffset = 0
+): ProcedureStatementNode | undefined {
+  if (/^\s*Resume\s*$/iu.test(text)) {
+    return {
+      actionKind: "implicit",
+      kind: "resumeStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  if (/^\s*Resume\s+Next\s*$/iu.test(text)) {
+    return {
+      actionKind: "next",
+      kind: "resumeStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const targetMatch = /^\s*Resume\s+(.+?)\s*$/iu.exec(text);
+
+  if (!targetMatch?.[1]) {
+    return undefined;
+  }
+
+  const targetSlice = targetMatch[1];
+  const targetText = targetSlice.trim();
+  const targetPrefixLength = /^\s*Resume\s+/iu.exec(text)?.[0].length ?? 0;
+  const targetStartCharacter = findTrimmedSliceStart(text, targetSlice, targetPrefixLength);
+
+  if (targetText.length === 0 || targetStartCharacter < 0) {
+    return undefined;
+  }
+
+  return {
+    actionKind: "target",
+    kind: "resumeStatement",
     range: statementRange,
     targetRange: createInlineOrStatementRange(
       statementRange,
@@ -1945,7 +2043,7 @@ function findAssignmentOperatorIndex(text: string): number {
 }
 
 function isStatementKeyword(text: string): boolean {
-  return /^(?:Call|Case|Do|Else|ElseIf|End|For|If|Loop|Next|On|Select|While|With)\b/iu.test(text);
+  return /^(?:Call|Case|Do|Else|ElseIf|End|For|GoSub|GoTo|If|Loop|Next|On|Resume|Select|While|With)\b/iu.test(text);
 }
 
 function getIdentifierBeforeOpenParen(text: string, openParenIndex: number): { startCharacter: number; text: string } | undefined {

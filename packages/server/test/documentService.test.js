@@ -5191,6 +5191,67 @@ End Sub`
   );
 });
 
+test("document service ignores label target statements for references and semantic tokens", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/LabelTargetStatements.bas";
+  const text = `Attribute VB_Name = "LabelTargetStatements"
+Option Explicit
+
+Public Sub Handler()
+End Sub
+
+Public Sub Demo()
+    On Error GoTo Handler
+    GoTo Handler
+    GoSub Handler
+    Resume Handler
+    Resume Next
+Handler:
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const references = service.getReferences(uri, { character: 11, line: 3 }, true);
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.deepEqual(
+    references.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:3:11`]
+  );
+  assertNoSemanticTokenByAnchor(
+    text,
+    tokens,
+    "    On Error GoTo Handler",
+    "Handler",
+    0,
+    "On Error label targets must not inherit procedure semantic tokens"
+  );
+  assertNoSemanticTokenByAnchor(
+    text,
+    tokens,
+    "    GoTo Handler",
+    "Handler",
+    0,
+    "GoTo label targets must not inherit procedure semantic tokens"
+  );
+  assertNoSemanticTokenByAnchor(
+    text,
+    tokens,
+    "    GoSub Handler",
+    "Handler",
+    0,
+    "GoSub label targets must not inherit procedure semantic tokens"
+  );
+  assertNoSemanticTokenByAnchor(
+    text,
+    tokens,
+    "    Resume Handler",
+    "Handler",
+    0,
+    "Resume label targets must not inherit procedure semantic tokens"
+  );
+});
+
 test("document service avoids false syntax errors for If headers with literal colons", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/LiteralColonBlocks.bas";

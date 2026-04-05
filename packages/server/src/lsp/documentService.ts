@@ -1669,10 +1669,27 @@ function getStructuredSemanticUnits(
       if (structuredUnits) {
         units.push(...structuredUnits);
       }
+
+      units.push(...getStructuredSemanticSuppressionUnits(statement));
     }
   }
 
   return units;
+}
+
+function getStructuredSemanticSuppressionUnits(
+  statement: ProcedureDeclarationNode["body"][number]
+): Array<{ range: SourceRange; text: string }> {
+  switch (statement.kind) {
+    case "goToStatement":
+      return [{ range: statement.targetRange, text: "" }];
+    case "onErrorStatement":
+      return statement.targetRange ? [{ range: statement.targetRange, text: "" }] : [];
+    case "resumeStatement":
+      return statement.targetRange ? [{ range: statement.targetRange, text: "" }] : [];
+    default:
+      return [];
+  }
 }
 
 function collectSemanticTokensInSegment(

@@ -338,6 +338,24 @@ export interface OnErrorStatementNode {
   text: string;
 }
 
+export interface GoToStatementNode {
+  actionKind: "goSub" | "goTo";
+  kind: "goToStatement";
+  range: SourceRange;
+  targetRange: SourceRange;
+  targetText: string;
+  text: string;
+}
+
+export interface ResumeStatementNode {
+  actionKind: "implicit" | "next" | "target";
+  kind: "resumeStatement";
+  range: SourceRange;
+  targetRange?: SourceRange;
+  targetText?: string;
+  text: string;
+}
+
 export interface ExecutableStatementNode {
   kind: "executableStatement";
   range: SourceRange;
@@ -359,10 +377,12 @@ export type ProcedureStatementNode =
   | ExecutableStatementNode
   | ForEachStatementNode
   | ForStatementNode
+  | GoToStatementNode
   | IfBlockStatementNode
   | LoopStatementNode
   | NextStatementNode
   | OnErrorStatementNode
+  | ResumeStatementNode
   | SelectCaseStatementNode
   | WhileStatementNode
   | WendStatementNode
