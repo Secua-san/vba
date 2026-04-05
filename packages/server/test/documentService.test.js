@@ -5425,6 +5425,45 @@ End Sub`
   );
 });
 
+test("document service keeps local rename edits across multiline structured headers", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/RenameStructuredMultiline.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "RenameStructuredMultiline"
+Option Explicit
+
+Public Sub Demo()
+    Dim totalCount As Long
+    totalCount = 1
+
+    If totalCount = 1 And _
+        totalCount < 3 Then
+        Debug.Print totalCount
+    End If
+End Sub`
+  );
+
+  const target = service.prepareRename(uri, { character: 12, line: 7 });
+  const edits = service.getRenameEdits(uri, { character: 12, line: 7 }, "currentCount");
+
+  assert.equal(target?.placeholder, "totalCount");
+  assert.equal(`${target?.range.start.line}:${target?.range.start.character}`, "7:7");
+  assert.deepEqual(
+    edits?.map((edit) => `${edit.uri}:${edit.range.start.line}:${edit.range.start.character}:${edit.newText}`),
+    [
+      `${uri}:4:8:currentCount`,
+      `${uri}:5:4:currentCount`,
+      `${uri}:7:7:currentCount`,
+      `${uri}:8:8:currentCount`,
+      `${uri}:9:20:currentCount`
+    ]
+  );
+});
+
 test("document service rejects unsafe local rename targets and names", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/RenameLocal.bas";

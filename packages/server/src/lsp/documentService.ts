@@ -1526,9 +1526,11 @@ function collectReferencesForState(
 
       const structuredReferenceUnits = getStructuredReferenceUnits(statement);
 
-      if (structuredReferenceUnits && structuredReferenceUnits.every((unit) => unit.range.start.line === unit.range.end.line)) {
+      if (structuredReferenceUnits) {
         for (const unit of structuredReferenceUnits) {
-          references.push(...collectResolvedReferencesInSegment(state.uri, target, resolveDefinition, unit.text, unit.range));
+          references.push(
+            ...collectResolvedReferencesInSegment(state.text, state.uri, target, resolveDefinition, unit.text, unit.range)
+          );
         }
 
         continue;
@@ -1609,18 +1611,21 @@ function getStructuredReferenceUnits(
 }
 
 function collectResolvedReferencesInSegment(
+  documentText: string,
   uri: string,
   target: WorkspaceSymbolResolution,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   text: string,
   range: SourceRange
 ): WorkspaceReference[] {
-  if (range.start.line !== range.end.line) {
+  const flattenedRange = buildFlattenedCodeRange(documentText, range, text);
+
+  if (!flattenedRange) {
     return [];
   }
 
   const references: WorkspaceReference[] = [];
-  const scrubbed = removeStringAndDateLiterals(text);
+  const scrubbed = removeStringAndDateLiterals(flattenedRange.code);
 
   for (const match of scrubbed.matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
     const identifier = match[0];
@@ -1641,16 +1646,12 @@ function collectResolvedReferencesInSegment(
       continue;
     }
 
-    const referenceRange = {
-      start: {
-        character: range.start.character + startIndex,
-        line: range.start.line
-      },
-      end: {
-        character: range.start.character + startIndex + identifier.length,
-        line: range.start.line
-      }
-    };
+    const referenceRange = mapFlattenedCharacterSpan(flattenedRange.positions, startIndex, startIndex + identifier.length);
+
+    if (!referenceRange) {
+      continue;
+    }
+
     const resolution = resolveDefinition(uri, referenceRange.start);
 
     if (resolution && isSameResolution(resolution, target)) {
@@ -1662,6 +1663,65 @@ function collectResolvedReferencesInSegment(
   }
 
   return references;
+}
+
+function buildFlattenedCodeRange(
+  text: string,
+  range: SourceRange,
+  singleLineText?: string
+): { code: string; positions: Array<LinePosition | undefined> } | undefined {
+  if (range.start.line === range.end.line) {
+    return {
+      code: singleLineText ?? "",
+      positions: Array.from({ length: (singleLineText ?? "").length }, (_, index) => ({
+        character: range.start.character + index,
+        line: range.start.line
+      }))
+    };
+  }
+
+  const normalizedLines = text.replace(/\r\n?/g, "\n").split("\n");
+  let flattenedCode = "";
+  let hasOutput = false;
+  const positions: Array<LinePosition | undefined> = [];
+
+  for (let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex += 1) {
+    const originalLine = normalizedLines[lineIndex];
+
+    if (originalLine === undefined) {
+      continue;
+    }
+
+    const sliceStartCharacter = lineIndex === range.start.line ? range.start.character : 0;
+    const sliceEndCharacter = lineIndex === range.end.line ? range.end.character : originalLine.length;
+    const lineSlice = originalLine.slice(sliceStartCharacter, sliceEndCharacter);
+    const { code } = splitCodeAndComment(lineSlice);
+    const continued = /\s+_\s*$/.test(code);
+    const codeWithoutContinuation = continued ? code.replace(/\s+_\s*$/, "") : code;
+    const trimmedCode = codeWithoutContinuation.trimEnd();
+    const leadingTrimLength = hasOutput ? trimmedCode.length - trimmedCode.trimStart().length : 0;
+    const emittedText = hasOutput ? trimmedCode.trimStart() : trimmedCode;
+
+    if (hasOutput) {
+      flattenedCode += " ";
+      positions.push(undefined);
+    }
+
+    for (let index = 0; index < emittedText.length; index += 1) {
+      flattenedCode += emittedText[index];
+      positions.push({
+        character: sliceStartCharacter + leadingTrimLength + index,
+        line: lineIndex
+      });
+    }
+
+    hasOutput = true;
+  }
+
+  return {
+    code: flattenedCode,
+    positions
+  };
 }
 
 function deduplicateWorkspaceEntries(entries: WorkspaceSymbolResolution[]): WorkspaceSymbolResolution[] {
@@ -2914,6 +2974,27 @@ function getMappedFlattenedPosition(
   }
 
   return undefined;
+}
+
+function mapFlattenedCharacterSpan(
+  positions: Array<LinePosition | undefined>,
+  startCharacter: number,
+  endCharacter: number
+): SourceRange | undefined {
+  const startPosition = getMappedFlattenedPosition(positions, startCharacter);
+  const endPosition = getMappedFlattenedPosition(positions, Math.max(endCharacter - 1, startCharacter));
+
+  if (!startPosition || !endPosition) {
+    return undefined;
+  }
+
+  return {
+    start: startPosition,
+    end: {
+      character: endPosition.character + (endCharacter > startCharacter ? 1 : 0),
+      line: endPosition.line
+    }
+  };
 }
 
 function findCallableMember(analysis: AnalysisResult, symbol: SymbolInfo): CallableMember | undefined {
