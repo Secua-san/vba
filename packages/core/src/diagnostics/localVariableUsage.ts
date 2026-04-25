@@ -52,7 +52,7 @@ export function analyzeProcedureLocalUsage(procedure: ProcedureDeclarationNode):
       continue;
     }
 
-    if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
+    if (statement.kind !== "executableStatement") {
       continue;
     }
 
