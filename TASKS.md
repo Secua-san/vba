@@ -15,6 +15,7 @@
 
 - 現在の主タスクは `ProcedureStatementNode` の block statement structured AST 拡張
 - `assignment` / `call`、主要 block statement、label target statement、termination statement の structured AST slice は完了済みで、次は downstream の raw text 依存を減らす段階
+- Codex 作業では [AGENTS.md](AGENTS.md) の「最小変更ガード」「テスト選択ルール」「出力ルール」を優先し、承認なしのコード変更、全体テスト、E2E テスト、無関係修正を避ける
 - 過去の完了履歴や docs-only 更新の経緯は [`TASKLOG.md`](TASKLOG.md) を参照する
 
 ## 進行中
@@ -24,11 +25,18 @@
   - block validation の first slice は AST kind ベースへ移行済みなので、残る raw text 依存を局所的に削る
   - 既存 diagnostics、references / rename、semantic token、formatter の回帰を崩さないことを完了条件にする
 
+- [ ] Codex 作業制御を強化する
+  - テスト高速化の候補を調査する
+  - 重いテストを分類し、明示承認が必要なテストを分ける
+  - 最小テスト選択ルールを作成する
+  - Codex 作業チェックリストを作成する
+
 ## 次に行うタスク
 
 - structured statement を使う diagnostics / symbol 連携の次 slice を進める
 - `formatModuleIndentation.ts`、references / rename / semantic token に残る block text 判定を段階的に AST kind ベースへ寄せる
 - core / server / extension の回帰を維持しながら structured AST 利用箇所を増やす
+- Codex 作業制御の改善タスクは、アプリ本体コードに触れず、文書とルール整備だけで小さく分割して進める
 
 ## 直近の更新
 
