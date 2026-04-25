@@ -191,6 +191,10 @@ function collectUndeclaredVariableDiagnostics(parseResult: ParseResult, symbolTa
         continue;
       }
 
+      if (statement.kind !== "executableStatement") {
+        continue;
+      }
+
       const { code } = splitCodeAndComment(statement.text);
       collectUndeclaredIdentifiers(parseResult, code, statement.range, accessibleNames, diagnostics);
     }
