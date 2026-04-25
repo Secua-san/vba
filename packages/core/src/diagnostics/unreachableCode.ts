@@ -157,11 +157,13 @@ function getStructuredTerminationReason(
 }
 
 function getTextTerminationReason(text: string, procedureKind: ProcedureKind): string | undefined {
-  if (/^End$/i.test(text)) {
+  const normalizedText = text.trim();
+
+  if (/^End$/i.test(normalizedText)) {
     return "End";
   }
 
-  const exitKind = getTextExitKind(text);
+  const exitKind = getTextExitKind(normalizedText);
 
   if (!exitKind || !isExitKindForProcedure(exitKind, procedureKind)) {
     return undefined;
@@ -189,9 +191,15 @@ function isExitKindForProcedure(exitKind: "Function" | "Property" | "Sub", proce
     case "PropertyLet":
     case "PropertySet":
       return exitKind === "Property";
-    default:
+    case "Sub":
       return exitKind === "Sub";
+    default:
+      return assertNever(procedureKind);
   }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unexpected procedure kind: ${String(value)}`);
 }
 
 function popLastBlockOfKind(blockStack: BlockKind[], blockKind: BlockKind): void {

@@ -1319,6 +1319,7 @@ function parseTerminationStatement(
     };
   }
 
+  // Loop exits (`Exit For` / `Exit Do`) are not procedure termination statements.
   const exitMatch = /^\s*Exit\s+(Sub|Function|Property)\s*$/iu.exec(text);
 
   if (!exitMatch?.[1]) {
