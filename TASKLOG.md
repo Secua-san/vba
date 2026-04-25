@@ -9,6 +9,12 @@
 
 ## 完了ログ
 
+- [x] `Exit` / `End` termination statement を structured AST 化する
+  - `packages/core/src/types/model.ts` に `exitStatement` / `endStatement` を追加し、`packages/core/src/parser/parseModule.ts` で `Exit Sub` / `Exit Function` / `Exit Property` と standalone `End` を procedure body の structured statement として保持するようにした
+  - `packages/core/src/diagnostics/procedureStatementReferences.ts` では termination statement を参照なしとして扱い、`packages/core/src/diagnostics/unreachableCode.ts` では structured node を主経路、raw text を fallback として到達不能判定へ接続した
+  - `packages/core/test/analysis.test.ts` に parser shape と `Exit Function` 後の unreachable diagnostic の回帰を追加した
+  - `npm test` が成功した
+
 - [x] `unreachable-code` diagnostics の block boundary 判定を structured statement metadata へ寄せる
   - `packages/core/src/diagnostics/unreachableCode.ts` で block stack 更新、boundary 抑止、unreachable state 解除に使う block boundary 判定を 1 つの metadata へ寄せ、structured statement kind を主経路、raw text regex を executable fallback に限定した
   - `packages/core/test/analysis.test.ts` と `packages/server/test/documentService.test.js` に、literal colon を含む structured `ElseIf` 境界で unreachable warning が clause 自体へ漏れない回帰を追加した

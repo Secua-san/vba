@@ -14,7 +14,7 @@
 ## 重要事項
 
 - 現在の主タスクは `ProcedureStatementNode` の block statement structured AST 拡張
-- `assignment` / `call` の first slice と、主要 block statement / block validation の first slice は完了済みで、次は downstream の raw text 依存を減らす段階
+- `assignment` / `call`、主要 block statement、label target statement、termination statement の structured AST slice は完了済みで、次は downstream の raw text 依存を減らす段階
 - 過去の完了履歴や docs-only 更新の経緯は [`TASKLOG.md`](TASKLOG.md) を参照する
 
 ## 進行中
@@ -36,3 +36,4 @@
 - [完了] extension host の active workbook identity snapshot と shared semantic test の安定化を完了した
 - [完了] `ProcedureStatementNode` の `assignment` / `call` structured AST first slice を導入した
 - [完了] `unreachable-code` diagnostics の block boundary 判定を structured statement metadata へ寄せた
+- [完了] `Exit` / `End` termination statement を structured AST 化し、`unreachable-code` diagnostics の判定へ接続した

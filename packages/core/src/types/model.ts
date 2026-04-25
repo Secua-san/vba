@@ -356,6 +356,19 @@ export interface ResumeStatementNode {
   text: string;
 }
 
+export interface ExitStatementNode {
+  exitKind: "Function" | "Property" | "Sub";
+  kind: "exitStatement";
+  range: SourceRange;
+  text: string;
+}
+
+export interface EndStatementNode {
+  kind: "endStatement";
+  range: SourceRange;
+  text: string;
+}
+
 export interface ExecutableStatementNode {
   kind: "executableStatement";
   range: SourceRange;
@@ -374,7 +387,9 @@ export type ProcedureStatementNode =
   | ElseIfClauseStatementNode
   | EndIfStatementNode
   | EndSelectStatementNode
+  | EndStatementNode
   | ExecutableStatementNode
+  | ExitStatementNode
   | ForEachStatementNode
   | ForStatementNode
   | GoToStatementNode

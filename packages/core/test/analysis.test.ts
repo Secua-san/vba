@@ -514,6 +514,46 @@ End Sub`, { fileName: "StructuredLabelTargets.bas" });
   }
 });
 
+test("parseModule structures Exit and End statements in procedure bodies", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+    Exit Sub
+    End
+End Sub
+
+Public Function Build() As Long
+    Exit Function
+End Function
+
+Public Property Get Name() As String
+    Exit Property
+End Property`, { fileName: "StructuredTerminationStatements.bas" });
+  const demo = result.module.members.find((member) => member.kind === "procedureDeclaration" && member.name === "Demo");
+  const build = result.module.members.find((member) => member.kind === "procedureDeclaration" && member.name === "Build");
+  const name = result.module.members.find((member) => member.kind === "procedureDeclaration" && member.name === "Name");
+  const exitSubStatement = demo && demo.kind === "procedureDeclaration" ? demo.body[0] : undefined;
+  const endStatement = demo && demo.kind === "procedureDeclaration" ? demo.body[1] : undefined;
+  const exitFunctionStatement = build && build.kind === "procedureDeclaration" ? build.body[0] : undefined;
+  const exitPropertyStatement = name && name.kind === "procedureDeclaration" ? name.body[0] : undefined;
+
+  assert.equal(exitSubStatement?.kind, "exitStatement");
+  if (exitSubStatement?.kind === "exitStatement") {
+    assert.equal(exitSubStatement.exitKind, "Sub");
+  }
+
+  assert.equal(endStatement?.kind, "endStatement");
+  assert.equal(exitFunctionStatement?.kind, "exitStatement");
+  if (exitFunctionStatement?.kind === "exitStatement") {
+    assert.equal(exitFunctionStatement.exitKind, "Function");
+  }
+
+  assert.equal(exitPropertyStatement?.kind, "exitStatement");
+  if (exitPropertyStatement?.kind === "exitStatement") {
+    assert.equal(exitPropertyStatement.exitKind, "Property");
+  }
+});
+
 test("analyzeModule reports undeclared identifiers and missing PtrSafe", () => {
   const result = analyzeModule(`Option Explicit
 
@@ -1204,6 +1244,62 @@ End Sub`, { fileName: "Unreachable.bas" });
     ]
   );
   assert.ok(unreachableDiagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+});
+
+test("analyzeModule uses structured termination statements for unreachable code", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredTerminationUnreachable"
+Option Explicit
+
+Public Function Build() As Long
+    Dim marker As Long
+    Exit Function
+    marker = 1
+End Function`, { fileName: "StructuredTerminationUnreachable.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const exitStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(exitStatement?.kind, "exitStatement");
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => diagnostic.message),
+    ["Unreachable code after Exit Function."]
+  );
+});
+
+test("analyzeModule uses labeled structured property exits for unreachable code", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredLabeledPropertyExit"
+Option Explicit
+
+Public Property Get Name() As String
+LabelExit: Exit Property
+    Name = "fallback"
+End Property`, { fileName: "StructuredLabeledPropertyExit.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const exitStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(exitStatement?.kind, "exitStatement");
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => diagnostic.message),
+    ["Unreachable code after Exit Property."]
+  );
+});
+
+test("analyzeModule ignores mismatched structured exit kind for unreachable code", () => {
+  const result = analyzeModule(`Attribute VB_Name = "MismatchedStructuredExit"
+Option Explicit
+
+Public Function Build() As Long
+    Dim marker As Long
+    Exit Sub
+    marker = 1
+End Function`, { fileName: "MismatchedStructuredExit.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const exitStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(exitStatement?.kind, "exitStatement");
+  assert.deepEqual(unreachableDiagnostics, []);
 });
 
 test("analyzeModule clears unreachable state at structured Case and Next boundaries", () => {
