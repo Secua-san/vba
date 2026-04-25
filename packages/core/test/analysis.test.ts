@@ -1266,6 +1266,42 @@ End Function`, { fileName: "StructuredTerminationUnreachable.bas" });
   );
 });
 
+test("analyzeModule uses labeled structured property exits for unreachable code", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredLabeledPropertyExit"
+Option Explicit
+
+Public Property Get Name() As String
+LabelExit: Exit Property
+    Name = "fallback"
+End Property`, { fileName: "StructuredLabeledPropertyExit.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const exitStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(exitStatement?.kind, "exitStatement");
+  assert.deepEqual(
+    unreachableDiagnostics.map((diagnostic) => diagnostic.message),
+    ["Unreachable code after Exit Property."]
+  );
+});
+
+test("analyzeModule ignores mismatched structured exit kind for unreachable code", () => {
+  const result = analyzeModule(`Attribute VB_Name = "MismatchedStructuredExit"
+Option Explicit
+
+Public Function Build() As Long
+    Dim marker As Long
+    Exit Sub
+    marker = 1
+End Function`, { fileName: "MismatchedStructuredExit.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const exitStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(exitStatement?.kind, "exitStatement");
+  assert.deepEqual(unreachableDiagnostics, []);
+});
+
 test("analyzeModule clears unreachable state at structured Case and Next boundaries", () => {
   const result = analyzeModule(`Attribute VB_Name = "StructuredUnreachableBoundaries"
 Option Explicit
