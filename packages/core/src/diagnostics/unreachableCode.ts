@@ -62,12 +62,14 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
       });
     }
 
-    if (isUnconditionalProcedureExit(controlText, procedure.procedureKind)) {
+    const terminationReason = getTerminationReason(statement, controlText, procedure.procedureKind);
+
+    if (terminationReason) {
       const barrierKind = getBarrierKind(blockStack);
       unreachableState = {
         barrierIndex: getBarrierIndex(blockStack, barrierKind),
         barrierKind,
-        reason: normalizeTerminationReason(controlText)
+        reason: terminationReason
       };
     }
 
@@ -131,25 +133,65 @@ function hasLeadingLabel(text: string): boolean {
   return /^(?:[A-Za-z_][A-Za-z0-9_]*|\d+):/u.test(text);
 }
 
-function isUnconditionalProcedureExit(text: string, procedureKind: ProcedureKind): boolean {
-  if (/^End$/i.test(text)) {
-    return true;
+function getTerminationReason(
+  statement: ProcedureDeclarationNode["body"][number],
+  text: string,
+  procedureKind: ProcedureKind
+): string | undefined {
+  return getStructuredTerminationReason(statement, procedureKind) ?? getTextTerminationReason(text, procedureKind);
+}
+
+function getStructuredTerminationReason(
+  statement: ProcedureDeclarationNode["body"][number],
+  procedureKind: ProcedureKind
+): string | undefined {
+  if (statement.kind === "endStatement") {
+    return "End";
   }
 
+  if (statement.kind !== "exitStatement" || !isExitKindForProcedure(statement.exitKind, procedureKind)) {
+    return undefined;
+  }
+
+  return `Exit ${statement.exitKind}`;
+}
+
+function getTextTerminationReason(text: string, procedureKind: ProcedureKind): string | undefined {
+  if (/^End$/i.test(text)) {
+    return "End";
+  }
+
+  const exitKind = getTextExitKind(text);
+
+  if (!exitKind || !isExitKindForProcedure(exitKind, procedureKind)) {
+    return undefined;
+  }
+
+  return `Exit ${exitKind}`;
+}
+
+function getTextExitKind(text: string): "Function" | "Property" | "Sub" | undefined {
+  const match = /^Exit\s+(Function|Property|Sub)$/iu.exec(text);
+
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const normalizedExitKind = match[1].toLowerCase();
+  return normalizedExitKind === "function" ? "Function" : normalizedExitKind === "property" ? "Property" : "Sub";
+}
+
+function isExitKindForProcedure(exitKind: "Function" | "Property" | "Sub", procedureKind: ProcedureKind): boolean {
   switch (procedureKind) {
     case "Function":
-      return /^Exit\s+Function$/i.test(text);
+      return exitKind === "Function";
     case "PropertyGet":
     case "PropertyLet":
     case "PropertySet":
-      return /^Exit\s+Property$/i.test(text);
+      return exitKind === "Property";
     default:
-      return /^Exit\s+Sub$/i.test(text);
+      return exitKind === "Sub";
   }
-}
-
-function normalizeTerminationReason(text: string): string {
-  return /^End$/i.test(text) ? "End" : text.replace(/\s+/g, " ").trim();
 }
 
 function popLastBlockOfKind(blockStack: BlockKind[], blockKind: BlockKind): void {

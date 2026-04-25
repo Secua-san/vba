@@ -699,6 +699,12 @@ function parseStructuredBlockStatement(
     return resumeStatement;
   }
 
+  const terminationStatement = parseTerminationStatement(text, statementRange);
+
+  if (terminationStatement) {
+    return terminationStatement;
+  }
+
   return undefined;
 }
 
@@ -1297,6 +1303,36 @@ function parseResumeStatement(
       inlineCharacterOffset + targetStartCharacter + targetText.length
     ),
     targetText,
+    text
+  };
+}
+
+function parseTerminationStatement(
+  text: string,
+  statementRange: ProcedureStatementNode["range"]
+): ProcedureStatementNode | undefined {
+  if (/^\s*End\s*$/iu.test(text)) {
+    return {
+      kind: "endStatement",
+      range: statementRange,
+      text
+    };
+  }
+
+  const exitMatch = /^\s*Exit\s+(Sub|Function|Property)\s*$/iu.exec(text);
+
+  if (!exitMatch?.[1]) {
+    return undefined;
+  }
+
+  const normalizedExitKind = exitMatch[1].toLowerCase();
+  const exitKind =
+    normalizedExitKind === "function" ? "Function" : normalizedExitKind === "property" ? "Property" : "Sub";
+
+  return {
+    exitKind,
+    kind: "exitStatement",
+    range: statementRange,
     text
   };
 }
@@ -2043,7 +2079,7 @@ function findAssignmentOperatorIndex(text: string): number {
 }
 
 function isStatementKeyword(text: string): boolean {
-  return /^(?:Call|Case|Do|Else|ElseIf|End|For|GoSub|GoTo|If|Loop|Next|On|Resume|Select|While|With)\b/iu.test(text);
+  return /^(?:Call|Case|Do|Else|ElseIf|End|Exit|For|GoSub|GoTo|If|Loop|Next|On|Resume|Select|While|With)\b/iu.test(text);
 }
 
 function getIdentifierBeforeOpenParen(text: string, openParenIndex: number): { startCharacter: number; text: string } | undefined {
