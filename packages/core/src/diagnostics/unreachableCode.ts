@@ -42,18 +42,18 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
       continue;
     }
 
-    const hasLabel = hasLeadingLabel(rawText);
-    const controlText = stripLeadingLabel(rawText);
-
-    if (hasLabel) {
+    if (hasLeadingLabel(rawText)) {
       unreachableState = undefined;
     }
 
-    if (unreachableState && clearsUnreachableState(statement, controlText, blockStack, unreachableState)) {
+    const legacyControlText = statement.kind === "executableStatement" ? stripLeadingLabel(rawText) : undefined;
+    const controlMetadata = getStatementControlMetadata(statement, legacyControlText);
+
+    if (unreachableState && clearsUnreachableState(controlMetadata, blockStack, unreachableState)) {
       unreachableState = undefined;
     }
 
-    if (unreachableState && shouldReportUnreachableStatement(statement, controlText)) {
+    if (unreachableState && shouldReportUnreachableStatement(controlMetadata)) {
       diagnostics.push({
         code: "unreachable-code",
         message: `Unreachable code after ${unreachableState.reason}.`,
@@ -62,7 +62,7 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
       });
     }
 
-    const terminationReason = getTerminationReason(statement, controlText, procedure.procedureKind);
+    const terminationReason = getTerminationReason(statement, procedure.procedureKind, legacyControlText);
 
     if (terminationReason) {
       const barrierKind = getBarrierKind(blockStack);
@@ -73,33 +73,30 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
       };
     }
 
-    applyBlockTransition(statement, controlText, blockStack);
+    applyBlockTransition(controlMetadata, blockStack);
   }
 
   return diagnostics;
 }
 
-function applyBlockTransition(statement: ProcedureDeclarationNode["body"][number], text: string, blockStack: BlockKind[]): void {
-  const transition = getStatementControlMetadata(statement, text);
-
-  if (transition?.push) {
-    blockStack.push(transition.push);
+function applyBlockTransition(controlMetadata: StatementControlMetadata | undefined, blockStack: BlockKind[]): void {
+  if (controlMetadata?.push) {
+    blockStack.push(controlMetadata.push);
     return;
   }
 
-  if (transition?.pop) {
-    popLastBlockOfKind(blockStack, transition.pop);
+  if (controlMetadata?.pop) {
+    popLastBlockOfKind(blockStack, controlMetadata.pop);
     return;
   }
 }
 
 function clearsUnreachableState(
-  statement: ProcedureDeclarationNode["body"][number],
-  text: string,
+  controlMetadata: StatementControlMetadata | undefined,
   blockStack: BlockKind[],
   unreachableState: UnreachableState
 ): boolean {
-  const boundaryKind = getStatementBoundaryKind(statement, text);
+  const boundaryKind = controlMetadata?.boundaryKind;
 
   if (!boundaryKind || boundaryKind !== unreachableState.barrierKind) {
     return false;
@@ -135,10 +132,10 @@ function hasLeadingLabel(text: string): boolean {
 
 function getTerminationReason(
   statement: ProcedureDeclarationNode["body"][number],
-  text: string,
-  procedureKind: ProcedureKind
+  procedureKind: ProcedureKind,
+  legacyControlText: string | undefined
 ): string | undefined {
-  return getStructuredTerminationReason(statement, procedureKind) ?? getTextTerminationReason(text, procedureKind);
+  return getStructuredTerminationReason(statement, procedureKind) ?? getTextTerminationReason(legacyControlText, procedureKind);
 }
 
 function getStructuredTerminationReason(
@@ -156,7 +153,11 @@ function getStructuredTerminationReason(
   return `Exit ${statement.exitKind}`;
 }
 
-function getTextTerminationReason(text: string, procedureKind: ProcedureKind): string | undefined {
+function getTextTerminationReason(text: string | undefined, procedureKind: ProcedureKind): string | undefined {
+  if (!text) {
+    return undefined;
+  }
+
   const normalizedText = text.trim();
 
   if (/^End$/i.test(normalizedText)) {
@@ -211,12 +212,8 @@ function popLastBlockOfKind(blockStack: BlockKind[], blockKind: BlockKind): void
   }
 }
 
-function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["body"][number], text: string): boolean {
-  if (text.length === 0) {
-    return false;
-  }
-
-  if (getStatementBoundaryKind(statement, text)) {
+function shouldReportUnreachableStatement(controlMetadata: StatementControlMetadata | undefined): boolean {
+  if (controlMetadata?.boundaryKind) {
     return false;
   }
 
@@ -225,16 +222,9 @@ function shouldReportUnreachableStatement(statement: ProcedureDeclarationNode["b
 
 function getStatementControlMetadata(
   statement: ProcedureDeclarationNode["body"][number],
-  text: string
+  legacyControlText: string | undefined
 ): StatementControlMetadata | undefined {
-  return getStructuredControlMetadata(statement) ?? getExecutableControlMetadata(statement, text);
-}
-
-function getStatementBoundaryKind(
-  statement: ProcedureDeclarationNode["body"][number],
-  text: string
-): BlockKind | undefined {
-  return getStatementControlMetadata(statement, text)?.boundaryKind;
+  return getStructuredControlMetadata(statement) ?? getExecutableControlMetadata(legacyControlText);
 }
 
 function getStructuredControlMetadata(statement: ProcedureDeclarationNode["body"][number]): StatementControlMetadata | undefined {
@@ -274,11 +264,8 @@ function getStructuredControlMetadata(statement: ProcedureDeclarationNode["body"
   }
 }
 
-function getExecutableControlMetadata(
-  statement: ProcedureDeclarationNode["body"][number],
-  text: string
-): StatementControlMetadata | undefined {
-  if (statement.kind !== "executableStatement") {
+function getExecutableControlMetadata(text: string | undefined): StatementControlMetadata | undefined {
+  if (!text) {
     return undefined;
   }
 
