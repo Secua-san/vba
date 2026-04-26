@@ -1848,6 +1848,49 @@ End Sub`
   );
 });
 
+test("formatModuleIndentation keeps structured non-block statements at the active block indentation", () => {
+  const formatted = formatModuleIndentation(`Attribute VB_Name = "StructuredNonBlockFormatting"
+Option Explicit
+
+Public Sub Demo()
+If True Then
+value = 1
+Call Trace(value)
+On Error GoTo HandleError
+GoTo Done
+Resume Next
+Exit Sub
+End
+End If
+Done:
+Debug.Print value
+HandleError:
+Resume Done
+End Sub`, { fileName: "StructuredNonBlockFormatting.bas", indentSize: 4, insertSpaces: true });
+
+  assert.equal(
+    formatted,
+    `Attribute VB_Name = "StructuredNonBlockFormatting"
+Option Explicit
+
+Public Sub Demo()
+    If True Then
+        value = 1
+        Call Trace(value)
+        On Error GoTo HandleError
+        GoTo Done
+        Resume Next
+        Exit Sub
+        End
+    End If
+Done:
+    Debug.Print value
+HandleError:
+    Resume Done
+End Sub`
+  );
+});
+
 test("formatModuleIndentation aligns declaration blocks conservatively", () => {
   const formatted = formatModuleIndentation(`Attribute VB_Name = "DeclarationAlignment"
 Option Explicit

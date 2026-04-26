@@ -145,6 +145,16 @@ function addStructuredMemberLineKinds(lineKinds: Map<number, LineKind>, member: 
 
 function getStructuredProcedureLineKind(statement: ProcedureStatementNode): LineKind | undefined {
   switch (statement.kind) {
+    case "assignmentStatement":
+    case "callStatement":
+    case "constStatement":
+    case "declarationStatement":
+    case "endStatement":
+    case "exitStatement":
+    case "goToStatement":
+    case "onErrorStatement":
+    case "resumeStatement":
+      return "other";
     case "caseClauseStatement":
       return "caseBranch";
     case "doBlockStatement":
