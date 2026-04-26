@@ -104,6 +104,17 @@ export function lexPreparedDocument(source: SourceDocument): Token[] {
         continue;
       }
 
+      if (currentCharacter === "_" && isLineContinuationMarker(line, index)) {
+        tokens.push({
+          kind: "lineContinuation",
+          range: createMappedRange(source, lineIndex, index, lineIndex, index + 1),
+          text: currentCharacter
+        });
+        index += 1;
+        atTokenBoundary = false;
+        continue;
+      }
+
       if (/[A-Za-z_]/.test(currentCharacter)) {
         const endIndex = readIdentifier(line, index);
         const text = line.slice(index, endIndex);
@@ -169,6 +180,28 @@ function readDateLiteral(line: string, start: number): number {
   }
 
   return line.length;
+}
+
+function isLineContinuationMarker(line: string, index: number): boolean {
+  if (index === 0 || !/\s/.test(line[index - 1] ?? "")) {
+    return false;
+  }
+
+  let probe = index + 1;
+
+  while (probe < line.length && /\s/.test(line[probe])) {
+    probe += 1;
+  }
+
+  const hasWhitespaceAfterMarker = probe > index + 1;
+
+  return (
+    probe === line.length ||
+    line[probe] === "'" ||
+    (hasWhitespaceAfterMarker &&
+      line.slice(probe, probe + 3).toLowerCase() === "rem" &&
+      (probe + 3 === line.length || /\s/.test(line[probe + 3] ?? "")))
+  );
 }
 
 function readIdentifier(line: string, start: number): number {

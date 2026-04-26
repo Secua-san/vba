@@ -18,13 +18,29 @@ Option Explicit
 Dim value$ As String
 message = "a""b"
 stamp = #2024-01-01#
+total = 1# + _
+    value%
 Rem comment`
   );
 
   assert.ok(tokens.some((token) => token.kind === "attribute"));
+  assert.ok(tokens.some((token) => token.kind === "lineContinuation" && token.text === "_"));
   assert.ok(tokens.some((token) => token.kind === "stringLiteral" && token.text === "\"a\"\"b\""));
   assert.ok(tokens.some((token) => token.kind === "dateLiteral"));
   assert.ok(tokens.some((token) => token.kind === "comment"));
+  assert.ok(tokens.some((token) => token.kind === "numberLiteral" && token.text === "1#"));
+  assert.ok(tokens.some((token) => token.kind === "identifier" && token.text === "value%"));
+
+  const continuationBeforeCommentTokens = lexDocument(`value = 1 _ Rem note
+value = 1 _ ' note`);
+  assert.equal(
+    continuationBeforeCommentTokens.filter((token) => token.kind === "lineContinuation").length,
+    2
+  );
+
+  const nonContinuationTokens = lexDocument(`value = 1 _remote
+value = _Rem note`);
+  assert.equal(nonContinuationTokens.some((token) => token.kind === "lineContinuation"), false);
 });
 
 test("parseModule recovers from broken procedure blocks", () => {
