@@ -184,6 +184,7 @@ End Sub`, { fileName: "StructuredStatements.bas" });
   const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
   const callKeywordStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
   const bareCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[2] : undefined;
+  const memberCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[3] : undefined;
 
   assert.ok(procedure && procedure.kind === "procedureDeclaration");
   assert.ok(assignmentStatement?.kind === "assignmentStatement");
@@ -197,7 +198,10 @@ End Sub`, { fileName: "StructuredStatements.bas" });
   assert.ok(bareCallStatement?.kind === "callStatement");
   assert.equal(bareCallStatement.callStyle, "bare");
   assert.equal(bareCallStatement.name, "UpdateCount");
-  assert.equal(procedure.body[3]?.kind, "executableStatement");
+  assert.ok(memberCallStatement?.kind === "callStatement");
+  assert.equal(memberCallStatement.callStyle, "bare");
+  assert.equal(memberCallStatement.name, "Debug.Print");
+  assert.deepEqual(memberCallStatement.arguments.map((argument) => argument.text), ["holder.Count"]);
 });
 
 test("parseModule structures call statements that span multiple physical lines", () => {
