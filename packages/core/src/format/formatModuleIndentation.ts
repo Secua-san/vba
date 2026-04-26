@@ -444,7 +444,7 @@ function expandCompressedBlockLine(line: string): string[] {
     return [line];
   }
 
-  const kinds = segments.map((segment) => classifyLineKind(segment));
+  const kinds = segments.map((segment) => classifyStructuredProcedureSegmentKind(segment) ?? classifyLineKind(segment));
   const expandedLines: string[] = [];
   let statementBuffer = "";
   let changed = false;
@@ -567,6 +567,16 @@ function shouldOwnLine(index: number, kinds: LineKind[]): boolean {
 
 function hasFollowingKind(kinds: LineKind[], index: number, targets: LineKind[]): boolean {
   return kinds.slice(index + 1).some((kind) => targets.includes(kind));
+}
+
+function classifyStructuredProcedureSegmentKind(segment: string): LineKind | undefined {
+  const parsed = parseModule(`Attribute VB_Name = "FormatterSegment"\nOption Explicit\n\nPublic Sub Demo()\n${segment}\nEnd Sub`, {
+    fileName: "FormatterSegment.bas"
+  });
+  const procedure = parsed.module.members.find((member) => member.kind === "procedureDeclaration");
+  const statement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+
+  return statement ? getStructuredProcedureLineKind(statement) : undefined;
 }
 
 function parseAlignableDeclarationLine(line: string): AlignableDeclarationLine | undefined {
