@@ -141,6 +141,17 @@ export function getProcedureStatementReferenceSegments(
         }
       ];
     case "constStatement":
+      return statement.declaredConstants.flatMap((constant) =>
+        constant.valueRange && constant.valueText
+          ? [
+              {
+                range: constant.valueRange,
+                role: "read",
+                text: constant.valueText
+              } satisfies ProcedureStatementReferenceSegment
+            ]
+          : []
+      );
     case "declarationStatement":
     case "elseClauseStatement":
     case "endIfStatement":

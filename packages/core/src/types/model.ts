@@ -104,6 +104,8 @@ export interface ConstDeclarationNode {
   range: SourceRange;
   text: string;
   typeName?: string;
+  valueRange?: SourceRange;
+  valueText?: string;
 }
 
 export interface EnumMemberNode {

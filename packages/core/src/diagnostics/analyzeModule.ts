@@ -164,7 +164,7 @@ function collectUndeclaredVariableDiagnostics(parseResult: ParseResult, symbolTa
     }
 
     for (const statement of member.body) {
-      if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
+      if (statement.kind === "declarationStatement") {
         continue;
       }
 
