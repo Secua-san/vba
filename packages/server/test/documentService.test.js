@@ -5545,6 +5545,8 @@ End Sub`
 
   const target = service.prepareRename(uri, { character: 12, line: 7 });
   const edits = service.getRenameEdits(uri, { character: 12, line: 7 }, "currentCount");
+  const continuationTarget = service.prepareRename(uri, { character: 12, line: 8 });
+  const continuationEdits = service.getRenameEdits(uri, { character: 12, line: 8 }, "nextCount");
 
   assert.equal(target?.placeholder, "totalCount");
   assert.equal(`${target?.range.start.line}:${target?.range.start.character}`, "7:7");
@@ -5556,6 +5558,18 @@ End Sub`
       `${uri}:7:7:currentCount`,
       `${uri}:8:8:currentCount`,
       `${uri}:9:20:currentCount`
+    ]
+  );
+  assert.equal(continuationTarget?.placeholder, "totalCount");
+  assert.equal(`${continuationTarget?.range.start.line}:${continuationTarget?.range.start.character}`, "8:8");
+  assert.deepEqual(
+    continuationEdits?.map((edit) => `${edit.uri}:${edit.range.start.line}:${edit.range.start.character}:${edit.newText}`),
+    [
+      `${uri}:4:8:nextCount`,
+      `${uri}:5:4:nextCount`,
+      `${uri}:7:7:nextCount`,
+      `${uri}:8:8:nextCount`,
+      `${uri}:9:20:nextCount`
     ]
   );
 });
