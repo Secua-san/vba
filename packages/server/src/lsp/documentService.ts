@@ -248,7 +248,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     }
 
     const resolution = resolveDefinition(uri, position);
-    const range = getIdentifierRangeAtPosition(state.text, position);
+    const range = getStructuredIdentifierRangeAtPosition(state, position) ?? getIdentifierRangeAtPosition(state.text, position);
 
     if (
       !resolution ||
@@ -2009,6 +2009,36 @@ function getIdentifierRangeAtPosition(text: string, position: LinePosition): Sou
   }
 
   return undefined;
+}
+
+function getStructuredIdentifierRangeAtPosition(state: DocumentState, position: LinePosition): SourceRange | undefined {
+  for (const unit of getStructuredSemanticUnits(state.analysis.module.members)) {
+    if (!positionIsWithinRange(position, unit.range)) {
+      continue;
+    }
+
+    const flattenedRange = buildFlattenedCodeRange(state.text, unit.range, unit.text);
+
+    if (!flattenedRange) {
+      continue;
+    }
+
+    for (const match of removeStringAndDateLiterals(flattenedRange.code).matchAll(/[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?/g)) {
+      const startIndex = match.index ?? 0;
+      const endIndex = startIndex + match[0].length;
+      const range = mapFlattenedCharacterSpan(flattenedRange.positions, startIndex, endIndex);
+
+      if (range && positionIsWithinRange(position, range)) {
+        return range;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function positionIsWithinRange(position: LinePosition, range: SourceRange): boolean {
+  return comparePositions(position, range.start) >= 0 && comparePositions(position, range.end) <= 0;
 }
 
 function getCompletionContext(text: string, position: LinePosition): CompletionContext {
