@@ -5191,6 +5191,41 @@ End Sub`
   );
 });
 
+test("document service resolves procedure Const initializer references", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/ConstInitializerReferences.bas";
+  const text = `Attribute VB_Name = "ConstInitializerReferences"
+Option Explicit
+
+Public Sub Demo()
+    Const baseValue As Long = 1
+    Const usedValue As Long = baseValue
+    Debug.Print usedValue
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const definition = service.getDefinition(uri, { character: 30, line: 5 });
+  const references = service.getReferences(uri, { character: 30, line: 5 }, true);
+  const edits = service.getRenameEdits(uri, { character: 30, line: 5 }, "rootValue");
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.equal(definition?.symbol.kind, "constant");
+  assert.equal(definition?.symbol.scope, "procedure");
+  assert.deepEqual(
+    references.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:4:10`, `${uri}:5:30`]
+  );
+  assert.deepEqual(
+    edits?.map((edit) => `${edit.uri}:${edit.range.start.line}:${edit.range.start.character}:${edit.newText}`),
+    [`${uri}:4:10:rootValue`, `${uri}:5:30:rootValue`]
+  );
+  assertSemanticToken(text, tokens, 5, "baseValue", {
+    modifiers: ["readonly"],
+    type: "variable"
+  });
+});
+
 test("document service ignores label target statements for references and semantic tokens", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/LabelTargetStatements.bas";

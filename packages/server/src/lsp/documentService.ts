@@ -255,7 +255,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
       !range ||
       resolution.uri !== uri ||
       resolution.symbol.scope !== "procedure" ||
-      resolution.symbol.kind !== "variable"
+      (resolution.symbol.kind !== "constant" && resolution.symbol.kind !== "variable")
     ) {
       return undefined;
     }
@@ -1504,7 +1504,7 @@ function collectReferencesForState(
     }
 
     for (const statement of member.body) {
-      if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
+      if (statement.kind === "declarationStatement") {
         continue;
       }
 
@@ -1660,7 +1660,7 @@ function getStructuredSemanticUnits(
     }
 
     for (const statement of member.body) {
-      if (statement.kind === "constStatement" || statement.kind === "declarationStatement") {
+      if (statement.kind === "declarationStatement") {
         continue;
       }
 
