@@ -1210,6 +1210,35 @@ End Sub`, { fileName: "SetRequired.bas" });
   assert.equal(typeMismatchDiagnostics.length, 0);
 });
 
+test("analyzeModule uses structured multiline assignments for type inference", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredAssignmentInference"
+Option Explicit
+
+Public Sub Demo()
+    Dim items As Collection
+Label1: items = _
+        New Collection
+End Sub`, { fileName: "StructuredAssignmentInference.bas" });
+
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const assignment = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const setDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "set-required");
+
+  assert.equal(assignment?.kind, "assignmentStatement");
+  assert.deepEqual(
+    setDiagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Set is required to assign Collection to Collection.",
+        start: "5:8"
+      }
+    ]
+  );
+});
+
 test("analyzeModule does not require Set for user-defined types", () => {
   const result = analyzeModule(`Attribute VB_Name = "UserTypes"
 Option Explicit
