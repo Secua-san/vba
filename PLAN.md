@@ -23,7 +23,7 @@
 | Phase | 状態 | 現状 | 次のゲート |
 | --- | --- | --- | --- |
 | Phase 0: リポジトリ基盤整備 | 完了 | `core` / `server` / `extension` の分離、`build` / `test` / `lint` / `package`、fixture と test host が揃っている | 維持のみ |
-| Phase 1: 字句解析 | 概ね完了 | `lexDocument.ts` と token range があり、コメント、文字列、日付、directive などを扱えている | parser 強化で必要になる字句境界だけ追加対応 |
+| Phase 1: 字句解析 | 完了 | `lexDocument.ts` と token range があり、行継続、コメント、文字列、日付、directive、型サフィックス、属性行を扱えている | 維持のみ |
 | Phase 2: 構文解析 MVP | 進行中 | module / procedure / declare / enum / type / variable に加え、主要 block statement の structured node は入り、parser shape は core test で固定され始めている | parser edge case を維持しつつ structured node coverage を回帰で守る |
 | Phase 3: AST 安定化・構文情報整備 | 進行中 | `range` / `headerRange` / `nameRange` はある。procedure body も block statement の主要 kind は持てているが、formatter / diagnostics / navigation の一部に raw text 判定が残る | block validation と後続処理を AST kind ベースへさらに寄せる |
 | Phase 4: シンボルテーブル・スコープ解析 | 部分実装 | module / procedure scope の symbol 抽出、定義ジャンプ、参照検索、rename の基盤はある | structured statement を前提に symbol 解決を安定化する |

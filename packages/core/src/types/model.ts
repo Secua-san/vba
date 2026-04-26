@@ -25,6 +25,7 @@ export type TokenKind =
   | "eof"
   | "identifier"
   | "keyword"
+  | "lineContinuation"
   | "newline"
   | "numberLiteral"
   | "operator"

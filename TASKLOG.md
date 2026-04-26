@@ -9,6 +9,13 @@
 
 ## 完了ログ
 
+- [x] Phase 1 字句解析の B-1 回帰を固定する
+  - `packages/core/src/lexer/lexDocument.ts` に行継続 `_` の token 化を追加し、既存のコメント境界と同じく apostrophe / `Rem` コメント前の marker だけを扱うようにした
+  - `packages/core/src/types/model.ts` に `lineContinuation` token kind を追加した
+  - `packages/core/test/analysis.test.ts` で行継続、文字列エスケープ、日付リテラル、コメント、型サフィックス、属性行の B-1 回帰を固定した
+  - `PLAN.md` の Phase 1 状態を完了に更新した
+  - `npm run build --workspace @vba/core` と `npm run test --workspace @vba/core` が成功した
+
 - [x] `Exit` / `End` termination statement を structured AST 化する
   - `packages/core/src/types/model.ts` に `exitStatement` / `endStatement` を追加し、`packages/core/src/parser/parseModule.ts` で `Exit Sub` / `Exit Function` / `Exit Property` と standalone `End` を procedure body の structured statement として保持するようにした
   - `packages/core/src/diagnostics/procedureStatementReferences.ts` では termination statement を参照なしとして扱い、`packages/core/src/diagnostics/unreachableCode.ts` では structured node を主経路、raw text を fallback として到達不能判定へ接続した
