@@ -124,6 +124,10 @@ End Sub`, { fileName: "LabeledDeclarations.bas" });
     constStatement?.declaredConstants.map((constant) => constant.name),
     ["localValue"]
   );
+  assert.deepEqual(
+    constStatement?.declaredConstants.map((constant) => constant.valueText),
+    ["1"]
+  );
   assert.equal(declarationStatement?.kind, "declarationStatement");
   assert.deepEqual(
     declarationStatement?.declaredVariables.map((variable) => variable.name),
@@ -1103,6 +1107,38 @@ End Sub`, { fileName: "StructuredMultilineHeaderUndeclared.bas" });
         start: "5:8"
       }
     ]
+  );
+});
+
+test("analyzeModule uses structured Const initializer references in diagnostics", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredConstInitializerReferences"
+Option Explicit
+
+Public Sub Demo()
+    Const baseValue As Long = 1
+    Const usedValue As Long = baseValue
+    Const missingValue As Long = missingConst
+    Debug.Print usedValue
+End Sub`, { fileName: "StructuredConstInitializerReferences.bas" });
+
+  const undeclaredDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "undeclared-variable");
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+
+  assert.deepEqual(
+    undeclaredDiagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Undeclared identifier 'missingConst'.",
+        start: "6:33"
+      }
+    ]
+  );
+  assert.deepEqual(
+    unusedDiagnostics.map((diagnostic) => diagnostic.message),
+    ["Unused local declaration 'missingValue'."]
   );
 });
 

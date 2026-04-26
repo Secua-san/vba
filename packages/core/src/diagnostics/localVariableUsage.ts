@@ -4,7 +4,7 @@ import type { Diagnostic, ProcedureDeclarationNode } from "../types/model";
 import { getProcedureStatementReferenceSegments } from "./procedureStatementReferences";
 
 export interface LocalDeclarationEntry {
-  declarationKind: "parameter" | "variable";
+  declarationKind: "constant" | "parameter" | "variable";
   name: string;
   normalizedName: string;
   range: Diagnostic["range"];
@@ -29,6 +29,12 @@ export function analyzeProcedureLocalUsage(procedure: ProcedureDeclarationNode):
     if (statement.kind === "declarationStatement") {
       for (const variable of statement.declaredVariables) {
         addDeclaration(declarations, "variable", variable.name, variable.range);
+      }
+    }
+
+    if (statement.kind === "constStatement") {
+      for (const constant of statement.declaredConstants) {
+        addDeclaration(declarations, "constant", constant.name, constant.range);
       }
     }
 

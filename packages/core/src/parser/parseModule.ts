@@ -200,18 +200,70 @@ function parseAttributeLine(source: SourceDocument, logicalLine: { codeText: str
   };
 }
 
-function parseConstDeclaration(source: SourceDocument, logicalLine: { codeText: string; endLine: number; startLine: number }): ConstDeclarationNode {
+function parseConstDeclaration(
+  source: SourceDocument,
+  logicalLine: { codeText: string; endLine: number; startLine: number },
+  createSegmentRange?: (startCharacter: number, endCharacter: number) => ConstDeclarationNode["range"]
+): ConstDeclarationNode {
   const match = /^(?:(Public|Private)\s+)?Const\s+([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s+As\s+([A-Za-z_][A-Za-z0-9_\.]*))?/i.exec(
     logicalLine.codeText.trim()
   );
+  const text = logicalLine.codeText.trim();
+  const value = parseConstValue(source, logicalLine, text, createSegmentRange);
 
   return {
     kind: "constDeclaration",
     modifier: match?.[1],
-    name: match?.[2] ?? logicalLine.codeText.trim(),
+    name: match?.[2] ?? text,
     range: createMappedRange(source, logicalLine.startLine, 0, logicalLine.endLine, source.normalizedLines[logicalLine.endLine]?.length ?? 0),
     text: logicalLine.codeText,
-    typeName: match?.[3] ?? typeNameFromSuffix(match?.[2] ?? "")
+    typeName: match?.[3] ?? typeNameFromSuffix(match?.[2] ?? ""),
+    valueRange: value?.range,
+    valueText: value?.text
+  };
+}
+
+function parseConstValue(
+  source: SourceDocument,
+  logicalLine: { codeText: string; endLine: number; startLine: number },
+  text: string,
+  createSegmentRange?: (startCharacter: number, endCharacter: number) => ConstDeclarationNode["range"]
+): { range: ConstDeclarationNode["range"]; text: string } | undefined {
+  const equalsIndex = findAssignmentOperatorIndex(text);
+
+  if (equalsIndex < 0) {
+    return undefined;
+  }
+
+  const rawValueText = text.slice(equalsIndex + 1);
+  const valueText = rawValueText.trim();
+  const valueStartCharacter = findTrimmedSliceStart(text, rawValueText, equalsIndex + 1);
+
+  if (valueText.length === 0 || valueStartCharacter < 0) {
+    return undefined;
+  }
+
+  if (createSegmentRange) {
+    return {
+      range: createSegmentRange(valueStartCharacter, valueStartCharacter + valueText.length),
+      text: valueText
+    };
+  }
+
+  if (logicalLine.startLine !== logicalLine.endLine) {
+    return {
+      range: createMappedRange(source, logicalLine.startLine, 0, logicalLine.endLine, source.normalizedLines[logicalLine.endLine]?.length ?? 0),
+      text: valueText
+    };
+  }
+
+  const lineText = source.normalizedLines[logicalLine.startLine] ?? "";
+  const textStartCharacter = lineText.indexOf(text);
+  const inlineCharacterOffset = textStartCharacter >= 0 ? textStartCharacter : lineText.length - lineText.trimStart().length;
+
+  return {
+    range: createInlineRange(logicalLine.startLine, inlineCharacterOffset + valueStartCharacter, inlineCharacterOffset + valueStartCharacter + valueText.length),
+    text: valueText
   };
 }
 
@@ -501,7 +553,7 @@ function parseProcedureStatement(
   }
 
   if (/^Const\b/i.test(parsedText)) {
-    const constant = parseConstDeclaration(source, parsedLogicalLine);
+    const constant = parseConstDeclaration(source, parsedLogicalLine, createParsedRange);
     return {
       declaredConstants: [constant],
       kind: "constStatement",
