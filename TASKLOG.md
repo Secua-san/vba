@@ -9,6 +9,13 @@
 
 ## 完了ログ
 
+- [x] Phase 3 の AST 安定化・構文情報整備を完了扱いにする
+  - `packages/core/src/inference/inferModuleTypes.ts` で type inference の assignment 入力を `assignmentStatement` に限定し、`executableStatement.text` の再パース fallback を削除した
+  - `packages/core/src/parser/parseModule.ts` で `Debug.Print value` のような member call を `callStatement` として構造化し、既存の diagnostics / references / semantic token segment 経路へ載せた
+  - `packages/core/test/analysis.test.ts` に structured multiline assignment inference と member call structured AST の回帰を追加した
+  - `PLAN.md` と `TASKS.md` を更新し、Phase 3 完了と次候補を `CreateObject("WScript.Shell")` 既知 ProgID 解決へ進めた
+  - `npm run build --workspace @vba/core`、`npm run test --workspace @vba/core`、`npm run test --workspace @vba/server` が成功した
+
 - [x] Phase 2 の `ProcedureStatementNode` structured AST coverage を完了扱いにする
   - `packages/core/src/format/formatModuleIndentation.ts` で compressed block line の segment 判定を structured procedure statement kind 優先へ寄せ、従来の text classifier は fallback として残した
   - `packages/server/src/lsp/documentService.ts` で local rename target range を structured semantic unit の flattened range 優先で取得し、単一行 identifier scan は fallback として残した

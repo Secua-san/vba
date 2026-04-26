@@ -27,6 +27,11 @@ import {
 } from "../types/model";
 import { buildLogicalLines, hasStatementSeparatorColon, splitCodeAndComment, splitCommaAware } from "./text";
 
+const CALLABLE_NAME_PATTERN = "[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*[$%&!#@]?";
+const EXPLICIT_CALL_PATTERN = new RegExp(`^\\s*Call\\s+(${CALLABLE_NAME_PATTERN})\\s*\\((.*)\\)\\s*$`, "iu");
+const BARE_CALL_PATTERN = new RegExp(`^\\s*(${CALLABLE_NAME_PATTERN})(?:\\s+(.*\\S))?\\s*$`, "u");
+const PARENTHESIZED_CALL_PATTERN = new RegExp(`^\\s*(${CALLABLE_NAME_PATTERN})\\s*\\((.*)\\)\\s*$`, "u");
+
 export function parseModule(text: string, options: AnalyzeModuleOptions = {}): ParseResult {
   const source = createSourceDocument(text, options);
   const tokens = lexPreparedDocument(source);
@@ -1474,7 +1479,7 @@ function parseCallStatement(
         inlineCharacterOffset + endCharacter
       ));
 
-  const explicitCallMatch = /^\s*Call\s+([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)\s*$/iu.exec(text);
+  const explicitCallMatch = EXPLICIT_CALL_PATTERN.exec(text);
 
   if (explicitCallMatch?.[1]) {
     const callPrefixLength = /^\s*Call\s+/iu.exec(text)?.[0].length ?? 0;
@@ -1498,7 +1503,7 @@ function parseCallStatement(
     }
   }
 
-  const bareCallMatch = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s+(.*\S))?\s*$/u.exec(text);
+  const bareCallMatch = BARE_CALL_PATTERN.exec(text);
 
   if (bareCallMatch?.[1] && bareCallMatch[2] && !isStatementKeyword(bareCallMatch[1])) {
     const leadingWhitespace = /^\s*/u.exec(text)?.[0].length ?? 0;
@@ -1521,7 +1526,7 @@ function parseCallStatement(
     };
   }
 
-  const parenthesizedCallMatch = /^\s*([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*\((.*)\)\s*$/u.exec(text);
+  const parenthesizedCallMatch = PARENTHESIZED_CALL_PATTERN.exec(text);
   const openParenIndex = parenthesizedCallMatch ? text.indexOf("(", /^\s*/u.exec(text)?.[0].length ?? 0) : -1;
   const closeParenIndex = findMatchingCloseParen(text, openParenIndex);
   const identifier =

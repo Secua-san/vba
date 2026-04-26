@@ -50,9 +50,7 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
               targetName: statement.targetName,
               targetRange: statement.targetRange
             }
-          : statement.kind === "executableStatement"
-            ? parseSimpleAssignment(statement.text, statement.range)
-            : undefined;
+          : undefined;
 
       if (!assignment) {
         continue;
@@ -146,41 +144,6 @@ function seedExplicitTypes(symbolTable: SymbolTable, sink: Map<string, InferredS
       setSymbolType(sink, symbol, symbol.typeName, "explicit");
     }
   }
-}
-
-function parseSimpleAssignment(
-  text: string,
-  statementRange: SourceRange
-): { expressionRange: SourceRange; expressionText: string; isSet: boolean; targetName: string; targetRange: SourceRange } | undefined {
-  const equalsIndex = findAssignmentOperatorIndex(text);
-
-  if (equalsIndex < 0) {
-    return undefined;
-  }
-
-  const leftText = text.slice(0, equalsIndex);
-  const rightText = text.slice(equalsIndex + 1);
-  const match = /^\s*(Set\s+)?([A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)\s*$/i.exec(leftText);
-
-  if (!match) {
-    return undefined;
-  }
-
-  const targetName = match[2];
-  const targetStartCharacter = (/^\s*(?:Set\s+)?/iu.exec(leftText)?.[0].length ?? 0);
-  const expressionStart = equalsIndex + 1 + (rightText.length - rightText.trimStart().length);
-  const expressionText = rightText.trim();
-  const spansMultipleLines = statementRange.start.line !== statementRange.end.line;
-
-  return {
-    expressionRange: spansMultipleLines
-      ? statementRange
-      : createInlineRange(statementRange.start.line, expressionStart, expressionStart + expressionText.length),
-    expressionText,
-    isSet: Boolean(match[1]),
-    targetName: targetName.replace(/[$%&!#@]$/, ""),
-    targetRange: createInlineRange(statementRange.start.line, targetStartCharacter, targetStartCharacter + targetName.length)
-  };
 }
 
 function inferExpressionType(
@@ -502,49 +465,6 @@ function inferConcatenationExpressionType(
   return "String";
 }
 
-function findAssignmentOperatorIndex(text: string): number {
-  let depth = 0;
-  let index = 0;
-
-  while (index < text.length) {
-    const currentCharacter = text[index];
-
-    if (currentCharacter === "\"") {
-      index = skipStringLiteral(text, index);
-      continue;
-    }
-
-    if (currentCharacter === "#") {
-      index = skipDateLiteral(text, index);
-      continue;
-    }
-
-    if (currentCharacter === "(") {
-      depth += 1;
-      index += 1;
-      continue;
-    }
-
-    if (currentCharacter === ")") {
-      depth = Math.max(0, depth - 1);
-      index += 1;
-      continue;
-    }
-
-    if (depth === 0 && currentCharacter === "=") {
-      const previousNonWhitespaceCharacter = getAdjacentNonWhitespaceCharacter(text, index, -1);
-
-      if (previousNonWhitespaceCharacter !== "<" && previousNonWhitespaceCharacter !== ">") {
-        return index;
-      }
-    }
-
-    index += 1;
-  }
-
-  return -1;
-}
-
 function getAdjacentNonWhitespaceCharacter(text: string, startIndex: number, direction: -1 | 1): string | undefined {
   let index = startIndex + direction;
 
@@ -746,15 +666,3 @@ function positionWithinRange(position: LinePosition, range: SourceRange): boolea
   return true;
 }
 
-function createInlineRange(line: number, startCharacter: number, endCharacter: number): SourceRange {
-  return {
-    start: {
-      character: startCharacter,
-      line
-    },
-    end: {
-      character: endCharacter,
-      line
-    }
-  };
-}
