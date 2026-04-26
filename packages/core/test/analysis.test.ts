@@ -179,11 +179,14 @@ Public Sub Demo()
     Call UpdateCount(holder.Count)
     UpdateCount holder.Count
     Debug.Print holder.Count
+    Property.Get holder.Count
 End Sub`, { fileName: "StructuredStatements.bas" });
   const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
   const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
   const callKeywordStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
   const bareCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[2] : undefined;
+  const memberCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[3] : undefined;
+  const propertyCallStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[4] : undefined;
 
   assert.ok(procedure && procedure.kind === "procedureDeclaration");
   assert.ok(assignmentStatement?.kind === "assignmentStatement");
@@ -197,7 +200,14 @@ End Sub`, { fileName: "StructuredStatements.bas" });
   assert.ok(bareCallStatement?.kind === "callStatement");
   assert.equal(bareCallStatement.callStyle, "bare");
   assert.equal(bareCallStatement.name, "UpdateCount");
-  assert.equal(procedure.body[3]?.kind, "executableStatement");
+  assert.ok(memberCallStatement?.kind === "callStatement");
+  assert.equal(memberCallStatement.callStyle, "bare");
+  assert.equal(memberCallStatement.name, "Debug.Print");
+  assert.deepEqual(memberCallStatement.arguments.map((argument) => argument.text), ["holder.Count"]);
+  assert.ok(propertyCallStatement?.kind === "callStatement");
+  assert.equal(propertyCallStatement.callStyle, "bare");
+  assert.equal(propertyCallStatement.name, "Property.Get");
+  assert.deepEqual(propertyCallStatement.arguments.map((argument) => argument.text), ["holder.Count"]);
 });
 
 test("parseModule structures call statements that span multiple physical lines", () => {
@@ -1210,6 +1220,40 @@ End Sub`, { fileName: "SetRequired.bas" });
   assert.equal(typeMismatchDiagnostics.length, 0);
 });
 
+test("analyzeModule uses structured multiline assignments for type inference", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredAssignmentInference"
+Option Explicit
+
+Public Sub Demo()
+    Dim items As Collection
+Label1: items = _
+        New Collection
+End Sub`, { fileName: "StructuredAssignmentInference.bas" });
+
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const assignment = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const setDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "set-required");
+
+  assert.equal(assignment?.kind, "assignmentStatement");
+  if (assignment?.kind === "assignmentStatement") {
+    assert.equal(assignment.assignmentKind, "implicit");
+    assert.equal(assignment.targetText, "items");
+    assert.equal(assignment.expressionText, "New Collection");
+  }
+  assert.deepEqual(
+    setDiagnostics.map((diagnostic) => ({
+      message: diagnostic.message,
+      start: `${diagnostic.range.start.line}:${diagnostic.range.start.character}`
+    })),
+    [
+      {
+        message: "Set is required to assign Collection to Collection.",
+        start: "5:8"
+      }
+    ]
+  );
+});
+
 test("analyzeModule does not require Set for user-defined types", () => {
   const result = analyzeModule(`Attribute VB_Name = "UserTypes"
 Option Explicit
@@ -1577,6 +1621,23 @@ Public Sub Demo()
     rightValue = "B"
     Debug.Print leftValue & Len(rightValue)
 End Sub`, { fileName: "NestedInvocationReads.bas" });
+
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+  const writeOnlyDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "write-only-variable");
+
+  assert.equal(unusedDiagnostics.length, 0);
+  assert.equal(writeOnlyDiagnostics.length, 0);
+});
+
+test("analyzeModule keeps dotted call receivers as local reads", () => {
+  const result = analyzeModule(`Attribute VB_Name = "DottedCallReceiverReads"
+Option Explicit
+
+Public Sub Demo()
+    Dim items As Collection
+    Set items = New Collection
+    items.Add 1
+End Sub`, { fileName: "DottedCallReceiverReads.bas" });
 
   const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
   const writeOnlyDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "write-only-variable");
