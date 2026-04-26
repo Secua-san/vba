@@ -135,6 +135,26 @@ End Sub`, { fileName: "LabeledDeclarations.bas" });
   );
 });
 
+test("parseModule preserves module-level multiline Const value ranges", () => {
+  const result = parseModule(`Option Explicit
+Private Const moduleValue As Long = _
+    1`, { fileName: "ModuleConst.bas" });
+  const constant = result.module.members.find((member) => member.kind === "constDeclaration");
+
+  assert.ok(constant && constant.kind === "constDeclaration");
+  assert.equal(constant.valueText, "1");
+  assert.deepEqual(
+    {
+      end: `${constant.valueRange?.end.line}:${constant.valueRange?.end.character}`,
+      start: `${constant.valueRange?.start.line}:${constant.valueRange?.start.character}`
+    },
+    {
+      end: "2:5",
+      start: "2:4"
+    }
+  );
+});
+
 test("parseModule structures simple assignment and call statements in procedure bodies", () => {
   const result = parseModule(`Option Explicit
 

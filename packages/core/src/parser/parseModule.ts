@@ -88,7 +88,15 @@ export function parsePreparedModule(source: SourceDocument, tokens: Token[]): Pa
     }
 
     if (isConstDeclaration(trimmedText)) {
-      members.push(parseConstDeclaration(source, logicalLine));
+      const constantRange = createMappedRange(
+        source,
+        logicalLine.startLine,
+        0,
+        logicalLine.endLine,
+        source.normalizedLines[logicalLine.endLine]?.length ?? 0
+      );
+      const constantText = createProcedureStatementText(source, logicalLine, constantRange);
+      members.push(parseConstDeclaration(source, logicalLine, constantText.createRange));
       index += 1;
       continue;
     }
