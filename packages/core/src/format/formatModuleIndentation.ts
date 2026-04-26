@@ -54,6 +54,11 @@ interface AlignableDeclarationLine {
   value?: string;
 }
 
+const FORMATTER_SEGMENT_FILE_NAME = "FormatterSegment.bas";
+const FORMATTER_SEGMENT_PRELUDE = 'Attribute VB_Name = "FormatterSegment"\nOption Explicit\n\nPublic Sub Demo()\n';
+const FORMATTER_SEGMENT_POSTLUDE = "\nEnd Sub";
+const structuredProcedureSegmentKindCache = new Map<string, LineKind | undefined>();
+
 export function formatModuleIndentation(text: string, options: FormatModuleIndentationOptions = {}): string {
   const lineEnding = text.includes("\r\n") ? "\r\n" : "\n";
   const source = createSourceDocument(text, { fileName: options.fileName });
@@ -444,7 +449,7 @@ function expandCompressedBlockLine(line: string): string[] {
     return [line];
   }
 
-  const kinds = segments.map((segment) => classifyLineKind(segment));
+  const kinds = segments.map((segment) => classifyStructuredProcedureSegmentKind(segment) ?? classifyLineKind(segment));
   const expandedLines: string[] = [];
   let statementBuffer = "";
   let changed = false;
@@ -567,6 +572,22 @@ function shouldOwnLine(index: number, kinds: LineKind[]): boolean {
 
 function hasFollowingKind(kinds: LineKind[], index: number, targets: LineKind[]): boolean {
   return kinds.slice(index + 1).some((kind) => targets.includes(kind));
+}
+
+function classifyStructuredProcedureSegmentKind(segment: string): LineKind | undefined {
+  if (structuredProcedureSegmentKindCache.has(segment)) {
+    return structuredProcedureSegmentKindCache.get(segment);
+  }
+
+  const parsed = parseModule(`${FORMATTER_SEGMENT_PRELUDE}${segment}${FORMATTER_SEGMENT_POSTLUDE}`, {
+    fileName: FORMATTER_SEGMENT_FILE_NAME
+  });
+  const procedure = parsed.module.members.find((member) => member.kind === "procedureDeclaration");
+  const statement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const lineKind = statement ? getStructuredProcedureLineKind(statement) : undefined;
+
+  structuredProcedureSegmentKindCache.set(segment, lineKind);
+  return lineKind;
 }
 
 function parseAlignableDeclarationLine(line: string): AlignableDeclarationLine | undefined {

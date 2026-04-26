@@ -13,16 +13,16 @@
 
 ## 重要事項
 
-- 現在の主タスクは `ProcedureStatementNode` の block statement structured AST 拡張
-- `assignment` / `call`、主要 block statement、label target statement、termination statement の structured AST slice は完了済みで、次は downstream の raw text 依存を減らす段階
+- Phase 2 の主タスクだった `ProcedureStatementNode` の block statement structured AST 拡張は完了済み
+- `assignment` / `call`、主要 block statement、label target statement、termination statement の structured AST slice は core / server 回帰で固定済みで、次は Phase 3 として downstream の raw text fallback を減らす段階
 - Codex 作業では [AGENTS.md](AGENTS.md) の「最小変更ガード」「テスト選択ルール」「出力ルール」を優先し、承認なしのコード変更、全体テスト、E2E テスト、無関係修正を避ける
 - 過去の完了履歴や docs-only 更新の経緯は [`TASKLOG.md`](TASKLOG.md) を参照する
 
 ## 進行中
 
-- [ ] ProcedureStatementNode の block statement structured AST を広げる
-  - 主要 block statement は node kind 化済みなので、`range` / `text` 互換を維持したまま downstream の diagnostics / references / formatter を AST kind ベースへ寄せる
-  - block validation の first slice は AST kind ベースへ移行済みなので、残る raw text 依存を局所的に削る
+- [ ] Phase 3 の AST 安定化・構文情報整備を進める
+  - Phase 2 structured AST coverage は維持し、未構造化 `executableStatement` 互換 fallback を局所的に削る
+  - downstream の diagnostics / references / semantic token を AST segment 優先へ寄せる
   - 既存 diagnostics、references / rename、semantic token、formatter の回帰を崩さないことを完了条件にする
 
 - [ ] Codex 作業制御を強化する
@@ -34,7 +34,7 @@
 ## 次に行うタスク
 
 - structured statement を使う diagnostics / symbol 連携の次 slice を進める
-- `formatModuleIndentation.ts`、references / rename / semantic token に残る block text 判定を段階的に AST kind ベースへ寄せる
+- references / semantic token に残る fallback 判定を段階的に AST segment 優先へ寄せる
 - core / server / extension の回帰を維持しながら structured AST 利用箇所を増やす
 - Codex 作業制御の改善タスクは、アプリ本体コードに触れず、文書とルール整備だけで小さく分割して進める
 
@@ -45,3 +45,4 @@
 - [完了] `ProcedureStatementNode` の `assignment` / `call` structured AST first slice を導入した
 - [完了] `unreachable-code` diagnostics の block boundary 判定を structured statement metadata へ寄せた
 - [完了] `Exit` / `End` termination statement を structured AST 化し、`unreachable-code` diagnostics の判定へ接続した
+- [完了] Phase 2 の structured AST coverage を完了扱いにし、formatter compressed block 判定と local rename target range を structured kind / segment 優先へ寄せた
