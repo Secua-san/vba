@@ -9,6 +9,12 @@
 
 ## 完了ログ
 
+- [x] Phase 2 の `ProcedureStatementNode` structured AST coverage を完了扱いにする
+  - `packages/core/src/format/formatModuleIndentation.ts` で compressed block line の segment 判定を structured procedure statement kind 優先へ寄せ、従来の text classifier は fallback として残した
+  - `packages/server/src/lsp/documentService.ts` で local rename target range を structured semantic unit の flattened range 優先で取得し、単一行 identifier scan は fallback として残した
+  - `PLAN.md` と `TASKS.md` を更新し、Phase 2 は完了、次の主軸は Phase 3 の AST 安定化・構文情報整備であることを反映した
+  - `npm run test --workspace @vba/core`、`npm run build --workspace @vba/server`、`npm run test --workspace @vba/server` が成功した
+
 - [x] Phase 1 字句解析の B-1 回帰を固定する
   - `packages/core/src/lexer/lexDocument.ts` に行継続 `_` の token 化を追加し、既存のコメント境界と同じく apostrophe / `Rem` コメント前の marker だけを扱うようにした
   - `packages/core/src/types/model.ts` に `lineContinuation` token kind を追加した
