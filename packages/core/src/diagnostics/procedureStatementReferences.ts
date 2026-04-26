@@ -28,11 +28,22 @@ export function getProcedureStatementReferenceSegments(
         }
       ];
     case "callStatement":
-      return statement.arguments.map((argument) => ({
-        range: argument.range,
-        role: "read",
-        text: argument.text
-      }));
+      return [
+        ...(statement.name.includes(".")
+          ? [
+              {
+                range: statement.nameRange,
+                role: "read",
+                text: statement.name
+              } satisfies ProcedureStatementReferenceSegment
+            ]
+          : []),
+        ...statement.arguments.map((argument) => ({
+          range: argument.range,
+          role: "read",
+          text: argument.text
+        }) satisfies ProcedureStatementReferenceSegment)
+      ];
     case "ifBlockStatement":
     case "elseIfClauseStatement":
       return [
