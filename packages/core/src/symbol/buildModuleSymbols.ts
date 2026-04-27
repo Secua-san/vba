@@ -1,5 +1,5 @@
 import { normalizeIdentifier } from "../types/helpers";
-import { ParseResult, ProcedureDeclarationNode, ProcedureScope, SymbolInfo, SymbolTable } from "../types/model";
+import { LinePosition, ParseResult, ProcedureDeclarationNode, ProcedureScope, SymbolInfo, SymbolTable } from "../types/model";
 
 export function buildModuleSymbols(parseResult: ParseResult): SymbolTable {
   const moduleSymbol: SymbolInfo = {
@@ -104,10 +104,9 @@ export function getAccessibleSymbolsAtLine(symbolTable: SymbolTable, line: numbe
     return [symbolTable.moduleSymbol, ...symbolTable.moduleSymbols];
   }
 
-  const combinedSymbols = [symbolTable.moduleSymbol, ...symbolTable.moduleSymbols, ...scope.symbols];
   const uniqueSymbols = new Map<string, SymbolInfo>();
 
-  for (const symbol of combinedSymbols) {
+  for (const symbol of [symbolTable.moduleSymbol, ...symbolTable.moduleSymbols]) {
     const key = `${symbol.kind}:${symbol.normalizedName}`;
 
     if (!uniqueSymbols.has(key)) {
@@ -115,7 +114,41 @@ export function getAccessibleSymbolsAtLine(symbolTable: SymbolTable, line: numbe
     }
   }
 
+  for (const symbol of scope.symbols) {
+    const key = `${symbol.kind}:${symbol.normalizedName}`;
+    const existingSymbol = uniqueSymbols.get(key);
+
+    if (!existingSymbol || existingSymbol.scope !== "procedure") {
+      uniqueSymbols.set(key, symbol);
+    }
+  }
+
   return [...uniqueSymbols.values()];
+}
+
+export function resolveSymbolAtPosition(
+  symbolTable: SymbolTable,
+  line: number,
+  identifier: string,
+  position: LinePosition
+): SymbolInfo | undefined {
+  const matchingSymbols = getAccessibleSymbolsAtLine(symbolTable, line).filter(
+    (symbol) => symbol.normalizedName === normalizeIdentifier(identifier)
+  );
+
+  if (matchingSymbols.length === 0) {
+    return undefined;
+  }
+
+  const declarationMatches = matchingSymbols.filter(
+    (symbol) => symbol.kind !== "module" && isPositionWithinRange(position, symbol.selectionRange)
+  );
+
+  if (declarationMatches.length > 0) {
+    return declarationMatches.find((symbol) => symbol.scope === "module") ?? declarationMatches[0];
+  }
+
+  return matchingSymbols.find((symbol) => symbol.scope === "procedure") ?? matchingSymbols.find((symbol) => symbol.kind !== "module") ?? matchingSymbols[0];
 }
 
 function buildProcedureScope(procedure: ProcedureDeclarationNode): ProcedureScope {
@@ -197,4 +230,20 @@ function createModuleSymbol(
     selectionRange,
     typeName
   };
+}
+
+function isPositionWithinRange(position: LinePosition, range: SymbolInfo["selectionRange"]): boolean {
+  if (position.line < range.start.line || position.line > range.end.line) {
+    return false;
+  }
+
+  if (position.line === range.start.line && position.character < range.start.character) {
+    return false;
+  }
+
+  if (position.line === range.end.line && position.character > range.end.character) {
+    return false;
+  }
+
+  return true;
 }

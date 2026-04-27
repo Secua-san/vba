@@ -1,13 +1,11 @@
-import { getAccessibleSymbolsAtLine } from "../symbol/buildModuleSymbols";
+import { getAccessibleSymbolsAtLine, resolveSymbolAtPosition } from "../symbol/buildModuleSymbols";
 import { normalizeIdentifier } from "../types/helpers";
 import type {
   AnalysisResult,
   Diagnostic,
   InferredSymbolType,
-  LinePosition,
   ParseResult,
   ProcedureDeclarationNode,
-  SourceRange,
   SymbolInfo,
   SymbolTable,
   TypeInferenceResult
@@ -225,24 +223,6 @@ function inferExpressionType(
 
   const symbol = resolveSymbolAtPosition(symbolTable, line, identifierMatch[1], { character: 0, line });
   return symbol ? getResolvedTypeName(symbolTypes, symbol) : undefined;
-}
-
-function resolveSymbolAtPosition(symbolTable: SymbolTable, line: number, identifier: string, position: LinePosition): SymbolInfo | undefined {
-  const matchingSymbols = getAccessibleSymbolsAtLine(symbolTable, line).filter(
-    (symbol) => symbol.normalizedName === normalizeIdentifier(identifier)
-  );
-
-  if (matchingSymbols.length === 0) {
-    return undefined;
-  }
-
-  const declarationMatches = matchingSymbols.filter((symbol) => symbol.kind !== "module" && positionWithinRange(position, symbol.selectionRange));
-
-  if (declarationMatches.length > 0) {
-    return declarationMatches.find((symbol) => symbol.scope === "module") ?? declarationMatches[0];
-  }
-
-  return matchingSymbols.find((symbol) => symbol.scope === "procedure") ?? matchingSymbols.find((symbol) => symbol.kind !== "module") ?? matchingSymbols[0];
 }
 
 function findProcedureSymbolForReturn(
@@ -648,21 +628,5 @@ function parenthesesAreBalanced(expressionText: string): boolean {
   }
 
   return depth === 0;
-}
-
-function positionWithinRange(position: LinePosition, range: SourceRange): boolean {
-  if (position.line < range.start.line || position.line > range.end.line) {
-    return false;
-  }
-
-  if (position.line === range.start.line && position.character < range.start.character) {
-    return false;
-  }
-
-  if (position.line === range.end.line && position.character > range.end.character) {
-    return false;
-  }
-
-  return true;
 }
 

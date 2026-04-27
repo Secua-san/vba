@@ -9,8 +9,8 @@ import { parseModule } from "../parser/parseModule";
 import { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { inferModuleTypes } from "../inference/inferModuleTypes";
 import { normalizeIdentifier } from "../types/helpers";
-import { AnalysisResult, AnalyzeModuleOptions, Diagnostic, LinePosition, OutlineSymbol, ParseResult, SymbolInfo, SymbolTable } from "../types/model";
-import { buildModuleSymbols, getAccessibleSymbolsAtLine } from "../symbol/buildModuleSymbols";
+import { AnalysisResult, AnalyzeModuleOptions, Diagnostic, LinePosition, OutlineSymbol, ParseResult, SymbolTable } from "../types/model";
+import { buildModuleSymbols, getAccessibleSymbolsAtLine, resolveSymbolAtPosition } from "../symbol/buildModuleSymbols";
 
 export function analyzeModule(text: string, options: AnalyzeModuleOptions = {}): AnalysisResult {
   const parseResult = parseModule(text, options);
@@ -46,23 +46,7 @@ export function findDefinition(result: AnalysisResult | ParseResult & { symbols:
     return undefined;
   }
 
-  const normalizedIdentifier = normalizeIdentifier(identifier);
-  const accessibleSymbols = getAccessibleSymbolsAtLine(result.symbols, position.line);
-  const matchingSymbols = accessibleSymbols.filter((symbol) => symbol.normalizedName === normalizedIdentifier);
-
-  if (matchingSymbols.length === 0) {
-    return undefined;
-  }
-
-  const declarationMatches = matchingSymbols.filter(
-    (symbol) => symbol.kind !== "module" && isPositionWithinRange(position, symbol.selectionRange)
-  );
-
-  if (declarationMatches.length > 0) {
-    return declarationMatches.find((symbol) => symbol.scope === "module") ?? declarationMatches[0];
-  }
-
-  return matchingSymbols.find((symbol) => symbol.scope === "procedure") ?? matchingSymbols.find((symbol) => symbol.kind !== "module") ?? matchingSymbols[0];
+  return resolveSymbolAtPosition(result.symbols, position.line, identifier, position);
 }
 
 export function getCompletionSymbols(
@@ -347,20 +331,4 @@ function pushUndeclaredIdentifierDiagnostic(
     };
   const key = `${diagnostic.code}:${diagnostic.range.start.line}:${diagnostic.range.start.character}:${diagnostic.range.end.line}:${diagnostic.range.end.character}:${diagnostic.message}`;
   diagnostics.set(key, diagnostic);
-}
-
-function isPositionWithinRange(position: LinePosition, range: SymbolInfo["selectionRange"]): boolean {
-  if (position.line < range.start.line || position.line > range.end.line) {
-    return false;
-  }
-
-  if (position.line === range.start.line && position.character < range.start.character) {
-    return false;
-  }
-
-  if (position.line === range.end.line && position.character > range.end.character) {
-    return false;
-  }
-
-  return true;
 }
