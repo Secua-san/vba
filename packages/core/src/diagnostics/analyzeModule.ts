@@ -9,7 +9,7 @@ import { parseModule } from "../parser/parseModule";
 import { extractIdentifierAtPosition, removeStringAndDateLiterals, splitCodeAndComment } from "../parser/text";
 import { inferModuleTypes } from "../inference/inferModuleTypes";
 import { normalizeIdentifier } from "../types/helpers";
-import { AnalysisResult, AnalyzeModuleOptions, Diagnostic, LinePosition, OutlineSymbol, ParseResult, SymbolTable } from "../types/model";
+import { AnalysisResult, AnalyzeModuleOptions, Diagnostic, LinePosition, OutlineSymbol, ParseResult, SymbolInfo, SymbolTable } from "../types/model";
 import { buildModuleSymbols, getAccessibleSymbolsAtLine, resolveSymbolAtPosition } from "../symbol/buildModuleSymbols";
 
 export function analyzeModule(text: string, options: AnalyzeModuleOptions = {}): AnalysisResult {
