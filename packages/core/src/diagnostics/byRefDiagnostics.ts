@@ -210,7 +210,7 @@ function findLocalCallable(result: AnalysisResult, position: LinePosition): Reso
     return undefined;
   }
 
-  const targetSymbol = resolveSymbolAtPosition(result.symbols, position.line, identifier, position);
+  const targetSymbol = resolveSymbolAtPosition(result.symbols, identifier, position);
 
   if (!targetSymbol) {
     return undefined;
@@ -270,7 +270,7 @@ function resolveArgumentSymbol(result: AnalysisResult, position: LinePosition): 
     return undefined;
   }
 
-  return resolveSymbolAtPosition(result.symbols, position.line, identifier, position);
+  return resolveSymbolAtPosition(result.symbols, identifier, position);
 }
 
 function collectInvocations(text: string, line: number, baseCharacter = 0): Invocation[] {

@@ -46,7 +46,7 @@ export function findDefinition(result: AnalysisResult | ParseResult & { symbols:
     return undefined;
   }
 
-  return resolveSymbolAtPosition(result.symbols, position.line, identifier, position);
+  return resolveSymbolAtPosition(result.symbols, identifier, position);
 }
 
 export function getCompletionSymbols(

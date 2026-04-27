@@ -58,7 +58,7 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
         continue;
       }
 
-      const targetSymbol = resolveSymbolAtPosition(symbolTable, statement.range.start.line, assignment.targetName, assignment.targetRange.start);
+      const targetSymbol = resolveSymbolAtPosition(symbolTable, assignment.targetName, assignment.targetRange.start);
       const inferredExpressionType = inferExpressionType(symbolTable, symbolTypes, statement.range.start.line, assignment.expressionText);
 
       if (!targetSymbol || !inferredExpressionType) {
@@ -211,7 +211,7 @@ function inferExpressionType(
       return castType;
     }
 
-    const symbol = resolveSymbolAtPosition(symbolTable, line, callMatch[1], { character: 0, line });
+    const symbol = resolveSymbolAtPosition(symbolTable, callMatch[1], { character: 0, line });
     return symbol ? getResolvedTypeName(symbolTypes, symbol) : undefined;
   }
 
@@ -221,7 +221,7 @@ function inferExpressionType(
     return undefined;
   }
 
-  const symbol = resolveSymbolAtPosition(symbolTable, line, identifierMatch[1], { character: 0, line });
+  const symbol = resolveSymbolAtPosition(symbolTable, identifierMatch[1], { character: 0, line });
   return symbol ? getResolvedTypeName(symbolTypes, symbol) : undefined;
 }
 

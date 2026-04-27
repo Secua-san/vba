@@ -128,11 +128,10 @@ export function getAccessibleSymbolsAtLine(symbolTable: SymbolTable, line: numbe
 
 export function resolveSymbolAtPosition(
   symbolTable: SymbolTable,
-  line: number,
   identifier: string,
   position: LinePosition
 ): SymbolInfo | undefined {
-  const matchingSymbols = getAccessibleSymbolsAtLine(symbolTable, line).filter(
+  const matchingSymbols = getAccessibleSymbolsAtLine(symbolTable, position.line).filter(
     (symbol) => symbol.normalizedName === normalizeIdentifier(identifier)
   );
 
@@ -145,6 +144,7 @@ export function resolveSymbolAtPosition(
   );
 
   if (declarationMatches.length > 0) {
+    // Prefer procedure declarations over implicit Function return variables that share the header range.
     return declarationMatches.find((symbol) => symbol.scope === "module") ?? declarationMatches[0];
   }
 
