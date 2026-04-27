@@ -9,6 +9,11 @@
 
 ## 完了ログ
 
+- [x] Phase 4 のシンボルテーブル・スコープ解析を完了扱いにする
+  - `packages/core/src/symbol/buildModuleSymbols.ts` に shared symbol resolution を寄せ、procedure symbol が同 kind の module symbol を shadow するようにした
+  - `packages/core/src/diagnostics/analyzeModule.ts`、`packages/core/src/inference/inferModuleTypes.ts`、`packages/core/src/diagnostics/byRefDiagnostics.ts` の duplicated resolution を共通化した
+  - `packages/core/test/analysis.test.ts` と `packages/server/test/documentService.test.js` で definition / references / rename / type inference の same-kind shadowing 回帰を固定した
+
 - [x] Phase 3 の AST 安定化・構文情報整備を完了扱いにする
   - `packages/core/src/inference/inferModuleTypes.ts` で type inference の assignment 入力を `assignmentStatement` に限定し、`executableStatement.text` の再パース fallback を削除した
   - `packages/core/src/parser/parseModule.ts` で `Debug.Print value` のような member call を `callStatement` として構造化し、既存の diagnostics / references / semantic token segment 経路へ載せた
