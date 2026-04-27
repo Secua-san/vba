@@ -5146,6 +5146,42 @@ End Sub`
   );
 });
 
+test("document service keeps local references scoped when module variables are shadowed", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/SameKindShadowing.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "SameKindShadowing"
+Option Explicit
+
+Private SharedValue As String
+
+Public Sub Demo()
+    Dim SharedValue
+    SharedValue = 1
+    Debug.Print SharedValue
+End Sub`
+  );
+
+  const definition = service.getDefinition(uri, { character: 8, line: 6 });
+  const references = service.getReferences(uri, { character: 8, line: 6 }, true);
+  const edits = service.getRenameEdits(uri, { character: 4, line: 7 }, "localValue");
+
+  assert.equal(definition?.symbol.scope, "procedure");
+  assert.equal(definition?.symbol.kind, "variable");
+  assert.deepEqual(
+    references.map((reference) => `${reference.uri}:${reference.range.start.line}:${reference.range.start.character}`),
+    [`${uri}:6:8`, `${uri}:7:4`, `${uri}:8:16`]
+  );
+  assert.deepEqual(
+    edits?.map((edit) => `${edit.uri}:${edit.range.start.line}:${edit.range.start.character}:${edit.newText}`),
+    [`${uri}:6:8:localValue`, `${uri}:7:4:localValue`, `${uri}:8:16:localValue`]
+  );
+});
+
 test("document service resolves structured control header references within one procedure", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/StructuredReferences.bas";

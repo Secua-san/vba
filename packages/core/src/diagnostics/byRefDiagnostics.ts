@@ -1,7 +1,7 @@
 import { VBA_KEYWORDS } from "../lexer/keywords";
 import { getSymbolTypeName, areTypesCompatible } from "../inference/inferModuleTypes";
 import { splitCodeAndComment } from "../parser/text";
-import { getAccessibleSymbolsAtLine } from "../symbol/buildModuleSymbols";
+import { resolveSymbolAtPosition } from "../symbol/buildModuleSymbols";
 import { normalizeIdentifier } from "../types/helpers";
 import { getProcedureStatementReferenceSegments } from "./procedureStatementReferences";
 import type {
@@ -210,22 +210,7 @@ function findLocalCallable(result: AnalysisResult, position: LinePosition): Reso
     return undefined;
   }
 
-  const accessibleSymbols = getAccessibleSymbolsAtLine(result.symbols, position.line);
-  const matchingSymbols = accessibleSymbols.filter((symbol) => symbol.normalizedName === normalizeIdentifier(identifier));
-
-  if (matchingSymbols.length === 0) {
-    return undefined;
-  }
-
-  const declarationMatches = matchingSymbols.filter(
-    (symbol) => symbol.kind !== "module" && isPositionWithinRange(position, symbol.selectionRange)
-  );
-  const targetSymbol =
-    declarationMatches.find((symbol) => symbol.scope === "module") ??
-    declarationMatches[0] ??
-    matchingSymbols.find((symbol) => symbol.scope === "procedure") ??
-    matchingSymbols.find((symbol) => symbol.kind !== "module") ??
-    matchingSymbols[0];
+  const targetSymbol = resolveSymbolAtPosition(result.symbols, identifier, position);
 
   if (!targetSymbol) {
     return undefined;
@@ -285,24 +270,7 @@ function resolveArgumentSymbol(result: AnalysisResult, position: LinePosition): 
     return undefined;
   }
 
-  const accessibleSymbols = getAccessibleSymbolsAtLine(result.symbols, position.line);
-  const matchingSymbols = accessibleSymbols.filter((symbol) => symbol.normalizedName === normalizeIdentifier(identifier));
-
-  if (matchingSymbols.length === 0) {
-    return undefined;
-  }
-
-  const declarationMatches = matchingSymbols.filter(
-    (symbol) => symbol.kind !== "module" && isPositionWithinRange(position, symbol.selectionRange)
-  );
-
-  return (
-    declarationMatches.find((symbol) => symbol.scope === "module") ??
-    declarationMatches[0] ??
-    matchingSymbols.find((symbol) => symbol.scope === "procedure") ??
-    matchingSymbols.find((symbol) => symbol.kind !== "module") ??
-    matchingSymbols[0]
-  );
+  return resolveSymbolAtPosition(result.symbols, identifier, position);
 }
 
 function collectInvocations(text: string, line: number, baseCharacter = 0): Invocation[] {
@@ -667,22 +635,6 @@ function usesNamedArgument(argumentText: string): boolean {
 
 function isAssignableSymbol(symbol: SymbolInfo): boolean {
   return symbol.kind === "parameter" || symbol.kind === "variable";
-}
-
-function isPositionWithinRange(position: LinePosition, range: SymbolInfo["selectionRange"]): boolean {
-  if (position.line < range.start.line || position.line > range.end.line) {
-    return false;
-  }
-
-  if (position.line === range.start.line && position.character < range.start.character) {
-    return false;
-  }
-
-  if (position.line === range.end.line && position.character > range.end.character) {
-    return false;
-  }
-
-  return true;
 }
 
 function rangesEqual(left: SourceRange, right: SourceRange): boolean {

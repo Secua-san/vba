@@ -718,6 +718,37 @@ End Sub`, { fileName: "Shadowing.bas" });
   assert.equal(usageDefinition?.scope, "procedure");
 });
 
+test("symbol resolution lets procedure variables shadow module variables of the same kind", () => {
+  const result = analyzeModule(`Attribute VB_Name = "SameKindShadowing"
+Option Explicit
+
+Private SharedValue As String
+
+Public Sub Demo()
+    Dim SharedValue
+    SharedValue = 1
+    Debug.Print SharedValue
+End Sub`, { fileName: "SameKindShadowing.bas" });
+
+  const declarationDefinition = findDefinition(result, { character: 8, line: 6 });
+  const usageDefinition = findDefinition(result, { character: 4, line: 7 });
+  const completionVariables = getCompletionSymbols(result, { character: 4, line: 8 }).filter(
+    (symbol) => symbol.kind === "variable" && symbol.name === "SharedValue"
+  );
+  const localSymbol = result.symbols.procedureScopes
+    .flatMap((scope) => scope.symbols)
+    .find((symbol) => symbol.kind === "variable" && symbol.name === "SharedValue");
+
+  assert.equal(declarationDefinition?.scope, "procedure");
+  assert.equal(usageDefinition?.scope, "procedure");
+  assert.deepEqual(
+    completionVariables.map((symbol) => symbol.scope),
+    ["procedure"]
+  );
+  assert.equal(getSymbolTypeName(result, localSymbol), "Long");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
 test("analyzeModule infers types from literals, simple assignments, and function return values", () => {
   const result = analyzeModule(`Attribute VB_Name = "Inference"
 Option Explicit
