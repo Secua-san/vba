@@ -806,6 +806,8 @@ End Sub`, { fileName: "GetObjectInference.bas" });
     .find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
 
   assert.equal(getSymbolTypeName(result, shellSymbol), "Object");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
 
 test("analyzeModule reports simple type mismatches", () => {
