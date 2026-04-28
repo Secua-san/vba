@@ -123,6 +123,10 @@ function collectStatementInvocations(
       .flatMap((segment) => collectInvocationsInSourceRange(result, segment.range));
   }
 
+  if (statement.kind !== "executableStatement") {
+    return [];
+  }
+
   return collectInvocationsInSourceRange(result, statement.range);
 }
 

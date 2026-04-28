@@ -17,6 +17,7 @@ import {
   LinePosition,
   ProcedureDeclarationNode,
   ProcedureKind,
+  ProcedureStatementLabelNode,
   ProcedureStatementNode,
   SourceDocument,
   Token,
@@ -553,6 +554,13 @@ function parseProcedureStatement(
   const parsedText = leadingLabel?.statementText ?? trimmedText;
   const parsedLogicalLine = leadingLabel ? { ...logicalLine, codeText: parsedText } : logicalLine;
   const parsedInlineCharacterOffset = inlineCharacterOffset + (leadingLabel?.statementStartCharacter ?? 0);
+  const leadingLabelNode = leadingLabel
+    ? {
+        kind: "procedureStatementLabel" as const,
+        range: statementText.createRange(leadingLabel.labelStartCharacter, leadingLabel.labelEndCharacter),
+        text: leadingLabel.labelText
+      }
+    : undefined;
   const createParsedRange = leadingLabel
     ? (startCharacter: number, endCharacter: number) =>
         statementText.createRange(
@@ -567,33 +575,33 @@ function parseProcedureStatement(
 
   if (/^Const\b/i.test(parsedText)) {
     const constant = parseConstDeclaration(source, parsedLogicalLine, createParsedRange);
-    return {
+    return withLeadingLabel({
       declaredConstants: [constant],
       kind: "constStatement",
       range: statementRange,
       text: trimmedText
-    };
+    }, leadingLabelNode);
   }
 
   if (/^(?:Dim|Static)\b/i.test(parsedText)) {
     const declaration = parseProcedureVariableDeclaration(source, parsedLogicalLine);
-    return {
+    return withLeadingLabel({
       declaredVariables: declaration.declarators,
       kind: "declarationStatement",
       range: statementRange,
       text: trimmedText
-    };
+    }, leadingLabelNode);
   }
 
   const structuredBlockStatement = parseStructuredBlockStatement(parsedText, statementRange, parsedInlineCharacterOffset);
 
   if (structuredBlockStatement) {
-    return structuredBlockStatement.text === trimmedText
+    return withLeadingLabel(structuredBlockStatement.text === trimmedText
       ? structuredBlockStatement
       : {
           ...structuredBlockStatement,
           text: trimmedText
-        };
+        }, leadingLabelNode);
   }
 
   const assignmentStatement = parseAssignmentStatement(
@@ -604,12 +612,12 @@ function parseProcedureStatement(
   );
 
   if (assignmentStatement) {
-    return assignmentStatement.text === trimmedText
+    return withLeadingLabel(assignmentStatement.text === trimmedText
       ? assignmentStatement
       : {
           ...assignmentStatement,
           text: trimmedText
-        };
+        }, leadingLabelNode);
   }
 
   const callStatement = parseCallStatement(
@@ -620,19 +628,26 @@ function parseProcedureStatement(
   );
 
   if (callStatement) {
-    return callStatement.text === trimmedText
+    return withLeadingLabel(callStatement.text === trimmedText
       ? callStatement
       : {
           ...callStatement,
           text: trimmedText
-        };
+        }, leadingLabelNode);
   }
 
-  return {
+  return withLeadingLabel({
     kind: "executableStatement",
     range: statementRange,
     text: trimmedText
-  };
+  }, leadingLabelNode);
+}
+
+function withLeadingLabel<T extends ProcedureStatementNode>(
+  statement: T,
+  leadingLabel: ProcedureStatementLabelNode | undefined
+): T {
+  return leadingLabel ? { ...statement, leadingLabel } : statement;
 }
 
 function parseStructuredBlockStatement(
@@ -1776,15 +1791,24 @@ function mapFlattenedProcedureStatementRange(
   };
 }
 
-function parseLeadingLabel(text: string): { statementStartCharacter: number; statementText: string } | undefined {
-  const match = /^(?:[A-Za-z_][A-Za-z0-9_]*|\d+):\s*/u.exec(text);
+function parseLeadingLabel(text: string): {
+  labelEndCharacter: number;
+  labelStartCharacter: number;
+  labelText: string;
+  statementStartCharacter: number;
+  statementText: string;
+} | undefined {
+  const match = /^([A-Za-z_][A-Za-z0-9_]*|\d+):\s*/u.exec(text);
   const statementText = match ? text.slice(match[0].length).trimStart() : "";
 
-  if (!match || statementText.length === 0) {
+  if (!match?.[1] || statementText.length === 0) {
     return undefined;
   }
 
   return {
+    labelEndCharacter: match[1].length,
+    labelStartCharacter: 0,
+    labelText: match[1],
     statementStartCharacter: match[0].length,
     statementText
   };

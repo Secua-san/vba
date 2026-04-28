@@ -289,6 +289,11 @@ End Sub`, { fileName: "StructuredLabeledStatements.bas" });
   assert.ok(procedure && procedure.kind === "procedureDeclaration");
   assert.equal(assignmentStatement?.kind, "assignmentStatement");
   assert.equal(assignmentStatement?.text, "Label1: title = 1");
+  assert.equal(assignmentStatement?.leadingLabel?.text, "Label1");
+  assert.deepEqual(assignmentStatement?.leadingLabel?.range, {
+    end: { character: 6, line: 3 },
+    start: { character: 0, line: 3 }
+  });
   assert.equal(assignmentStatement?.targetText, "title");
   assert.deepEqual(assignmentStatement?.targetRange, {
     end: { character: 13, line: 3 },
@@ -296,11 +301,33 @@ End Sub`, { fileName: "StructuredLabeledStatements.bas" });
   });
   assert.equal(callStatement?.kind, "callStatement");
   assert.equal(callStatement?.text, "Label2: UpdateCount title");
+  assert.equal(callStatement?.leadingLabel?.text, "Label2");
   assert.equal(callStatement?.name, "UpdateCount");
   assert.deepEqual(callStatement?.nameRange, {
     end: { character: 19, line: 4 },
     start: { character: 8, line: 4 }
   });
+});
+
+test("parseModule preserves leading labels on structured block boundaries", () => {
+  const result = parseModule(`Option Explicit
+
+Public Sub Demo()
+LabelIf: If ready Then
+LabelElse: Else
+LabelEnd: End If
+End Sub`, { fileName: "StructuredBoundaryLabels.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const ifStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[0] : undefined;
+  const elseStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const endIfStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[2] : undefined;
+
+  assert.equal(ifStatement?.kind, "ifBlockStatement");
+  assert.equal(ifStatement?.leadingLabel?.text, "LabelIf");
+  assert.equal(elseStatement?.kind, "elseClauseStatement");
+  assert.equal(elseStatement?.leadingLabel?.text, "LabelElse");
+  assert.equal(endIfStatement?.kind, "endIfStatement");
+  assert.equal(endIfStatement?.leadingLabel?.text, "LabelEnd");
 });
 
 test("parseModule structures block If, Select Case, For, and For Each statements in procedure bodies", () => {
@@ -1484,6 +1511,45 @@ End Property`, { fileName: "StructuredLabeledPropertyExit.bas" });
     unreachableDiagnostics.map((diagnostic) => diagnostic.message),
     ["Unreachable code after Exit Property."]
   );
+});
+
+test("analyzeModule uses structured leading labels to clear unreachable state", () => {
+  const result = analyzeModule(`Attribute VB_Name = "StructuredLabeledReachable"
+Option Explicit
+
+Public Sub Demo()
+    Dim marker As Long
+    Exit Sub
+Label1: marker = 1
+End Sub`, { fileName: "StructuredLabeledReachable.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[2] : undefined;
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(assignmentStatement?.kind, "assignmentStatement");
+  assert.equal(assignmentStatement?.leadingLabel?.text, "Label1");
+  assert.deepEqual(unreachableDiagnostics, []);
+});
+
+test("analyzeModule uses executable label fallback to clear unreachable state", () => {
+  const result = analyzeModule(`Attribute VB_Name = "ExecutableLabelReachable"
+Option Explicit
+
+Public Sub Demo()
+    Dim marker As Long
+    Exit Sub
+Label1:
+    marker = 1
+End Sub`, { fileName: "ExecutableLabelReachable.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const labelStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[2] : undefined;
+  const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[3] : undefined;
+  const unreachableDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unreachable-code");
+
+  assert.equal(labelStatement?.kind, "executableStatement");
+  assert.equal(labelStatement?.text, "Label1:");
+  assert.equal(assignmentStatement?.kind, "assignmentStatement");
+  assert.deepEqual(unreachableDiagnostics, []);
 });
 
 test("analyzeModule ignores mismatched structured exit kind for unreachable code", () => {

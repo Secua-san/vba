@@ -36,17 +36,16 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
   let unreachableState: UnreachableState | undefined;
 
   for (const statement of procedure.body) {
-    const rawText = statement.text.trim();
-
-    if (rawText.length === 0 || /^#/i.test(rawText)) {
+    if (isEmptyOrDirectiveExecutableStatement(statement)) {
       continue;
     }
 
-    if (hasLeadingLabel(rawText)) {
+    const legacyControlText = getLegacyExecutableControlText(statement);
+
+    if (statement.leadingLabel || (statement.kind === "executableStatement" && hasLeadingLabel(statement.text.trim()))) {
       unreachableState = undefined;
     }
 
-    const legacyControlText = statement.kind === "executableStatement" ? stripLeadingLabel(rawText) : undefined;
     const controlMetadata = getStatementControlMetadata(statement, legacyControlText);
 
     if (unreachableState && clearsUnreachableState(controlMetadata, blockStack, unreachableState)) {
@@ -77,6 +76,23 @@ function collectProcedureUnreachableDiagnostics(procedure: ProcedureDeclarationN
   }
 
   return diagnostics;
+}
+
+function isEmptyOrDirectiveExecutableStatement(statement: ProcedureDeclarationNode["body"][number]): boolean {
+  if (statement.kind !== "executableStatement") {
+    return false;
+  }
+
+  const rawText = statement.text.trim();
+  return rawText.length === 0 || /^#/i.test(rawText);
+}
+
+function getLegacyExecutableControlText(statement: ProcedureDeclarationNode["body"][number]): string | undefined {
+  if (statement.kind !== "executableStatement") {
+    return undefined;
+  }
+
+  return stripLeadingLabel(statement.text.trim());
 }
 
 function applyBlockTransition(controlMetadata: StatementControlMetadata | undefined, blockStack: BlockKind[]): void {

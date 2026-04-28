@@ -162,6 +162,7 @@ export interface DeclareStatementNode {
 export interface ConstStatementNode {
   declaredConstants: ConstDeclarationNode[];
   kind: "constStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -169,6 +170,13 @@ export interface ConstStatementNode {
 export interface DeclarationStatementNode {
   declaredVariables: VariableDeclaratorNode[];
   kind: "declarationStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
+  range: SourceRange;
+  text: string;
+}
+
+export interface ProcedureStatementLabelNode {
+  kind: "procedureStatementLabel";
   range: SourceRange;
   text: string;
 }
@@ -178,6 +186,7 @@ export interface AssignmentStatementNode {
   expressionRange: SourceRange;
   expressionText: string;
   kind: "assignmentStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   targetName?: string;
   targetRange: SourceRange;
@@ -194,6 +203,7 @@ export interface CallStatementNode {
   arguments: InvocationArgumentNode[];
   callStyle: "bare" | "call" | "parenthesized";
   kind: "callStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   name: string;
   nameRange: SourceRange;
   range: SourceRange;
@@ -204,6 +214,7 @@ export interface IfBlockStatementNode {
   conditionRange: SourceRange;
   conditionText: string;
   kind: "ifBlockStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -212,18 +223,21 @@ export interface ElseIfClauseStatementNode {
   conditionRange: SourceRange;
   conditionText: string;
   kind: "elseIfClauseStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
 
 export interface ElseClauseStatementNode {
   kind: "elseClauseStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
 
 export interface EndIfStatementNode {
   kind: "endIfStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -232,6 +246,7 @@ export interface SelectCaseStatementNode {
   expressionRange: SourceRange;
   expressionText: string;
   kind: "selectCaseStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -241,12 +256,14 @@ export interface CaseClauseStatementNode {
   conditionRange?: SourceRange;
   conditionText?: string;
   kind: "caseClauseStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
 
 export interface EndSelectStatementNode {
   kind: "endSelectStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -258,6 +275,7 @@ export interface ForStatementNode {
   endExpressionRange: SourceRange;
   endExpressionText: string;
   kind: "forStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   startExpressionRange: SourceRange;
   startExpressionText: string;
@@ -273,6 +291,7 @@ export interface ForEachStatementNode {
   itemRange: SourceRange;
   itemText: string;
   kind: "forEachStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -282,6 +301,7 @@ export interface NextStatementNode {
   counterRange?: SourceRange;
   counterText?: string;
   kind: "nextStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -291,6 +311,7 @@ export interface DoBlockStatementNode {
   conditionRange?: SourceRange;
   conditionText?: string;
   kind: "doBlockStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -300,6 +321,7 @@ export interface LoopStatementNode {
   conditionRange?: SourceRange;
   conditionText?: string;
   kind: "loopStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -308,12 +330,14 @@ export interface WhileStatementNode {
   conditionRange: SourceRange;
   conditionText: string;
   kind: "whileStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
 
 export interface WendStatementNode {
   kind: "wendStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -322,12 +346,14 @@ export interface WithBlockStatementNode {
   targetRange: SourceRange;
   targetText: string;
   kind: "withBlockStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
 
 export interface EndWithStatementNode {
   kind: "endWithStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
@@ -335,6 +361,7 @@ export interface EndWithStatementNode {
 export interface OnErrorStatementNode {
   actionKind: "goto" | "resumeNext";
   kind: "onErrorStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   targetRange?: SourceRange;
   targetText?: string;
@@ -344,6 +371,7 @@ export interface OnErrorStatementNode {
 export interface GoToStatementNode {
   actionKind: "goSub" | "goTo";
   kind: "goToStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   targetRange: SourceRange;
   targetText: string;
@@ -353,6 +381,7 @@ export interface GoToStatementNode {
 export interface ResumeStatementNode {
   actionKind: "implicit" | "next" | "target";
   kind: "resumeStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   targetRange?: SourceRange;
   targetText?: string;
@@ -362,18 +391,21 @@ export interface ResumeStatementNode {
 export interface ExitStatementNode {
   exitKind: "Function" | "Property" | "Sub";
   kind: "exitStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
 
 export interface EndStatementNode {
   kind: "endStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
 
 export interface ExecutableStatementNode {
   kind: "executableStatement";
+  leadingLabel?: ProcedureStatementLabelNode;
   range: SourceRange;
   text: string;
 }
