@@ -3907,6 +3907,31 @@ End Sub`;
   );
 });
 
+test("document service resolves known CreateObject ProgID members", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/KnownProgIdMembers.bas";
+  const text = `Attribute VB_Name = "KnownProgIdMembers"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell
+    Set shell = CreateObject("WScript.Shell")
+    Call shell.Run("notepad.exe")
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const hover = getHoverAfterToken(service, uri, text, "shell.Run");
+  const signature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.equal(completions.some((resolution) => resolution.symbol.name === "Run"), true);
+  assert.equal(hover?.contents.includes("Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long"), true);
+  assert.equal(signature?.label, "Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long");
+  assertSemanticToken(text, tokens, 6, "Run", { modifiers: [], type: "function" });
+});
+
 test("document service keeps ThisWorkbook built-in alias conservative for non-document class modules", () => {
   const service = createDocumentService();
   const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";

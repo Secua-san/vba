@@ -9,6 +9,12 @@
 
 ## 完了ログ
 
+- [x] Phase 5 の名前解決・基本型推論を完了扱いにする
+  - `packages/core/src/inference/inferModuleTypes.ts` で `CreateObject("WScript.Shell")` を既知 ProgID として `WshShell` 型へ推論するようにした
+  - `packages/core/src/reference/builtinReference.ts` に `WshShell.Run` の最小 supplemental owner / member を追加し、`packages/server/src/lsp/documentService.ts` で推論済み既知 ProgID owner を built-in member 解決へ接続した
+  - `packages/core/test/analysis.test.ts` と `packages/server/test/documentService.test.js` で type inference、completion、hover、signature help、semantic token の回帰を固定した
+  - `npm run build --workspace @vba/core`、`npm run test --workspace @vba/core`、`npm run build --workspace @vba/server`、`npm run test --workspace @vba/server` が成功した
+
 - [x] Phase 4 のシンボルテーブル・スコープ解析を完了扱いにする
   - `packages/core/src/symbol/buildModuleSymbols.ts` に shared symbol resolution を寄せ、procedure symbol が同 kind の module symbol を shadow するようにした
   - `packages/core/src/diagnostics/analyzeModule.ts`、`packages/core/src/inference/inferModuleTypes.ts`、`packages/core/src/diagnostics/byRefDiagnostics.ts` の duplicated resolution を共通化した

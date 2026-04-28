@@ -140,6 +140,39 @@ const BASE_BUILTIN_COMPLETIONS: Array<
   { completionKind: "variable", detail: "Excel built-in object", name: "WorksheetFunction", priority: 10, semanticType: "variable" },
   { completionKind: "variable", detail: "Excel built-in object", name: "Worksheets", priority: 10, semanticType: "variable" }
 ];
+const SUPPLEMENTAL_BUILTIN_TYPES: Array<{
+  detail: string;
+  name: string;
+  priority: number;
+}> = [
+  { detail: "Windows Script Host object", name: "WshShell", priority: 115 }
+];
+const SUPPLEMENTAL_BUILTIN_MEMBERS: Array<{
+  kind: BuiltinMemberKind;
+  name: string;
+  ownerName: string;
+  priority: number;
+  signature?: BuiltinCallableSignature;
+  typeName?: string;
+}> = [
+  {
+    kind: "method",
+    name: "Run",
+    ownerName: "WshShell",
+    priority: 135,
+    signature: {
+      label: "Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long",
+      ownerName: "WshShell",
+      parameters: [
+        { dataType: "String", isRequired: true, label: "Command As String", name: "Command" },
+        { isRequired: false, label: "[WindowStyle]", name: "WindowStyle" },
+        { isRequired: false, label: "[WaitOnReturn]", name: "WaitOnReturn" }
+      ],
+      returnType: "Long"
+    },
+    typeName: "Long"
+  }
+];
 
 const derivedReferenceData = createDerivedReferenceData();
 
@@ -234,6 +267,10 @@ export function resolveBuiltinMemberOwnerFromRootType(rootOwnerName: string, mem
 
 export function isReservedOrBuiltinIdentifier(name: string): boolean {
   return RESERVED_IDENTIFIERS.has(normalizeIdentifier(name));
+}
+
+export function isKnownProgIdOwnerTypeName(typeName: string | undefined): boolean {
+  return normalizeIdentifier(typeName ?? "") === "wshshell";
 }
 
 function createDerivedReferenceData(): DerivedReferenceData {
@@ -374,6 +411,10 @@ function createDerivedReferenceData(): DerivedReferenceData {
     );
   }
 
+  for (const supplementalType of SUPPLEMENTAL_BUILTIN_TYPES) {
+    addEntry(createReferenceItem(supplementalType.name, "type", supplementalType.detail), supplementalType.priority);
+  }
+
   addObjectMemberEntries(
     readEntryArray(rawReferenceData, "excel", "objectModel", "items"),
     "Excel",
@@ -388,6 +429,13 @@ function createDerivedReferenceData(): DerivedReferenceData {
     addMemberEntry,
     130
   );
+
+  for (const supplementalMember of SUPPLEMENTAL_BUILTIN_MEMBERS) {
+    addMemberEntry(
+      createSupplementalMemberReferenceItem(supplementalMember),
+      supplementalMember.priority
+    );
+  }
 
   for (const memberItem of memberItemsByOwnerAndName.values()) {
     const ownerItems = memberItemsByOwnerNormalizedName.get(memberItem.ownerNormalizedName);
@@ -410,6 +458,30 @@ function createDerivedReferenceData(): DerivedReferenceData {
     memberItemsByOwnerAndName,
     memberItemsByOwnerNormalizedName,
     reservedIdentifiers
+  };
+}
+
+function createSupplementalMemberReferenceItem(source: {
+  kind: BuiltinMemberKind;
+  name: string;
+  ownerName: string;
+  signature?: BuiltinCallableSignature;
+  typeName?: string;
+}): BuiltinMemberReferenceItem {
+  return {
+    ...createReferenceItem(
+      source.name,
+      source.kind === "method" || source.kind === "event" ? "function" : "variable",
+      `Supplemental ${source.ownerName} ${source.kind}`,
+      undefined,
+      {
+        signature: source.signature,
+        typeName: source.typeName
+      }
+    ),
+    memberKind: source.kind,
+    ownerName: source.ownerName,
+    ownerNormalizedName: normalizeIdentifier(source.ownerName)
   };
 }
 

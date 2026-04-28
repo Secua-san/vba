@@ -26,6 +26,9 @@ const CAST_FUNCTION_TYPES = new Map<string, string>([
 
 const NUMERIC_TYPES = new Set(["byte", "currency", "double", "integer", "long", "longlong", "longptr", "single"]);
 const SCALAR_TYPES = new Set(["boolean", "date", "nothing", "string", "variant", ...NUMERIC_TYPES]);
+const CREATE_OBJECT_PROGID_TYPES = new Map<string, string>([
+  ["wscript.shell", "WshShell"]
+]);
 
 export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTable): TypeInferenceResult {
   const diagnostics: Diagnostic[] = [];
@@ -177,7 +180,7 @@ function inferExpressionType(
   }
 
   if (/^(?:CreateObject|GetObject)\s*\(/iu.test(normalizedExpression)) {
-    return "Object";
+    return inferCreateObjectType(normalizedExpression) ?? "Object";
   }
 
   if (/^Array\s*\(/iu.test(normalizedExpression)) {
@@ -628,5 +631,20 @@ function parenthesesAreBalanced(expressionText: string): boolean {
   }
 
   return depth === 0;
+}
+
+function inferCreateObjectType(expressionText: string): string | undefined {
+  const match = /^(?:CreateObject|GetObject)\s*\(\s*("(?:[^"]|"")*")/iu.exec(expressionText);
+  const progId = match?.[1] ? readVbaStringLiteral(match[1]) : undefined;
+
+  return progId ? CREATE_OBJECT_PROGID_TYPES.get(progId.toLowerCase()) : undefined;
+}
+
+function readVbaStringLiteral(text: string): string | undefined {
+  if (!/^"(?:[^"]|"")*"$/u.test(text)) {
+    return undefined;
+  }
+
+  return text.slice(1, -1).replace(/""/gu, "\"");
 }
 
