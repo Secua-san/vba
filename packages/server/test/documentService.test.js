@@ -3957,6 +3957,31 @@ End Sub`;
   assertNoSemanticToken(text, tokens, 6, "Run");
 });
 
+test("document service keeps dynamic CreateObject ProgID expressions out of known ProgID members", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/DynamicCreateObjectProgIdMembers.bas";
+  const text = `Attribute VB_Name = "DynamicCreateObjectProgIdMembers"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell
+    Set shell = CreateObject("WScript." & "Shell")
+    Call shell.Run("notepad.exe")
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const hover = getHoverAfterToken(service, uri, text, "shell.Run");
+  const signature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.deepEqual(completions, []);
+  assert.equal(hover, undefined);
+  assert.equal(signature, undefined);
+  assertNoSemanticToken(text, tokens, 6, "Run");
+});
+
 test("document service keeps ThisWorkbook built-in alias conservative for non-document class modules", () => {
   const service = createDocumentService();
   const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";

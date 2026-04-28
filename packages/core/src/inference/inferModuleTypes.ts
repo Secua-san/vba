@@ -638,7 +638,7 @@ function parenthesesAreBalanced(expressionText: string): boolean {
 }
 
 function inferCreateObjectType(expressionText: string): string | undefined {
-  const match = /^CreateObject\s*\(\s*("(?:[^"]|"")*")/iu.exec(expressionText);
+  const match = /^CreateObject\s*\(\s*("(?:[^"]|"")*")\s*(?:,|\))/iu.exec(expressionText);
   const progId = match?.[1] ? readVbaStringLiteral(match[1]) : undefined;
 
   return progId ? CREATE_OBJECT_PROGID_TYPES.get(progId.toLowerCase()) : undefined;
