@@ -792,6 +792,22 @@ End Sub`, { fileName: "KnownProgIdInference.bas" });
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
 
+test("analyzeModule keeps GetObject pathname arguments as Object", () => {
+  const result = analyzeModule(`Attribute VB_Name = "GetObjectInference"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell
+    Set shell = GetObject("WScript.Shell")
+End Sub`, { fileName: "GetObjectInference.bas" });
+
+  const shellSymbol = result.symbols.procedureScopes
+    .flatMap((scope) => scope.symbols)
+    .find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
+
+  assert.equal(getSymbolTypeName(result, shellSymbol), "Object");
+});
+
 test("analyzeModule reports simple type mismatches", () => {
   const result = analyzeModule(`Attribute VB_Name = "Mismatch"
 Option Explicit

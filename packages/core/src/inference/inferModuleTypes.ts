@@ -179,8 +179,12 @@ function inferExpressionType(
     return /[.Ee]/u.test(normalizedExpression) ? "Double" : "Long";
   }
 
-  if (/^(?:CreateObject|GetObject)\s*\(/iu.test(normalizedExpression)) {
+  if (/^CreateObject\s*\(/iu.test(normalizedExpression)) {
     return inferCreateObjectType(normalizedExpression) ?? "Object";
+  }
+
+  if (/^GetObject\s*\(/iu.test(normalizedExpression)) {
+    return "Object";
   }
 
   if (/^Array\s*\(/iu.test(normalizedExpression)) {
@@ -634,7 +638,7 @@ function parenthesesAreBalanced(expressionText: string): boolean {
 }
 
 function inferCreateObjectType(expressionText: string): string | undefined {
-  const match = /^(?:CreateObject|GetObject)\s*\(\s*("(?:[^"]|"")*")/iu.exec(expressionText);
+  const match = /^CreateObject\s*\(\s*("(?:[^"]|"")*")/iu.exec(expressionText);
   const progId = match?.[1] ? readVbaStringLiteral(match[1]) : undefined;
 
   return progId ? CREATE_OBJECT_PROGID_TYPES.get(progId.toLowerCase()) : undefined;
