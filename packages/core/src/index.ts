@@ -17,6 +17,7 @@ export {
   getBuiltinMemberReferenceItem,
   getBuiltinMemberSignature,
   getBuiltinReferenceItem,
+  isKnownProgIdOwnerTypeName,
   isReservedOrBuiltinIdentifier,
   markIndexedAccessPathSegment,
   resolveBuiltinMemberOwner,

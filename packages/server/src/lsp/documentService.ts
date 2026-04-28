@@ -22,6 +22,7 @@ import {
   getDocumentOutline,
   getSupportedWorksheetControlMetadataOwners,
   inferExpressionTypeAtLine,
+  isKnownProgIdOwnerTypeName,
   isReservedOrBuiltinIdentifier,
   markIndexedAccessPathSegment,
   getSymbolTypeName,
@@ -2402,7 +2403,11 @@ function resolveBuiltinMemberOwnerForPath(
       : undefined);
 
   if (!builtinContext) {
-    return effectiveRootResolution ? undefined : resolveBuiltinMemberOwner(pathSegments);
+    if (effectiveRootResolution) {
+      return resolveKnownProgIdMemberOwner(effectiveRootResolution.typeName, memberSegments);
+    }
+
+    return resolveBuiltinMemberOwner(pathSegments);
   }
 
   const memberPathOffset = builtinContext.memberPathOffset ?? 0;
@@ -2416,6 +2421,10 @@ function resolveBuiltinMemberOwnerForPath(
   );
 
   return sidecarOwnerName ?? resolveBuiltinMemberOwnerFromRootType(builtinContext.ownerName, adjustedMemberSegments);
+}
+
+function resolveKnownProgIdMemberOwner(typeName: string | undefined, memberSegments: string[]): string | undefined {
+  return isKnownProgIdOwnerTypeName(typeName) ? resolveBuiltinMemberOwnerFromRootType(typeName, memberSegments) : undefined;
 }
 
 function getIgnoredTypeWorkbookRootFamilyBuiltinContext(

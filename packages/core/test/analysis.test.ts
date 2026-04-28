@@ -774,6 +774,60 @@ End Sub`, { fileName: "Inference.bas" });
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
 
+test("analyzeModule infers known CreateObject ProgID result types", () => {
+  const result = analyzeModule(`Attribute VB_Name = "KnownProgIdInference"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell
+    Set shell = CreateObject("WScript.Shell")
+End Sub`, { fileName: "KnownProgIdInference.bas" });
+
+  const shellSymbol = result.symbols.procedureScopes
+    .flatMap((scope) => scope.symbols)
+    .find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
+
+  assert.equal(getSymbolTypeName(result, shellSymbol), "WshShell");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
+test("analyzeModule keeps GetObject pathname arguments as Object", () => {
+  const result = analyzeModule(`Attribute VB_Name = "GetObjectInference"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell
+    Set shell = GetObject("WScript.Shell")
+End Sub`, { fileName: "GetObjectInference.bas" });
+
+  const shellSymbol = result.symbols.procedureScopes
+    .flatMap((scope) => scope.symbols)
+    .find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
+
+  assert.equal(getSymbolTypeName(result, shellSymbol), "Object");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
+test("analyzeModule keeps dynamic CreateObject ProgID expressions as Object", () => {
+  const result = analyzeModule(`Attribute VB_Name = "DynamicProgIdInference"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell
+    Set shell = CreateObject("WScript." & "Shell")
+End Sub`, { fileName: "DynamicProgIdInference.bas" });
+
+  const shellSymbol = result.symbols.procedureScopes
+    .flatMap((scope) => scope.symbols)
+    .find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
+
+  assert.equal(getSymbolTypeName(result, shellSymbol), "Object");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
 test("analyzeModule reports simple type mismatches", () => {
   const result = analyzeModule(`Attribute VB_Name = "Mismatch"
 Option Explicit
