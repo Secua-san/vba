@@ -4374,6 +4374,35 @@ End Sub`
   );
 });
 
+test("document service exposes nested enum and type members in document symbols", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/OutlineMembers.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "OutlineMembers"
+Option Explicit
+
+Public Enum StatusKind
+    StatusReady = 1
+End Enum
+
+Public Type CustomerRecord
+    Name As String
+End Type`
+  );
+
+  const symbols = service.getDocumentSymbols(uri);
+  const moduleChildren = symbols[0]?.children ?? [];
+  const statusKind = moduleChildren.find((symbol) => symbol.name === "StatusKind");
+  const customerRecord = moduleChildren.find((symbol) => symbol.name === "CustomerRecord");
+
+  assert.deepEqual(statusKind?.children?.map((symbol) => `${symbol.kind}:${symbol.name}`), ["enumMember:StatusReady"]);
+  assert.deepEqual(customerRecord?.children?.map((symbol) => `${symbol.kind}:${symbol.name}`), ["typeMember:Name"]);
+});
+
 test("document service exposes indexed public symbols for workspace navigation", () => {
   const service = createDocumentService();
   const libraryUri = "file:///C:/temp/PublicApi.bas";

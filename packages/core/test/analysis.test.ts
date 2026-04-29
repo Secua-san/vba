@@ -725,6 +725,27 @@ End Sub`, { fileName: "UserForm1.frm" });
   assert.ok(outline[0]?.children?.some((symbol) => symbol.name === "ShowMessage"));
 });
 
+test("getDocumentOutline exposes nested enum and type members", () => {
+  const result = analyzeModule(`Attribute VB_Name = "OutlineMembers"
+Option Explicit
+
+Public Enum StatusKind
+    StatusReady = 1
+End Enum
+
+Public Type CustomerRecord
+    Name As String
+End Type`, { fileName: "OutlineMembers.bas" });
+
+  const outline = getDocumentOutline(result);
+  const moduleChildren = outline[0]?.children ?? [];
+  const statusKind = moduleChildren.find((symbol) => symbol.name === "StatusKind");
+  const customerRecord = moduleChildren.find((symbol) => symbol.name === "CustomerRecord");
+
+  assert.deepEqual(statusKind?.children?.map((symbol) => `${symbol.kind}:${symbol.name}`), ["enumMember:StatusReady"]);
+  assert.deepEqual(customerRecord?.children?.map((symbol) => `${symbol.kind}:${symbol.name}`), ["typeMember:Name"]);
+});
+
 test("findDefinition prefers the declaration under the cursor when names are shadowed", () => {
   const result = analyzeModule(`Attribute VB_Name = "Shadowing"
 Option Explicit
