@@ -4077,6 +4077,50 @@ End Sub`;
   assertSemanticToken(text, tokens, 10, "Count", { modifiers: [], type: "variable" });
 });
 
+test("document service narrows generic Object and Variant from known CreateObject ProgIDs only", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/GenericRuntimeBindingMembers.bas";
+  const text = `Attribute VB_Name = "GenericRuntimeBindingMembers"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell As Object
+    Dim dictionary As Variant
+    Dim genericObject As Object
+    Dim dynamicVariant As Variant
+    Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
+    Set genericObject = GetObject("WScript.Shell")
+    Set dynamicVariant = CreateObject("WScript." & "Shell")
+    Call shell.Run("notepad.exe")
+    If dictionary.Exists("id") Then
+        Debug.Print dictionary.Count
+    End If
+    Debug.Print genericObject.
+    Debug.Print dynamicVariant.
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const shellCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const dictionaryCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "If dictionary."));
+  const genericObjectCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Debug.Print genericObject."));
+  const dynamicVariantCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Debug.Print dynamicVariant."));
+  const shellSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const dictionarySignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "dictionary.Exists("));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.equal(shellCompletions.some((resolution) => resolution.symbol.name === "Run"), true);
+  assert.equal(dictionaryCompletions.some((resolution) => resolution.symbol.name === "Exists"), true);
+  assert.deepEqual(genericObjectCompletions, []);
+  assert.deepEqual(dynamicVariantCompletions, []);
+  assert.equal(shellSignature?.label, "Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long");
+  assert.equal(dictionarySignature?.label, "Exists(Key) As Boolean");
+  assertSemanticToken(text, tokens, 12, "Run", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 13, "Exists", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 14, "Count", { modifiers: [], type: "variable" });
+});
+
 test("document service keeps GetObject pathname arguments out of known ProgID members", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/GetObjectProgIdMembers.bas";

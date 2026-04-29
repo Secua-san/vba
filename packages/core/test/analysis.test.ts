@@ -825,6 +825,35 @@ End Sub`, { fileName: "KnownProgIdInference.bas" });
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
 
+test("analyzeModule narrows generic Object and Variant from known CreateObject ProgIDs", () => {
+  const result = analyzeModule(`Attribute VB_Name = "GenericRuntimeBindingInference"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell As Object
+    Dim dictionary As Variant
+    Dim genericObject As Object
+    Dim dynamicVariant As Variant
+    Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
+    Set genericObject = GetObject("WScript.Shell")
+    Set dynamicVariant = CreateObject("WScript." & "Shell")
+End Sub`, { fileName: "GenericRuntimeBindingInference.bas" });
+
+  const symbols = result.symbols.procedureScopes.flatMap((scope) => scope.symbols);
+  const shellSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
+  const dictionarySymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "dictionary");
+  const genericObjectSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "genericObject");
+  const dynamicVariantSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "dynamicVariant");
+
+  assert.equal(getSymbolTypeName(result, shellSymbol), "WshShell");
+  assert.equal(getSymbolTypeName(result, dictionarySymbol), "ScriptingDictionary");
+  assert.equal(getSymbolTypeName(result, genericObjectSymbol), "Object");
+  assert.equal(getSymbolTypeName(result, dynamicVariantSymbol), "Variant");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
 test("analyzeModule keeps GetObject pathname arguments as Object", () => {
   const result = analyzeModule(`Attribute VB_Name = "GetObjectInference"
 Option Explicit
