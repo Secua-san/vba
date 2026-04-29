@@ -2120,6 +2120,14 @@ function isCompletionPositionInCode(text: string, position: LinePosition): boole
     }
 
     if (atTokenBoundary && currentCharacter === "#") {
+      const fileNumberPrefixEnd = getFileNumberPrefixEnd(beforeCursor, index);
+
+      if (fileNumberPrefixEnd !== undefined) {
+        index = fileNumberPrefixEnd;
+        atTokenBoundary = true;
+        continue;
+      }
+
       index += 1;
 
       while (index < beforeCursor.length && beforeCursor[index] !== "#") {
@@ -2153,6 +2161,27 @@ function isCompletionPositionInCode(text: string, position: LinePosition): boole
   }
 
   return true;
+}
+
+function getFileNumberPrefixEnd(text: string, markerIndex: number): number | undefined {
+  const beforeMarker = text.slice(0, markerIndex);
+
+  if (!isFileNumberMarkerContext(beforeMarker)) {
+    return undefined;
+  }
+
+  const match = /^#\s*(?:\d+|[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s*,|\s*(?=[:\s]|$))/u.exec(text.slice(markerIndex));
+  return match ? markerIndex + match[0].length : undefined;
+}
+
+function isFileNumberMarkerContext(beforeMarker: string): boolean {
+  const fileStatementPrefix = /(?:^|[\s:])(?:Print|Write|Line\s+Input|Input|Get|Put|Seek|Lock|Unlock|Width|Close)\b/iu;
+
+  return (
+    /(?:^|[\s:])(?:Print|Write|Line\s+Input|Input|Get|Put|Seek|Lock|Unlock|Width|Close)\s*$/iu.test(beforeMarker) ||
+    /(?:^|[\s:])Open\b[\s\S]*\bAs\s*$/iu.test(beforeMarker) ||
+    (/,\s*$/u.test(beforeMarker) && fileStatementPrefix.test(beforeMarker))
+  );
 }
 
 function getCompletionContext(text: string, position: LinePosition): CompletionContext {

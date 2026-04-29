@@ -88,6 +88,44 @@ End Sub`;
   assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Rem message")), []);
 });
 
+test("document service keeps completion open after file-number prefixes", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/FileNumberCompletionContext.bas";
+  const text = `Attribute VB_Name = "FileNumberCompletionContext"
+Option Explicit
+
+Public Sub Demo()
+    Dim message As String
+    Print #1, mes
+    Seek #1, mes
+    Lock #1, mes
+    Unlock #1, mes
+    Close #1: mes
+    Close #1, #2: mes
+    Open "C:\\temp\\sample.txt" For Input As #1: mes
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  for (const anchor of [
+    "Print #1, mes",
+    "Seek #1, mes",
+    "Lock #1, mes",
+    "Unlock #1, mes",
+    "Close #1: mes",
+    "Close #1, #2: mes",
+    'Open "C:\\temp\\sample.txt" For Input As #1: mes'
+  ]) {
+    const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, anchor));
+
+    assert.equal(
+      completions.some((resolution) => resolution.symbol.name === "message"),
+      true,
+      `expected message completion after ${anchor}`
+    );
+  }
+});
+
 test("document service uses declared built-in object types for member completion", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/DeclaredBuiltInTypeCompletion.bas";
