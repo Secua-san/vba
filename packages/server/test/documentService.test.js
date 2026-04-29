@@ -4374,6 +4374,33 @@ End Sub`
   );
 });
 
+test("document service exposes indexed public symbols for workspace navigation", () => {
+  const service = createDocumentService();
+  const libraryUri = "file:///C:/temp/PublicApi.bas";
+
+  service.analyzeText(
+    libraryUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicApi"
+Option Explicit
+
+Public Function PublicMessage() As String
+    PublicMessage = "Hello"
+End Function
+
+Private Function HiddenMessage() As String
+    HiddenMessage = "No"
+End Function`
+  );
+
+  assert.deepEqual(
+    service.getWorkspaceSymbols("PublicMessage").map((resolution) => `${resolution.uri}:${resolution.symbol.name}:${resolution.moduleName}`),
+    [`${libraryUri}:PublicMessage:PublicApi`]
+  );
+  assert.deepEqual(service.getWorkspaceSymbols("HiddenMessage"), []);
+});
+
 test("document service narrows completion candidates by inferred assignment type", () => {
   const service = createDocumentService();
   const consumerUri = "file:///C:/temp/ConsumerCompletion.bas";

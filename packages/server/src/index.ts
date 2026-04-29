@@ -20,6 +20,7 @@ import {
   SemanticTokensBuilder,
   SignatureHelp,
   SignatureInformation,
+  SymbolInformation,
   SymbolKind,
   TextEdit,
   TextDocumentSyncKind
@@ -110,7 +111,8 @@ export function startServer(): void {
           retriggerCharacters: [","],
           triggerCharacters: ["(", ","]
         },
-        textDocumentSync: TextDocumentSyncKind.Full
+        textDocumentSync: TextDocumentSyncKind.Full,
+        workspaceSymbolProvider: true
       }
     };
   });
@@ -244,6 +246,10 @@ export function startServer(): void {
 
   connection.onDocumentSymbol((params): DocumentSymbol[] => {
     return documentService.getDocumentSymbols(params.textDocument.uri).map(toDocumentSymbol);
+  });
+
+  connection.onWorkspaceSymbol((params): SymbolInformation[] => {
+    return documentService.getWorkspaceSymbols(params.query).map(toWorkspaceSymbol);
   });
 
   connection.onDocumentFormatting((params): TextEdit[] => {
@@ -427,6 +433,16 @@ function toDocumentSymbol(symbol: OutlineSymbol): DocumentSymbol {
   );
 }
 
+function toWorkspaceSymbol(resolution: WorkspaceSymbolResolution): SymbolInformation {
+  return SymbolInformation.create(
+    resolution.symbol.name,
+    mapWorkspaceSymbolKind(resolution.symbol.kind),
+    toLspRange(resolution.symbol.selectionRange),
+    resolution.uri,
+    resolution.moduleName
+  );
+}
+
 function toLspDiagnostic(diagnostic: Diagnostic) {
   return {
     message: diagnostic.message,
@@ -509,6 +525,31 @@ function mapDocumentSymbolKind(kind: OutlineSymbol["kind"]): SymbolKind {
       return SymbolKind.Module;
     case "type":
       return SymbolKind.Struct;
+    case "variable":
+      return SymbolKind.Variable;
+    default:
+      return SymbolKind.Object;
+  }
+}
+
+function mapWorkspaceSymbolKind(kind: SymbolInfo["kind"]): SymbolKind {
+  switch (kind) {
+    case "constant":
+    case "enumMember":
+      return SymbolKind.Constant;
+    case "declare":
+    case "procedure":
+      return SymbolKind.Function;
+    case "enum":
+      return SymbolKind.Enum;
+    case "module":
+      return SymbolKind.Module;
+    case "parameter":
+      return SymbolKind.Variable;
+    case "type":
+      return SymbolKind.Struct;
+    case "typeMember":
+      return SymbolKind.Field;
     case "variable":
       return SymbolKind.Variable;
     default:

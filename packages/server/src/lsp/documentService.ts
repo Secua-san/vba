@@ -207,6 +207,7 @@ export interface DocumentService {
   getReferences: (uri: string, position: LinePosition, includeDeclaration: boolean) => WorkspaceReference[];
   getSemanticTokens: (uri: string) => SemanticTokenEntry[];
   prepareRename: (uri: string, position: LinePosition) => RenameTarget | undefined;
+  getWorkspaceSymbols: (query: string) => WorkspaceSymbolResolution[];
   getSignatureHelp: (uri: string, position: LinePosition) => SignatureHint | undefined;
   getState: (uri: string) => DocumentState | undefined;
   remove: (uri: string) => void;
@@ -1045,6 +1046,9 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
             range: renameTarget.range
           }
         : undefined;
+    },
+    getWorkspaceSymbols(query: string): WorkspaceSymbolResolution[] {
+      return filterWorkspaceSymbolsByQuery(workspaceIndex.entries, query);
     },
     getSignatureHelp(uri: string, position: LinePosition): SignatureHint | undefined {
       const state = documentStates.get(uri);
@@ -2300,6 +2304,19 @@ function filterCompletionsByPrefix(
 
   const normalizedPrefix = normalizeIdentifier(prefix);
   return completions.filter((resolution) => resolution.symbol.normalizedName.startsWith(normalizedPrefix));
+}
+
+function filterWorkspaceSymbolsByQuery(
+  symbols: WorkspaceSymbolResolution[],
+  query: string
+): WorkspaceSymbolResolution[] {
+  const normalizedQuery = normalizeIdentifier(query.trim());
+
+  if (normalizedQuery.length === 0) {
+    return symbols;
+  }
+
+  return symbols.filter((resolution) => resolution.symbol.normalizedName.includes(normalizedQuery));
 }
 
 function resolveBuiltinCallableMember(
