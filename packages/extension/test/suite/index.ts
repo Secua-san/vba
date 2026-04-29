@@ -229,6 +229,16 @@ export async function run(): Promise<void> {
   );
   assert.ok(publicMessageCompletion?.detail?.includes("String"), "completion detail should include inferred type information");
 
+  const workspaceSymbols = await waitForWorkspaceSymbols("PublicMessage", (items) =>
+    items.some((item) => item.name === "PublicMessage" && item.location.uri.fsPath.endsWith(path.join("fixtures", "PublicApi.bas")))
+  );
+  assert.ok(
+    workspaceSymbols.some(
+      (item) => item.name === "PublicMessage" && item.location.uri.fsPath.endsWith(path.join("fixtures", "PublicApi.bas"))
+    ),
+    "workspace symbols should expose exported workspace symbols"
+  );
+
   const builtInCompletionDocument = await vscode.workspace.openTextDocument(path.resolve(fixturesPath, "BuiltInCompletion.bas"));
   await vscode.window.showTextDocument(builtInCompletionDocument);
 
@@ -4590,6 +4600,26 @@ async function waitForSymbols(document: vscode.TextDocument): Promise<readonly v
     );
 
     if (symbols && symbols.length > 0) {
+      return symbols;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return [];
+}
+
+async function waitForWorkspaceSymbols(
+  query: string,
+  predicate: (symbols: readonly vscode.SymbolInformation[]) => boolean
+): Promise<readonly vscode.SymbolInformation[]> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const symbols = await vscode.commands.executeCommand<readonly vscode.SymbolInformation[]>(
+      "vscode.executeWorkspaceSymbolProvider",
+      query
+    );
+
+    if (symbols?.length && predicate(symbols)) {
       return symbols;
     }
 
