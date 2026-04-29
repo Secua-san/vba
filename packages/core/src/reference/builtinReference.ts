@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { VBA_KEYWORDS } from "../lexer/keywords";
 import { normalizeIdentifier } from "../types/helpers";
+export { isKnownProgIdOwnerTypeName } from "./progIdRegistry";
 
 export type BuiltinCompletionKind = "constant" | "function" | "keyword" | "type" | "variable";
 export type BuiltinMemberKind = "event" | "member" | "method" | "property";
@@ -145,6 +146,7 @@ const SUPPLEMENTAL_BUILTIN_TYPES: Array<{
   name: string;
   priority: number;
 }> = [
+  { detail: "Windows Scripting Runtime object", name: "ScriptingDictionary", priority: 115 },
   { detail: "Windows Script Host object", name: "WshShell", priority: 115 }
 ];
 const SUPPLEMENTAL_BUILTIN_MEMBERS: Array<{
@@ -155,6 +157,101 @@ const SUPPLEMENTAL_BUILTIN_MEMBERS: Array<{
   signature?: BuiltinCallableSignature;
   typeName?: string;
 }> = [
+  {
+    kind: "method",
+    name: "Add",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    signature: {
+      label: "Add(Key, Item)",
+      ownerName: "ScriptingDictionary",
+      parameters: [
+        { isRequired: true, label: "Key", name: "Key" },
+        { isRequired: true, label: "Item", name: "Item" }
+      ]
+    }
+  },
+  {
+    kind: "property",
+    name: "Count",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    typeName: "Long"
+  },
+  {
+    kind: "method",
+    name: "Exists",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    signature: {
+      label: "Exists(Key) As Boolean",
+      ownerName: "ScriptingDictionary",
+      parameters: [{ isRequired: true, label: "Key", name: "Key" }],
+      returnType: "Boolean"
+    },
+    typeName: "Boolean"
+  },
+  {
+    kind: "property",
+    name: "Item",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    signature: {
+      label: "Item(Key) As Variant",
+      ownerName: "ScriptingDictionary",
+      parameters: [{ isRequired: true, label: "Key", name: "Key" }],
+      returnType: "Variant"
+    },
+    typeName: "Variant"
+  },
+  {
+    kind: "method",
+    name: "Items",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    signature: {
+      label: "Items() As Variant",
+      ownerName: "ScriptingDictionary",
+      parameters: [],
+      returnType: "Variant"
+    },
+    typeName: "Variant"
+  },
+  {
+    kind: "method",
+    name: "Keys",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    signature: {
+      label: "Keys() As Variant",
+      ownerName: "ScriptingDictionary",
+      parameters: [],
+      returnType: "Variant"
+    },
+    typeName: "Variant"
+  },
+  {
+    kind: "method",
+    name: "Remove",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    signature: {
+      label: "Remove(Key)",
+      ownerName: "ScriptingDictionary",
+      parameters: [{ isRequired: true, label: "Key", name: "Key" }]
+    }
+  },
+  {
+    kind: "method",
+    name: "RemoveAll",
+    ownerName: "ScriptingDictionary",
+    priority: 135,
+    signature: {
+      label: "RemoveAll()",
+      ownerName: "ScriptingDictionary",
+      parameters: []
+    }
+  },
   {
     kind: "method",
     name: "Run",
@@ -267,10 +364,6 @@ export function resolveBuiltinMemberOwnerFromRootType(rootOwnerName: string, mem
 
 export function isReservedOrBuiltinIdentifier(name: string): boolean {
   return RESERVED_IDENTIFIERS.has(normalizeIdentifier(name));
-}
-
-export function isKnownProgIdOwnerTypeName(typeName: string | undefined): boolean {
-  return normalizeIdentifier(typeName ?? "") === "wshshell";
 }
 
 function createDerivedReferenceData(): DerivedReferenceData {

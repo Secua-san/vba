@@ -807,14 +807,20 @@ Option Explicit
 
 Public Sub Demo()
     Dim shell
+    Dim dictionary
     Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
 End Sub`, { fileName: "KnownProgIdInference.bas" });
 
   const shellSymbol = result.symbols.procedureScopes
     .flatMap((scope) => scope.symbols)
     .find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
+  const dictionarySymbol = result.symbols.procedureScopes
+    .flatMap((scope) => scope.symbols)
+    .find((symbol) => symbol.kind === "variable" && symbol.name === "dictionary");
 
   assert.equal(getSymbolTypeName(result, shellSymbol), "WshShell");
+  assert.equal(getSymbolTypeName(result, dictionarySymbol), "ScriptingDictionary");
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });

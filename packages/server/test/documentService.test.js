@@ -4046,21 +4046,35 @@ Option Explicit
 
 Public Sub Demo()
     Dim shell
+    Dim dictionary
     Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
     Call shell.Run("notepad.exe")
+    If dictionary.Exists("id") Then
+        Debug.Print dictionary.Count
+    End If
 End Sub`;
 
   service.analyzeText(uri, "vba", 1, text);
 
   const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const dictionaryCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "If dictionary."));
   const hover = getHoverAfterToken(service, uri, text, "shell.Run");
+  const dictionaryHover = getHoverAfterToken(service, uri, text, "dictionary.Exists");
   const signature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const dictionarySignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "dictionary.Exists("));
   const tokens = service.getSemanticTokens(uri);
 
   assert.equal(completions.some((resolution) => resolution.symbol.name === "Run"), true);
+  assert.equal(dictionaryCompletions.some((resolution) => resolution.symbol.name === "Exists"), true);
+  assert.equal(dictionaryCompletions.some((resolution) => resolution.symbol.name === "Count"), true);
   assert.equal(hover?.contents.includes("Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long"), true);
+  assert.equal(dictionaryHover?.contents.includes("Exists(Key) As Boolean"), true);
   assert.equal(signature?.label, "Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long");
-  assertSemanticToken(text, tokens, 6, "Run", { modifiers: [], type: "function" });
+  assert.equal(dictionarySignature?.label, "Exists(Key) As Boolean");
+  assertSemanticToken(text, tokens, 8, "Run", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 9, "Exists", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 10, "Count", { modifiers: [], type: "variable" });
 });
 
 test("document service keeps GetObject pathname arguments out of known ProgID members", () => {

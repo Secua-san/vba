@@ -1,4 +1,5 @@
 import { getAccessibleSymbolsAtLine, resolveSymbolAtPosition } from "../symbol/buildModuleSymbols";
+import { resolveCreateObjectProgIdType } from "../reference/progIdRegistry";
 import { normalizeIdentifier } from "../types/helpers";
 import type {
   AnalysisResult,
@@ -26,10 +27,6 @@ const CAST_FUNCTION_TYPES = new Map<string, string>([
 
 const NUMERIC_TYPES = new Set(["byte", "currency", "double", "integer", "long", "longlong", "longptr", "single"]);
 const SCALAR_TYPES = new Set(["boolean", "date", "nothing", "string", "variant", ...NUMERIC_TYPES]);
-const CREATE_OBJECT_PROGID_TYPES = new Map<string, string>([
-  ["wscript.shell", "WshShell"]
-]);
-
 export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTable): TypeInferenceResult {
   const diagnostics: Diagnostic[] = [];
   const symbolTypes = new Map<string, InferredSymbolType>();
@@ -641,7 +638,7 @@ function inferCreateObjectType(expressionText: string): string | undefined {
   const match = /^CreateObject\s*\(\s*("(?:[^"]|"")*")\s*(?:,|\))/iu.exec(expressionText);
   const progId = match?.[1] ? readVbaStringLiteral(match[1]) : undefined;
 
-  return progId ? CREATE_OBJECT_PROGID_TYPES.get(progId.toLowerCase()) : undefined;
+  return progId ? resolveCreateObjectProgIdType(progId) : undefined;
 }
 
 function readVbaStringLiteral(text: string): string | undefined {
