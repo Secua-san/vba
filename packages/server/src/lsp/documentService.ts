@@ -916,6 +916,10 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         return [];
       }
 
+      if (!isCompletionPositionInCode(state.text, position)) {
+        return [];
+      }
+
       const completionContext = getCompletionContext(state.text, position);
       const localSymbols = getCompletionSymbols(state.analysis, position).map((symbol) => ({
         ...createResolution(state, symbol, uri)
@@ -946,7 +950,8 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
           completionContext,
           resolveDefinition,
           getDocumentState,
-          getWorksheetControlMetadataState
+          getWorksheetControlMetadataState,
+          (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
         );
 
         return memberOwnerName
@@ -986,7 +991,15 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         return undefined;
       }
 
-      return getBuiltinMemberHover(state, uri, position, resolveDefinition, getDocumentState, getWorksheetControlMetadataState);
+      return getBuiltinMemberHover(
+        state,
+        uri,
+        position,
+        resolveDefinition,
+        getDocumentState,
+        getWorksheetControlMetadataState,
+        (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
+      );
     },
     getRenameEdits(uri: string, position: LinePosition, newName: string): RenameTextEdit[] | undefined {
       const renameTarget = resolveLocalRenameTarget(uri, position);
@@ -1013,7 +1026,13 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
     getSemanticTokens(uri: string): SemanticTokenEntry[] {
       const state = documentStates.get(uri);
       return state
-        ? collectSemanticTokensForState(state, resolveDefinition, documentStates, getWorksheetControlMetadataState)
+        ? collectSemanticTokensForState(
+            state,
+            resolveDefinition,
+            documentStates,
+            getWorksheetControlMetadataState,
+            (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
+          )
         : [];
     },
     prepareRename(uri: string, position: LinePosition): RenameTarget | undefined {
@@ -1044,7 +1063,8 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         callContext,
         resolveDefinition,
         getDocumentState,
-        getWorksheetControlMetadataState
+        getWorksheetControlMetadataState,
+        (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
       );
 
       if (builtinMember) {
@@ -1205,6 +1225,17 @@ function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
   };
 }
 
+function hasUserTypeSymbol(state: DocumentState, workspaceIndex: WorkspaceIndex, normalizedName: string): boolean {
+  return (
+    state.analysis.symbols.allSymbols.some((symbol) => isTypeNameSymbol(symbol) && symbol.normalizedName === normalizedName) ||
+    (workspaceIndex.byNormalizedName.get(normalizedName) ?? []).some((resolution) => isTypeNameSymbol(resolution.symbol))
+  );
+}
+
+function isTypeNameSymbol(symbol: SymbolInfo): boolean {
+  return symbol.kind === "module" || symbol.kind === "type" || symbol.kind === "enum";
+}
+
 function createBuiltinResolution(item: BuiltinMemberReferenceItem | BuiltinReferenceItem): WorkspaceSymbolResolution {
   return {
     completionItemKind: item.completionKind,
@@ -1339,7 +1370,8 @@ function collectSemanticTokensForState(
   state: DocumentState,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   documentStates: ReadonlyMap<string, DocumentState>,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): SemanticTokenEntry[] {
   const tokens = new Map<string, SemanticTokenEntry>();
   const getDocumentState = (uri: string): DocumentState | undefined => documentStates.get(uri);
@@ -1373,7 +1405,8 @@ function collectSemanticTokensForState(
       getDocumentState,
       getWorksheetControlMetadataState,
       unit.text,
-      unit.range
+      unit.range,
+      hasWorkspaceTypeSymbol
     );
   }
 
@@ -1416,7 +1449,8 @@ function collectSemanticTokensForState(
         nextCharacter,
         resolveDefinition,
         getDocumentState,
-        getWorksheetControlMetadataState
+        getWorksheetControlMetadataState,
+        hasWorkspaceTypeSymbol
       );
     }
   }
@@ -1700,7 +1734,8 @@ function collectSemanticTokensInSegment(
   getDocumentState: (uri: string) => DocumentState | undefined,
   getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
   text: string,
-  range: SourceRange
+  range: SourceRange,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): void {
   const flattenedRange = buildFlattenedCodeRange(state.text, range, text);
 
@@ -1730,7 +1765,8 @@ function collectSemanticTokensInSegment(
       nextCharacter,
       resolveDefinition,
       getDocumentState,
-      getWorksheetControlMetadataState
+      getWorksheetControlMetadataState,
+      hasWorkspaceTypeSymbol
     );
   }
 }
@@ -1744,7 +1780,8 @@ function addSemanticTokenForIdentifier(
   nextCharacter: string,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): void {
   if (nextCharacter === ":" && range.start.character === 0) {
     return;
@@ -1759,7 +1796,8 @@ function addSemanticTokenForIdentifier(
       identifier,
       resolveDefinition,
       getDocumentState,
-      getWorksheetControlMetadataState
+      getWorksheetControlMetadataState,
+      hasWorkspaceTypeSymbol
     );
 
     if (memberTokenShape) {
@@ -2042,6 +2080,81 @@ function positionIsWithinRange(position: LinePosition, range: SourceRange): bool
   return comparePositions(position, range.start) >= 0 && comparePositions(position, range.end) <= 0;
 }
 
+function isCompletionPositionInCode(text: string, position: LinePosition): boolean {
+  const line = text.replace(/\r\n?/g, "\n").split("\n")[position.line];
+
+  if (line === undefined) {
+    return false;
+  }
+
+  const beforeCursor = line.slice(0, Math.max(0, position.character));
+  let index = 0;
+  let atTokenBoundary = true;
+
+  while (index < beforeCursor.length) {
+    const currentCharacter = beforeCursor[index];
+
+    if (currentCharacter === "\"") {
+      index += 1;
+
+      while (index < beforeCursor.length) {
+        if (beforeCursor[index] === "\"" && beforeCursor[index + 1] === "\"") {
+          index += 2;
+          continue;
+        }
+
+        if (beforeCursor[index] === "\"") {
+          index += 1;
+          atTokenBoundary = false;
+          break;
+        }
+
+        index += 1;
+      }
+
+      if (index >= beforeCursor.length) {
+        return false;
+      }
+
+      continue;
+    }
+
+    if (atTokenBoundary && currentCharacter === "#") {
+      index += 1;
+
+      while (index < beforeCursor.length && beforeCursor[index] !== "#") {
+        index += 1;
+      }
+
+      if (index >= beforeCursor.length) {
+        return false;
+      }
+
+      index += 1;
+      atTokenBoundary = false;
+      continue;
+    }
+
+    if (currentCharacter === "'") {
+      return false;
+    }
+
+    if (
+      atTokenBoundary &&
+      /[Rr]/.test(currentCharacter ?? "") &&
+      beforeCursor.slice(index, index + 3).toLowerCase() === "rem" &&
+      (index + 3 === beforeCursor.length || /\s/.test(beforeCursor[index + 3] ?? ""))
+    ) {
+      return false;
+    }
+
+    atTokenBoundary = /\s|[:(,]/.test(currentCharacter ?? "");
+    index += 1;
+  }
+
+  return true;
+}
+
 function getCompletionContext(text: string, position: LinePosition): CompletionContext {
   const flattenedPrefix = buildFlattenedContinuationPrefix(text, position);
   const code = flattenedPrefix?.code ?? "";
@@ -2074,7 +2187,8 @@ function resolveConfirmedBuiltinMemberOwner(
   completionContext: CompletionContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): string | undefined {
   if (
     !completionContext.isMemberAccess ||
@@ -2092,7 +2206,8 @@ function resolveConfirmedBuiltinMemberOwner(
     completionContext.memberPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
-    getWorksheetControlMetadataState
+    getWorksheetControlMetadataState,
+    hasWorkspaceTypeSymbol
   );
 }
 
@@ -2145,7 +2260,8 @@ function resolveBuiltinCallableMember(
   callContext: CallContext,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): BuiltinMemberReferenceItem | undefined {
   if (callContext.callPath.length < 2) {
     return undefined;
@@ -2159,7 +2275,8 @@ function resolveBuiltinCallableMember(
     callContext.callPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
-    getWorksheetControlMetadataState
+    getWorksheetControlMetadataState,
+    hasWorkspaceTypeSymbol
   );
   const memberName = callContext.callPath[callContext.callPath.length - 1];
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberName) : undefined;
@@ -2232,7 +2349,8 @@ function getBuiltinMemberHover(
   position: LinePosition,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): HoverHint | undefined {
   const builtinMember = resolveBuiltinMemberAtPosition(
     state.text,
@@ -2240,7 +2358,8 @@ function getBuiltinMemberHover(
     position,
     resolveDefinition,
     getDocumentState,
-    getWorksheetControlMetadataState
+    getWorksheetControlMetadataState,
+    hasWorkspaceTypeSymbol
   );
 
   if (!builtinMember) {
@@ -2259,7 +2378,8 @@ function resolveBuiltinMemberAtPosition(
   position: LinePosition,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): { range: SourceRange; reference: BuiltinMemberReferenceItem } | undefined {
   const range = getIdentifierRangeAtPosition(text, position);
 
@@ -2296,7 +2416,8 @@ function resolveBuiltinMemberAtPosition(
     memberPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
-    getWorksheetControlMetadataState
+    getWorksheetControlMetadataState,
+    hasWorkspaceTypeSymbol
   );
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, memberAccess.prefix) : undefined;
 
@@ -2374,7 +2495,8 @@ function resolveBuiltinMemberOwnerForPath(
   rootStartCharacter: number,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): string | undefined {
   if (pathSegments.length === 0) {
     return undefined;
@@ -2404,7 +2526,10 @@ function resolveBuiltinMemberOwnerForPath(
 
   if (!builtinContext) {
     if (effectiveRootResolution) {
-      return resolveKnownProgIdMemberOwner(effectiveRootResolution.typeName, memberSegments);
+      return (
+        resolveKnownProgIdMemberOwner(effectiveRootResolution.typeName, memberSegments) ??
+        resolveDeclaredBuiltinTypeMemberOwner(effectiveRootResolution.typeName, memberSegments, hasWorkspaceTypeSymbol)
+      );
     }
 
     return resolveBuiltinMemberOwner(pathSegments);
@@ -2425,6 +2550,26 @@ function resolveBuiltinMemberOwnerForPath(
 
 function resolveKnownProgIdMemberOwner(typeName: string | undefined, memberSegments: string[]): string | undefined {
   return isKnownProgIdOwnerTypeName(typeName) ? resolveBuiltinMemberOwnerFromRootType(typeName, memberSegments) : undefined;
+}
+
+function resolveDeclaredBuiltinTypeMemberOwner(
+  typeName: string | undefined,
+  memberSegments: string[],
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
+): string | undefined {
+  const normalizedTypeName = normalizeIdentifier(typeName ?? "");
+
+  if (!normalizedTypeName || hasWorkspaceTypeSymbol(normalizedTypeName)) {
+    return undefined;
+  }
+
+  const referenceItem = getBuiltinReferenceItem(typeName ?? "");
+
+  if (referenceItem?.completionKind !== "type") {
+    return undefined;
+  }
+
+  return resolveBuiltinMemberOwnerFromRootType(typeName ?? "", memberSegments);
 }
 
 function getIgnoredTypeWorkbookRootFamilyBuiltinContext(
@@ -3667,7 +3812,8 @@ function mapBuiltinMemberSemanticToken(
   identifier: string,
   resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
   getDocumentState: (uri: string) => DocumentState | undefined,
-  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
 ): SemanticTokenShape | undefined {
   const flattenedPrefix = buildFlattenedContinuationPrefix(text, {
     character: startCharacter + identifier.length,
@@ -3694,7 +3840,8 @@ function mapBuiltinMemberSemanticToken(
     memberPathStartPosition.character,
     resolveDefinition,
     getDocumentState,
-    getWorksheetControlMetadataState
+    getWorksheetControlMetadataState,
+    hasWorkspaceTypeSymbol
   );
   const memberReference = ownerName ? getBuiltinMemberReferenceItem(ownerName, identifier) : undefined;
 

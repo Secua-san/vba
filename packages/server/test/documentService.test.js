@@ -68,6 +68,68 @@ End Sub`
   assert.equal(excelConstant?.typeName, "Long");
 });
 
+test("document service suppresses completion items outside code", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/CompletionContext.bas";
+  const text = `Attribute VB_Name = "CompletionContext"
+Option Explicit
+
+Public Sub Demo()
+    Dim message As String
+    ' message
+    Debug.Print "Application"
+    Rem message
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "' message")), []);
+  assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, '"App')), []);
+  assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Rem message")), []);
+});
+
+test("document service uses declared built-in object types for member completion", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/DeclaredBuiltInTypeCompletion.bas";
+  const text = `Attribute VB_Name = "DeclaredBuiltInTypeCompletion"
+Option Explicit
+
+Public Sub Demo()
+    Dim target As Range
+    Dim sheet As Worksheet
+    Debug.Print target.Ad
+    Debug.Print sheet.Ra
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const rangeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "target.Ad"));
+  const worksheetMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "sheet.Ra"));
+
+  assert.equal(rangeMembers.some((resolution) => resolution.symbol.name === "Address"), true);
+  assert.equal(worksheetMembers.some((resolution) => resolution.symbol.name === "Range"), true);
+});
+
+test("document service keeps user-defined types out of built-in member completion", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/UserTypeCompletion.bas";
+  const text = `Attribute VB_Name = "UserTypeCompletion"
+Option Explicit
+
+Private Type Range
+    Address As String
+End Type
+
+Public Sub Demo()
+    Dim target As Range
+    Debug.Print target.
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "target.")), []);
+});
+
 test("document service exposes built-in member completion items from the reference index", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/BuiltInMemberCompletion.bas";

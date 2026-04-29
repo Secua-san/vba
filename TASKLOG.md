@@ -9,6 +9,12 @@
 
 ## 完了ログ
 
+- [x] Phase 7 の IntelliSense / 補完 MVP を完了扱いにする
+  - `packages/server/src/lsp/documentService.ts` で completion をコメント / 文字列 / `Rem` コメント内では返さないようにし、文脈外の誤候補を抑制した
+  - 明示型ローカル変数の型名が built-in object type と確認できる場合に built-in member owner 解決へ接続し、同名 user-defined type / enum / module がある場合は従来どおり閉じるようにした
+  - `packages/server/test/documentService.test.js` で文脈抑制、`Range` / `Worksheet` 型起点の補完、user-defined `Range` shadow の負例を固定した
+  - `npm run build --workspace @vba/server`、`npm run test --workspace @vba/server` が成功した
+
 - [x] Phase 6 の Diagnostics を完了扱いにする
   - `packages/core/src/parser/parseModule.ts` と `packages/core/src/types/model.ts` で procedure statement の structured leading label metadata を保持するようにした
   - `packages/core/src/diagnostics/unreachableCode.ts` で label による到達不能 state reset を structured metadata 優先にし、text fallback は未構造化 `executableStatement` に限定した
