@@ -2119,7 +2119,7 @@ function isCompletionPositionInCode(text: string, position: LinePosition): boole
       continue;
     }
 
-    if (atTokenBoundary && currentCharacter === "#") {
+    if (currentCharacter === "#" && isHashLiteralStart(beforeCursor, index)) {
       const fileNumberPrefixEnd = getFileNumberPrefixEnd(beforeCursor, index);
 
       if (fileNumberPrefixEnd !== undefined) {
@@ -2161,6 +2161,14 @@ function isCompletionPositionInCode(text: string, position: LinePosition): boole
   }
 
   return true;
+}
+
+function isHashLiteralStart(text: string, markerIndex: number): boolean {
+  if (markerIndex === 0) {
+    return true;
+  }
+
+  return !/[A-Za-z0-9_.$%&!@]/u.test(text[markerIndex - 1] ?? "");
 }
 
 function getFileNumberPrefixEnd(text: string, markerIndex: number): number | undefined {

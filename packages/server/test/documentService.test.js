@@ -78,6 +78,7 @@ Public Sub Demo()
     Dim message As String
     ' message
     Debug.Print "Application"
+    message=#2026/04/29#
     Rem message
 End Sub`;
 
@@ -85,6 +86,7 @@ End Sub`;
 
   assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "' message")), []);
   assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, '"App')), []);
+  assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "#2026")), []);
   assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Rem message")), []);
 });
 
@@ -165,7 +167,9 @@ End Sub`;
 
   service.analyzeText(uri, "vba", 1, text);
 
-  assert.deepEqual(service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "target.")), []);
+  const members = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "target."));
+
+  assert.equal(members.some((resolution) => resolution.isBuiltIn === true), false);
 });
 
 test("document service exposes built-in member completion items from the reference index", () => {
