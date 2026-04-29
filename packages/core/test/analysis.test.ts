@@ -854,6 +854,29 @@ End Sub`, { fileName: "GenericRuntimeBindingInference.bas" });
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
 
+test("analyzeModule clears generic runtime binding narrowing after unknown reassignment", () => {
+  const result = analyzeModule(`Attribute VB_Name = "GenericRuntimeBindingReassignment"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell As Object
+    Dim dictionary As Variant
+    Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
+    Set shell = GetObject("C:\\temp\\book.xlsx")
+    dictionary = "fallback"
+End Sub`, { fileName: "GenericRuntimeBindingReassignment.bas" });
+
+  const symbols = result.symbols.procedureScopes.flatMap((scope) => scope.symbols);
+  const shellSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
+  const dictionarySymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "dictionary");
+
+  assert.equal(getSymbolTypeName(result, shellSymbol), "Object");
+  assert.equal(getSymbolTypeName(result, dictionarySymbol), "Variant");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
 test("analyzeModule keeps GetObject pathname arguments as Object", () => {
   const result = analyzeModule(`Attribute VB_Name = "GetObjectInference"
 Option Explicit

@@ -95,8 +95,13 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
           });
         }
 
-        if (shouldNarrowGenericRuntimeBinding(targetSymbol.typeName, inferredExpressionType, assignment.isSet)) {
-          setSymbolTypeIgnoringPrecedence(symbolTypes, targetSymbol, inferredExpressionType, "assignment");
+        if (shouldTrackGenericRuntimeBindingAssignment(targetSymbol.typeName)) {
+          setSymbolTypeIgnoringPrecedence(
+            symbolTypes,
+            targetSymbol,
+            assignment.isSet && isKnownProgIdOwnerTypeName(inferredExpressionType) ? inferredExpressionType : targetTypeName,
+            "assignment"
+          );
         }
       } else {
         setSymbolType(symbolTypes, targetSymbol, inferredExpressionType, "assignment");
@@ -312,16 +317,8 @@ function compareSourcePrecedence(left: InferredSymbolType["source"], right: Infe
   return getSourcePrecedence(left) - getSourcePrecedence(right);
 }
 
-function shouldNarrowGenericRuntimeBinding(
-  declaredTypeName: string | undefined,
-  inferredExpressionType: string,
-  isSetAssignment: boolean
-): boolean {
-  return (
-    isSetAssignment &&
-    isGenericRuntimeBindingTypeName(declaredTypeName) &&
-    isKnownProgIdOwnerTypeName(inferredExpressionType)
-  );
+function shouldTrackGenericRuntimeBindingAssignment(declaredTypeName: string | undefined): boolean {
+  return isGenericRuntimeBindingTypeName(declaredTypeName);
 }
 
 function getNarrowedGenericRuntimeBindingTypeName(

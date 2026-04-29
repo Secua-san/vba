@@ -4121,6 +4121,42 @@ End Sub`;
   assertSemanticToken(text, tokens, 14, "Count", { modifiers: [], type: "variable" });
 });
 
+test("document service clears generic runtime binding narrowing after unknown reassignment", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/GenericRuntimeBindingReassignment.bas";
+  const text = `Attribute VB_Name = "GenericRuntimeBindingReassignment"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell As Object
+    Dim dictionary As Variant
+    Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
+    Set shell = GetObject("C:\\temp\\book.xlsx")
+    dictionary = "fallback"
+    Call shell.Run("notepad.exe")
+    If dictionary.Exists("id") Then
+        Debug.Print dictionary.Count
+    End If
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const shellCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const dictionaryCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "If dictionary."));
+  const shellSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const dictionarySignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "dictionary.Exists("));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.deepEqual(shellCompletions, []);
+  assert.deepEqual(dictionaryCompletions, []);
+  assert.equal(shellSignature, undefined);
+  assert.equal(dictionarySignature, undefined);
+  assertNoSemanticToken(text, tokens, 10, "Run");
+  assertNoSemanticToken(text, tokens, 11, "Exists");
+  assertNoSemanticToken(text, tokens, 12, "Count");
+});
+
 test("document service keeps GetObject pathname arguments out of known ProgID members", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/GetObjectProgIdMembers.bas";
