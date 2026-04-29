@@ -1,4 +1,5 @@
 import { getAccessibleSymbolsAtLine, resolveSymbolAtPosition } from "../symbol/buildModuleSymbols";
+import { isKnownProgIdOwnerTypeName, resolveCreateObjectProgIdType } from "../reference/progIdRegistry";
 import { normalizeIdentifier } from "../types/helpers";
 import type {
   AnalysisResult,
@@ -26,10 +27,6 @@ const CAST_FUNCTION_TYPES = new Map<string, string>([
 
 const NUMERIC_TYPES = new Set(["byte", "currency", "double", "integer", "long", "longlong", "longptr", "single"]);
 const SCALAR_TYPES = new Set(["boolean", "date", "nothing", "string", "variant", ...NUMERIC_TYPES]);
-const CREATE_OBJECT_PROGID_TYPES = new Map<string, string>([
-  ["wscript.shell", "WshShell"]
-]);
-
 export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTable): TypeInferenceResult {
   const diagnostics: Diagnostic[] = [];
   const symbolTypes = new Map<string, InferredSymbolType>();
@@ -62,13 +59,22 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
       }
 
       const targetSymbol = resolveSymbolAtPosition(symbolTable, assignment.targetName, assignment.targetRange.start);
-      const inferredExpressionType = inferExpressionType(symbolTable, symbolTypes, statement.range.start.line, assignment.expressionText);
 
-      if (!targetSymbol || !inferredExpressionType) {
+      if (!targetSymbol) {
         continue;
       }
 
-      const targetTypeName = getSymbolTypeNameFromMap(symbolTypes, targetSymbol) ?? targetSymbol.typeName;
+      const inferredExpressionType = inferExpressionType(symbolTable, symbolTypes, statement.range.start.line, assignment.expressionText);
+
+      if (!inferredExpressionType) {
+        if (shouldTrackGenericRuntimeBindingAssignment(targetSymbol.typeName) && targetSymbol.typeName) {
+          setSymbolTypeIgnoringPrecedence(symbolTypes, targetSymbol, targetSymbol.typeName, "assignment");
+        }
+
+        continue;
+      }
+
+      const targetTypeName = targetSymbol.typeName ?? getSymbolTypeNameFromMap(symbolTypes, targetSymbol);
 
       if (targetTypeName) {
         const missingSetAssignment = shouldWarnMissingSetAssignment(
@@ -96,6 +102,15 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
             range: assignment.expressionRange,
             severity: "warning"
           });
+        }
+
+        if (shouldTrackGenericRuntimeBindingAssignment(targetSymbol.typeName)) {
+          setSymbolTypeIgnoringPrecedence(
+            symbolTypes,
+            targetSymbol,
+            assignment.isSet && isKnownProgIdOwnerTypeName(inferredExpressionType) ? inferredExpressionType : targetTypeName,
+            "assignment"
+          );
         }
       } else {
         setSymbolType(symbolTypes, targetSymbol, inferredExpressionType, "assignment");
@@ -128,7 +143,8 @@ export function getSymbolTypeName(
   }
 
   const typeInference = "typeInference" in result ? result.typeInference : result;
-  return symbol.typeName ?? getSymbolTypeNameFromMap(typeInference.symbolTypes, symbol);
+  const inferredTypeName = getSymbolTypeNameFromMap(typeInference.symbolTypes, symbol);
+  return getNarrowedGenericRuntimeBindingTypeName(symbol.typeName, inferredTypeName) ?? symbol.typeName ?? inferredTypeName;
 }
 
 export function inferExpressionTypeAtLine(
@@ -272,8 +288,22 @@ function setSymbolType(
   }
 }
 
+function setSymbolTypeIgnoringPrecedence(
+  sink: Map<string, InferredSymbolType>,
+  symbol: SymbolInfo,
+  typeName: string,
+  source: InferredSymbolType["source"]
+): void {
+  sink.set(getSymbolKey(symbol), {
+    source,
+    symbol,
+    typeName
+  });
+}
+
 function getResolvedTypeName(symbolTypes: Map<string, InferredSymbolType>, symbol: SymbolInfo): string | undefined {
-  return symbol.typeName ?? symbolTypes.get(getSymbolKey(symbol))?.typeName;
+  const inferredTypeName = symbolTypes.get(getSymbolKey(symbol))?.typeName;
+  return getNarrowedGenericRuntimeBindingTypeName(symbol.typeName, inferredTypeName) ?? symbol.typeName ?? inferredTypeName;
 }
 
 function getSymbolTypeNameFromMap(symbolTypes: Map<string, InferredSymbolType> | InferredSymbolType[], symbol: SymbolInfo): string | undefined {
@@ -294,6 +324,24 @@ function getSymbolKey(symbol: SymbolInfo): string {
 
 function compareSourcePrecedence(left: InferredSymbolType["source"], right: InferredSymbolType["source"]): number {
   return getSourcePrecedence(left) - getSourcePrecedence(right);
+}
+
+function shouldTrackGenericRuntimeBindingAssignment(declaredTypeName: string | undefined): boolean {
+  return isGenericRuntimeBindingTypeName(declaredTypeName);
+}
+
+function getNarrowedGenericRuntimeBindingTypeName(
+  declaredTypeName: string | undefined,
+  inferredTypeName: string | undefined
+): string | undefined {
+  return isGenericRuntimeBindingTypeName(declaredTypeName) && isKnownProgIdOwnerTypeName(inferredTypeName)
+    ? inferredTypeName
+    : undefined;
+}
+
+function isGenericRuntimeBindingTypeName(typeName: string | undefined): boolean {
+  const normalizedTypeName = normalizeTypeName(typeName ?? "");
+  return normalizedTypeName === "object" || normalizedTypeName === "variant";
 }
 
 function getSourcePrecedence(source: InferredSymbolType["source"]): number {
@@ -641,7 +689,7 @@ function inferCreateObjectType(expressionText: string): string | undefined {
   const match = /^CreateObject\s*\(\s*("(?:[^"]|"")*")\s*(?:,|\))/iu.exec(expressionText);
   const progId = match?.[1] ? readVbaStringLiteral(match[1]) : undefined;
 
-  return progId ? CREATE_OBJECT_PROGID_TYPES.get(progId.toLowerCase()) : undefined;
+  return progId ? resolveCreateObjectProgIdType(progId) : undefined;
 }
 
 function readVbaStringLiteral(text: string): string | undefined {

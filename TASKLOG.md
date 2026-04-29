@@ -9,6 +9,13 @@
 
 ## 完了ログ
 
+- [x] Phase 8 の高度な型推論・実行時バインディング対応を完了扱いにする
+  - `packages/core/src/reference/progIdRegistry.ts` を追加し、`CreateObject` の既知 ProgID 型と known ProgID owner 判定を共有 registry に寄せた
+  - `packages/core/src/reference/builtinReference.ts` に `ScriptingDictionary` と `Add` / `Exists` / `Count` などの最小 supplemental member surface を追加した
+  - `packages/core/src/inference/inferModuleTypes.ts` で明示 `Object` / `Variant` への既知 ProgID `Set` 代入だけを補完用に狭め、`GetObject` と dynamic ProgID は閉じたまま維持した
+  - `packages/core/test/analysis.test.ts` と `packages/server/test/documentService.test.js` で type inference、completion、hover、signature help、semantic token の回帰を固定した
+  - `npm run build --workspace @vba/core`、`npm run test --workspace @vba/core`、`npm run build --workspace @vba/server`、`npm run test --workspace @vba/server` が成功した
+
 - [x] Phase 7 の IntelliSense / 補完 MVP を完了扱いにする
   - `packages/server/src/lsp/documentService.ts` で completion をコメント / 文字列 / `Rem` コメント内では返さないようにし、文脈外の誤候補を抑制した
   - 明示型ローカル変数の型名が built-in object type と確認できる場合に built-in member owner 解決へ接続し、同名 user-defined type / enum / module がある場合は従来どおり閉じるようにした

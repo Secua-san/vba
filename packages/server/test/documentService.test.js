@@ -4046,21 +4046,125 @@ Option Explicit
 
 Public Sub Demo()
     Dim shell
+    Dim dictionary
     Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
     Call shell.Run("notepad.exe")
+    If dictionary.Exists("id") Then
+        Debug.Print dictionary.Count
+    End If
 End Sub`;
 
   service.analyzeText(uri, "vba", 1, text);
 
   const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const dictionaryCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "If dictionary."));
   const hover = getHoverAfterToken(service, uri, text, "shell.Run");
+  const dictionaryHover = getHoverAfterToken(service, uri, text, "dictionary.Exists");
   const signature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const dictionarySignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "dictionary.Exists("));
   const tokens = service.getSemanticTokens(uri);
 
   assert.equal(completions.some((resolution) => resolution.symbol.name === "Run"), true);
+  assert.equal(dictionaryCompletions.some((resolution) => resolution.symbol.name === "Exists"), true);
+  assert.equal(dictionaryCompletions.some((resolution) => resolution.symbol.name === "Count"), true);
   assert.equal(hover?.contents.includes("Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long"), true);
+  assert.equal(dictionaryHover?.contents.includes("Exists(Key) As Boolean"), true);
   assert.equal(signature?.label, "Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long");
-  assertSemanticToken(text, tokens, 6, "Run", { modifiers: [], type: "function" });
+  assert.equal(dictionarySignature?.label, "Exists(Key) As Boolean");
+  assertSemanticToken(text, tokens, 8, "Run", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 9, "Exists", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 10, "Count", { modifiers: [], type: "variable" });
+});
+
+test("document service narrows generic Object and Variant from known CreateObject ProgIDs only", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/GenericRuntimeBindingMembers.bas";
+  const text = `Attribute VB_Name = "GenericRuntimeBindingMembers"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell As Object
+    Dim dictionary As Variant
+    Dim genericObject As Object
+    Dim dynamicVariant As Variant
+    Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
+    Set genericObject = GetObject("WScript.Shell")
+    Set dynamicVariant = CreateObject("WScript." & "Shell")
+    Call shell.Run("notepad.exe")
+    If dictionary.Exists("id") Then
+        Debug.Print dictionary.Count
+    End If
+    Debug.Print genericObject.
+    Debug.Print dynamicVariant.
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const shellCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const dictionaryCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "If dictionary."));
+  const genericObjectCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Debug.Print genericObject."));
+  const dynamicVariantCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Debug.Print dynamicVariant."));
+  const shellSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const dictionarySignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "dictionary.Exists("));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.equal(shellCompletions.some((resolution) => resolution.symbol.name === "Run"), true);
+  assert.equal(dictionaryCompletions.some((resolution) => resolution.symbol.name === "Exists"), true);
+  assert.deepEqual(genericObjectCompletions, []);
+  assert.deepEqual(dynamicVariantCompletions, []);
+  assert.equal(shellSignature?.label, "Run(Command As String, [WindowStyle], [WaitOnReturn]) As Long");
+  assert.equal(dictionarySignature?.label, "Exists(Key) As Boolean");
+  assertSemanticToken(text, tokens, 12, "Run", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 13, "Exists", { modifiers: [], type: "function" });
+  assertSemanticToken(text, tokens, 14, "Count", { modifiers: [], type: "variable" });
+});
+
+test("document service clears generic runtime binding narrowing after unknown reassignment", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/GenericRuntimeBindingReassignment.bas";
+  const text = `Attribute VB_Name = "GenericRuntimeBindingReassignment"
+Option Explicit
+
+Public Sub Demo()
+    Dim shell As Object
+    Dim dictionary As Variant
+    Dim unknownShell As Object
+    Dim shellFactory As Object
+    Set shell = CreateObject("WScript.Shell")
+    Set dictionary = CreateObject("Scripting.Dictionary")
+    Set unknownShell = CreateObject("WScript.Shell")
+    Set shell = GetObject("C:\\temp\\book.xlsx")
+    dictionary = "fallback"
+    Set unknownShell = shellFactory.Create()
+    Call shell.Run("notepad.exe")
+    Call unknownShell.Run("notepad.exe")
+    If dictionary.Exists("id") Then
+        Debug.Print dictionary.Count
+    End If
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const shellCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const unknownShellCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call unknownShell."));
+  const dictionaryCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "If dictionary."));
+  const shellSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const unknownShellSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "unknownShell.Run("));
+  const dictionarySignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "dictionary.Exists("));
+  const tokens = service.getSemanticTokens(uri);
+
+  assert.deepEqual(shellCompletions, []);
+  assert.deepEqual(unknownShellCompletions, []);
+  assert.deepEqual(dictionaryCompletions, []);
+  assert.equal(shellSignature, undefined);
+  assert.equal(unknownShellSignature, undefined);
+  assert.equal(dictionarySignature, undefined);
+  assertNoSemanticToken(text, tokens, 14, "Run");
+  assertNoSemanticToken(text, tokens, 15, "Run");
+  assertNoSemanticToken(text, tokens, 16, "Exists");
+  assertNoSemanticToken(text, tokens, 17, "Count");
 });
 
 test("document service keeps GetObject pathname arguments out of known ProgID members", () => {
