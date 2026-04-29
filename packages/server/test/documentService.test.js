@@ -4427,6 +4427,17 @@ End Function`
     service.getWorkspaceSymbols("PublicMessage").map((resolution) => `${resolution.uri}:${resolution.symbol.name}:${resolution.moduleName}`),
     [`${libraryUri}:PublicMessage:PublicApi`]
   );
+  assert.deepEqual(
+    service.getWorkspaceSymbols(" publicmessage ").map((resolution) => `${resolution.uri}:${resolution.symbol.name}:${resolution.moduleName}`),
+    [`${libraryUri}:PublicMessage:PublicApi`]
+  );
+  assert.deepEqual(
+    service.getWorkspaceSymbols("Message").map((resolution) => `${resolution.uri}:${resolution.symbol.name}:${resolution.moduleName}`),
+    [`${libraryUri}:PublicMessage:PublicApi`]
+  );
+  assert.ok(
+    service.getWorkspaceSymbols("").some((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage")
+  );
   assert.deepEqual(service.getWorkspaceSymbols("HiddenMessage"), []);
 });
 
