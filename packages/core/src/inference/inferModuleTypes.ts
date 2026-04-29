@@ -59,9 +59,18 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
       }
 
       const targetSymbol = resolveSymbolAtPosition(symbolTable, assignment.targetName, assignment.targetRange.start);
+
+      if (!targetSymbol) {
+        continue;
+      }
+
       const inferredExpressionType = inferExpressionType(symbolTable, symbolTypes, statement.range.start.line, assignment.expressionText);
 
-      if (!targetSymbol || !inferredExpressionType) {
+      if (!inferredExpressionType) {
+        if (shouldTrackGenericRuntimeBindingAssignment(targetSymbol.typeName) && targetSymbol.typeName) {
+          setSymbolTypeIgnoringPrecedence(symbolTypes, targetSymbol, targetSymbol.typeName, "assignment");
+        }
+
         continue;
       }
 

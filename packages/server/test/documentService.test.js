@@ -4130,11 +4130,16 @@ Option Explicit
 Public Sub Demo()
     Dim shell As Object
     Dim dictionary As Variant
+    Dim unknownShell As Object
+    Dim shellFactory As Object
     Set shell = CreateObject("WScript.Shell")
     Set dictionary = CreateObject("Scripting.Dictionary")
+    Set unknownShell = CreateObject("WScript.Shell")
     Set shell = GetObject("C:\\temp\\book.xlsx")
     dictionary = "fallback"
+    Set unknownShell = shellFactory.Create()
     Call shell.Run("notepad.exe")
+    Call unknownShell.Run("notepad.exe")
     If dictionary.Exists("id") Then
         Debug.Print dictionary.Count
     End If
@@ -4143,18 +4148,23 @@ End Sub`;
   service.analyzeText(uri, "vba", 1, text);
 
   const shellCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call shell."));
+  const unknownShellCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Call unknownShell."));
   const dictionaryCompletions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "If dictionary."));
   const shellSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "shell.Run("));
+  const unknownShellSignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "unknownShell.Run("));
   const dictionarySignature = service.getSignatureHelp(uri, findPositionAfterTokenInText(text, "dictionary.Exists("));
   const tokens = service.getSemanticTokens(uri);
 
   assert.deepEqual(shellCompletions, []);
+  assert.deepEqual(unknownShellCompletions, []);
   assert.deepEqual(dictionaryCompletions, []);
   assert.equal(shellSignature, undefined);
+  assert.equal(unknownShellSignature, undefined);
   assert.equal(dictionarySignature, undefined);
-  assertNoSemanticToken(text, tokens, 10, "Run");
-  assertNoSemanticToken(text, tokens, 11, "Exists");
-  assertNoSemanticToken(text, tokens, 12, "Count");
+  assertNoSemanticToken(text, tokens, 14, "Run");
+  assertNoSemanticToken(text, tokens, 15, "Run");
+  assertNoSemanticToken(text, tokens, 16, "Exists");
+  assertNoSemanticToken(text, tokens, 17, "Count");
 });
 
 test("document service keeps GetObject pathname arguments out of known ProgID members", () => {

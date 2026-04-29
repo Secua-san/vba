@@ -861,18 +861,24 @@ Option Explicit
 Public Sub Demo()
     Dim shell As Object
     Dim dictionary As Variant
+    Dim unknownShell As Object
+    Dim shellFactory As Object
     Set shell = CreateObject("WScript.Shell")
     Set dictionary = CreateObject("Scripting.Dictionary")
+    Set unknownShell = CreateObject("WScript.Shell")
     Set shell = GetObject("C:\\temp\\book.xlsx")
     dictionary = "fallback"
+    Set unknownShell = shellFactory.Create()
 End Sub`, { fileName: "GenericRuntimeBindingReassignment.bas" });
 
   const symbols = result.symbols.procedureScopes.flatMap((scope) => scope.symbols);
   const shellSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "shell");
   const dictionarySymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "dictionary");
+  const unknownShellSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "unknownShell");
 
   assert.equal(getSymbolTypeName(result, shellSymbol), "Object");
   assert.equal(getSymbolTypeName(result, dictionarySymbol), "Variant");
+  assert.equal(getSymbolTypeName(result, unknownShellSymbol), "Object");
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "set-required"), false);
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
