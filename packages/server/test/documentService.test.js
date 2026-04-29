@@ -105,6 +105,7 @@ Public Sub Demo()
     Close #1: mes
     Close #1, #2: mes
     Open "C:\\temp\\sample.txt" For Input As #1: mes
+    message = Input$(1, #1): mes
 End Sub`;
 
   service.analyzeText(uri, "vba", 1, text);
@@ -116,7 +117,8 @@ End Sub`;
     "Unlock #1, mes",
     "Close #1: mes",
     "Close #1, #2: mes",
-    'Open "C:\\temp\\sample.txt" For Input As #1: mes'
+    'Open "C:\\temp\\sample.txt" For Input As #1: mes',
+    "Input$(1, #1): mes"
   ]) {
     const completions = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, anchor));
 
@@ -148,6 +150,31 @@ End Sub`;
 
   assert.equal(rangeMembers.some((resolution) => resolution.symbol.name === "Address"), true);
   assert.equal(worksheetMembers.some((resolution) => resolution.symbol.name === "Range"), true);
+});
+
+test("document service keeps standard modules out of built-in type shadowing", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/StandardModuleTypeCompletion.bas";
+  const text = `Attribute VB_Name = "StandardModuleTypeCompletion"
+Option Explicit
+
+Public Sub Demo()
+    Dim target As Range
+    Debug.Print target.Ad
+End Sub`;
+
+  service.analyzeText(
+    "file:///C:/temp/Range.bas",
+    "vba",
+    1,
+    `Attribute VB_Name = "Range"
+Option Explicit`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const rangeMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "target.Ad"));
+
+  assert.equal(rangeMembers.some((resolution) => resolution.symbol.name === "Address"), true);
 });
 
 test("document service keeps user-defined types out of built-in member completion", () => {

@@ -47,6 +47,7 @@ import {
   type BuiltinSemanticType,
   type Diagnostic,
   type LinePosition,
+  type ModuleKind,
   type SourceRange,
   type SymbolInfo,
   type WorkbookBindingManifestValidationIssue,
@@ -951,7 +952,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
           resolveDefinition,
           getDocumentState,
           getWorksheetControlMetadataState,
-          (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
+          (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, documentStates, normalizedName)
         );
 
         return memberOwnerName
@@ -998,7 +999,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         resolveDefinition,
         getDocumentState,
         getWorksheetControlMetadataState,
-        (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
+        (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, documentStates, normalizedName)
       );
     },
     getRenameEdits(uri: string, position: LinePosition, newName: string): RenameTextEdit[] | undefined {
@@ -1031,7 +1032,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
             resolveDefinition,
             documentStates,
             getWorksheetControlMetadataState,
-            (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
+            (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, documentStates, normalizedName)
           )
         : [];
     },
@@ -1064,7 +1065,7 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         resolveDefinition,
         getDocumentState,
         getWorksheetControlMetadataState,
-        (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, normalizedName)
+        (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, documentStates, normalizedName)
       );
 
       if (builtinMember) {
@@ -1225,15 +1226,24 @@ function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
   };
 }
 
-function hasUserTypeSymbol(state: DocumentState, workspaceIndex: WorkspaceIndex, normalizedName: string): boolean {
+function hasUserTypeSymbol(
+  state: DocumentState,
+  workspaceIndex: WorkspaceIndex,
+  documentStates: ReadonlyMap<string, DocumentState>,
+  normalizedName: string
+): boolean {
   return (
-    state.analysis.symbols.allSymbols.some((symbol) => isTypeNameSymbol(symbol) && symbol.normalizedName === normalizedName) ||
-    (workspaceIndex.byNormalizedName.get(normalizedName) ?? []).some((resolution) => isTypeNameSymbol(resolution.symbol))
+    state.analysis.symbols.allSymbols.some(
+      (symbol) => isTypeNameSymbol(symbol, state.analysis.source.moduleKind) && symbol.normalizedName === normalizedName
+    ) ||
+    (workspaceIndex.byNormalizedName.get(normalizedName) ?? []).some((resolution) =>
+      isTypeNameSymbol(resolution.symbol, documentStates.get(resolution.uri)?.analysis.source.moduleKind)
+    )
   );
 }
 
-function isTypeNameSymbol(symbol: SymbolInfo): boolean {
-  return symbol.kind === "module" || symbol.kind === "type" || symbol.kind === "enum";
+function isTypeNameSymbol(symbol: SymbolInfo, moduleKind?: ModuleKind): boolean {
+  return symbol.kind === "type" || symbol.kind === "enum" || (symbol.kind === "module" && moduleKind !== "standard");
 }
 
 function createBuiltinResolution(item: BuiltinMemberReferenceItem | BuiltinReferenceItem): WorkspaceSymbolResolution {
@@ -2178,7 +2188,7 @@ function getFileNumberPrefixEnd(text: string, markerIndex: number): number | und
     return undefined;
   }
 
-  const match = /^#\s*(?:\d+|[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s*,|\s*(?=[:\s]|$))/u.exec(text.slice(markerIndex));
+  const match = /^#\s*(?:\d+|[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?)(?:\s*,|\s*(?=[):\s]|$))/u.exec(text.slice(markerIndex));
   return match ? markerIndex + match[0].length : undefined;
 }
 
