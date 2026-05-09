@@ -645,6 +645,26 @@ End Sub`, { fileName: "Demo.bas" });
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "undeclared-variable"));
 });
 
+test("analyzeModule reports Long usage in PtrSafe Declare statements", () => {
+  const result = analyzeModule(`Option Explicit
+
+Private Declare PtrSafe Function FindWindowA Lib "user32" (ByVal owner As LongPtr, ByVal flags As Long, ByVal id As LongLong) As Long
+`, { fileName: "Win64Declare.bas" });
+
+  const diagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "declare-long-win64");
+
+  assert.equal(diagnostics.length, 2);
+  assert.ok(diagnostics.every((diagnostic) => diagnostic.severity === "warning"));
+  assert.deepEqual(
+    diagnostics.map((diagnostic) => diagnostic.message),
+    [
+      "Declare PtrSafe parameter 'flags' uses Long, which may be unsafe on Win64. Use LongPtr or LongLong when appropriate.",
+      "Declare PtrSafe return type uses Long, which may be unsafe on Win64. Use LongPtr or LongLong when appropriate."
+    ]
+  );
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "declare-missing-ptrsafe"), false);
+});
+
 test("analyzeModule ignores label targets in GoTo, GoSub, Resume, and On Error statements", () => {
   const result = analyzeModule(`Attribute VB_Name = "StructuredLabelTargets"
 Option Explicit
