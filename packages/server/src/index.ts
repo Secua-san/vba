@@ -25,8 +25,9 @@ import {
   TextEdit,
   TextDocumentSyncKind
 } from "vscode-languageserver/node";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
@@ -75,6 +76,7 @@ export function startServer(): void {
     }
   });
   const pendingTimers = new Map<string, NodeJS.Timeout>();
+  let workspaceRootUris: string[] = [];
   let settings: ServerSettings = {
     analysisDebounceMs: 300
   };
@@ -82,11 +84,12 @@ export function startServer(): void {
 
   connection.onInitialize((params: InitializeParams): InitializeResult => {
     canReadConfiguration = Boolean(params.capabilities.workspace?.configuration);
-    documentService.setWorkspaceRoots([
+    workspaceRootUris = [
       ...(params.workspaceFolders?.map((workspaceFolder) => workspaceFolder.uri) ?? []),
       ...(params.rootUri ? [params.rootUri] : []),
       ...(params.rootPath ? [params.rootPath] : [])
-    ]);
+    ];
+    documentService.setWorkspaceRoots(workspaceRootUris);
 
     return {
       capabilities: {
@@ -333,16 +336,12 @@ export function startServer(): void {
   async function primeWorkspaceIndex(): Promise<void> {
     try {
       const openDocumentUris = new Set(documents.all().map((document) => document.uri));
-      const workspaceFileFinder = connection.workspace as typeof connection.workspace & {
-        findFiles: (pattern: string) => Promise<string[]>;
-      };
-      const workspaceUris = (
-        await Promise.all([
-          workspaceFileFinder.findFiles("**/*.bas"),
-          workspaceFileFinder.findFiles("**/*.cls"),
-          workspaceFileFinder.findFiles("**/*.frm")
-        ])
-      ).flat();
+      const currentWorkspaceFolders = await getCurrentWorkspaceFolders(connection);
+      const currentWorkspaceRootUris =
+        currentWorkspaceFolders && currentWorkspaceFolders.length > 0
+          ? currentWorkspaceFolders.map((workspaceFolder) => workspaceFolder.uri)
+          : workspaceRootUris;
+      const workspaceUris = (await Promise.all(currentWorkspaceRootUris.map(findVbaFileUris))).flat();
 
       for (const uri of [...new Set(workspaceUris)]) {
         if (openDocumentUris.has(uri)) {
@@ -370,6 +369,79 @@ export function startServer(): void {
       documentService.remove(uri);
     }
   }
+}
+
+async function findVbaFileUris(workspaceRootUri: string): Promise<string[]> {
+  const workspaceRootPath = workspaceRootUri.startsWith("file:")
+    ? fileURLToPath(workspaceRootUri)
+    : path.resolve(workspaceRootUri);
+  const fileUris: string[] = [];
+
+  await collectVbaFileUris(workspaceRootPath, fileUris);
+  return fileUris;
+}
+
+async function getCurrentWorkspaceFolders(
+  connection: ReturnType<typeof createConnection>
+): Promise<Array<{ uri: string }> | null> {
+  try {
+    return await connection.workspace.getWorkspaceFolders();
+  } catch {
+    return null;
+  }
+}
+
+async function collectVbaFileUris(directoryPath: string, fileUris: string[]): Promise<void> {
+  let entries;
+
+  try {
+    entries = await readdir(directoryPath, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (shouldSkipWorkspaceDirectory(entry.name)) {
+        continue;
+      }
+
+      await collectVbaFileUris(path.join(directoryPath, entry.name), fileUris);
+      continue;
+    }
+
+    if (entry.isFile() && isVbaSourceFile(entry.name)) {
+      fileUris.push(toLspFileUri(path.join(directoryPath, entry.name)));
+    }
+  }
+}
+
+function toLspFileUri(filePath: string): string {
+  const normalizedPath = path.resolve(filePath).replace(/\\/gu, "/");
+  const drivePathMatch = /^([a-zA-Z]):\/(.*)$/u.exec(normalizedPath);
+
+  if (!drivePathMatch) {
+    return pathToFileURL(filePath).href;
+  }
+
+  const driveLetter = drivePathMatch[1].toLowerCase();
+  const encodedPath = drivePathMatch[2].split("/").map(encodeUriPathSegment).join("/");
+
+  return `file:///${driveLetter}%3A/${encodedPath}`;
+}
+
+function encodeUriPathSegment(segment: string): string {
+  return encodeURIComponent(segment).replace(/[!'()*]/gu, (value) => {
+    return `%${value.charCodeAt(0).toString(16).toUpperCase()}`;
+  });
+}
+
+function isVbaSourceFile(fileName: string): boolean {
+  return [".bas", ".cls", ".frm"].includes(path.extname(fileName).toLowerCase());
+}
+
+function shouldSkipWorkspaceDirectory(directoryName: string): boolean {
+  return ["node_modules", "dist", "dist-test", ".vscode-test", ".git"].includes(directoryName);
 }
 
 async function readSettings(connection: ReturnType<typeof createConnection>): Promise<ServerSettings> {
