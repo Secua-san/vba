@@ -13,7 +13,7 @@
 
 ## 現在位置
 
-- 現在の主実装軸は Phase 9 の定義ジャンプ・参照検索・シンボルナビゲーション強化を完了し、Phase 10 の vbac.wsf / xlam 連携強化へ移る
+- 現在の主実装軸は Phase 10 の vbac.wsf / xlam 連携強化を完了し、Phase 11 の品質強化・回帰防止へ移る
 - 直近完了は `CreateObject` / ProgID registry 化、`Scripting.Dictionary` の既知 ProgID 解決、明示 `Object` / `Variant` への既知 ProgID `Set` 代入からの暫定補完接続
 - リポジトリ全体としては、LSP の user-facing 機能が先行しており、parser / AST を後追いで構造化して基盤を固めている状態
 - したがって、単純な Phase 0 -> 12 の直列進行ではなく、Phase 2-3 を再度強化しながら Phase 6-10 の既存機能を壊さない進め方が必要
@@ -32,7 +32,7 @@
 | Phase 7: IntelliSense / 補完 MVP | 完了 | completion、hover、signature help、semantic token、document symbol に加え、completion の文脈抑制と明示型起点の built-in member 補完を server 回帰で固定した | 維持のみ |
 | Phase 8: 高度な型推論・実行時バインディング対応 | 完了 | workbook binding、active workbook snapshot、worksheet control sidecar による限定解決に加え、`CreateObject` / ProgID registry、`Scripting.Dictionary`、既知 ProgID 起点の `Object` / `Variant` 暫定補完を core / server 回帰で固定した | 維持のみ |
 | Phase 9: 定義ジャンプ・参照検索・シンボルナビゲーション | 完了 | definition / references / rename / document symbol に加え、workspace symbol provider を LSP へ公開し、core / server / extension 回帰で固定した | 維持のみ |
-| Phase 10: vbac.wsf / xlam 連携 | 部分実装 | extract / combine コマンドはある | combine の安全性、エラーハンドリング、ログ、検証を強化する |
+| Phase 10: vbac.wsf / xlam 連携 | 完了 | `vba.extract` / `vba.combine` を公開し、同梱 `vbac.wsf`、一時作業ディレクトリ、確認、バックアップ、ログ、検証を通す安全経路を追加した | 維持のみ |
 | Phase 11: 品質強化・回帰防止 | 進行中 | shared case spec、fixture、server / extension ミラー回帰の整備が進んでいる | parser / AST 強化に追随する回帰セットを足す |
 | Phase 12: 最小ドキュメント整備 | 最小維持 | `TASKS.md` / `TASKLOG.md` / docs 入口は整理済み | 実装差分に直接関係する最小更新だけ行う |
 
@@ -82,7 +82,7 @@ Parser / AST が安定したら、Phase 4-7 で既にある user-facing 機能�
 
 次タスクは、原則として次の順で選ぶ。
 
-1. Phase 10 の `vbac.wsf` / xlam 連携として、combine の安全性、エラーハンドリング、ログ、検証を強化する
+1. Phase 11 の品質強化・回帰防止として、既存 parser / AST / LSP 回帰を維持する
 2. Phase 9 の definition / references / rename / document symbol / workspace symbol 回帰を維持する
 
 ## 1 PR 粒度の目安

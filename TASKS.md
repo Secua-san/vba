@@ -20,6 +20,7 @@
 - Phase 7 の IntelliSense / 補完 MVP は完了済み
 - Phase 8 の高度な型推論・実行時バインディング対応は完了済み
 - Phase 9 の定義ジャンプ・参照検索・シンボルナビゲーションは完了済み
+- Phase 10 の vbac.wsf / xlam 連携は完了済み
 - `assignment` / `call`、member call、主要 block statement、label target statement、termination statement の structured AST slice は core / server 回帰で固定済み
 - Codex 作業では [AGENTS.md](AGENTS.md) の「最小変更ガード」「テスト選択ルール」「出力ルール」を優先し、承認なしのコード変更、全体テスト、E2E テスト、無関係修正を避ける
 - 過去の完了履歴や docs-only 更新の経緯は [`TASKLOG.md`](TASKLOG.md) を参照する
@@ -48,6 +49,11 @@
   - document symbol の enum / type member 階層を core / server 回帰で固定した
   - 既存 definition / references / local rename / ambiguous cross-file 解決の保守動作を維持した
 
+- [x] Phase 10 の vbac.wsf / xlam 連携を完了する
+  - `vba.extract` / `vba.combine` を公開し、同梱 `vbac.wsf` を使う経路を追加した
+  - combine は一時作業ディレクトリ、入力検証、確認、workbook backup、ログ、post-combine decombine 検証を通してから対象 workbook を置き換える
+  - extract は一時抽出、既存 source backup、ログ、抽出 component 検証を通してから source folder を置き換える
+
 - [ ] Codex 作業制御を強化する
   - テスト高速化の候補を調査する
   - 重いテストを分類し、明示承認が必要なテストを分ける
@@ -56,7 +62,7 @@
 
 ## 次に行うタスク
 
-- Phase 10 の `vbac.wsf` / xlam 連携として、combine の安全性、エラーハンドリング、ログ、検証を強化する
+- Phase 11 の品質強化・回帰防止として、既存 parser / AST / LSP 回帰を維持する
 - Phase 9 の definition / references / rename / document symbol / workspace symbol 回帰を維持する
 - Codex 作業制御の改善タスクは、アプリ本体コードに触れず、文書とルール整備だけで小さく分割して進める
 
@@ -75,3 +81,4 @@
 - [完了] Phase 7 の IntelliSense / 補完 MVP として、completion の文脈抑制と明示型起点の built-in member 補完を server 回帰で固定した
 - [完了] Phase 8 の高度な型推論・実行時バインディング対応として、`Scripting.Dictionary` 既知 ProgID 解決と `Object` / `Variant` 暫定補完戦略を core / server 回帰で固定した
 - [完了] Phase 9 の定義ジャンプ・参照検索・シンボルナビゲーションとして、workspace symbol provider 公開と document symbol 階層回帰を core / server / extension で固定した
+- [完了] Phase 10 の vbac.wsf / xlam 連携として、safe extract / combine コマンド、backup、confirmation、log、verification を extension に追加した
