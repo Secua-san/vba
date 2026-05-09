@@ -4448,6 +4448,9 @@ End Function`
   assert.ok(
     service.getWorkspaceSymbols("").some((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage")
   );
+  assert.ok(
+    service.getWorkspaceSymbols("   ").some((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage")
+  );
   assert.deepEqual(service.getWorkspaceSymbols("HiddenMessage"), []);
 });
 
