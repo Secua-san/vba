@@ -4624,6 +4624,13 @@ async function assertVbacSafetyHelpers(): Promise<void> {
       "userform1.frx"
     ]);
 
+    await writeFile(path.join(verifiedDir, "module1.BAS"), "Attribute VB_Name = \"Different\"\r\n", "utf8");
+    await assert.rejects(
+      assertMatchingSourceComponents(sourceDir, verifiedDir, "Verified source"),
+      /Verified source component content does not match source: module1\.bas/
+    );
+    await writeFile(path.join(verifiedDir, "module1.BAS"), "Attribute VB_Name = \"Module1\"\r\n", "utf8");
+
     await rm(path.join(verifiedDir, "UserForm1.FRX"), { force: true });
     await assert.rejects(
       assertMatchingSourceComponents(sourceDir, verifiedDir, "Verified source"),

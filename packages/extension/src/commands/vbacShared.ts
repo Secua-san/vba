@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process";
-import { copyFile, cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
 
 const EXCEL_WORKBOOK_EXTENSIONS = new Set([".xls", ".xla", ".xlsb", ".xlsm", ".xlam", ".xlt", ".xltm"]);
 const SOURCE_COMPONENT_EXTENSIONS = new Set([".bas", ".cls", ".dcm", ".frm", ".frx"]);
+const TEXT_SOURCE_COMPONENT_EXTENSIONS = new Set([".bas", ".cls", ".dcm", ".frm"]);
 const VBAC_PROCESS_TIMEOUT_MS = 15 * 60 * 1000;
 let timestampSequence = 0;
 export const vbacOutputChannel = vscode.window.createOutputChannel("VBA vbac");
@@ -270,7 +271,7 @@ async function backupSourceDirectory(
   timestamp: string,
   logger: VbacLogger
 ): Promise<string> {
-  if (!isPathInside(sourceRoot, sourceDir)) {
+  if (!(await isPathInside(sourceRoot, sourceDir))) {
     throw new Error(`Refusing to back up source outside selected root: ${sourceDir}`);
   }
 
@@ -385,8 +386,8 @@ export async function assertMatchingSourceComponents(
   actualSourceDir: string,
   label: string
 ): Promise<string[]> {
-  const expectedFiles = await collectSourceComponentRelativePaths(expectedSourceDir);
-  const actualFiles = await collectSourceComponentRelativePaths(actualSourceDir);
+  const expectedFiles = await collectSourceComponentRelativePaths(expectedSourceDir, label);
+  const actualFiles = await collectSourceComponentRelativePaths(actualSourceDir, label);
   const actualSet = new Set(actualFiles);
   const expectedSet = new Set(expectedFiles);
   const missingFiles = expectedFiles.filter((file) => !actualSet.has(file));
@@ -402,11 +403,12 @@ export async function assertMatchingSourceComponents(
     throw new Error(`${label} component set does not match source. ${details}`);
   }
 
+  await verifyMatchingSourceComponentContents(expectedSourceDir, actualSourceDir, actualFiles, label);
   return actualFiles;
 }
 
-export async function collectSourceComponentRelativePaths(sourceProjectDir: string): Promise<string[]> {
-  const componentFiles = await assertSourceComponents(sourceProjectDir, "Source");
+export async function collectSourceComponentRelativePaths(sourceProjectDir: string, label = "Source"): Promise<string[]> {
+  const componentFiles = await assertSourceComponents(sourceProjectDir, label);
   return componentFiles.map((filePath) => normalizeRelativeComponentPath(path.relative(sourceProjectDir, filePath))).sort();
 }
 
@@ -437,7 +439,7 @@ async function assertNonEmptyFile(filePath: string, label: string): Promise<void
 }
 
 async function replaceDirectory(sourceDir: string, targetDir: string, sourceRoot: string): Promise<void> {
-  if (!isPathInside(sourceRoot, targetDir)) {
+  if (!(await isPathInside(sourceRoot, targetDir))) {
     throw new Error(`Refusing to replace source outside selected root: ${targetDir}`);
   }
 
@@ -451,8 +453,22 @@ async function pathExists(targetPath: string): Promise<boolean> {
     .catch(() => false);
 }
 
-function isPathInside(parent: string, child: string): boolean {
-  const relative = path.relative(parent, child);
+async function isPathInside(parent: string, child: string): Promise<boolean> {
+  const realParent = await realpath(parent).catch(() => undefined);
+  if (!realParent) {
+    return false;
+  }
+
+  const realChild =
+    (await realpath(child).catch(() => undefined)) ??
+    (await realpath(path.dirname(child))
+      .then((realChildParent) => path.join(realChildParent, path.basename(child)))
+      .catch(() => undefined));
+  if (!realChild) {
+    return false;
+  }
+
+  const relative = path.relative(realParent, realChild);
   return relative.length > 0 && !relative.startsWith("..") && !path.isAbsolute(relative);
 }
 
@@ -477,4 +493,54 @@ function quoteForLog(value: string): string {
 
 function normalizeRelativeComponentPath(relativePath: string): string {
   return relativePath.replace(/\\/g, "/").toLowerCase();
+}
+
+async function verifyMatchingSourceComponentContents(
+  expectedSourceDir: string,
+  actualSourceDir: string,
+  relativeFiles: readonly string[],
+  label: string
+): Promise<void> {
+  for (const relativeFile of relativeFiles) {
+    const expectedPath = path.join(expectedSourceDir, ...relativeFile.split("/"));
+    const actualPath = path.join(actualSourceDir, ...relativeFile.split("/"));
+    const expectedContent = await readFile(expectedPath);
+    const actualContent = await readFile(actualPath);
+
+    if (!sourceComponentContentsEqual(relativeFile, expectedContent, actualContent)) {
+      throw new Error(`${label} component content does not match source: ${relativeFile}`);
+    }
+  }
+}
+
+function sourceComponentContentsEqual(relativeFile: string, expectedContent: Buffer, actualContent: Buffer): boolean {
+  const extension = path.extname(relativeFile).toLowerCase();
+  if (TEXT_SOURCE_COMPONENT_EXTENSIONS.has(extension)) {
+    return normalizeTextComponentContent(expectedContent).equals(normalizeTextComponentContent(actualContent));
+  }
+
+  return expectedContent.equals(actualContent);
+}
+
+function normalizeTextComponentContent(content: Buffer): Buffer {
+  const normalized: number[] = [];
+
+  for (let index = 0; index < content.length; index += 1) {
+    const value = content[index] ?? 0;
+    if (value === 13) {
+      if (content[index + 1] === 10) {
+        index += 1;
+      }
+      normalized.push(10);
+      continue;
+    }
+
+    normalized.push(value);
+  }
+
+  while (normalized[normalized.length - 1] === 10) {
+    normalized.pop();
+  }
+
+  return Buffer.from(normalized);
 }
