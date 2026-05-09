@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
+import { runVbacCombine } from "./vbacShared";
 
-export async function vbacCombine(): Promise<void> {
-  await vscode.window.showInformationMessage("VBA combine is not implemented yet.");
+export async function vbacCombine(context: vscode.ExtensionContext): Promise<void> {
+  await runVbacCombine(context);
 }

@@ -4588,8 +4588,8 @@ End Sub`)
   );
 
   const commands = await vscode.commands.getCommands(true);
-  assert.equal(commands.includes("vba.extract"), false);
-  assert.equal(commands.includes("vba.combine"), false);
+  assert.equal(commands.includes("vba.extract"), true);
+  assert.equal(commands.includes("vba.combine"), true);
 }
 
 async function waitForSymbols(document: vscode.TextDocument): Promise<readonly vscode.DocumentSymbol[]> {
