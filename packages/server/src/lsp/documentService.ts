@@ -910,8 +910,10 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
         return [];
       }
 
-      const optionExplicitAction = createOptionExplicitCodeAction(state);
-      return optionExplicitAction ? [optionExplicitAction] : [];
+      return [
+        createOptionExplicitCodeAction(state),
+        ...createPtrSafeCodeActions(state)
+      ].filter((action): action is DocumentCodeAction => Boolean(action));
     },
     getCompletionSymbols(uri: string, position: LinePosition): WorkspaceSymbolResolution[] {
       const state = documentStates.get(uri);
@@ -1211,6 +1213,7 @@ interface WorksheetControlSidecarLookupContext {
 }
 
 const OPTION_EXPLICIT_TITLE = "Option Explicit を追加";
+const PTRSAFE_TITLE = "PtrSafe を追加";
 
 function createWorkspaceIndex(states: DocumentState[]): WorkspaceIndex {
   const entries = states.flatMap(collectWorkspaceSymbols);
@@ -1301,6 +1304,43 @@ function createOptionExplicitCodeAction(state: DocumentState): DocumentCodeActio
         title: OPTION_EXPLICIT_TITLE
       }
     : undefined;
+}
+
+function createPtrSafeCodeActions(state: DocumentState): DocumentCodeAction[] {
+  return state.analysis.diagnostics
+    .filter((diagnostic) => diagnostic.code === "declare-missing-ptrsafe")
+    .map((diagnostic) => createPtrSafeCodeAction(state, diagnostic.range))
+    .filter((action): action is DocumentCodeAction => Boolean(action));
+}
+
+function createPtrSafeCodeAction(state: DocumentState, range: SourceRange): DocumentCodeAction | undefined {
+  const line = state.analysis.source.originalLines[range.start.line] ?? "";
+  const match = /^(\s*(?:(?:Public|Private)\s+)?Declare)\s+/iu.exec(line);
+
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const character = match[1].length + 1;
+
+  return {
+    edit: {
+      newText: "PtrSafe ",
+      range: {
+        start: {
+          character,
+          line: range.start.line
+        },
+        end: {
+          character,
+          line: range.start.line
+        }
+      },
+      uri: state.uri
+    },
+    kind: "quickfix",
+    title: PTRSAFE_TITLE
+  };
 }
 
 function createOptionExplicitEdit(state: DocumentState): RenameTextEdit | undefined {

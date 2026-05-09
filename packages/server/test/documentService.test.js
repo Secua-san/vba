@@ -4319,6 +4319,35 @@ End Sub`
   );
 });
 
+test("document service offers a PtrSafe code action for Win64 Declare statements", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/MissingPtrSafe.bas";
+  const text = `Attribute VB_Name = "MissingPtrSafe"
+Option Explicit
+
+Private Declare Function GetActiveWindow Lib "user32" () As LongPtr
+
+Public Sub Demo()
+End Sub`;
+
+  service.analyzeText(uri, "vba", 1, text);
+
+  const actions = service.getCodeActions(uri);
+  const ptrSafeAction = actions.find((action) => action.title === "PtrSafe を追加");
+
+  assert.ok(ptrSafeAction);
+  assert.equal(
+    applyTextEdit(text, ptrSafeAction.edit),
+    `Attribute VB_Name = "MissingPtrSafe"
+Option Explicit
+
+Private Declare PtrSafe Function GetActiveWindow Lib "user32" () As LongPtr
+
+Public Sub Demo()
+End Sub`
+  );
+});
+
 test("document service omits the Option Explicit code action when the module already declares it", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/AlreadyExplicit.bas";
