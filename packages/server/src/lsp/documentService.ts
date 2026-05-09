@@ -48,6 +48,8 @@ import {
   type Diagnostic,
   type LinePosition,
   type ModuleKind,
+  type ModuleMemberNode,
+  type ProcedureDeclarationNode,
   type SourceRange,
   type SymbolInfo,
   type WorkbookBindingManifestValidationIssue,
@@ -1400,7 +1402,7 @@ function collectSemanticTokensForState(
   for (const resolution of declarationResolutions) {
     const tokenShape = mapSemanticToken(resolution.symbol);
 
-    if (!tokenShape) {
+    if (!tokenShape || isImplicitProcedureReturnSymbol(state, resolution.symbol)) {
       continue;
     }
 
@@ -1470,6 +1472,19 @@ function collectSemanticTokensForState(
   }
 
   return [...tokens.values()].sort(compareSemanticTokens);
+}
+
+function isImplicitProcedureReturnSymbol(state: DocumentState, symbol: SymbolInfo): boolean {
+  if (symbol.scope !== "procedure" || symbol.kind !== "variable") {
+    return false;
+  }
+
+  return state.analysis.symbols.procedureScopes.some(
+    (scope) =>
+      scope.procedure.procedureKind !== "Sub" &&
+      scope.procedure.name === symbol.name &&
+      rangesEqual(scope.procedure.headerRange, symbol.selectionRange)
+  );
 }
 
 function collectWorkspaceSymbols(state: DocumentState): WorkspaceSymbolResolution[] {
@@ -2613,7 +2628,9 @@ function resolveBuiltinMemberOwnerForPath(
 }
 
 function resolveKnownProgIdMemberOwner(typeName: string | undefined, memberSegments: string[]): string | undefined {
-  return isKnownProgIdOwnerTypeName(typeName) ? resolveBuiltinMemberOwnerFromRootType(typeName, memberSegments) : undefined;
+  return typeName && isKnownProgIdOwnerTypeName(typeName)
+    ? resolveBuiltinMemberOwnerFromRootType(typeName, memberSegments)
+    : undefined;
 }
 
 function resolveDeclaredBuiltinTypeMemberOwner(
@@ -2966,11 +2983,13 @@ function getWorksheetControlSidecarLookupContext(
       : undefined;
   }
 
-  if (builtinContext.worksheetControlSheetName) {
+  const worksheetControlSheetName = builtinContext.worksheetControlSheetName;
+
+  if (worksheetControlSheetName) {
     const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
       (owner) =>
         owner.ownerKind === "worksheet" &&
-        normalizeIdentifier(owner.sheetName) === normalizeIdentifier(builtinContext.worksheetControlSheetName)
+        normalizeIdentifier(owner.sheetName) === normalizeIdentifier(worksheetControlSheetName)
     );
 
     return supportedOwner

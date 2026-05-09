@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test test/**/*.test.js",
-    "lint": "echo \"No lint config yet (server)\"",
+    "lint": "tsc --noEmit --rootDir .. -p tsconfig.json",
     "clean": "if exist dist rmdir /s /q dist && if exist dist-test rmdir /s /q dist-test"
   },
   "dependencies": {
