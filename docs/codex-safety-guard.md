@@ -7,6 +7,26 @@
 - docs 全体の入口: [README.md](README.md)
 - PR 本文テンプレート: [../.github/pull_request_template.md](../.github/pull_request_template.md)
 
+## 実装前チェック
+- `PLAN.md` / `TASKS.md` と対象機能の要件書または ADR を確認する
+- 対象ファイル、変更理由、影響範囲、最小変更案を先に出す
+- `.codex/skills/minimal-change` と `.codex/skills/no-speculation` の停止条件に当たらないことを確認する
+- 1 つの論理単位に閉じ、実装、文書、整理、生成物を不要に混ぜない
+
+## テスト選択チェック
+- 検証前に `.codex/skills/test-budget` の対応表で最小の関連テストを選ぶ
+- `scripts/` は `node --test scripts/test/<file>.test.mjs` または `npm run test:scripts`
+- `packages/core/` は `npm run test --workspace @vba/core`
+- `packages/server/` は `npm run test --workspace @vba/server` または該当 `node --test packages/server/test/<file>.test.js`
+- `packages/extension/` はまず `npm run build --workspace vba-extension`
+- `npm run test --workspace vba-extension` と `npm run test:host` は重い E2E として扱い、明示指示時または PR 前ゲートでだけ実行する
+- `npm test` / `npm run test` は全体テストとして扱い、明示指示時または PR 前ゲートでだけ実行する
+
+## コミット / PR 前チェック
+- コミット前は現在差分だけを簡易自己レビューし、関連テストが通った小単位だけを commit する
+- PR 前は `reviewer` の自己レビューを行い、`npm run lint`、`npm test`、`npm run test:host` を通す
+- PR は draft にせず、CodeRabbit review の対象になる通常 PR とする
+
 ## 即停止する条件
 - `main` / `master` 直作業、または detached HEAD のまま進めようとしている
 - 仕様が曖昧、または差分が複数目的で混在している

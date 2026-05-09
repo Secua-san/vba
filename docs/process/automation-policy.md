@@ -1,16 +1,26 @@
 # Automation Policy
 
 ## 品質ゲート
-- `npm run lint`
-- `npm run build`
-- `npm test`
+- 通常コミット前:
+  - 差分に直接関係する最小テスト
+  - 差分だけの簡易自己レビュー
+- PR 作成前:
+  - `npm run lint`
+  - `npm test`
+  - `npm run test:host`
 - 必要に応じて `npm run package`
+
+## 重いテストの分類
+- `npm test` / `npm run test` は全体テストとして扱う
+- `npm run test --workspace vba-extension` と `npm run test:host` は E2E / VS Code host テストとして扱う
+- これらは明示指示がある場合、または PR 作成前ゲートでだけ実行する
 
 ## 品質ゲートの原則
 - Windows ネイティブ環境で build / test / package が通ることを優先する
 - 品質ゲートが失敗した状態では自動コミットしない
 - 失敗理由が不明なまま自動 PR を作成しない
 - 自動化を止める場合は、失敗コマンド、失敗理由、想定影響、人間確認が必要な点を要約する
+- PR 前ゲートで E2E が環境制約により実行できない場合は、失敗コマンドと制約を PR 本文に残し、代替確認を明示する
 
 ## 自動コミット許可条件
 - 変更が論理単位で分割されている
