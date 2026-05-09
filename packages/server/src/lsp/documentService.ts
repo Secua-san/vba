@@ -48,6 +48,8 @@ import {
   type Diagnostic,
   type LinePosition,
   type ModuleKind,
+  type ModuleMemberNode,
+  type ProcedureDeclarationNode,
   type SourceRange,
   type SymbolInfo,
   type WorkbookBindingManifestValidationIssue,
@@ -2626,7 +2628,9 @@ function resolveBuiltinMemberOwnerForPath(
 }
 
 function resolveKnownProgIdMemberOwner(typeName: string | undefined, memberSegments: string[]): string | undefined {
-  return isKnownProgIdOwnerTypeName(typeName) ? resolveBuiltinMemberOwnerFromRootType(typeName, memberSegments) : undefined;
+  return typeName && isKnownProgIdOwnerTypeName(typeName)
+    ? resolveBuiltinMemberOwnerFromRootType(typeName, memberSegments)
+    : undefined;
 }
 
 function resolveDeclaredBuiltinTypeMemberOwner(
@@ -2979,11 +2983,13 @@ function getWorksheetControlSidecarLookupContext(
       : undefined;
   }
 
-  if (builtinContext.worksheetControlSheetName) {
+  const worksheetControlSheetName = builtinContext.worksheetControlSheetName;
+
+  if (worksheetControlSheetName) {
     const supportedOwner = rootWorksheetControlMetadata.supportedOwners.find(
       (owner) =>
         owner.ownerKind === "worksheet" &&
-        normalizeIdentifier(owner.sheetName) === normalizeIdentifier(builtinContext.worksheetControlSheetName)
+        normalizeIdentifier(owner.sheetName) === normalizeIdentifier(worksheetControlSheetName)
     );
 
     return supportedOwner

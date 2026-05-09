@@ -333,11 +333,14 @@ export function startServer(): void {
   async function primeWorkspaceIndex(): Promise<void> {
     try {
       const openDocumentUris = new Set(documents.all().map((document) => document.uri));
+      const workspaceFileFinder = connection.workspace as typeof connection.workspace & {
+        findFiles: (pattern: string) => Promise<string[]>;
+      };
       const workspaceUris = (
         await Promise.all([
-          connection.workspace.findFiles("**/*.bas"),
-          connection.workspace.findFiles("**/*.cls"),
-          connection.workspace.findFiles("**/*.frm")
+          workspaceFileFinder.findFiles("**/*.bas"),
+          workspaceFileFinder.findFiles("**/*.cls"),
+          workspaceFileFinder.findFiles("**/*.frm")
         ])
       ).flat();
 
