@@ -19,6 +19,7 @@
 - Phase 6 の Diagnostics は完了済み
 - Phase 7 の IntelliSense / 補完 MVP は完了済み
 - Phase 8 の高度な型推論・実行時バインディング対応は完了済み
+- Phase 9 の定義ジャンプ・参照検索・シンボルナビゲーションは完了済み
 - `assignment` / `call`、member call、主要 block statement、label target statement、termination statement の structured AST slice は core / server 回帰で固定済み
 - Codex 作業では [AGENTS.md](AGENTS.md) の「最小変更ガード」「テスト選択ルール」「出力ルール」を優先し、承認なしのコード変更、全体テスト、E2E テスト、無関係修正を避ける
 - 過去の完了履歴や docs-only 更新の経緯は [`TASKLOG.md`](TASKLOG.md) を参照する
@@ -42,6 +43,11 @@
   - `CreateObject` / ProgID 解決を registry 化し、`Scripting.Dictionary` の既知 ProgID と member surface を追加した
   - 明示 `Object` / `Variant` への既知 ProgID `Set` 代入だけを暫定的に built-in member 補完へ接続した
 
+- [x] Phase 9 の定義ジャンプ・参照検索・シンボルナビゲーションを完了する
+  - workspace symbol provider を LSP へ公開し、VS Code からの workspace symbol 実行経路を extension 回帰で固定した
+  - document symbol の enum / type member 階層を core / server 回帰で固定した
+  - 既存 definition / references / local rename / ambiguous cross-file 解決の保守動作を維持した
+
 - [ ] Codex 作業制御を強化する
   - テスト高速化の候補を調査する
   - 重いテストを分類し、明示承認が必要なテストを分ける
@@ -50,8 +56,8 @@
 
 ## 次に行うタスク
 
-- Phase 9 の definition / references / rename / document symbol の安定度と coverage を上げる
-- core / server / extension の回帰を維持しながら structured AST と symbol resolution 利用箇所を保守する
+- Phase 10 の `vbac.wsf` / xlam 連携として、combine の安全性、エラーハンドリング、ログ、検証を強化する
+- Phase 9 の definition / references / rename / document symbol / workspace symbol 回帰を維持する
 - Codex 作業制御の改善タスクは、アプリ本体コードに触れず、文書とルール整備だけで小さく分割して進める
 
 ## 直近の更新
@@ -68,3 +74,4 @@
 - [完了] Phase 6 の Diagnostics として、structured label metadata を parser / diagnostics に接続し、text fallback を未構造化 `executableStatement` に限定した
 - [完了] Phase 7 の IntelliSense / 補完 MVP として、completion の文脈抑制と明示型起点の built-in member 補完を server 回帰で固定した
 - [完了] Phase 8 の高度な型推論・実行時バインディング対応として、`Scripting.Dictionary` 既知 ProgID 解決と `Object` / `Variant` 暫定補完戦略を core / server 回帰で固定した
+- [完了] Phase 9 の定義ジャンプ・参照検索・シンボルナビゲーションとして、workspace symbol provider 公開と document symbol 階層回帰を core / server / extension で固定した

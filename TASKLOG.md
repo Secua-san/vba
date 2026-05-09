@@ -511,6 +511,11 @@
   - 同一手続き内の procedure-scope 変数だけを `prepareRename` / `rename` の対象にする
   - 新しい名前が不正、または同一手続きや可視シンボルと衝突する場合は保守的に拒否する
 
+- [x] Phase 9 定義ジャンプ・参照検索・シンボルナビゲーション完了
+  - server の workspace symbol provider を LSP capability と request handler として公開し、既存 workspace index の公開 / 非公開判定をそのまま利用した
+  - extension smoke test で `vscode.executeWorkspaceSymbolProvider` から公開シンボルを取得できることを固定した
+  - core / server 回帰で document symbol の enum member / type member 階層を固定し、既存 definition / references / local rename / ambiguous cross-file 解決の保守動作を維持した
+
 - [x] セマンティックハイライト
   - LSP の full document semantic tokens を追加し、変数、引数、定数、手続き、型、列挙体メンバーを色分け対象にする
   - server / extension のテストで legend と token 配列が返ることを確認する

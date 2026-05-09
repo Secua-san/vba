@@ -4384,6 +4384,76 @@ End Sub`
   );
 });
 
+test("document service exposes nested enum and type members in document symbols", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/OutlineMembers.bas";
+
+  service.analyzeText(
+    uri,
+    "vba",
+    1,
+    `Attribute VB_Name = "OutlineMembers"
+Option Explicit
+
+Public Enum StatusKind
+    StatusReady = 1
+End Enum
+
+Public Type CustomerRecord
+    Name As String
+End Type`
+  );
+
+  const symbols = service.getDocumentSymbols(uri);
+  const moduleChildren = symbols[0]?.children ?? [];
+  const statusKind = moduleChildren.find((symbol) => symbol.name === "StatusKind");
+  const customerRecord = moduleChildren.find((symbol) => symbol.name === "CustomerRecord");
+
+  assert.deepEqual(statusKind?.children?.map((symbol) => `${symbol.kind}:${symbol.name}`), ["enumMember:StatusReady"]);
+  assert.deepEqual(customerRecord?.children?.map((symbol) => `${symbol.kind}:${symbol.name}`), ["typeMember:Name"]);
+});
+
+test("document service exposes indexed public symbols for workspace navigation", () => {
+  const service = createDocumentService();
+  const libraryUri = "file:///C:/temp/PublicApi.bas";
+
+  service.analyzeText(
+    libraryUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "PublicApi"
+Option Explicit
+
+Public Function PublicMessage() As String
+    PublicMessage = "Hello"
+End Function
+
+Private Function HiddenMessage() As String
+    HiddenMessage = "No"
+End Function`
+  );
+
+  assert.deepEqual(
+    service.getWorkspaceSymbols("PublicMessage").map((resolution) => `${resolution.uri}:${resolution.symbol.name}:${resolution.moduleName}`),
+    [`${libraryUri}:PublicMessage:PublicApi`]
+  );
+  assert.deepEqual(
+    service.getWorkspaceSymbols(" publicmessage ").map((resolution) => `${resolution.uri}:${resolution.symbol.name}:${resolution.moduleName}`),
+    [`${libraryUri}:PublicMessage:PublicApi`]
+  );
+  assert.deepEqual(
+    service.getWorkspaceSymbols("Message").map((resolution) => `${resolution.uri}:${resolution.symbol.name}:${resolution.moduleName}`),
+    [`${libraryUri}:PublicMessage:PublicApi`]
+  );
+  assert.ok(
+    service.getWorkspaceSymbols("").some((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage")
+  );
+  assert.ok(
+    service.getWorkspaceSymbols("   ").some((resolution) => resolution.uri === libraryUri && resolution.symbol.name === "PublicMessage")
+  );
+  assert.deepEqual(service.getWorkspaceSymbols("HiddenMessage"), []);
+});
+
 test("document service narrows completion candidates by inferred assignment type", () => {
   const service = createDocumentService();
   const consumerUri = "file:///C:/temp/ConsumerCompletion.bas";
