@@ -22,14 +22,22 @@ test("Codex safety guard documents implementation and test selection checkpoints
     ".codex/skills/no-speculation",
     ".codex/skills/test-budget",
     "npm run test --workspace vba-extension",
-    "npm run test:host",
-    "npm test",
+    "明示指示時だけ実行する",
     "簡易自己レビュー",
     "reviewer",
+    "ユーザーが PR 前 full gate を明示した場合",
+    "npm run lint",
+    "npm test",
+    "npm run test:host",
     "通常 PR"
   ]) {
     assert.match(safetyGuard, new RegExp(requiredText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+
+  assert.match(
+    safetyGuard,
+    /PR 前は `reviewer` の自己レビューを行う。ユーザーが PR 前 full gate を明示した場合は `npm run lint`、`npm test`、`npm run test:host` を通す/
+  );
 });
 
 test("automation policy separates commit gates from PR gates and heavy tests", () => {
@@ -37,17 +45,23 @@ test("automation policy separates commit gates from PR gates and heavy tests", (
 
   for (const requiredText of [
     "通常コミット前",
-    "PR 作成前",
+    "PR 作成前（ユーザーが full gate を明示した場合）",
     "npm run lint",
     "npm test",
     "npm run test:host",
     "重いテストの分類",
     "npm run test --workspace vba-extension",
     "E2E / VS Code host",
-    "PR 作成前ゲート"
+    "`AGENTS.md` の明示指示",
+    "PR 前 full gate"
   ]) {
     assert.match(automationPolicy, new RegExp(requiredText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+
+  assert.match(
+    automationPolicy,
+    /これらは `AGENTS\.md` の明示指示がある場合、またはユーザーが PR 前 full gate を明示した場合だけ実行する/
+  );
 });
 
 test("AGENTS keeps the canonical heavy-test command names", () => {

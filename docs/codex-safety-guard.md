@@ -19,12 +19,12 @@
 - `packages/core/` は `npm run test --workspace @vba/core`
 - `packages/server/` は `npm run test --workspace @vba/server` または該当 `node --test packages/server/test/<file>.test.js`
 - `packages/extension/` はまず `npm run build --workspace vba-extension`
-- `npm run test --workspace vba-extension` と `npm run test:host` は重い E2E として扱い、明示指示時または PR 前ゲートでだけ実行する
-- `npm test` / `npm run test` は全体テストとして扱い、明示指示時または PR 前ゲートでだけ実行する
+- `npm run test --workspace vba-extension` と `npm run test:host` は重い E2E として扱い、明示指示時だけ実行する
+- `npm test` / `npm run test` は全体テストとして扱い、明示指示時だけ実行する
 
 ## コミット / PR 前チェック
 - コミット前は現在差分だけを簡易自己レビューし、関連テストが通った小単位だけを commit する
-- PR 前は `reviewer` の自己レビューを行い、`npm run lint`、`npm test`、`npm run test:host` を通す
+- PR 前は `reviewer` の自己レビューを行う。ユーザーが PR 前 full gate を明示した場合は `npm run lint`、`npm test`、`npm run test:host` を通す
 - PR は draft にせず、CodeRabbit review の対象になる通常 PR とする
 
 ## 即停止する条件
