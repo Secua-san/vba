@@ -5,7 +5,9 @@ import path from "node:path";
 import * as vscode from "vscode";
 
 const EXCEL_WORKBOOK_EXTENSIONS = new Set([".xls", ".xla", ".xlsb", ".xlsm", ".xlam", ".xlt", ".xltm"]);
-const SOURCE_COMPONENT_EXTENSIONS = new Set([".bas", ".cls", ".dcm", ".frm"]);
+const SOURCE_COMPONENT_EXTENSIONS = new Set([".bas", ".cls", ".dcm", ".frm", ".frx"]);
+const VBAC_PROCESS_TIMEOUT_MS = 15 * 60 * 1000;
+let timestampSequence = 0;
 export const vbacOutputChannel = vscode.window.createOutputChannel("VBA vbac");
 
 type VbacCommand = "combine" | "decombine";
@@ -39,7 +41,7 @@ export async function runVbacExtract(context: vscode.ExtensionContext): Promise<
       return;
     }
 
-    const timestamp = createTimestamp();
+    const timestamp = createVbacTimestamp();
     const logPath = getLogPath("extract", workbookPath, sourceRoot, timestamp);
     const logger = new VbacLogger(logPath);
     const scriptPath = getVbacScriptPath(context);
@@ -118,7 +120,7 @@ export async function runVbacCombine(context: vscode.ExtensionContext): Promise<
 
     const workbookName = path.basename(workbookPath);
     const sourceProjectDir = path.join(sourceRoot, workbookName);
-    const timestamp = createTimestamp();
+    const timestamp = createVbacTimestamp();
     const logPath = getLogPath("combine", workbookPath, sourceRoot, timestamp);
     const logger = new VbacLogger(logPath);
     const scriptPath = getVbacScriptPath(context);
@@ -167,7 +169,8 @@ export async function runVbacCombine(context: vscode.ExtensionContext): Promise<
       await mkdir(verifySourceRoot, { recursive: true });
       await copyFile(tempWorkbookPath, path.join(verifyBinaryDir, workbookName));
       await runVbacProcess("decombine", scriptPath, verifyBinaryDir, verifySourceRoot, logger);
-      const verifiedComponentFiles = await assertSourceComponents(path.join(verifySourceRoot, workbookName), "Verified source");
+      const verifiedProjectDir = path.join(verifySourceRoot, workbookName);
+      const verifiedComponentFiles = await assertMatchingSourceComponents(sourceProjectDir, verifiedProjectDir, "Verified source");
       logger.append(`verifiedComponentCount=${verifiedComponentFiles.length}`);
 
       await copyFile(tempWorkbookPath, workbookPath);
@@ -289,7 +292,13 @@ async function runVbacProcess(
   const args = ["//nologo", scriptPath, command, `/binary:${binaryDir}`, `/source:${sourceDir}`];
   logger.append(`command=cscript.exe ${args.map(quoteForLog).join(" ")}`);
 
-  const result = await new Promise<{ exitCode: number | null; signal: string | null; stderr: string; stdout: string }>(
+  const result = await new Promise<{
+    exitCode: number | null;
+    signal: string | null;
+    stderr: string;
+    stdout: string;
+    timedOut: boolean;
+  }>(
     (resolve, reject) => {
       const child = spawn("cscript.exe", args, {
         cwd: path.dirname(scriptPath),
@@ -297,16 +306,26 @@ async function runVbacProcess(
       });
       const stdout: Buffer[] = [];
       const stderr: Buffer[] = [];
+      let timedOut = false;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        child.kill();
+      }, VBAC_PROCESS_TIMEOUT_MS);
 
       child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
       child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
-      child.on("error", reject);
+      child.on("error", (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
       child.on("close", (exitCode, signal) => {
+        clearTimeout(timeout);
         resolve({
           exitCode,
           signal,
           stderr: Buffer.concat(stderr).toString("utf8"),
-          stdout: Buffer.concat(stdout).toString("utf8")
+          stdout: Buffer.concat(stdout).toString("utf8"),
+          timedOut
         });
       });
     }
@@ -317,6 +336,13 @@ async function runVbacProcess(
   logger.append(`exitCode=${result.exitCode ?? "null"}`);
   if (result.signal) {
     logger.append(`signal=${result.signal}`);
+  }
+  if (result.timedOut) {
+    logger.append(`timeoutMs=${VBAC_PROCESS_TIMEOUT_MS}`);
+  }
+
+  if (result.timedOut) {
+    throw new Error(`vbac ${command} timed out after ${VBAC_PROCESS_TIMEOUT_MS}ms.`);
   }
 
   if (result.exitCode !== 0 || result.signal) {
@@ -352,6 +378,36 @@ async function assertSourceComponents(sourceProjectDir: string, label: string): 
   }
 
   return componentFiles;
+}
+
+export async function assertMatchingSourceComponents(
+  expectedSourceDir: string,
+  actualSourceDir: string,
+  label: string
+): Promise<string[]> {
+  const expectedFiles = await collectSourceComponentRelativePaths(expectedSourceDir);
+  const actualFiles = await collectSourceComponentRelativePaths(actualSourceDir);
+  const actualSet = new Set(actualFiles);
+  const expectedSet = new Set(expectedFiles);
+  const missingFiles = expectedFiles.filter((file) => !actualSet.has(file));
+  const unexpectedFiles = actualFiles.filter((file) => !expectedSet.has(file));
+
+  if (missingFiles.length > 0 || unexpectedFiles.length > 0) {
+    const details = [
+      missingFiles.length > 0 ? `missing=${missingFiles.join(",")}` : undefined,
+      unexpectedFiles.length > 0 ? `unexpected=${unexpectedFiles.join(",")}` : undefined
+    ]
+      .filter(Boolean)
+      .join(" ");
+    throw new Error(`${label} component set does not match source. ${details}`);
+  }
+
+  return actualFiles;
+}
+
+export async function collectSourceComponentRelativePaths(sourceProjectDir: string): Promise<string[]> {
+  const componentFiles = await assertSourceComponents(sourceProjectDir, "Source");
+  return componentFiles.map((filePath) => normalizeRelativeComponentPath(path.relative(sourceProjectDir, filePath))).sort();
 }
 
 async function collectSourceComponents(dir: string): Promise<string[]> {
@@ -409,10 +465,16 @@ function getLogPath(operation: string, workbookPath: string, sourceRoot: string,
   return path.join(workspaceRoot, ".vscode-vba", "logs", `vbac-${operation}-${timestamp}.log`);
 }
 
-function createTimestamp(): string {
-  return new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+export function createVbacTimestamp(now = new Date()): string {
+  const sequence = timestampSequence;
+  timestampSequence += 1;
+  return `${now.toISOString().replace(/[-:.]/g, "")}-${process.pid}-${sequence.toString().padStart(4, "0")}`;
 }
 
 function quoteForLog(value: string): string {
   return /\s/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
+}
+
+function normalizeRelativeComponentPath(relativePath: string): string {
+  return relativePath.replace(/\\/g, "/").toLowerCase();
 }

@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
+import { assertMatchingSourceComponents, createVbacTimestamp } from "../../src/commands/vbacShared";
 import {
   TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND,
   TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND
@@ -4590,6 +4593,45 @@ End Sub`)
   const commands = await vscode.commands.getCommands(true);
   assert.equal(commands.includes("vba.extract"), true);
   assert.equal(commands.includes("vba.combine"), true);
+
+  await assertVbacSafetyHelpers();
+}
+
+async function assertVbacSafetyHelpers(): Promise<void> {
+  const fixedTime = new Date("2026-05-09T00:00:00.000Z");
+  assert.notEqual(
+    createVbacTimestamp(fixedTime),
+    createVbacTimestamp(fixedTime),
+    "vbac timestamps should not collide within the same millisecond"
+  );
+
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "vba-vbac-test-"));
+  try {
+    const sourceDir = path.join(tempRoot, "src", "Book.xlsm");
+    const verifiedDir = path.join(tempRoot, "verified", "Book.xlsm");
+    await mkdir(sourceDir, { recursive: true });
+    await mkdir(verifiedDir, { recursive: true });
+    await writeFile(path.join(sourceDir, "Module1.bas"), "Attribute VB_Name = \"Module1\"\r\n", "utf8");
+    await writeFile(path.join(sourceDir, "UserForm1.frm"), "VERSION 5.00\r\n", "utf8");
+    await writeFile(path.join(sourceDir, "UserForm1.frx"), "binary", "utf8");
+    await writeFile(path.join(verifiedDir, "module1.BAS"), "Attribute VB_Name = \"Module1\"\r\n", "utf8");
+    await writeFile(path.join(verifiedDir, "UserForm1.frm"), "VERSION 5.00\r\n", "utf8");
+    await writeFile(path.join(verifiedDir, "UserForm1.FRX"), "binary", "utf8");
+
+    assert.deepEqual(await assertMatchingSourceComponents(sourceDir, verifiedDir, "Verified source"), [
+      "module1.bas",
+      "userform1.frm",
+      "userform1.frx"
+    ]);
+
+    await rm(path.join(verifiedDir, "UserForm1.FRX"), { force: true });
+    await assert.rejects(
+      assertMatchingSourceComponents(sourceDir, verifiedDir, "Verified source"),
+      /missing=userform1\.frx/
+    );
+  } finally {
+    await rm(tempRoot, { force: true, recursive: true });
+  }
 }
 
 async function waitForSymbols(document: vscode.TextDocument): Promise<readonly vscode.DocumentSymbol[]> {

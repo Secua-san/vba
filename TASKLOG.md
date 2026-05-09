@@ -12,10 +12,10 @@
 - [x] Phase 10 の vbac.wsf / xlam 連携を完了扱いにする
   - `resources/vbac/vbac.wsf` に ariawase の `vbac.wsf` を同梱し、`packages/extension` の build / package 経路で配布されるようにした
   - `packages/extension/src/commands/vbacShared.ts` を追加し、`vba.extract` / `vba.combine` の workbook / source root 選択、Excel VBA workbook 拡張子検証、source component 検証、vbac 実行ログ、エラー表示を共通化した
-  - `vba.combine` は一時作業ディレクトリ上の workbook copy と source copy だけを vbac に渡し、確認後に workbook backup を作成し、post-combine decombine 検証を通した copy だけを元 workbook に戻すようにした
+  - `vba.combine` は一時作業ディレクトリ上の workbook copy と source copy だけを vbac に渡し、確認後に workbook backup を作成し、post-combine decombine の component set 検証を通した copy だけを元 workbook に戻すようにした
   - `vba.extract` は一時抽出先で source component を検証し、既存 source folder は backup 後に置き換えるようにした
   - `packages/extension/package.json` と `packages/extension/src/extension.ts` で command palette 公開と command activation / registration を追加し、extension host 回帰の command visibility を更新した
-  - `npm run build --workspace vba-extension`、`npm run lint`、`npm test`、`npm run test:host` が成功した
+  - `npm run build --workspace vba-extension`、`npm run test --workspace vba-extension`、`npm run lint`、`npm test`、`npm run test:host` が成功した
 
 - [x] Phase 8 の高度な型推論・実行時バインディング対応を完了扱いにする
   - `packages/core/src/reference/progIdRegistry.ts` を追加し、`CreateObject` の既知 ProgID 型と known ProgID owner 判定を共有 registry に寄せた
