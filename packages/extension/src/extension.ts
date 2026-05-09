@@ -9,12 +9,18 @@ import {
   TEST_GET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND,
   TEST_SET_ACTIVE_WORKBOOK_IDENTITY_SNAPSHOT_COMMAND
 } from "./testCommands";
+import { vbacCombine } from "./commands/vbacCombine";
+import { vbacExtract } from "./commands/vbacExtract";
+import { vbacOutputChannel } from "./commands/vbacShared";
 
 let client: LanguageClient | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const serverModule = context.asAbsolutePath(path.join("dist", "server", "index.js"));
   const fileWatcher = vscode.workspace.createFileSystemWatcher("**/*.{bas,cls,frm}");
+  context.subscriptions.push(vbacOutputChannel);
+  context.subscriptions.push(vscode.commands.registerCommand("vba.extract", async () => vbacExtract(context)));
+  context.subscriptions.push(vscode.commands.registerCommand("vba.combine", async () => vbacCombine(context)));
   const serverOptions: ServerOptions = {
     debug: {
       module: serverModule,
