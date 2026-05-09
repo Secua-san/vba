@@ -313,6 +313,10 @@ function parseDeclareStatement(
     });
   }
 
+  if (headerMatch?.[2]) {
+    diagnostics.push(...collectPtrSafeLongDiagnostics(parameters, returnMatch?.[1], range));
+  }
+
   return {
     isPtrSafe: Boolean(headerMatch?.[2]),
     kind: "declareStatement",
@@ -324,6 +328,42 @@ function parseDeclareStatement(
     returnType: returnMatch?.[1],
     text
   };
+}
+
+function collectPtrSafeLongDiagnostics(
+  parameters: ParameterNode[],
+  returnType: string | undefined,
+  returnRange: Diagnostic["range"]
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  for (const parameter of parameters) {
+    if (!isLongTypeName(parameter.typeName)) {
+      continue;
+    }
+
+    diagnostics.push({
+      code: "declare-long-win64",
+      message: `Declare PtrSafe parameter '${parameter.name}' uses Long, which may be unsafe on Win64. Use LongPtr or LongLong when appropriate.`,
+      range: parameter.range,
+      severity: "warning"
+    });
+  }
+
+  if (isLongTypeName(returnType)) {
+    diagnostics.push({
+      code: "declare-long-win64",
+      message: "Declare PtrSafe return type uses Long, which may be unsafe on Win64. Use LongPtr or LongLong when appropriate.",
+      range: returnRange,
+      severity: "warning"
+    });
+  }
+
+  return diagnostics;
+}
+
+function isLongTypeName(typeName: string | undefined): boolean {
+  return typeName?.replace(/\s+/gu, "").toLowerCase() === "long";
 }
 
 function parseEnumDeclaration(
