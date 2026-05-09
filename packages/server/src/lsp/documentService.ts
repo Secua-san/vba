@@ -1400,7 +1400,7 @@ function collectSemanticTokensForState(
   for (const resolution of declarationResolutions) {
     const tokenShape = mapSemanticToken(resolution.symbol);
 
-    if (!tokenShape) {
+    if (!tokenShape || isImplicitProcedureReturnSymbol(state, resolution.symbol)) {
       continue;
     }
 
@@ -1470,6 +1470,19 @@ function collectSemanticTokensForState(
   }
 
   return [...tokens.values()].sort(compareSemanticTokens);
+}
+
+function isImplicitProcedureReturnSymbol(state: DocumentState, symbol: SymbolInfo): boolean {
+  if (symbol.scope !== "procedure" || symbol.kind !== "variable") {
+    return false;
+  }
+
+  return state.analysis.symbols.procedureScopes.some(
+    (scope) =>
+      scope.procedure.procedureKind !== "Sub" &&
+      scope.procedure.name === symbol.name &&
+      rangesEqual(scope.procedure.headerRange, symbol.selectionRange)
+  );
 }
 
 function collectWorkspaceSymbols(state: DocumentState): WorkspaceSymbolResolution[] {

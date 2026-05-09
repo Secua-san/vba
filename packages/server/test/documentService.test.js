@@ -6073,6 +6073,10 @@ End Sub`;
     modifiers: [],
     type: "parameter"
   });
+  assertSemanticToken(text, tokens, 12, "BuildCustomer", {
+    modifiers: [],
+    type: "variable"
+  });
   assertSemanticToken(text, tokens, 16, "current", {
     modifiers: ["declaration"],
     type: "variable"
@@ -6085,6 +6089,7 @@ End Sub`;
     modifiers: ["readonly"],
     type: "variable"
   });
+  assertNoOverlappingSemanticTokens(tokens);
 });
 
 test("document service exposes semantic tokens for built-in keywords, functions, constants, and members", () => {
@@ -7876,6 +7881,30 @@ function assertNoSemanticToken(text, tokens, lineIndex, identifier, occurrence =
     false,
     `semantic token '${identifier}' must not exist at ${lineIndex}:${startCharacter}`
   );
+}
+
+function assertNoOverlappingSemanticTokens(tokens) {
+  const orderedTokens = [...tokens].sort(
+    (left, right) =>
+      left.range.start.line - right.range.start.line ||
+      left.range.start.character - right.range.start.character ||
+      left.range.end.line - right.range.end.line ||
+      left.range.end.character - right.range.end.character
+  );
+
+  for (let index = 1; index < orderedTokens.length; index += 1) {
+    const previous = orderedTokens[index - 1];
+    const current = orderedTokens[index];
+
+    if (previous.range.end.line !== current.range.start.line) {
+      continue;
+    }
+
+    assert.ok(
+      previous.range.end.character <= current.range.start.character,
+      `semantic tokens must not overlap: previous=${JSON.stringify(previous)} current=${JSON.stringify(current)}`
+    );
+  }
 }
 
 function createWorksheetControlShapeNamePathFixture(fixtureRelativePath) {
