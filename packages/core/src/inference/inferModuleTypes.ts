@@ -84,7 +84,7 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
           inferredExpressionType,
           assignment.isSet
         );
-        const compatibleWithSet = areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: true });
+        const compatibleWithSet = areAssignmentTypesCompatible(symbolTable, targetTypeName, inferredExpressionType, { isSetAssignment: true });
 
         if (missingSetAssignment) {
           diagnostics.push({
@@ -95,7 +95,10 @@ export function inferModuleTypes(parseResult: ParseResult, symbolTable: SymbolTa
           });
         }
 
-        if (!areTypesCompatible(targetTypeName, inferredExpressionType, { isSetAssignment: assignment.isSet }) && (!missingSetAssignment || !compatibleWithSet)) {
+        if (
+          !areAssignmentTypesCompatible(symbolTable, targetTypeName, inferredExpressionType, { isSetAssignment: assignment.isSet }) &&
+          (!missingSetAssignment || !compatibleWithSet)
+        ) {
           diagnostics.push({
             code: "type-mismatch",
             message: `Type mismatch: cannot assign ${inferredExpressionType} to ${targetTypeName}.`,
@@ -386,6 +389,28 @@ export function areTypesCompatible(
   }
 
   return false;
+}
+
+function areAssignmentTypesCompatible(
+  symbolTable: SymbolTable,
+  targetTypeName: string,
+  valueTypeName: string,
+  options: { isSetAssignment?: boolean } = {}
+): boolean {
+  if (areTypesCompatible(targetTypeName, valueTypeName, options)) {
+    return true;
+  }
+
+  return isEnumValueNumericTargetCompatible(symbolTable, targetTypeName, valueTypeName);
+}
+
+function isEnumValueNumericTargetCompatible(symbolTable: SymbolTable, targetTypeName: string, valueTypeName: string): boolean {
+  return isEnumTypeName(symbolTable, valueTypeName) && NUMERIC_TYPES.has(normalizeTypeName(targetTypeName));
+}
+
+function isEnumTypeName(symbolTable: SymbolTable, typeName: string): boolean {
+  const normalizedTypeName = normalizeTypeName(typeName);
+  return symbolTable.moduleSymbols.some((entry) => entry.kind === "enum" && normalizeTypeName(entry.name) === normalizedTypeName);
 }
 
 function normalizeTypeName(typeName: string): string {
