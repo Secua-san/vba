@@ -949,17 +949,49 @@ export function createDocumentService(options?: DocumentServiceOptions): Documen
       }
 
       const userAndWorkspaceCompletions = filterCompletionsByPrefix([...deduplicated.values()], completionContext.prefix);
+      const hasWorkspaceTypeSymbol = (normalizedName: string) => hasUserTypeSymbol(state, workspaceIndex, documentStates, normalizedName);
+      const withMemberAccess = completionContext.withMemberAccess;
 
-      if (completionContext.isMemberAccess) {
-        const memberOwnerName = resolveConfirmedBuiltinMemberOwner(
+      const hasActiveWithBlock = withMemberAccess
+        ? Boolean(findActiveWithBlockStatement(state, position))
+        : false;
+      const memberOwnerName = completionContext.isMemberAccess
+        ? resolveConfirmedBuiltinMemberOwner(
+            state,
+            completionContext,
+            resolveDefinition,
+            getDocumentState,
+            getWorksheetControlMetadataState,
+            hasWorkspaceTypeSymbol
+          )
+        : undefined;
+
+      const allowWithFallback =
+        withMemberAccess &&
+        hasActiveWithBlock &&
+        (!completionContext.isMemberAccess || !withMemberAccess.hasContinuationBoundaryBeforeLeadingDot);
+
+      if (allowWithFallback && !memberOwnerName) {
+        const withMemberOwnerName = resolveWithBuiltinMemberOwner(
           state,
+          position,
           completionContext,
           resolveDefinition,
           getDocumentState,
           getWorksheetControlMetadataState,
-          (normalizedName) => hasUserTypeSymbol(state, workspaceIndex, documentStates, normalizedName)
+          hasWorkspaceTypeSymbol
         );
 
+        return withMemberOwnerName
+          ? getBuiltinMemberCompletionItems(withMemberOwnerName, withMemberAccess.prefix).map(createBuiltinResolution)
+          : [];
+      }
+
+      if (withMemberAccess && !completionContext.isMemberAccess) {
+        return [];
+      }
+
+      if (completionContext.isMemberAccess) {
         return memberOwnerName
           ? getBuiltinMemberCompletionItems(memberOwnerName, completionContext.prefix).map(createBuiltinResolution)
           : [];
@@ -1162,6 +1194,7 @@ interface WorkspaceIndex {
 type LocalProcedureScope = DocumentState["analysis"]["symbols"]["procedureScopes"][number];
 type CallableMember = Extract<AnalysisResult["module"]["members"][number], { kind: "declareStatement" | "procedureDeclaration" }>;
 type SemanticTokenShape = Pick<SemanticTokenEntry, "modifiers" | "type">;
+type WithBlockStatement = Extract<ProcedureDeclarationNode["body"][number], { kind: "withBlockStatement" }>;
 
 interface MemberAccessPathSegment {
   accessKind: IndexedAccessKind;
@@ -1185,6 +1218,14 @@ interface CompletionContext {
   memberPath: string[];
   memberPathSegments?: MemberAccessPathSegment[];
   memberPathStartPosition?: LinePosition;
+  prefix: string;
+  withMemberAccess?: WithMemberAccessContext;
+}
+
+interface WithMemberAccessContext {
+  hasContinuationBoundaryBeforeLeadingDot: boolean;
+  memberPath: string[];
+  memberPathSegments: MemberAccessPathSegment[];
   prefix: string;
 }
 
@@ -2264,6 +2305,9 @@ function isFileNumberMarkerContext(beforeMarker: string): boolean {
 function getCompletionContext(text: string, position: LinePosition): CompletionContext {
   const flattenedPrefix = buildFlattenedContinuationPrefix(text, position);
   const code = flattenedPrefix?.code ?? "";
+  const withMemberAccess = flattenedPrefix
+    ? parseTrailingWithMemberAccess(code, flattenedPrefix.positions)
+    : undefined;
   const memberAccess = parseTrailingMemberAccess(code);
   const memberPathStartPosition =
     memberAccess && flattenedPrefix
@@ -2276,7 +2320,8 @@ function getCompletionContext(text: string, position: LinePosition): CompletionC
       memberPath: memberAccess.memberPath,
       memberPathSegments: memberAccess.memberPathSegments,
       memberPathStartPosition,
-      prefix: memberAccess.prefix
+      prefix: memberAccess.prefix,
+      withMemberAccess
     };
   }
 
@@ -2284,7 +2329,8 @@ function getCompletionContext(text: string, position: LinePosition): CompletionC
     isMemberAccess: false,
     memberPath: [],
     memberPathStartPosition: undefined,
-    prefix: getTrailingIdentifier(code)
+    prefix: getTrailingIdentifier(code),
+    withMemberAccess
   };
 }
 
@@ -2315,6 +2361,90 @@ function resolveConfirmedBuiltinMemberOwner(
     getWorksheetControlMetadataState,
     hasWorkspaceTypeSymbol
   );
+}
+
+function resolveWithBuiltinMemberOwner(
+  state: DocumentState,
+  position: LinePosition,
+  completionContext: CompletionContext,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
+): string | undefined {
+  if (!completionContext.withMemberAccess) {
+    return undefined;
+  }
+
+  const withBlock = findActiveWithBlockStatement(state, position);
+  const withOwnerName = withBlock
+    ? resolveWithTargetBuiltinOwner(
+        state,
+        withBlock,
+        resolveDefinition,
+        getDocumentState,
+        getWorksheetControlMetadataState,
+        hasWorkspaceTypeSymbol
+      )
+    : undefined;
+
+  return withOwnerName
+    ? resolveBuiltinMemberOwnerFromRootType(withOwnerName, completionContext.withMemberAccess.memberPath)
+    : undefined;
+}
+
+function resolveWithTargetBuiltinOwner(
+  state: DocumentState,
+  withBlock: WithBlockStatement,
+  resolveDefinition: (uri: string, position: LinePosition) => WorkspaceSymbolResolution | undefined,
+  getDocumentState: (uri: string) => DocumentState | undefined,
+  getWorksheetControlMetadataState: (uri: string) => WorksheetControlMetadataState | undefined,
+  hasWorkspaceTypeSymbol: (normalizedName: string) => boolean
+): string | undefined {
+  const targetPath = parseMemberPathExpression(withBlock.targetText);
+
+  if (!targetPath) {
+    return undefined;
+  }
+
+  return resolveBuiltinMemberOwnerForPath(
+    state.uri,
+    withBlock.targetRange.start.line,
+    targetPath.memberPath,
+    targetPath.memberPathSegments,
+    withBlock.targetRange.start.character,
+    resolveDefinition,
+    getDocumentState,
+    getWorksheetControlMetadataState,
+    hasWorkspaceTypeSymbol
+  );
+}
+
+function findActiveWithBlockStatement(state: DocumentState, position: LinePosition): WithBlockStatement | undefined {
+  const procedure = state.analysis.module.members.find(
+    (member): member is ProcedureDeclarationNode =>
+      member.kind === "procedureDeclaration" && positionIsWithinRange(position, member.range)
+  );
+
+  if (!procedure) {
+    return undefined;
+  }
+
+  const stack: WithBlockStatement[] = [];
+
+  for (const statement of procedure.body) {
+    if (comparePositions(statement.range.start, position) >= 0) {
+      break;
+    }
+
+    if (statement.kind === "withBlockStatement") {
+      stack.push(statement);
+    } else if (statement.kind === "endWithStatement") {
+      stack.pop();
+    }
+  }
+
+  return stack.at(-1);
 }
 
 function isValidRenameIdentifier(name: string): boolean {
@@ -4091,6 +4221,123 @@ function parseTrailingMemberAccess(
         prefixStartCharacter
       }
     : undefined;
+}
+
+function parseMemberPathExpression(
+  text: string
+): { memberPath: string[]; memberPathSegments: MemberAccessPathSegment[] } | undefined {
+  const trimmedText = text.trim();
+
+  if (/^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(trimmedText)) {
+    return {
+      memberPath: [trimmedText],
+      memberPathSegments: [
+        {
+          accessKind: "none",
+          pathSegment: trimmedText,
+          text: trimmedText
+        }
+      ]
+    };
+  }
+
+  const memberAccess = parseTrailingMemberAccess(`${trimmedText}.`);
+
+  return memberAccess && memberAccess.prefix.length === 0
+    ? {
+        memberPath: memberAccess.memberPath,
+        memberPathSegments: memberAccess.memberPathSegments
+      }
+    : undefined;
+}
+
+function parseTrailingWithMemberAccess(
+  text: string,
+  positions: Array<LinePosition | undefined>
+): WithMemberAccessContext | undefined {
+  let index = text.length - 1;
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  const prefixEnd = index + 1;
+
+  while (index >= 0 && /[A-Za-z0-9_$%&!#@]/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  const prefix = text.slice(index + 1, prefixEnd);
+
+  if (prefix.length > 0 && !/^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(prefix)) {
+    return undefined;
+  }
+
+  while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+    index -= 1;
+  }
+
+  if (text[index] !== ".") {
+    return undefined;
+  }
+
+  const leadingDotIndex = findLeadingWithMemberDotIndex(text, index);
+
+  if (leadingDotIndex === undefined) {
+    return undefined;
+  }
+
+  const memberAccess = parseTrailingMemberAccess(`__with${text.slice(leadingDotIndex, prefixEnd)}`);
+
+  if (!memberAccess || memberAccess.memberPath[0] !== "__with") {
+    return undefined;
+  }
+
+  return {
+    hasContinuationBoundaryBeforeLeadingDot: leadingDotIndex > 0 && positions[leadingDotIndex - 1] === undefined,
+    memberPath: memberAccess.memberPath.slice(1),
+    memberPathSegments: memberAccess.memberPathSegments.slice(1),
+    prefix: memberAccess.prefix
+  };
+}
+
+function findLeadingWithMemberDotIndex(text: string, dotIndex: number): number | undefined {
+  let currentDotIndex = dotIndex;
+  let index = currentDotIndex - 1;
+
+  while (isMemberPathTailCharacter(text[index])) {
+    const indexedAccess = skipTrailingIndexedAccess(text, index);
+    index = indexedAccess.index;
+
+    const identifierEnd = index + 1;
+
+    while (index >= 0 && /[A-Za-z0-9_$%&!#@]/u.test(text[index] ?? "")) {
+      index -= 1;
+    }
+
+    const identifier = text.slice(index + 1, identifierEnd);
+
+    if (!/^[A-Za-z_][A-Za-z0-9_]*[$%&!#@]?$/u.test(identifier)) {
+      return undefined;
+    }
+
+    while (index >= 0 && /\s/u.test(text[index] ?? "")) {
+      index -= 1;
+    }
+
+    if (text[index] !== ".") {
+      return undefined;
+    }
+
+    currentDotIndex = index;
+    index = currentDotIndex - 1;
+  }
+
+  return currentDotIndex;
+}
+
+function isMemberPathTailCharacter(character: string | undefined): boolean {
+  return character !== undefined && /[A-Za-z0-9_$%&!#@\)]/u.test(character);
 }
 
 function getTrailingIdentifier(text: string): string {
