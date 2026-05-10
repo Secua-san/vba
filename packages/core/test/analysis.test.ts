@@ -842,6 +842,34 @@ End Sub`, { fileName: "Inference.bas" });
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
 });
 
+test("analyzeModule infers enum types from enum member assignments", () => {
+  const result = analyzeModule(`Attribute VB_Name = "EnumInference"
+Option Explicit
+
+Public Enum StatusKind
+    StatusReady = 1
+End Enum
+
+Public Sub Demo()
+    Dim inferredStatus
+    Dim typedStatus As StatusKind
+    Dim numericStatus As Long
+    inferredStatus = StatusReady
+    typedStatus = StatusReady
+    numericStatus = StatusReady
+End Sub`, { fileName: "EnumInference.bas" });
+
+  const enumMemberSymbol = result.symbols.moduleSymbols.find((symbol) => symbol.kind === "enumMember" && symbol.name === "StatusReady");
+  const symbols = result.symbols.procedureScopes.flatMap((scope) => scope.symbols);
+  const inferredStatusSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "inferredStatus");
+  const typedStatusSymbol = symbols.find((symbol) => symbol.kind === "variable" && symbol.name === "typedStatus");
+
+  assert.equal(getSymbolTypeName(result, enumMemberSymbol), "StatusKind");
+  assert.equal(getSymbolTypeName(result, inferredStatusSymbol), "StatusKind");
+  assert.equal(getSymbolTypeName(result, typedStatusSymbol), "StatusKind");
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "type-mismatch"), false);
+});
+
 test("analyzeModule infers known CreateObject ProgID result types", () => {
   const result = analyzeModule(`Attribute VB_Name = "KnownProgIdInference"
 Option Explicit

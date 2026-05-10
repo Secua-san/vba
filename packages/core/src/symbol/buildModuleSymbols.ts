@@ -41,7 +41,8 @@ export function buildModuleSymbols(parseResult: ParseResult): SymbolTable {
             normalizedName: normalizeIdentifier(enumMember.name),
             range: enumMember.range,
             scope: "module",
-            selectionRange: enumMember.range
+            selectionRange: enumMember.range,
+            typeName: member.name
           });
         }
         break;
