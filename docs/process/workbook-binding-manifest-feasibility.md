@@ -87,6 +87,7 @@
 ### 6. generator と consumer の責務は v1 で分けておく
 
 - generator は saved かつ non-addin workbook にだけ `workbook-binding.json` を生成する。
+- generator は `npm run generate:workbook-binding -- --workbook-path <workbook-path> --bundle-root <bundle-root>` で実行する。
 - unsaved workbook と add-in workbook では manifest を生成せず、理由は log または docs で説明する。
 - consumer は manifest 不在を error にせず、「binding disabled」として broad root を閉じたままにする。
 - これにより unsupported workbook state を invalid manifest で表現せずに済む。
