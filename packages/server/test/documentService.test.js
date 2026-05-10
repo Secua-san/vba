@@ -4038,6 +4038,64 @@ End Sub`;
   );
 });
 
+test("document service exposes built-in member completion inside With blocks", () => {
+  const service = createDocumentService();
+  const uri = "file:///C:/temp/WithBuiltInMemberCompletion.bas";
+  const thisWorkbookUri = "file:///C:/temp/ThisWorkbook.cls";
+  const text = `Attribute VB_Name = "WithBuiltInMemberCompletion"
+Option Explicit
+
+Public Sub Demo()
+    Dim app As Application
+    With Application
+        .Na
+        .WorksheetFunction.Su
+        Debug.Print WorksheetFunction _
+            .Co
+        UnknownExpr _
+            .Na
+        With ThisWorkbook
+            .Sa
+        End With
+        .Cal
+    End With
+    With app
+        .Work
+    End With
+    Debug.Print .Na
+End Sub`;
+
+  service.analyzeText(
+    thisWorkbookUri,
+    "vba",
+    1,
+    `Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_PredeclaredId = True
+Option Explicit`
+  );
+  service.analyzeText(uri, "vba", 1, text);
+
+  const applicationMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "        .Na"));
+  const worksheetFunctionMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "        .WorksheetFunction.Su"));
+  const continuedWorksheetFunctionMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "            .Co"));
+  const unresolvedContinuationMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "UnknownExpr _\n            .Na"));
+  const nestedWorkbookMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "            .Sa"));
+  const outerApplicationMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "        .Cal"));
+  const typedLocalMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "        .Work"));
+  const outsideWithMembers = service.getCompletionSymbols(uri, findPositionAfterTokenInText(text, "Debug.Print .Na"));
+
+  assert.equal(applicationMembers.some((resolution) => resolution.symbol.name === "Name"), true);
+  assert.equal(worksheetFunctionMembers.some((resolution) => resolution.symbol.name === "Sum"), true);
+  assert.equal(continuedWorksheetFunctionMembers.some((resolution) => resolution.symbol.name === "CountA"), true);
+  assert.deepEqual(unresolvedContinuationMembers, []);
+  assert.equal(nestedWorkbookMembers.some((resolution) => resolution.symbol.name === "SaveAs"), true);
+  assert.equal(nestedWorkbookMembers.some((resolution) => resolution.symbol.name === "CalculateFull"), false);
+  assert.equal(outerApplicationMembers.some((resolution) => resolution.symbol.name === "CalculateFull"), true);
+  assert.equal(typedLocalMembers.some((resolution) => resolution.symbol.name === "WorksheetFunction"), true);
+  assert.deepEqual(outsideWithMembers, []);
+});
+
 test("document service resolves known CreateObject ProgID members", () => {
   const service = createDocumentService();
   const uri = "file:///C:/temp/KnownProgIdMembers.bas";
