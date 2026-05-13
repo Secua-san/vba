@@ -110,7 +110,8 @@ type WorksheetControlShapeNamePathReason =
   | "dynamic-selector"
   | "non-target-root"
   | "numeric-selector"
-  | "plain-shape";
+  | "plain-shape"
+  | "shape-range";
 type WorksheetControlShapeNamePathFixture =
   | "packages/extension/test/fixtures/OleObjectBuiltIn.bas"
   | "packages/extension/test/fixtures/ShapesBuiltIn.bas";
