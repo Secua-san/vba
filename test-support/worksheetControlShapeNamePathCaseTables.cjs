@@ -108,6 +108,14 @@ const worksheetControlShapeNamePath = {
       },
       {
         fixture: SHAPE_FIXTURE,
+        anchor: 'Sheet1.Shapes.Range(Array("CheckBox1")).OLEFormat.Object.',
+        reason: "shape-range",
+        rootKind: "document-module",
+        routeKind: "shape-oleformat",
+        scopes: ["extension", "server-worksheet-control-shape-name-path-shape"]
+      },
+      {
+        fixture: SHAPE_FIXTURE,
         anchor: 'Sheet1.Shapes("PlainShape").OLEFormat.Object.',
         reason: "plain-shape",
         rootKind: "document-module",

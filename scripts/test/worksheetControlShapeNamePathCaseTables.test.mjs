@@ -35,7 +35,8 @@ test("worksheet control shapeName path completion case spec satisfies the v1 min
     "dynamic-selector",
     "non-target-root",
     "numeric-selector",
-    "plain-shape"
+    "plain-shape",
+    "shape-range"
   ]) {
     assert.equal(negativeReasons.has(reason), true, `negative reason '${reason}' must exist`);
   }
@@ -53,6 +54,36 @@ test("worksheet control shapeName path completion case spec satisfies the v1 min
   assert.equal(
     negativeEntries.some((entry) => entry.routeKind === "shape-oleformat" && entry.rootKind === "workbook-qualified-closed"),
     true
+  );
+  assert.equal(
+    negativeEntries.some((entry) => entry.reason === "chartsheet-root" && entry.anchor.startsWith("Chart1.")),
+    true,
+    "completion negative entries must include the chartsheet root boundary"
+  );
+  assert.equal(
+    negativeEntries.some((entry) => entry.reason === "non-target-root" && entry.anchor.startsWith("ActiveSheet.")),
+    true,
+    "completion negative entries must include the ActiveSheet root boundary"
+  );
+  assert.equal(
+    negativeEntries.some((entry) => entry.reason === "numeric-selector" && entry.anchor.includes("Worksheets(1)")),
+    true,
+    "completion negative entries must include the numeric selector boundary"
+  );
+  assert.equal(
+    negativeEntries.some((entry) => entry.reason === "dynamic-selector" && entry.anchor.includes("i + 1")),
+    true,
+    "completion negative entries must include the dynamic selector boundary"
+  );
+  assert.equal(
+    negativeEntries.some(
+      (entry) =>
+        entry.routeKind === "shape-oleformat" &&
+        entry.reason === "shape-range" &&
+        entry.anchor.includes("Shapes.Range(")
+    ),
+    true,
+    "completion negative entries must include the ShapeRange boundary"
   );
 
   assert.deepEqual([...fixtures].sort(), [OLE_FIXTURE, SHAPE_FIXTURE]);
