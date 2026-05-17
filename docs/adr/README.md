@@ -14,6 +14,7 @@
 | [0006 Workbook Binding Policy](0006-workbook-binding-policy.md) | broad root 再評価の前提となる workbook identity binding | `ActiveWorkbook` / unqualified `Worksheets`、binding manifest、host identity 受け渡しを触るとき |
 | [0007 Active Workbook Identity Provider Contract](0007-active-workbook-identity-provider-contract.md) | host / extension / server 間の active workbook runtime identity 契約 | `ActiveWorkbook` snapshot、Protected View、notification transport、resolver gating を触るとき |
 | [0008 `.frx` and Real Host Bridge Design Gate](0008-frx-and-real-host-bridge-design-gate.md) | `.frx` 解析と実 Excel host bridge の設計ゲート | `.frx` binary 解析、UserForm metadata、実 host 接続方式を触るとき |
+| [0009 Excel Host Bridge Connection](0009-excel-host-bridge-connection.md) | 実 Excel host bridge の v1 接続方式 | `vba.refreshActiveWorkbookIdentity`、helper process、host snapshot 取得を触るとき |
 
 ## 追加ルール
 

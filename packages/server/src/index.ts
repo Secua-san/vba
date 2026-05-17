@@ -26,6 +26,7 @@ import {
   TextDocumentSyncKind
 } from "vscode-languageserver/node";
 import { readdir, readFile } from "node:fs/promises";
+import { performance } from "node:perf_hooks";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { TextDocuments } from "vscode-languageserver";
@@ -53,7 +54,10 @@ export { createDocumentService } from "./lsp/documentService";
 
 interface ServerSettings {
   analysisDebounceMs: number;
+  logPerformance: boolean;
 }
+
+type AnalysisTrigger = "change" | "configuration" | "initialized" | "open" | "restore" | "watched-files";
 
 export function startServer(): void {
   const connection = createConnection(ProposedFeatures.all);
@@ -78,7 +82,8 @@ export function startServer(): void {
   const pendingTimers = new Map<string, NodeJS.Timeout>();
   let workspaceRootUris: string[] = [];
   let settings: ServerSettings = {
-    analysisDebounceMs: 300
+    analysisDebounceMs: 300,
+    logPerformance: false
   };
   let canReadConfiguration = false;
 
@@ -128,12 +133,12 @@ export function startServer(): void {
     await primeWorkspaceIndex();
 
     for (const document of documents.all()) {
-      analyzeAndPublish(document);
+      analyzeAndPublish(document, "initialized");
     }
   });
 
   documents.onDidOpen((event) => {
-    analyzeAndPublish(event.document);
+    analyzeAndPublish(event.document, "open");
   });
 
   documents.onDidChangeContent((event) => {
@@ -146,7 +151,7 @@ export function startServer(): void {
     pendingTimers.set(
       event.document.uri,
       setTimeout(() => {
-        analyzeAndPublish(event.document);
+        analyzeAndPublish(event.document, "change");
         pendingTimers.delete(event.document.uri);
       }, settings.analysisDebounceMs)
     );
@@ -170,7 +175,7 @@ export function startServer(): void {
     }
 
     for (const document of documents.all()) {
-      analyzeAndPublish(document);
+      analyzeAndPublish(document, "configuration");
     }
   });
 
@@ -196,12 +201,12 @@ export function startServer(): void {
       if (change.type === FileChangeType.Deleted) {
         documentService.remove(change.uri);
       } else {
-        await restoreWorkspaceDocument(change.uri);
+        await restoreWorkspaceDocument(change.uri, "watched-files");
       }
     }
 
     for (const document of documents.all()) {
-      analyzeAndPublish(document);
+      analyzeAndPublish(document, "watched-files");
     }
   });
 
@@ -324,10 +329,25 @@ export function startServer(): void {
   documents.listen(connection);
   connection.listen();
 
-  function analyzeAndPublish(document: TextDocument): DocumentState {
-    const state = documentService.analyzeText(document.uri, document.languageId, document.version, document.getText());
+  function analyzeAndPublish(document: TextDocument, trigger: AnalysisTrigger): DocumentState {
+    const text = document.getText();
+    const startTime = performance.now();
+    const state = documentService.analyzeText(document.uri, document.languageId, document.version, text);
+    const diagnostics = documentService.getDiagnostics(document.uri);
+
+    if (settings.logPerformance) {
+      logAnalysisPerformance({
+        characterCount: text.length,
+        diagnosticCount: diagnostics.length,
+        durationMs: performance.now() - startTime,
+        lineCount: getLineCount(text),
+        trigger,
+        version: document.version
+      });
+    }
+
     connection.sendDiagnostics({
-      diagnostics: documentService.getDiagnostics(document.uri).map(toLspDiagnostic),
+      diagnostics: diagnostics.map(toLspDiagnostic),
       uri: document.uri
     });
     return state;
@@ -348,14 +368,14 @@ export function startServer(): void {
           continue;
         }
 
-        await restoreWorkspaceDocument(uri);
+        await restoreWorkspaceDocument(uri, "restore");
       }
     } catch (error) {
       connection.console.error(`Failed to index VBA workspace files: ${String(error)}`);
     }
   }
 
-  async function restoreWorkspaceDocument(uri: string): Promise<void> {
+  async function restoreWorkspaceDocument(uri: string, trigger: AnalysisTrigger = "restore"): Promise<void> {
     if (!uri.startsWith("file:")) {
       documentService.remove(uri);
       return;
@@ -364,10 +384,50 @@ export function startServer(): void {
     try {
       const filePath = fileURLToPath(uri);
       const text = await readFile(filePath, "utf8");
+      const startTime = performance.now();
+
       documentService.analyzeText(uri, "vba", 0, text);
+
+      if (settings.logPerformance) {
+        const diagnostics = documentService.getDiagnostics(uri);
+
+        logAnalysisPerformance({
+          characterCount: text.length,
+          diagnosticCount: diagnostics.length,
+          durationMs: performance.now() - startTime,
+          lineCount: getLineCount(text),
+          trigger,
+          version: 0
+        });
+      }
     } catch {
       documentService.remove(uri);
     }
+  }
+
+  function logAnalysisPerformance(input: {
+    characterCount: number;
+    diagnosticCount: number;
+    durationMs: number;
+    lineCount: number;
+    trigger: AnalysisTrigger;
+    version: number;
+  }): void {
+    if (!settings.logPerformance) {
+      return;
+    }
+
+    connection.console.info(
+      [
+        "[analysis-performance]",
+        `trigger=${input.trigger}`,
+        `version=${input.version}`,
+        `durationMs=${input.durationMs.toFixed(2)}`,
+        `lineCount=${input.lineCount}`,
+        `characterCount=${input.characterCount}`,
+        `diagnosticCount=${input.diagnosticCount}`
+      ].join(" ")
+    );
   }
 }
 
@@ -447,10 +507,16 @@ function shouldSkipWorkspaceDirectory(directoryName: string): boolean {
 async function readSettings(connection: ReturnType<typeof createConnection>): Promise<ServerSettings> {
   const configuration = await connection.workspace.getConfiguration("vba");
   const rawDebounce = configuration?.analysis?.debounceMs;
+  const rawLogPerformance = configuration?.analysis?.logPerformance;
 
   return {
-    analysisDebounceMs: typeof rawDebounce === "number" ? Math.max(50, Math.min(2000, rawDebounce)) : 300
+    analysisDebounceMs: typeof rawDebounce === "number" ? Math.max(50, Math.min(2000, rawDebounce)) : 300,
+    logPerformance: rawLogPerformance === true
   };
+}
+
+function getLineCount(text: string): number {
+  return text.length === 0 ? 1 : text.split(/\r\n|\r|\n/u).length;
 }
 
 function toCompletionItem(resolution: WorkspaceSymbolResolution): CompletionItem {

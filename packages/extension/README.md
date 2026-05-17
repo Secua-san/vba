@@ -50,6 +50,7 @@ Use `packages/extension/test/fixtures` or a real exported VBA source folder.
 ## Settings
 
 - `vba.analysis.debounceMs`: debounce delay in milliseconds before the language server re-analyzes a VBA document. Default: `300`.
+- `vba.analysis.logPerformance`: opt-in language server console logging for analysis timing, line count, character count, diagnostic count, document version, and trigger. Default: `false`; source text and absolute file paths are not logged.
 
 ## Known limits
 

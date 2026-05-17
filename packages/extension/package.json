@@ -73,6 +73,11 @@
           "minimum": 50,
           "maximum": 2000,
           "description": "Debounce delay in milliseconds before the language server re-analyzes a VBA document."
+        },
+        "vba.analysis.logPerformance": {
+          "type": "boolean",
+          "default": false,
+          "description": "Log VBA analysis timing and document-size metrics to the language server console without logging source text or absolute file paths."
         }
       }
     }
