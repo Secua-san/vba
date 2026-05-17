@@ -16,6 +16,22 @@ Monorepo for a VS Code extension focused on Excel VBA editing support.
 - `packages/server`: Language Server (LSP)
 - `packages/extension`: VS Code client extension
 
+## Local VSIX Release
+
+The first release target is local VSIX distribution for Excel VBA editing support.
+
+From the repository root:
+
+```sh
+npm install
+npm run package
+code --install-extension dist/vba-extension.vsix
+```
+
+Open a folder that contains `.bas`, `.cls`, or `.frm` files. The extension contributes the `vba` language id, VBA language features, and the `VBA: Extract Source with vbac` / `VBA: Combine Source with vbac` commands.
+
+User-facing install, feature, smoke-check, and limitation notes are in [`packages/extension/README.md`](./packages/extension/README.md).
+
 ## Development Host
 
 Run `npm run dev:host` to build the workspace and open an Extension Development Host against `packages/extension/test/fixtures`.
