@@ -65,6 +65,7 @@
 - Phase 12 の最小ドキュメント整備として、実装差分に直接関係する文書だけを維持する
 - 既存 parser / AST / LSP 回帰を維持する
 - Phase 9 の definition / references / rename / document symbol / workspace symbol 回帰を維持する
+- active workbook identity manual refresh と local VSIX release surface の回帰を維持する
 
 ## 直近の更新
 
@@ -83,3 +84,4 @@
 - [完了] Phase 9 の定義ジャンプ・参照検索・シンボルナビゲーションとして、workspace symbol provider 公開と document symbol 階層回帰を core / server / extension で固定した
 - [完了] Phase 10 の vbac.wsf / xlam 連携として、safe extract / combine コマンド、backup、confirmation、log、verification を extension に追加した
 - [完了] Phase 11 の品質強化・回帰防止として、workbook root family shared case spec と Codex 作業制御の scripts 監査を追加し、テスト選択 / 重いテスト / PR 前ゲートを固定した
+- [完了] active workbook identity manual refresh command、helper smoke、local VSIX verifier の release surface 回帰を固定した

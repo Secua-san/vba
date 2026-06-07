@@ -4,7 +4,7 @@
 
 - `.frx` 配置オブジェクト解析と実 Excel host bridge は、どちらも product code 実装前に設計ゲートを通す。
 - `.frx` は対象 binary format と取得 metadata を固定するまで解析しない。
-- 実 host bridge は [ADR 0009](../adr/0009-excel-host-bridge-connection.md) の接続方式に従い、実装前に helper payload、timeout、logging、validation を固定する。
+- 実 host bridge は [ADR 0009](../adr/0009-excel-host-bridge-connection.md) の接続方式に従う。最小 v1 は manual refresh command として helper payload、timeout、logging、validation を固定済みで、自動接続や常駐化は引き続き設計ゲート対象とする。
 - 既存の `ActiveWorkbookIdentitySnapshot` schema は利用可能な contract とし、実 host への v1 接続方式は ADR 0009 の manual helper として扱う。
 
 ## 現行で確認済みの前提
@@ -15,6 +15,7 @@
 - 既存 docs では、`.frm` / `.frx` は UserForm には有効だが、worksheet / chart sheet 上の ActiveX control inventory source とは別であると整理している。
 - active workbook identity は host -> extension -> server の snapshot schema と LSP notification までは固定済みである。
 - 実 Excel host と extension の v1 接続方式は、extension-owned manual `cscript.exe` helper として ADR 0009 で固定済みである。
+- v1 manual refresh は `vba.refreshActiveWorkbookIdentity` から 1 回だけ `cscript.exe` helper を起動し、valid `ActiveWorkbookIdentitySnapshot` だけを `vba/activeWorkbookIdentity` notification へ流す。
 
 ## `.frx` 解析ゲート
 
@@ -62,24 +63,27 @@
 
 ### 実装前に決めること
 
+最小 v1 manual refresh では以下を固定済みである。自動 polling、long-running helper、startup bridge、複数 instance 識別を追加する場合は、この節を更新してから実装する。
+
 1. helper payload
-   - helper が ADR 0007 の `ActiveWorkbookIdentitySnapshot` をどう生成するか。
-   - 読み取る Excel property を最小化できているか。
+   - helper は ADR 0007 の `ActiveWorkbookIdentitySnapshot` だけを stdout JSON として返す。
+   - 読み取る Excel property は通常 workbook では `ActiveWorkbook.FullName` / `Name` / `Path` / `IsAddin`、Protected View では取得できる場合のみ `ActiveProtectedViewWindow.SourceName` / `SourcePath` に限定する。
 2. lifecycle
-   - `vba.refreshActiveWorkbookIdentity` 実行時にどの timeout / cancellation 境界で helper を起動するか。
-   - Excel が未起動、複数 instance、workbook 切替、Excel 終了をどう扱うか。
+   - `vba.refreshActiveWorkbookIdentity` 実行時に 10 秒 timeout / VS Code progress cancellation 境界で helper を起動する。
+   - Excel 未起動は valid `unavailable` snapshot の `reason=host-unreachable` とする。複数 instance 識別、workbook 切替追跡、Excel 終了監視は v1 に含めない。
 3. transport contract
-   - ADR 0007 の `ActiveWorkbookIdentitySnapshot` を host 側でどう生成するか。
-   - timeout、retry、cancellation、stale snapshot の扱い。
+   - extension は helper stdout を JSON parse し、`parseActiveWorkbookIdentitySnapshot()` で validation してから server へ送る。
+   - retry と自動 stale 更新は v1 に含めない。helper failure、timeout、invalid payload、stale `observedAt` では extension が `unavailable` / `host-error` を送って cached binding を閉じる。cancellation では snapshot を送らない。
 4. user control
-   - 明示 command 実行中 / 成功 / 失敗をどう表示するか。
-   - status / log / error surface をどこに出すか。
+   - 明示 command 実行中は VS Code progress、成功 / unsupported / unavailable / protected-view / 失敗は VS Code message で表示する。
+   - log は `VBA Active Workbook` output channel に出す。
 5. security / safety
-   - workbook や macro を実行しないことをどう保証するか。
-   - helper の出力が snapshot payload 以外を resolver へ流さないことをどう保証するか。
+   - helper は property read だけを行い、workbook や macro を実行せず、workbook を mutate しない。
+   - helper の出力は snapshot payload 以外を resolver へ流さない。invalid payload は extension validation で止める。
 6. validation
-   - local unit test、mock host test、manual Windows test の境界。
-   - extension host test が必要になる条件。
+   - local validation は extension build、VSIX verifier、`npm run smoke:active-workbook-identity` で command/package surface と実 helper stdout schema を確認する。
+   - 実 Excel workbook を開いた状態の manual scenario は `npm run smoke:active-workbook-identity -- --expect-state available --expect-full-name <workbook-full-name>` で検証する。
+   - extension host test は明示承認時だけ実行する。
 
 ### ゲート解除条件
 
@@ -89,13 +93,13 @@
 - user-facing resolver を開く条件が ADR 0006 / ADR 0007 と矛盾しない。
 - 最小 validation command と、manual test が必要な場合の手順が決まっている。
 
-## PR7 でやること
+## 現行で product code に入れないこと
 
-- この設計ゲートを docs と ADR 入口から参照できるようにする。
-- product code、parser、LSP、extension runtime、script は変更しない。
+- `.frx` binary parser は、この設計ゲートを解除するまで product code、parser、LSP、extension runtime、script に追加しない。
+- automatic polling、long-running helper、startup bridge、複数 Excel instance 識別は、ADR 0009 の manual helper v1 には含めない。
 
 ## 次段候補
 
 - `.frx` は、UserForm `.frm` text と `.frx` binary の責務分担を決める design PR を先に作る。
-- 実 host bridge は、ADR 0009 の manual helper 境界に沿って payload、timeout、logging、validation を固定してから最小 implementation PR へ進む。
+- 実 host bridge は、manual helper v1 の real Excel smoke と release verifier を維持する。自動接続へ進む場合は、先にこのゲートと ADR 0009 を更新する。
 - どちらも design PR が通った後、最小 implementation PR へ分ける。

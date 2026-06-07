@@ -4592,6 +4592,7 @@ End Sub`)
   );
 
   const commands = await vscode.commands.getCommands(true);
+  assert.equal(commands.includes("vba.refreshActiveWorkbookIdentity"), true);
   assert.equal(commands.includes("vba.extract"), true);
   assert.equal(commands.includes("vba.combine"), true);
 

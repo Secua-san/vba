@@ -21,12 +21,17 @@
     "vscode": "^1.90.0"
   },
   "activationEvents": [
+    "onCommand:vba.refreshActiveWorkbookIdentity",
     "onCommand:vba.extract",
     "onCommand:vba.combine",
     "onLanguage:vba"
   ],
   "contributes": {
     "commands": [
+      {
+        "command": "vba.refreshActiveWorkbookIdentity",
+        "title": "VBA: Refresh Active Workbook Identity"
+      },
       {
         "command": "vba.extract",
         "title": "VBA: Extract Source with vbac"
