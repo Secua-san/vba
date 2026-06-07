@@ -33,10 +33,11 @@ export async function refreshActiveWorkbookIdentity(
         activeWorkbookIdentityOutputChannel.appendLine(`result=failed error=${message}`);
         activeWorkbookIdentityOutputChannel.show(true);
 
-        if (!isCancellationErrorMessage(message)) {
-          await clearActiveWorkbookIdentity(sendSnapshot);
+        if (isCancellationErrorMessage(message)) {
+          return;
         }
 
+        await clearActiveWorkbookIdentity(sendSnapshot);
         await vscode.window.showErrorMessage(message);
         return;
       }

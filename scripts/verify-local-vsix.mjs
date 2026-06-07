@@ -150,7 +150,12 @@ function verifyCommands(manifest, failures) {
 }
 
 function verifyActivationEvents(manifest, failures) {
-  const activationEvents = new Set(manifest.activationEvents ?? []);
+  if (!Array.isArray(manifest.activationEvents)) {
+    failures.push("activationEvents must be an array");
+    return;
+  }
+
+  const activationEvents = new Set(manifest.activationEvents);
 
   for (const commandId of REQUIRED_COMMANDS) {
     const activationEvent = `onCommand:${commandId}`;

@@ -9,6 +9,8 @@ import {
   parseSmokeOptions
 } from "../smoke-active-workbook-identity.mjs";
 
+const testOnWindows = process.platform === "win32" ? test : test.skip;
+
 test("active workbook smoke options parse explicit state and reason", () => {
   assert.deepEqual(omitHelperPath(parseSmokeOptions(["--expect-state", "unavailable", "--expect-reason", "host-unreachable"])), {
     expectFullName: undefined,
@@ -128,7 +130,7 @@ test("active workbook smoke rejects mismatched expectation", () => {
   );
 });
 
-test("active workbook smoke main accepts synthetic available helper", async () => {
+testOnWindows("active workbook smoke main accepts synthetic available helper", async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-active-workbook-smoke-"));
 
   try {
@@ -148,7 +150,7 @@ test("active workbook smoke main accepts synthetic available helper", async () =
   }
 });
 
-test("active workbook smoke main accepts synthetic protected-view helper with metadata", async () => {
+testOnWindows("active workbook smoke main accepts synthetic protected-view helper with metadata", async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-active-workbook-smoke-"));
 
   try {
@@ -161,7 +163,7 @@ test("active workbook smoke main accepts synthetic protected-view helper with me
   }
 });
 
-test("active workbook smoke main accepts synthetic protected-view helper with expected metadata", async () => {
+testOnWindows("active workbook smoke main accepts synthetic protected-view helper with expected metadata", async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-active-workbook-smoke-"));
 
   try {
@@ -181,7 +183,7 @@ test("active workbook smoke main accepts synthetic protected-view helper with ex
   }
 });
 
-test("active workbook smoke main rejects synthetic stale helper", async () => {
+testOnWindows("active workbook smoke main rejects synthetic stale helper", async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-active-workbook-smoke-"));
 
   try {

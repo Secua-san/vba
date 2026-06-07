@@ -125,6 +125,24 @@ test("local VSIX verifier は不足 activation event を報告する", async () 
   }
 });
 
+test("local VSIX verifier は invalid activation event 形式を報告する", async () => {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "vba-vsix-verify-"));
+
+  try {
+    const vsixPath = await writeSyntheticVsix(temporaryDirectory, {
+      transformManifest: (manifest) => ({
+        ...manifest,
+        activationEvents: "onLanguage:vba"
+      })
+    });
+    const failures = await verifyLocalVsix(vsixPath);
+
+    assert.deepEqual(failures, ["activationEvents must be an array"]);
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+});
+
 async function writeSyntheticVsix(temporaryDirectory, options = {}) {
   const zip = new JSZip();
   const omitFiles = new Set(options.omitFiles ?? []);
