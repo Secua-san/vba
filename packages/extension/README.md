@@ -45,7 +45,7 @@ Use `packages/extension/test/fixtures` or a real exported VBA source folder.
 - In a `Declare` statement without `PtrSafe`, confirm the diagnostic and `PtrSafe` quick fix appear.
 - Type `Application.` or `WorksheetFunction.` and confirm completion, hover, and signature help are available.
 - Use Go to Definition, Find References, Rename Symbol on a local variable, document symbols, workspace symbols, and Format Document.
-- Confirm the commands `VBA: Extract Source with vbac` and `VBA: Combine Source with vbac` are listed in the Command Palette. Real workbook extract/combine is not required for this release smoke check.
+- Confirm the commands `VBA: Refresh Active Workbook Identity`, `VBA: Extract Source with vbac`, and `VBA: Combine Source with vbac` are listed in the Command Palette. Real Excel refresh and workbook extract/combine are not required for this release smoke check.
 
 ## Settings
 
@@ -56,8 +56,18 @@ Use `packages/extension/test/fixtures` or a real exported VBA source folder.
 
 - This extension targets Excel VBA editing only. It does not execute VBA or replace the VBE runtime.
 - The first release is local VSIX distribution. VS Marketplace and GitHub Releases publishing are out of scope.
-- Real Excel host bridge integration and `.frx` binary object parsing are out of scope.
+- Automatic Excel host bridge integration and `.frx` binary object parsing are out of scope.
 - vbac commands are available, but production workbook extract/combine validation is tracked separately from the editing-focused release gate.
+
+## Active workbook identity
+
+- `VBA: Refresh Active Workbook Identity` (`vba.refreshActiveWorkbookIdentity`) manually runs a Windows `cscript.exe` helper, reads the active Excel workbook identity, validates the snapshot, and sends it to the language server.
+- The command sends workbook identity only after the helper returns a valid, fresh payload. If a non-cancelled refresh fails, it sends an `unavailable` snapshot to close any previously cached active workbook binding. It does not start a background bridge or send startup placeholder snapshots.
+- The helper reads workbook identity properties only; it does not execute workbook macros or mutate workbooks.
+- If Excel is in Protected View, the helper returns a `protected-view` snapshot and may include source name/path metadata; workbook binding remains disabled.
+- To smoke-check the same helper outside VS Code, run `npm run smoke:active-workbook-identity` from the repository root.
+- To require an opened workbook match, run `npm run smoke:active-workbook-identity -- --expect-state available --expect-full-name C:\path\Book1.xlsm`.
+- To require a Protected View source match, run `npm run smoke:active-workbook-identity -- --expect-protected-source-name Book1.xlsm --expect-protected-source-path C:\Downloads`.
 
 ## vbac commands
 

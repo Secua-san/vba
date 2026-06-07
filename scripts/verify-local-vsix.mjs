@@ -3,7 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import JSZip from "jszip";
 
-const REQUIRED_COMMANDS = ["vba.extract", "vba.combine"];
+const REQUIRED_COMMANDS = ["vba.refreshActiveWorkbookIdentity", "vba.extract", "vba.combine"];
 const REQUIRED_LANGUAGE_EXTENSIONS = [".bas", ".cls", ".frm"];
 const REQUIRED_SETTINGS = new Map([
   ["vba.analysis.debounceMs", { defaultValue: 300, type: "number" }],
@@ -12,6 +12,7 @@ const REQUIRED_SETTINGS = new Map([
 const REQUIRED_FIXED_FILES = [
   "extension/dist/server/index.js",
   "extension/language-configuration.json",
+  "extension/resources/host/activeWorkbookIdentity.js",
   "extension/resources/reference/mslearn-vba-reference.json",
   "extension/resources/vbac/vbac.wsf",
   "extension/snippets/vba.code-snippets",
@@ -28,6 +29,7 @@ export async function verifyLocalVsix(vsixPath) {
   }
 
   await verifyVbacScript(zip, failures);
+  await verifyActiveWorkbookIdentityHelperScript(zip, failures);
 
   if (!manifest) {
     return failures;
@@ -36,6 +38,7 @@ export async function verifyLocalVsix(vsixPath) {
   requireManifestFile(zip, manifest.main, "main", failures);
   verifyConfiguration(manifest, failures);
   verifyCommands(manifest, failures);
+  verifyActivationEvents(manifest, failures);
   verifyVbaLanguage(zip, manifest, failures);
   verifyGrammarFiles(zip, manifest, failures);
   verifySnippetFiles(zip, manifest, failures);
@@ -91,6 +94,25 @@ async function verifyVbacScript(zip, failures) {
   }
 }
 
+async function verifyActiveWorkbookIdentityHelperScript(zip, failures) {
+  const filePath = "extension/resources/host/activeWorkbookIdentity.js";
+  const content = await readTextFile(zip, filePath);
+
+  if (content === undefined) {
+    return;
+  }
+
+  if (
+    !content.includes('PROVIDER_KIND = "excel-active-workbook"') ||
+    !content.includes('GetObject("", "Excel.Application")') ||
+    !content.includes("ActiveWorkbook") ||
+    !content.includes("SourceName") ||
+    !content.includes("SourcePath")
+  ) {
+    failures.push(`Invalid active workbook identity helper script ${filePath}`);
+  }
+}
+
 function verifyConfiguration(manifest, failures) {
   const properties = manifest.contributes?.configuration?.properties;
 
@@ -123,6 +145,23 @@ function verifyCommands(manifest, failures) {
   for (const commandId of REQUIRED_COMMANDS) {
     if (!commandIds.has(commandId)) {
       failures.push(`Missing command contribution ${commandId}`);
+    }
+  }
+}
+
+function verifyActivationEvents(manifest, failures) {
+  if (!Array.isArray(manifest.activationEvents)) {
+    failures.push("activationEvents must be an array");
+    return;
+  }
+
+  const activationEvents = new Set(manifest.activationEvents);
+
+  for (const commandId of REQUIRED_COMMANDS) {
+    const activationEvent = `onCommand:${commandId}`;
+
+    if (!activationEvents.has(activationEvent)) {
+      failures.push(`Missing activation event ${activationEvent}`);
     }
   }
 }

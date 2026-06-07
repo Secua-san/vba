@@ -13,6 +13,7 @@
     "generate:workbook-binding": "node scripts/generate-workbook-binding.mjs",
     "generate:worksheet-control-sidecar": "node scripts/probe-workbook-control-metadata.mjs --format sidecar",
     "probe:worksheet-control-metadata": "node scripts/probe-workbook-control-metadata.mjs",
+    "smoke:active-workbook-identity": "npm run build --workspace @vba/core && node scripts/smoke-active-workbook-identity.mjs",
     "verify:vsix": "node scripts/verify-local-vsix.mjs",
     "test": "npm run build && npm run test:scripts && npm run test --workspace @vba/core && npm run test --workspace @vba/server && npm run test --workspace vba-extension",
     "test:scripts": "node --test scripts/test/**/*.test.mjs",

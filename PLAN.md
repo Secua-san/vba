@@ -14,7 +14,7 @@
 ## 現在位置
 
 - 現在の主実装軸は Phase 11 の品質強化・回帰防止まで完了し、以後は既存回帰セットを維持する
-- 直近完了は `CreateObject` / ProgID registry 化、`Scripting.Dictionary` の既知 ProgID 解決、明示 `Object` / `Variant` への既知 ProgID `Set` 代入からの暫定補完接続
+- 直近完了は active workbook identity の manual refresh command と release surface 固定、`CreateObject` / ProgID registry 化、`Scripting.Dictionary` の既知 ProgID 解決、明示 `Object` / `Variant` への既知 ProgID `Set` 代入からの暫定補完接続
 - リポジトリ全体としては、LSP の user-facing 機能が先行しており、parser / AST を後追いで構造化して基盤を固めている状態
 - したがって、単純な Phase 0 -> 12 の直列進行ではなく、Phase 2-3 を再度強化しながら Phase 6-10 の既存機能を壊さない進め方が必要
 
