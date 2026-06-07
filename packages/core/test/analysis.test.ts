@@ -1949,6 +1949,28 @@ End Sub`, { fileName: "IndexedAssignmentWrites.bas" });
   );
 });
 
+test("analyzeModule keeps labeled structured assignment writes", () => {
+  const result = analyzeModule(`Attribute VB_Name = "LabeledAssignmentWrites"
+Option Explicit
+
+Public Sub Demo()
+    Dim value As Long
+Label1: value = 42
+End Sub`, { fileName: "LabeledAssignmentWrites.bas" });
+  const procedure = result.module.members.find((member) => member.kind === "procedureDeclaration");
+  const assignmentStatement = procedure && procedure.kind === "procedureDeclaration" ? procedure.body[1] : undefined;
+  const unusedDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "unused-variable");
+  const writeOnlyDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "write-only-variable");
+
+  assert.equal(assignmentStatement?.kind, "assignmentStatement");
+  assert.equal(assignmentStatement?.leadingLabel?.text, "Label1");
+  assert.equal(unusedDiagnostics.length, 0);
+  assert.deepEqual(
+    writeOnlyDiagnostics.map((diagnostic) => diagnostic.message),
+    ["Write-only local variable 'value'."]
+  );
+});
+
 test("analyzeModule warns on write-only local variables without duplicating unused-variable", () => {
   const result = analyzeModule(`Attribute VB_Name = "WriteOnlyLocals"
 Option Explicit
